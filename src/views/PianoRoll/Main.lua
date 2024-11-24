@@ -1,3 +1,5 @@
+local UID = dofile(views_path .. "PianoRoll/UID.lua")
+
 ---utility functions---
 
 function CloneInto(destination, source)
@@ -123,7 +125,7 @@ return {
         local previousAlpha = BreitbandGraphics.colors.white.a
         BreitbandGraphics.colors.white.a = 110
         ugui.listbox({
-            uid = 0,
+            uid = UID.VarWatch,
             rectangle = grid_rect(-6, 10, 6, 7),
             selected_index = nil,
             items = VarWatch.processed_values,

@@ -6,6 +6,7 @@ local function EnumNext(count)
 end
 
 return {
+    VarWatch = EnumNext(),
     ToggleHelp = EnumNext(),
     HelpNext = EnumNext(),
     HelpBack = EnumNext(),
