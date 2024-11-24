@@ -30,9 +30,9 @@ local col5 = 2.8
 local col6 = 3.0
 local col_1 = 8.0
 
-local row0 = -0.25
-local row1 = 0.25
-local row2 = 1.00
+local row0 = 1.00
+local row1 = 1.50
+local row2 = 2.25
 
 local buttonColumnWidth = 0.3
 local buttonSize = 0.22
@@ -78,14 +78,13 @@ local function DrawHeaders(pianoRoll, draw, buttonDrawData)
     BreitbandGraphics.fill_rectangle(grid_rect(0, row0, col_1, row2 - row0, 0), backgroundColor)
 
     draw:text(grid_rect(0, row0, 2, 1), "start", "Start: " .. pianoRoll.startGT)
-
-    draw:text(grid_rect(3, 0, 1, 0.5), "start", "Name")
+    draw:text(grid_rect(3, row0, 1, 0.5), "start", "Name")
     local prev_font_size = ugui.standard_styler.params.font_size
     ugui.standard_styler.params.font_size = ugui.standard_styler.params.font_size * 0.75
     pianoRoll.name = ugui.textbox({
         uid = UID.PianoRollName,
         is_enabled = true,
-        rectangle = grid_rect(4, 0, 4, 0.5),
+        rectangle = grid_rect(4, row0, 4, 0.5),
         text = pianoRoll.name
     })
     ugui.standard_styler.params.font_size = prev_font_size
@@ -308,16 +307,18 @@ function __clsLuaGui.Render() end
 ---@type LuaGui
 return {
     Render = function(draw)
-        local pianoRoll = PianoRollContext.AssertedCurrent()
+        local pianoRoll = PianoRollContext:AssertedCurrent()
 
         local buttonDrawData = DrawColorCodes()
         DrawHeaders(pianoRoll, draw, buttonDrawData)
 
-        local prev_joystick_tip_size = ugui.standard_styler.params.joystick.tip_size
-        ugui.standard_styler.params.joystick.tip_size = 4 * Drawing.scale
-        local anyChange = DrawFramesGui(pianoRoll, draw, buttonDrawData)
-        ugui.standard_styler.params.joystick.tip_size = prev_joystick_tip_size
+        local prev_joystick_tip_size = ugui.standard_styler.joystick_tip_size
+        ugui.standard_styler.joystick_tip_size = 4 * Drawing.scale
+        local anyChanges = DrawFramesGui(pianoRoll, draw, buttonDrawData)
+        ugui.standard_styler.joystick_tip_size = prev_joystick_tip_size
 
-        return anyChange
+        if anyChanges then
+            PianoRollContext.current:jumpTo(PianoRollContext.current.previewGT)
+        end
     end,
 }

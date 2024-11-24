@@ -1,7 +1,5 @@
 local UID = dofile(views_path .. "PianoRoll/UID.lua")
 
-local shown = false
-
 local page = 1
 
 local title = "Piano Roll Help"
@@ -75,41 +73,38 @@ return {
                 uid = UID.ToggleHelp,
 
                 rectangle = buttonPosition,
-                text = shown and "Exit" or "What?",
+                text = "Exit",
             }
         ) then
-            shown = not shown
-        end
-        if shown then
-            BreitbandGraphics.draw_text(grid_rect(0, 0.1, 8, 1), "start", "start", {}, foregroundColor, theme.font_size * 1.2 * Drawing.scale, theme.font_name, title)
-            BreitbandGraphics.draw_text(grid_rect(0, 0.666, 8, 1), "start", "start", {}, foregroundColor, theme.font_size * 2 * Drawing.scale, theme.font_name, headers[page])
-            BreitbandGraphics.draw_text(grid_rect(0, 1.8, 8, 1), "start", "start", {}, foregroundColor, theme.font_size * Drawing.scale, theme.font_name, explanations[page])
-
-            if ugui.button(
-                {
-                    uid = UID.HelpBack,
-
-                    rectangle = grid_rect(5, top, 1.5, controlHeight),
-                    text = "back",
-                    is_enabled = page > 1
-                }
-            ) then
-                page = page - 1
-            end
-
-            if ugui.button(
-                {
-                    uid = UID.HelpNext,
-
-                    rectangle = grid_rect(6.5, top, 1.5, controlHeight),
-                    text = "next",
-                    is_enabled = page < #explanations
-                }
-            ) then
-                page = page + 1
-            end
+            PianoRollDialog = nil
         end
 
-        return shown
+        BreitbandGraphics.draw_text(grid_rect(0, 0.1, 8, 1), "start", "start", {}, foregroundColor, theme.font_size * 1.2 * Drawing.scale, theme.font_name, title)
+        BreitbandGraphics.draw_text(grid_rect(0, 0.666, 8, 1), "start", "start", {}, foregroundColor, theme.font_size * 2 * Drawing.scale, theme.font_name, headers[page])
+        BreitbandGraphics.draw_text(grid_rect(0, 1.8, 8, 1), "start", "start", {}, foregroundColor, theme.font_size * Drawing.scale, theme.font_name, explanations[page])
+
+        if ugui.button(
+            {
+                uid = UID.HelpBack,
+
+                rectangle = grid_rect(5, top, 1.5, controlHeight),
+                text = "back",
+                is_enabled = page > 1
+            }
+        ) then
+            page = page - 1
+        end
+
+        if ugui.button(
+            {
+                uid = UID.HelpNext,
+
+                rectangle = grid_rect(6.5, top, 1.5, controlHeight),
+                text = "next",
+                is_enabled = page < #explanations
+            }
+        ) then
+            page = page + 1
+        end
     end,
 }

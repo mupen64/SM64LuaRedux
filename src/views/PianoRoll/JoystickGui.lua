@@ -1,4 +1,5 @@
 local UID = dofile(views_path .. "PianoRoll/UID.lua")
+local FrameListGui = dofile(views_path .. "PianoRoll/FrameListGui.lua")
 
 local function AnyEntries(table) for _ in pairs(table) do return true end return false end
 
@@ -92,9 +93,9 @@ local function ControlsForSelected(draw)
 
     local smallControlHeight = 0.5
     local largeControlHeight = 1.0
-    local top = 9
+    local top = 10
 
-    local pianoRoll = PianoRollContext.AssertedCurrent()
+    local pianoRoll = PianoRollContext:AssertedCurrent()
 
     local newValues = {}
     CloneInto(newValues, TASState)
@@ -235,9 +236,32 @@ local function ControlsForSelected(draw)
             dest.joy = btns
         end
     end
-    return anyChanges
+
+    if anyChanges then
+        PianoRollContext.current:jumpTo(PianoRollContext.current.previewGT)
+    end
+
+    local controlHeight = 0.75
+    if ugui.button({
+        uid = UID.TrimEnd,
+        rectangle = grid_rect(0, top + 0.25, 1.5, controlHeight),
+        text = "Trim",
+    }) then
+        PianoRollContext.current:trimEnd()
+    end
+
+    PianoRollContext.copyEntireState = ugui.toggle_button({
+        uid = UID.CopyEntireState,
+        rectangle = grid_rect(4.5, top + 0.25, 3.5, controlHeight),
+        text = "Copy entire state",
+        is_checked = PianoRollContext.copyEntireState,
+    })
 end
 
 return {
-    Render = ControlsForSelected
+    name = "Joystick",
+    Render = function(draw)
+        ControlsForSelected(draw)
+        FrameListGui.Render(draw)
+    end
 }

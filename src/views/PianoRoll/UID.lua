@@ -7,6 +7,7 @@ end
 
 return {
     VarWatch = EnumNext(),
+    SelectTab = EnumNext(),
     ToggleHelp = EnumNext(),
     HelpNext = EnumNext(),
     HelpBack = EnumNext(),

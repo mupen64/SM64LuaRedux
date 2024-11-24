@@ -1,6 +1,10 @@
 local UID = dofile(views_path .. "PianoRoll/UID.lua")
+local Project = dofile(views_path .. "PianoRoll/Project.lua")
 
 ---utility functions---
+
+PianoRollContext = Project.new()
+PianoRollDialog = nil
 
 function CloneInto(destination, source)
     local changes = {}
@@ -28,11 +32,12 @@ function RecordPianoRollInput(input)
     input.preview_joystick_y = input.manual_joystick_y
 end
 
-local SelectionGui = dofile(views_path .. "PianoRoll/SelectionGui.lua")
-local FrameListGui = dofile(views_path .. "PianoRoll/FrameListGui.lua")
-local JoystickGui = dofile(views_path .. "PianoRoll/JoystickGui.lua")
-local ToolsGui = dofile(views_path .. "PianoRoll/ToolsGui.lua")
-local Help = dofile(views_path .. "PianoRoll/Help.lua")
+local Tabs = {
+    dofile(views_path .. "PianoRoll/ProjectGui.lua"),
+    dofile(views_path .. "PianoRoll/JoystickGui.lua"),
+};
+
+local SelectedTabIndex = 1
 
 emu.atupdatescreen(function()
     -- prevent reentrant calls caused by GUI actions while the game is running
@@ -63,27 +68,6 @@ function CurrentPianoRollOverride()
     return PianoRollContext.current.frames[globalTimer]
 end
 
----@class PianoRollContext
----@field public current PianoRoll|nil The currently selected and active piano roll.
----@field public all table An array of up to 7 piano rolls to easily switch between for rapid iteration, indexed from 1 through 7 inclusively.
----@field public maxDisplayedFrames integer The maximum number of frames to display at once.
----@field public copyEntireState boolean If true, the entire TASState of the active edited frame is copied to all selected. If false, only the changes made will be copied instead.
-PianoRollContext = {
-    current = nil,
-    all = {},
-    maxDisplayedFrames = 15,
-    copyEntireState = true,
-
-    ---Retrieves the current piano roll, raising error when it is nil
-    ---@return PianoRoll current The current PianoRoll, never nil
-    AssertedCurrent = function()
-        if PianoRollContext.current == nil then
-            error("Expected PianoRollContext.current to not be nil.", 2)
-        end
-        return PianoRollContext.current
-    end,
-}
-
 local function DrawFactory(theme)
     return {
         foregroundColor = BreitbandGraphics.invert_color(theme.background_color),
@@ -105,19 +89,25 @@ return {
     name = "Piano Roll",
     draw = function()
 
-        -- if we're showing help or a confirmation dialog, stop rendering anything else
-        if SelectionGui.RenderConfirmDeletionPrompt() or Help.Render() then return end
-
-        SelectionGui.Render()
-
-        if PianoRollContext.current == nil then return end
+        -- if we're showing any dialog, stop rendering anything else
+        if PianoRollDialog ~= nil then
+            PianoRollDialog()
+            return
+        end
 
         local draw = DrawFactory(Styles.theme())
 
-        ToolsGui.Render()
-        if FrameListGui.Render(draw) or JoystickGui.Render(draw) then
-            PianoRollContext.current:jumpTo(PianoRollContext.current.previewGT)
-        end
+        SelectedTabIndex = ugui.carrousel_button({
+            uid = UID.SelectTab,
+
+            rectangle = grid_rect(0, 0, 8, 1),
+            items = lualinq.select(Tabs, function(e) return e.name end),
+            selected_index = SelectedTabIndex
+        })
+
+        -- show only the project page if no piano rolls exist
+        if PianoRollContext.current == nil then SelectedTabIndex = 1 end
+        Tabs[SelectedTabIndex].Render(draw)
 
         -- hack to make the listbox transparent
         Memory.update()
