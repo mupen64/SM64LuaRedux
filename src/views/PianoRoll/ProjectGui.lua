@@ -13,10 +13,10 @@ local function SelectCurrent()
     end
 end
 
-local function RenderConfirmDeletionPrompt(selectionIndex)
+local function RenderConfirmDeletionPrompt(sheetIndex)
     return function()
         local top = 15 - controlHeight
-        local confirmationText = "[Confirm deletion]\n\nAre you sure you want to delete \"" .. PianoRollContext.current.name .. "\"?\nThis action cannot be undone."
+        local confirmationText = "[Confirm deletion]\n\nAre you sure you want to delete \"" .. PianoRollContext.all[sheetIndex].name .. "\"?\nThis action cannot be undone."
 
         local theme = Styles.theme()
         local foregroundColor = theme.listbox.text[1]
@@ -36,7 +36,7 @@ local function RenderConfirmDeletionPrompt(selectionIndex)
             rectangle = grid_rect(4, top, 2, controlHeight),
             text = 'Yes'
         }) then
-            table.remove(PianoRollContext.all, selectionIndex)
+            table.remove(PianoRollContext.all, sheetIndex)
             SelectCurrent()
             PianoRollDialog = nil
         end
@@ -51,13 +51,6 @@ local function RenderConfirmDeletionPrompt(selectionIndex)
 end
 
 local function RenderSheetList()
-    local top = 15 - controlHeight
-    local availablePianoRolls = {}
-    for i = 1, #PianoRollContext.all, 1 do
-        availablePianoRolls[i] = PianoRollContext.all[i].name
-    end
-    availablePianoRolls[#availablePianoRolls + 1] = "Off"
-
     local theme = Styles.theme()
     local foregroundColor = theme.listbox.text[1]
     if #PianoRollContext.all == 0 then
@@ -70,51 +63,68 @@ local function RenderSheetList()
             theme.font_size * 1.2 * Drawing.scale,
             theme.font_name,
             "No piano roll sheets available.\nCreate one to proceed.")
-    else
-        if availablePianoRolls[selectionIndex] == "Off" then
-            BreitbandGraphics.draw_text(
-                grid_rect(0, 0, 8, 16),
-                "center",
-                "center",
-                {},
-                foregroundColor,
-                theme.font_size * 1.2 * Drawing.scale,
-                theme.font_name,
-                "No piano roll sheet selected.\nSelect one to proceed.")
+    end
+
+    local top = 1
+    local availablePianoRolls = {}
+    for i = 1, #PianoRollContext.all, 1 do
+        availablePianoRolls[i] = PianoRollContext.all[i].name
+    end
+    availablePianoRolls[#availablePianoRolls + 1] = "Add..."
+
+    nextPianoRoll = selectionIndex
+    local uid = UID.ProjectSheetBase
+    for i = 1, #availablePianoRolls, 1 do
+        local y = top + (i - 1) * controlHeight
+        if ugui.toggle_button({
+            uid = uid,
+            rectangle = grid_rect(0, y, 3, controlHeight),
+            text = availablePianoRolls[i],
+            is_checked = i == nextPianoRoll,
+        }) then
+            if i == #PianoRollContext.all + 1 then -- add new sheet
+                nextPianoRoll = #PianoRollContext.all + 1
+                createdSheetCount = createdSheetCount + 1
+                PianoRollContext.current = PianoRoll.new("Sheet " .. createdSheetCount)
+                PianoRollContext.all[nextPianoRoll] = PianoRollContext.current
+            else -- select sheet
+                nextPianoRoll = i % #availablePianoRolls
+            end
         end
-    end
+        uid = uid + 1
 
-    local nextPianoRoll = ugui.carrousel_button(
-        {
-            uid = UID.SelectionSpinner,
+        -- prevent rendering options for the "add..." button
+        if i > #PianoRollContext.all then break end
 
-            rectangle = grid_rect(3, top, 4, controlHeight),
-            items = availablePianoRolls,
-            selected_index = selectionIndex,
-            is_enabled = #availablePianoRolls > 1
-        }
-    )
+        local x = 3
+        local function drawUtilityButton(text, enabled, width)
+            width = width or 0.5
+            local result = ugui.button({
+                uid = uid,
+                rectangle = grid_rect(x, y, width, controlHeight),
+                text = text,
+                is_enabled = enabled
+            })
+            uid = uid + 1
+            x = x + width
+            return result
+        end
 
-    if (ugui.button({
-        uid = UID.Delete,
+        if (drawUtilityButton("^", i > 1)) then
+            local tmp = PianoRollContext.all[i]
+            PianoRollContext.all[i] = PianoRollContext.all[i - 1]
+            PianoRollContext.all[i - 1] = tmp
+        end
 
-        rectangle = grid_rect(2, top, 1, controlHeight),
-        text = "-",
-        is_enabled = PianoRollContext.all[nextPianoRoll] ~= nil,
-    })) then
-        PianoRollDialog = RenderConfirmDeletionPrompt(selectionIndex)
-    end
+        if (drawUtilityButton("v", i < #PianoRollContext.all)) then
+            local tmp = PianoRollContext.all[i]
+            PianoRollContext.all[i] = PianoRollContext.all[i + 1]
+            PianoRollContext.all[i + 1] = tmp
+        end
 
-    if ugui.button({
-        uid = UID.AddPianoRoll,
-
-        rectangle = grid_rect(7, top, 1, controlHeight),
-        text = "+",
-    }) then
-        nextPianoRoll = #PianoRollContext.all + 1
-        createdSheetCount = createdSheetCount + 1
-        PianoRollContext.current = PianoRoll.new("Sheet " .. createdSheetCount)
-        PianoRollContext.all[nextPianoRoll] = PianoRollContext.current
+        if (drawUtilityButton("-")) then
+            PianoRollDialog = RenderConfirmDeletionPrompt(i)
+        end
     end
 
     if selectionIndex ~= nextPianoRoll then
@@ -124,14 +134,12 @@ local function RenderSheetList()
 end
 
 local function RenderFooter()
-    local controlHeight = 0.75
-    local top = 15 - controlHeight
-    local buttonPosition = grid_rect(0, top, 1.5, controlHeight)
+    local top = 16 - controlHeight
     if ugui.button(
         {
             uid = UID.ToggleHelp,
 
-            rectangle = buttonPosition,
+            rectangle = grid_rect(0, top, 1.5, controlHeight),
             text = "Help",
         }
     ) then
