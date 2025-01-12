@@ -5,10 +5,9 @@ local persistence = dofile(lib_path .. "persistence.lua")
 
 local controlHeight = 0.75
 
-local function RenderConfirmDeletionPrompt(sheetIndex)
+local function CreateConfirmDialog(prompt, onConfirmed)
     return function()
         local top = 15 - controlHeight
-        local confirmationText = "[Confirm deletion]\n\nAre you sure you want to delete \"" .. PianoRollProject.meta.sheets[sheetIndex].name .. "\"?\nThis action cannot be undone."
 
         local theme = Styles.theme()
         local foregroundColor = theme.listbox.text[1]
@@ -21,14 +20,14 @@ local function RenderConfirmDeletionPrompt(sheetIndex)
             foregroundColor,
             theme.font_size * 1.2 * Drawing.scale,
             theme.font_name,
-            confirmationText)
+            prompt)
 
         if ugui.button({
             uid = UID.ConfirmationYes,
             rectangle = grid_rect(4, top, 2, controlHeight),
             text = 'Yes'
         }) then
-            PianoRollProject:RemoveSheet(sheetIndex)
+            onConfirmed()
             PianoRollDialog = nil
         end
         if ugui.button({
@@ -40,6 +39,34 @@ local function RenderConfirmDeletionPrompt(sheetIndex)
         end
     end
 end
+
+local function RenderConfirmDeletionPrompt(sheetIndex)
+    return CreateConfirmDialog(
+        "[Confirm deletion]\n\nAre you sure you want to delete \"" .. PianoRollProject.meta.sheets[sheetIndex].name .. "\"?\nThis action cannot be undone.",
+        function() PianoRollProject:RemoveSheet(sheetIndex) end
+    )
+end
+
+local RenderConfirmPurgeDialog = CreateConfirmDialog(
+    "[Confirm project purge]\n\n"
+    .."Are you sure you want to purge unused sheets from the project directory?\n"
+    .."Unrelated files (not ending with .prs or .prs.savestate) will not be touched.\n"
+    .."This action cannot be undone.",
+    function()
+        local ignoredFiles = {}
+        local projectFolder = PianoRollProject:ProjectFolder()
+        for _, sheetMeta in ipairs(PianoRollProject.meta.sheets) do
+            ignoredFiles[sheetMeta.name .. ".prs"] = true
+            ignoredFiles[sheetMeta.name .. ".prs.savestate"] = true
+        end
+        for file in io.popen("dir \"" .. projectFolder .. "\" /b"):lines() do
+            if ignoredFiles[file] == nil and (file:match("(.)prs$") ~= nil or file:match("(.)prs(.)savestate$") ~= nil) then
+                assert(os.remove(projectFolder .. file))
+                print("removed " .. file)
+            end
+        end
+    end
+)
 
 local function RenderSheetList(draw)
     local theme = Styles.theme()
@@ -103,6 +130,15 @@ local function RenderSheetList(draw)
         end
     end
     ::skipSave::
+
+    if ugui.button({
+        uid = UID.PurgeProject,
+        rectangle = grid_rect(4.5, top + 1, 1.5, controlHeight),
+        text = "Purge",
+        is_enabled = PianoRollProject.projectLocation ~= nil,
+    }) then
+        PianoRollDialog = RenderConfirmPurgeDialog
+    end
 
     top = 3
     local availablePianoRolls = {}

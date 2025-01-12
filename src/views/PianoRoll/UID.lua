@@ -12,6 +12,7 @@ return {
     NewProject = EnumNext(),
     OpenProject = EnumNext(),
     SaveProject = EnumNext(),
+    PurgeProject = EnumNext(),
     ProjectSheetBase = EnumNext(1024), -- TODO: allocate an exact amount, assuming a scroll bar for too many sheets in one project
     HelpNext = EnumNext(),
     HelpBack = EnumNext(),
