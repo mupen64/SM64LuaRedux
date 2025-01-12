@@ -1,32 +1,31 @@
 ---@class Selection
----@field public startGT integer The global timer value of the frame that was clicked to begin creating this selection, which may be greater than endGT
----@field public endGT integer The global timer value of the frame on which this selection's range was ended, which may be less than startGT
+---@field public startIndex integer The 0-based index of the frame that was clicked to begin creating this selection, which may be greater than endIndex
+---@field public endIndex integer The 0-based index of the frame on which this selection's range was ended, which may be less than startIndex
 local __clsSelection = {}
 
-function __clsSelection.new(state, globalTimer)
+function __clsSelection.new(state, frameNumber)
     return {
         state = state,
-        startGT = globalTimer,
-        endGT = globalTimer,
+        startIndex = frameNumber,
+        endIndex = frameNumber,
         min = __clsSelection.min,
         max = __clsSelection.max,
     }
 end
 
----The smaller value of startGT and endGT
-function __clsSelection:min() return math.min(self.startGT, self.endGT) end
+---The smaller value of startIndex and endIndex
+function __clsSelection:min() return math.min(self.startIndex, self.endIndex) end
 
----The greater value of startGT and endGT
-function __clsSelection:max() return math.max(self.startGT, self.endGT) end
+---The greater value of startIndex and endIndex
+function __clsSelection:max() return math.max(self.startIndex, self.endIndex) end
 
 
 ---@class PianoRoll
----@field public previewGT integer The global timer value to which to advance to when changes to the piano roll have been made.
+---@field public previewIndex integer The 0-based index of the to which to advance to when changes to the piano roll have been made.
 ---@field public startGT integer The global timer value indicating the inclusive start of this piano roll.
----@field public editingGT integer The global timer value indicating the frame of this piano roll that is currently being edited.
----@field public endGT integer The global timer value indicating the exclusive end of this piano roll.
+---@field public editingIndex integer The 0-based index of the frame of this piano roll that is currently being edited.
 ---@field public selection Selection | nil A single selection range for which to apply changes in the joystick gui to.
----@field public frames table A table mapping from global timer values to the respective intended inputs and TASState.
+---@field public frames table An array of TASStates to execute per global timer increment after startGT.
 ---@field public name string A name for the piano roll for convenience.
 local __clsPianoRoll = {}
 
@@ -37,9 +36,8 @@ function __clsPianoRoll.new(name)
     ---@type PianoRoll
     local newInstance = {
         startGT = globalTimer,
-        endGT = globalTimer,
-        previewGT = globalTimer,
-        editingGT = globalTimer,
+        previewIndex = 0,
+        editingIndex = 0,
         selection = nil,
         frames = {},
         name = name,
@@ -60,21 +58,21 @@ function __clsPianoRoll.new(name)
     return newInstance
 end
 
-function __clsPianoRoll:numFrames() return self.endGT - self.startGT end
+function __clsPianoRoll:numFrames() return self.frames[0] ~= nil and #self.frames + 1 or 0 end
 
-function __clsPianoRoll:edit(globalTimerTarget)
-    self.editingGT = globalTimerTarget
-    TASState = self.frames[globalTimerTarget] or TASState
+function __clsPianoRoll:edit(frameIndex)
+    self.editingIndex = frameIndex
+    TASState = self.frames[frameIndex] or TASState
     self._oldClock = os.clock()
 end
 
-function __clsPianoRoll:jumpTo(globalTimerTarget)
+function __clsPianoRoll:jumpTo(targetIndex)
     if self._busy then
         self._updatePending = true
         return
     end
-    if self.endGT == self.startGT then return end
-    self.previewGT = globalTimerTarget
+    if self:numFrames() == 0 then return end
+    self.previewIndex = targetIndex
     self._busy = true
     self._updatePending = false
 
@@ -87,10 +85,10 @@ function __clsPianoRoll:jumpTo(globalTimerTarget)
     runUntilSelected = function()
         TASState = previousTASState
         local globalTimer = memory.readdword(Addresses[Settings.address_source_index].global_timer)
-        local frame = self.frames[globalTimer]
+        local frame = self.frames[globalTimer - self.startGT]
         frame.preview_joystick_x = Joypad.input.X
         frame.preview_joystick_y = Joypad.input.Y
-        if globalTimer >= self.previewGT then
+        if globalTimer >= self.startGT + self.previewIndex then
             emu.pause(false)
             emu.set_ff(was_ff)
             emu.atinput(runUntilSelected, true)
@@ -143,17 +141,12 @@ function __clsPianoRoll:update()
         self._updatePending = true
     elseif self._updatePending then
         self._oldClock = now
-        self:jumpTo(self.previewGT)
+        self:jumpTo(self.previewIndex)
     end
 end
 
 function __clsPianoRoll:trimEnd()
-    for k, _ in pairs(self.frames) do
-        if k > self.previewGT then
-            self.frames[k] = nil
-        end
-    end
-    self.endGT = self.previewGT + 1
+    self.frames = table.move(self.frames, 0, self.previewIndex, 0, {})
 end
 
 return {

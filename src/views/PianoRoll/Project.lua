@@ -63,7 +63,7 @@ function __clsProject:AddSheet()
 end
 
 ---Removes the sheet at the provided index
----@param index number The 1 based index of the sheet to remove - must be within the range of [1; #meta.sheets]
+---@param index number The 1-based index of the sheet to remove - must be within the range of [1; #meta.sheets]
 function __clsProject:RemoveSheet(index)
     self.all[table.remove(self.meta.sheets, index).name] = nil
     self:Select(#self.meta.sheets > 0 and (index % #self.meta.sheets) or 0)
@@ -92,12 +92,12 @@ function __clsProject:SetCurrentName(name)
 end
 
 ---Selects the piano roll sheet at the provided index and runs it from its savestate to its current preview.
----@param index number The 1 based index of the sheet to select.
+---@param index number The 1-based index of the sheet to select.
 function __clsProject:Select(index)
     self.meta.selectionIndex = index
     local current = self:Current()
     if current ~= nil then
-        current:jumpTo(current.previewGT)
+        current:jumpTo(current.previewIndex)
     end
 end
 

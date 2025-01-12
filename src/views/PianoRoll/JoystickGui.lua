@@ -45,7 +45,8 @@ local function AtanControls(draw, pianoRoll, newValues, top)
         is_checked = newValues.atan_strain
     })
     if pianoRoll.selection ~= nil and newAtan and not newValues.atan_strain then
-        newValues.atan_start = pianoRoll.selection:min()
+        -- TODO: document why these +1 are correct (if they are lol)
+        newValues.atan_start = pianoRoll.selection:min() + pianoRoll.startGT + 1
         newValues.atan_n = pianoRoll.selection:max() - pianoRoll.selection:min() + 1
         newValues.dyaw = true
         newValues.movement_mode = MovementModes.match_angle
@@ -239,7 +240,7 @@ local function ControlsForSelected(draw)
     end
 
     if anyChanges then
-        currentSheet:jumpTo(currentSheet.previewGT)
+        currentSheet:jumpTo(currentSheet.previewIndex)
     end
 
     local controlHeight = 0.75

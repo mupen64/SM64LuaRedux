@@ -58,16 +58,19 @@ function CurrentPianoRollOverride()
     local currentSheet = PianoRollProject:Current()
     if (currentSheet == nil) then return nil end
     local globalTimer = memory.readdword(Addresses[Settings.address_source_index].global_timer)
-    if currentSheet ~= nil and globalTimer >= currentSheet.endGT then
+    local numFrames = currentSheet:numFrames()
+    if currentSheet ~= nil and currentSheet.startGT + numFrames <= globalTimer then
         local input = {}
         RecordPianoRollInput(input)
-        currentSheet.endGT = globalTimer + 1
-        currentSheet.previewGT = globalTimer
-        currentSheet.editingGT = globalTimer
-        currentSheet.frames[globalTimer] = input
+        repeat
+            currentSheet.previewIndex = numFrames
+            currentSheet.editingIndex = numFrames
+            currentSheet.frames[numFrames] = input
+            numFrames = numFrames + 1
+        until currentSheet.startGT + numFrames > globalTimer -- TODO: this may cause issues with overflowing global timer - a sturdier method is needed
     end
 
-    return currentSheet.frames[globalTimer]
+    return currentSheet.frames[globalTimer - currentSheet.startGT]
 end
 
 local function DrawFactory(theme)
