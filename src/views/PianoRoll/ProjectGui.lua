@@ -193,6 +193,20 @@ local function RenderSheetList(draw)
         if (drawUtilityButton("-")) then
             PianoRollDialog = RenderConfirmDeletionPrompt(i)
         end
+
+        if (drawUtilityButton(".st", true, 0.75)) then
+            local path = iohelper.filediag("*.st;*.savestate", 0)
+            if string.len(path) > 0 then
+                PianoRollProject:Rebase(i, path)
+            end
+        end
+
+        if (drawUtilityButton(".prs", true, 0.75)) then
+            local path = iohelper.filediag("*.prs", 0)
+            if string.len(path) > 0 then
+                PianoRollProject.all[PianoRollProject.meta.sheets[i].name]:load(path, false)
+            end
+        end
     end
 end
 

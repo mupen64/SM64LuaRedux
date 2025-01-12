@@ -34,6 +34,7 @@ function __clsProject.new()
         MoveSheet = __clsProject.MoveSheet,
         RemoveSheet = __clsProject.RemoveSheet,
         Select = __clsProject.Select,
+        Rebase = __clsProject.Rebase,
     }
 end
 
@@ -101,6 +102,14 @@ function __clsProject:Select(index)
     end
 end
 
+---Selects and rebases the piano roll sheet at the provided index onto the provided savestate.
+---@param index number The 1-based index of the sheet to select.
+---@param savestatePath number The location of the .st or .savestate file to rebase onto.
+function __clsProject:Rebase(index, savestatePath)
+    self.meta.selectionIndex = index
+    self.all[self.meta.sheets[index].name]:rebase(savestatePath)
+end
+
 ---Retrieves the directory in which this project's project file resides
 function __clsProject:ProjectFolder()
     return self.projectLocation:match("(.*[/\\])")
@@ -114,7 +123,7 @@ function __clsProject:Load(meta)
     local projectFolder = self:ProjectFolder()
     for _, sheetMeta in ipairs(meta.sheets) do
         local newSheet = PianoRoll.new(sheetMeta.name)
-        newSheet:load(projectFolder .. sheetMeta.name .. ".prs")
+        newSheet:load(projectFolder .. sheetMeta.name .. ".prs", true)
         self.all[sheetMeta.name] = newSheet
     end
 end

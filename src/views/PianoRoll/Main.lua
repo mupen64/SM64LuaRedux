@@ -58,6 +58,10 @@ function CurrentPianoRollOverride()
     local currentSheet = PianoRollProject:Current()
     if (currentSheet == nil) then return nil end
     local globalTimer = memory.readdword(Addresses[Settings.address_source_index].global_timer)
+    if currentSheet._rebasing then
+        currentSheet.startGT = globalTimer
+        currentSheet._rebasing = false
+    end
     local numFrames = currentSheet:numFrames()
     if currentSheet ~= nil and currentSheet.startGT + numFrames <= globalTimer then
         local input = {}

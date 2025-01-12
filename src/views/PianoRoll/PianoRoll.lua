@@ -19,6 +19,19 @@ function __clsSelection:min() return math.min(self.startIndex, self.endIndex) en
 ---The greater value of startIndex and endIndex
 function __clsSelection:max() return math.max(self.startIndex, self.endIndex) end
 
+local function CopyFile(srcPath, destPath)
+    local infile = io.open(srcPath, "rb")
+    local outfile = io.open(destPath, "wb")
+    if (infile == nil or outfile == nil) then
+        print("Failed to copy \"" .. srcPath .. "\" to \"" .. destPath .. "\"")
+        return false
+    end
+    outfile:write(infile:read("a"))
+    infile:close()
+    outfile:close()
+    return true
+end
+
 
 ---@class PianoRoll
 ---@field public previewIndex integer The 0-based index of the to which to advance to when changes to the piano roll have been made.
@@ -46,11 +59,13 @@ function __clsPianoRoll.new(name)
         _oldClock = 0,
         _busy = false,
         _updatePending = false,
+        _rebasing = false,
         numFrames = __clsPianoRoll.numFrames,
         edit = __clsPianoRoll.edit,
         update = __clsPianoRoll.update,
         jumpTo = __clsPianoRoll.jumpTo,
         trimEnd = __clsPianoRoll.trimEnd,
+        rebase = __clsPianoRoll.rebase,
         save = __clsPianoRoll.save,
         load = __clsPianoRoll.load,
     }
@@ -77,6 +92,7 @@ function __clsPianoRoll:jumpTo(targetIndex)
     self._updatePending = false
 
     savestate.loadfile(self._savestateFile)
+    print("loading file \"" .. self._savestateFile .. "\"")
     emu.pause(true)
     local previousTASState = TASState
     local was_ff = emu.get_ff()
@@ -100,16 +116,7 @@ end
 
 function __clsPianoRoll:save(file)
     local savestateFile = file .. ".savestate"
-    if self._savestateFile ~= savestateFile then
-        local infile = io.open(self._savestateFile, "rb")
-        local outfile = io.open(savestateFile, "wb")
-        if (infile == nil or outfile == nil) then
-            print("Failed to copy savestate for " .. self.name)
-            return
-        end
-        outfile:write(infile:read("a"))
-        infile:close()
-        outfile:close()
+    if self._savestateFile ~= savestateFile and CopyFile(self._savestateFile, savestateFile) then
         self._savestateFile = savestateFile
     end
 
@@ -125,10 +132,10 @@ function __clsPianoRoll:save(file)
     )
 end
 
-function __clsPianoRoll:load(file)
+function __clsPianoRoll:load(file, setStFile)
     local contents = persistence.load(file);
     if contents ~= nil then
-        self._savestateFile = file .. ".savestate"
+        if setStFile then self._savestateFile = file .. ".savestate" end
         CloneInto(self, contents)
     end
 end
@@ -147,6 +154,14 @@ end
 
 function __clsPianoRoll:trimEnd()
     self.frames = table.move(self.frames, 0, self.previewIndex, 0, {})
+end
+
+function __clsPianoRoll:rebase(path)
+    if CopyFile(path, self._savestateFile) then
+        self._rebasing = true
+        self:jumpTo(self.previewIndex)
+        print("rebased \"" .. self.name .. "\" onto \"" .. path .. "\"")
+    end
 end
 
 return {
