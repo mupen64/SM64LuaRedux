@@ -290,13 +290,13 @@ local function DrawFramesGui(sheet, draw, buttonDrawData)
     return anyChange
 end
 
----@class LuaGui
-local __clsLuaGui = {}
+---@class FrameListGui
+local __clsFrameListGui = {}
 
 --- Renders the piano roll, indicating whether an update by the user has been made that should cause a rerun
-function __clsLuaGui.Render() end
+function __clsFrameListGui.Render() end
 
----@type LuaGui
+---@type FrameListGui
 return {
     Render = function(draw)
         local currentSheet = PianoRollProject:AssertedCurrent()
