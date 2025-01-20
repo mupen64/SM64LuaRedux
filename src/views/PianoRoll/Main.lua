@@ -37,6 +37,23 @@ end
 local Tabs = dofile(views_path .. "PianoRoll/Tabs.lua")
 local SelectedTabIndex = 1
 
+local function DrawFactory(theme)
+    return {
+        foregroundColor = BreitbandGraphics.invert_color(theme.background_color),
+        backgroundColor = theme.background_color,
+        fontSize = theme.font_size * Drawing.scale * 0.75,
+        style = { aliased = theme.pixelated_text },
+
+        text = function(self, rect, horizontal_alignment, text)
+            BreitbandGraphics.draw_text(rect, horizontal_alignment, "center", self.style, self.foregroundColor, self.fontSize, "Consolas", text)
+        end,
+
+        small_text = function(self, rect, horizontal_alignment, text)
+            BreitbandGraphics.draw_text(rect, horizontal_alignment, "center", self.style, self.foregroundColor, self.fontSize * 0.75, "Consolas", text)
+        end
+    }
+end
+
 emu.atupdatescreen(function()
     -- prevent reentrant calls caused by GUI actions while the game is running
     local currentSheet = PianoRollProject:Current()
@@ -73,23 +90,6 @@ function CurrentPianoRollOverride()
     end
 
     return currentSheet.frames[globalTimer - currentSheet.startGT]
-end
-
-local function DrawFactory(theme)
-    return {
-        foregroundColor = BreitbandGraphics.invert_color(theme.background_color),
-        backgroundColor = theme.background_color,
-        fontSize = theme.font_size * Drawing.scale * 0.75,
-        style = { aliased = not theme.cleartype },
-
-        text = function(self, rect, horizontal_alignment, text)
-            BreitbandGraphics.draw_text(rect, horizontal_alignment, "center", self.style, self.foregroundColor, self.fontSize, "Consolas", text)
-        end,
-
-        small_text = function(self, rect, horizontal_alignment, text)
-            BreitbandGraphics.draw_text(rect, horizontal_alignment, "center", self.style, self.foregroundColor, self.fontSize * 0.75, "Consolas", text)
-        end
-    }
 end
 
 return {

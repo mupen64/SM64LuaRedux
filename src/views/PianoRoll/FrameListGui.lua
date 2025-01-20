@@ -109,6 +109,8 @@ local function DrawHeaders(sheet, draw, buttonDrawData)
     draw:text(grid_rect(col0, row1, col1 - col0, 1), "start", Locales.str("PIANO_ROLL_FRAMELIST_FRAME"))
     draw:text(grid_rect(col1, row1, col6 - col1, 1), "start", Locales.str("PIANO_ROLL_FRAMELIST_STICK"))
 
+    if not buttonDrawData then return end
+
     local rect = grid_rect(0, row1, 0.333, 1)
     for i, v in ipairs(Buttons) do
         rect.x = buttonDrawData[i].x
@@ -116,25 +118,18 @@ local function DrawHeaders(sheet, draw, buttonDrawData)
     end
 end
 
-local function DrawColorCodes()
-
-    local unit = Settings.grid_size * Drawing.scale
+local function DrawScrollbar()
     local numDisplayFrames = NumDisplayFrames()
     local baseline = grid_rect(col_1, row2, buttonColumnWidth, frameColumnHeight, 0)
+    local unit = Settings.grid_size * Drawing.scale
     local scrollbarRect = {
         x = baseline.x - scrollbarWidth * unit,
         y = baseline.y,
         width = scrollbarWidth * unit,
         height = baseline.height * numDisplayFrames
     }
-    local rect = {
-        x = scrollbarRect.x - baseline.width * #Buttons,
-        y = baseline.y,
-        width = baseline.width,
-        height = baseline.height * numDisplayFrames
-     }
 
-     local maxScroll = MaxScroll()
+    local maxScroll = MaxScroll()
     if numDisplayFrames > 0 and maxScroll > 0 then
         local relativeScroll = ugui.scrollbar({
             uid = UID.Scrollbar,
@@ -144,6 +139,17 @@ local function DrawColorCodes()
         })
         scrollOffset = math.floor(relativeScroll * maxScroll + 0.5)
     end
+
+    return baseline, scrollbarRect
+end
+
+local function DrawColorCodes(baseline, scrollbarRect)
+    local rect = {
+        x = scrollbarRect.x - baseline.width * #Buttons,
+        y = baseline.y,
+        width = baseline.width,
+        height = baseline.height * NumDisplayFrames(),
+    }
 
     local i = 1
     local colorIndex = 1
@@ -192,6 +198,8 @@ local function PlaceAndUnplaceButtons(frameRect, buttonDrawData)
         ugui.internal.environment.wheel = 0
     end
 
+    if not buttonDrawData then return end
+
     if inRange and frame ~= nil then
         for buttonIndex, v in ipairs(Buttons) do
             local inRangeX = mouseX >= buttonDrawData[buttonIndex].x and mouseX < buttonDrawData[buttonIndex + 1].x
@@ -212,7 +220,7 @@ local function PlaceAndUnplaceButtons(frameRect, buttonDrawData)
     return anyChange
 end
 
-local function DrawFramesGui(sheet, draw, buttonDrawData)
+local function DrawFramesGui(sheet, draw, buttonDrawData, drawFrameContent)
 
     if ugui.internal.is_mouse_just_up() and sheet.selection ~= nil then
         sheet:edit(sheet.selection.endIndex)
@@ -271,22 +279,25 @@ local function DrawFramesGui(sheet, draw, buttonDrawData)
             BreitbandGraphics.fill_rectangle(joystickBox, {r = 0, g = 200, b = 0, a = 100})
         end
 
-        draw:text(span(col2, col3), "center", ModeTexts[input.movement_mode + 1])
+        if drawFrameContent then
+        else
+            draw:text(span(col2, col3), "center", ModeTexts[input.movement_mode + 1])
 
-        if input.movement_mode == MovementModes.match_angle then
-            draw:text(span(col4, col5), "end", tostring(input.goal_angle))
-            draw:text(span(col5, col6), "end", input.strain_left and '<' or (input.strain_right and '>' or '-'))
-        end
-
-        local unit = Settings.grid_size * Drawing.scale
-        local sz = buttonSize * unit
-        local rect = {x = 0, y = frameRect.y + (frameColumnHeight - buttonSize) * 0.5 * unit, width = sz, height = sz}
-        for buttonIndex, v in ipairs(Buttons) do
-            rect.x = buttonDrawData[buttonIndex].x + unit * (buttonColumnWidth - buttonSize) * 0.5
-            if input.joy[v.input] then
-                BreitbandGraphics.fill_ellipse(rect, buttonColors[buttonDrawData[buttonIndex].colorIndex].button)
+            if input.movement_mode == MovementModes.match_angle then
+                draw:text(span(col4, col5), "end", tostring(input.goal_angle))
+                draw:text(span(col5, col6), "end", input.strain_left and '<' or (input.strain_right and '>' or '-'))
             end
-            BreitbandGraphics.draw_ellipse(rect, {r=0, g=0, b=0, a=input.joy[v.input] and 255 or 80}, 1)
+
+            local unit = Settings.grid_size * Drawing.scale
+            local sz = buttonSize * unit
+            local rect = {x = 0, y = frameRect.y + (frameColumnHeight - buttonSize) * 0.5 * unit, width = sz, height = sz}
+            for buttonIndex, v in ipairs(Buttons) do
+                rect.x = buttonDrawData[buttonIndex].x + unit * (buttonColumnWidth - buttonSize) * 0.5
+                if input.joy[v.input] then
+                    BreitbandGraphics.fill_ellipse(rect, buttonColors[buttonDrawData[buttonIndex].colorIndex].button)
+                end
+                BreitbandGraphics.draw_ellipse(rect, {r=0, g=0, b=0, a=input.joy[v.input] and 255 or 80}, 1)
+            end
         end
 
         if (frameNumber == sheet.previewIndex) then
@@ -307,15 +318,16 @@ end
 local __clsFrameListGui = {}
 
 --- Renders the piano roll, indicating whether an update by the user has been made that should cause a rerun
-function __clsFrameListGui.Render(draw)
+function __clsFrameListGui.Render(draw, drawFrameContent)
     local currentSheet = PianoRollProject:AssertedCurrent()
 
-    local buttonDrawData = DrawColorCodes()
+    local baseline, scrollbarRect = DrawScrollbar()
+    local buttonDrawData = drawFrameContent == nil and DrawColorCodes(baseline, scrollbarRect) or nil
     DrawHeaders(currentSheet, draw, buttonDrawData)
 
     local prev_joystick_tip_size = ugui.standard_styler.params.joystick.tip_size
     ugui.standard_styler.params.joystick.tip_size = 4 * Drawing.scale
-    local anyChanges = DrawFramesGui(currentSheet, draw, buttonDrawData)
+    local anyChanges = DrawFramesGui(currentSheet, draw, buttonDrawData, drawFrameContent)
     ugui.standard_styler.params.joystick.tip_size = prev_joystick_tip_size
 
     if anyChanges then
