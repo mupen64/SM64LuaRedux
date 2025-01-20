@@ -94,11 +94,11 @@ end
 
 ---Selects the piano roll sheet at the provided index and runs it from its savestate to its current preview.
 ---@param index number The 1-based index of the sheet to select.
-function __clsProject:Select(index)
+function __clsProject:Select(index, loadState)
     self.meta.selectionIndex = index
     local current = self:Current()
     if current ~= nil then
-        current:jumpTo(current.previewIndex)
+        current:jumpTo(current.previewIndex, loadState)
     end
 end
 

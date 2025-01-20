@@ -207,6 +207,10 @@ local function RenderSheetList(draw)
                 PianoRollProject.all[PianoRollProject.meta.sheets[i].name]:load(path, false)
             end
         end
+
+        if (drawUtilityButton(">")) then
+            PianoRollProject:Select(i, false)
+        end
     end
 end
 

@@ -81,7 +81,7 @@ function __clsPianoRoll:edit(frameIndex)
     self._oldClock = os.clock()
 end
 
-function __clsPianoRoll:jumpTo(targetIndex)
+function __clsPianoRoll:jumpTo(targetIndex, loadState)
     if self._busy then
         self._updatePending = true
         return
@@ -91,8 +91,10 @@ function __clsPianoRoll:jumpTo(targetIndex)
     self._busy = true
     self._updatePending = false
 
-    savestate.loadfile(self._savestateFile)
-    print("loading file \"" .. self._savestateFile .. "\"")
+    if loadState == nil and true or loadState then
+        savestate.loadfile(self._savestateFile)
+        print("loading file \"" .. self._savestateFile .. "\"")
+    end
     emu.pause(true)
     local previousTASState = TASState
     local was_ff = emu.get_ff()
