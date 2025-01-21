@@ -1,3 +1,6 @@
+__PianoRollUids = nil or __PianoRollUids
+if __PianoRollUids then return __PianoRollUids end
+
 local enumerator = 1000
 local function EnumNext(count)
     local current = enumerator
@@ -5,47 +8,27 @@ local function EnumNext(count)
     return current
 end
 
-return {
+--TODO: document how this works
+---Allocates uids for a table abiding to the "Renderer" class contract
+---@param renderer any
+---@return table
+local function FromRenderer(renderer)
+    local table = {}
+    for k, v in pairs(renderer.AllocateUids(EnumNext)) do
+        table[k] = v
+    end
+    return table
+end
+
+__PianoRollUids = {}
+__PianoRollUids = {
     VarWatch = EnumNext(),
     SelectTab = EnumNext(),
-    ToggleHelp = EnumNext(),
-    NewProject = EnumNext(),
-    OpenProject = EnumNext(),
-    SaveProject = EnumNext(),
-    PurgeProject = EnumNext(),
-    ProjectSheetBase = EnumNext(1024), -- TODO: allocate an exact amount, assuming a scroll bar for too many sheets in one project
-    HelpNext = EnumNext(),
-    HelpBack = EnumNext(),
-    PianoRollName = EnumNext(),
-    AddSheet = EnumNext(),
-    SelectionSpinner = EnumNext(),
-    SaveSheet = EnumNext(),
-    LoadSheet = EnumNext(),
-    CopyEntireState = EnumNext(),
-    Joypad = EnumNext(),
-    JoypadSpinnerX = EnumNext(3),
-    JoypadSpinnerY = EnumNext(3),
-    GoalAngle = EnumNext(),
-    GoalMag = EnumNext(),
-    StrainLeft = EnumNext(),
-    StrainRight = EnumNext(),
-    StrainAlways = EnumNext(),
-    StrainSpeedTarget = EnumNext(),
-    MovementModeManual = EnumNext(),
-    MovementModeMatchYaw = EnumNext(),
-    MovementModeMatchAngle = EnumNext(),
-    MovementModeReverseAngle = EnumNext(),
-    DYaw = EnumNext(),
-    SpeedKick = EnumNext(),
-    ResetMag = EnumNext(),
-    AtanStrain = EnumNext(),
-    AtanN = EnumNext(3),
-    AtanD = EnumNext(3),
-    AtanE = EnumNext(3),
-    TrimEnd = EnumNext(),
-    Delete = EnumNext(),
-    ConfirmationYes = EnumNext(),
-    ConfirmationNo = EnumNext(),
-    FrameListScrollbar = EnumNext(),
-    UIDCOUNT = EnumNext(),
+    FrameList = FromRenderer(dofile(views_path .. "PianoRoll/FrameListGui.lua")),
 }
+
+for _, tab in pairs(dofile(views_path .. "PianoRoll/Tabs.lua")) do
+    __PianoRollUids[tab.name] = FromRenderer(tab)
+end
+
+return __PianoRollUids

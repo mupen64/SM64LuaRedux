@@ -1,4 +1,6 @@
-local UID = dofile(views_path .. "PianoRoll/UID.lua")
+local name = "FrameList"
+
+local UID = dofile(views_path .. "PianoRoll/UID.lua")[name]
 local _, Selection = dofile(views_path .. "PianoRoll/Sheet.lua")
 
 ---constants---
@@ -52,6 +54,17 @@ local buttonColors = {
     {background={r=055, g=055, b=055, a=100}, button={r=035, g=035, b=035, a=255}}, -- 4 DPad Buttons
 }
 
+local function AllocateUids(EnumNext)
+    local base = EnumNext(maxDisplayedFrames * 20)
+    return {
+        SheetName = EnumNext(),
+        Scrollbar = EnumNext(),
+        Row = function(index)
+            return base + index * 20 --TODO: allocate an exact amount
+        end,
+    }
+end
+
 ---logic---
 
 local function NumDisplayFrames()
@@ -84,7 +97,7 @@ local function DrawHeaders(sheet, draw, buttonDrawData)
     local prev_font_size = ugui.standard_styler.params.font_size
     ugui.standard_styler.params.font_size = ugui.standard_styler.params.font_size * 0.75
     sheet.name = ugui.textbox({
-        uid = UID.PianoRollName,
+        uid = UID.SheetName,
         is_enabled = true,
         rectangle = grid_rect(4, row0, 4, 0.5),
         text = sheet.name
@@ -124,7 +137,7 @@ local function DrawColorCodes()
      local maxScroll = MaxScroll()
     if numDisplayFrames > 0 and maxScroll > 0 then
         local relativeScroll = ugui.scrollbar({
-            uid = UID.FrameListScrollbar,
+            uid = UID.Scrollbar,
             rectangle = scrollbarRect,
             value = scrollOffset / maxScroll,
             ratio = 1 / (PianoRollProject:AssertedCurrent():numFrames() / numDisplayFrames),
@@ -230,7 +243,7 @@ local function DrawFramesGui(sheet, draw, buttonDrawData)
         end
 
         local input = sheet.frames[frameNumber]
-        local uidBase = UID.UIDCOUNT + i * 20
+        local uidBase = UID.Row(i)
         local frameBox = span(col0 + 0.25, col1)
         draw:text(frameBox, "end", frameNumber .. ":")
 
@@ -294,23 +307,24 @@ end
 local __clsFrameListGui = {}
 
 --- Renders the piano roll, indicating whether an update by the user has been made that should cause a rerun
-function __clsFrameListGui.Render() end
+function __clsFrameListGui.Render(draw)
+    local currentSheet = PianoRollProject:AssertedCurrent()
+
+    local buttonDrawData = DrawColorCodes()
+    DrawHeaders(currentSheet, draw, buttonDrawData)
+
+    local prev_joystick_tip_size = ugui.standard_styler.joystick_tip_size
+    ugui.standard_styler.joystick_tip_size = 4 * Drawing.scale
+    local anyChanges = DrawFramesGui(currentSheet, draw, buttonDrawData)
+    ugui.standard_styler.joystick_tip_size = prev_joystick_tip_size
+
+    if anyChanges then
+        currentSheet:jumpTo(currentSheet.previewIndex)
+    end
+end
 
 ---@type FrameListGui
 return {
-    Render = function(draw)
-        local currentSheet = PianoRollProject:AssertedCurrent()
-
-        local buttonDrawData = DrawColorCodes()
-        DrawHeaders(currentSheet, draw, buttonDrawData)
-
-        local prev_joystick_tip_size = ugui.standard_styler.joystick_tip_size
-        ugui.standard_styler.joystick_tip_size = 4 * Drawing.scale
-        local anyChanges = DrawFramesGui(currentSheet, draw, buttonDrawData)
-        ugui.standard_styler.joystick_tip_size = prev_joystick_tip_size
-
-        if anyChanges then
-            currentSheet:jumpTo(currentSheet.previewIndex)
-        end
-    end,
+    Render = __clsFrameListGui.Render,
+    AllocateUids = AllocateUids,
 }

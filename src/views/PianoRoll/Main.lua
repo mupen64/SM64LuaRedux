@@ -32,11 +32,9 @@ function RecordPianoRollInput(input)
     input.preview_joystick_y = input.manual_joystick_y
 end
 
-local Tabs = {
-    dofile(views_path .. "PianoRoll/ProjectGui.lua"),
-    dofile(views_path .. "PianoRoll/JoystickGui.lua"),
-};
+--implementation details
 
+local Tabs = dofile(views_path .. "PianoRoll/Tabs.lua")
 local SelectedTabIndex = 1
 
 emu.atupdatescreen(function()

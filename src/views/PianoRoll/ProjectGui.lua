@@ -1,7 +1,25 @@
+local name = "Project"
+
+local UID = dofile(views_path .. "PianoRoll/UID.lua")[name]
 local Project = dofile(views_path .. "PianoRoll/Project.lua")
-local UID = dofile(views_path .. "PianoRoll/UID.lua")
 local Help = dofile(views_path .. "PianoRoll/Help.lua")
 local persistence = dofile(lib_path .. "persistence.lua")
+
+local function AllocateUids(EnumNext)
+    return {
+        ToggleHelp = EnumNext(),
+        NewProject = EnumNext(),
+        OpenProject = EnumNext(),
+        SaveProject = EnumNext(),
+        PurgeProject = EnumNext(),
+        ProjectSheetBase = EnumNext(1024), -- TODO: allocate an exact amount, assuming a scroll bar for too many sheets in one project
+        HelpNext = EnumNext(),
+        HelpBack = EnumNext(),
+        AddSheet = EnumNext(),
+        ConfirmationYes = EnumNext(),
+        ConfirmationNo = EnumNext(),
+    }
+end
 
 local controlHeight = 0.75
 
@@ -229,9 +247,10 @@ local function RenderFooter()
 end
 
 return {
-    name = "Project",
+    name = name,
     Render = function(draw)
         RenderSheetList(draw)
         RenderFooter()
     end,
+    AllocateUids = AllocateUids,
 }

@@ -70,7 +70,7 @@ return {
         local buttonPosition = grid_rect(0, top, 1.5, controlHeight)
         if ugui.button(
             {
-                uid = UID.ToggleHelp,
+                uid = UID.Project.ToggleHelp,
 
                 rectangle = buttonPosition,
                 text = "Exit",
@@ -85,7 +85,7 @@ return {
 
         if ugui.button(
             {
-                uid = UID.HelpBack,
+                uid = UID.Project.HelpBack,
 
                 rectangle = grid_rect(5, top, 1.5, controlHeight),
                 text = "back",
@@ -97,7 +97,7 @@ return {
 
         if ugui.button(
             {
-                uid = UID.HelpNext,
+                uid = UID.Project.HelpNext,
 
                 rectangle = grid_rect(6.5, top, 1.5, controlHeight),
                 text = "next",

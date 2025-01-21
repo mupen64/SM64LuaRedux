@@ -1,5 +1,34 @@
-local UID = dofile(views_path .. "PianoRoll/UID.lua")
+local name = "Joystick"
+
+local UID = dofile(views_path .. "PianoRoll/UID.lua")[name]
 local FrameListGui = dofile(views_path .. "PianoRoll/FrameListGui.lua")
+
+local function AllocateUids(EnumNext)
+    return {
+        CopyEntireState = EnumNext(),
+        Joypad = EnumNext(),
+        JoypadSpinnerX = EnumNext(3),
+        JoypadSpinnerY = EnumNext(3),
+        GoalAngle = EnumNext(),
+        GoalMag = EnumNext(),
+        StrainLeft = EnumNext(),
+        StrainRight = EnumNext(),
+        StrainAlways = EnumNext(),
+        StrainSpeedTarget = EnumNext(),
+        MovementModeManual = EnumNext(),
+        MovementModeMatchYaw = EnumNext(),
+        MovementModeMatchAngle = EnumNext(),
+        MovementModeReverseAngle = EnumNext(),
+        DYaw = EnumNext(),
+        SpeedKick = EnumNext(),
+        ResetMag = EnumNext(),
+        AtanStrain = EnumNext(),
+        AtanN = EnumNext(3),
+        AtanD = EnumNext(3),
+        AtanE = EnumNext(3),
+        TrimEnd = EnumNext(),
+    }
+end
 
 local function AnyEntries(table) for _ in pairs(table) do return true end return false end
 
@@ -261,9 +290,10 @@ local function ControlsForSelected(draw)
 end
 
 return {
-    name = "Joystick",
+    name = name,
     Render = function(draw)
         ControlsForSelected(draw)
         FrameListGui.Render(draw)
-    end
+    end,
+    AllocateUids = AllocateUids,
 }
