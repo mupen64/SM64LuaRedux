@@ -41,9 +41,10 @@ local SelectedTabIndex = 1
 
 emu.atupdatescreen(function()
     -- prevent reentrant calls caused by GUI actions while the game is running
-    if PianoRollContext.current == nil or PianoRollContext.current then return end
-
-    PianoRollContext.current:update()
+    local currentSheet = PianoRollContext:Current()
+    if currentSheet ~= nil and not currentSheet._busy then
+        currentSheet:update()
+    end
 end)
 
 ---public API---
@@ -54,18 +55,19 @@ end)
 ---
 ---@return table|nil override A table that can be assigned to TASState, additionally holding a field 'joy' that can be passed to joypad.set(...).
 function CurrentPianoRollOverride()
-    if (PianoRollContext.current == nil) then return nil end
+    local currentSheet = PianoRollContext:Current()
+    if (currentSheet == nil) then return nil end
     local globalTimer = memory.readdword(Addresses[Settings.address_source_index].global_timer)
-    if PianoRollContext.current ~= nil and globalTimer >= PianoRollContext.current.endGT then
+    if currentSheet ~= nil and globalTimer >= currentSheet.endGT then
         local input = {}
         RecordPianoRollInput(input)
-        PianoRollContext.current.endGT = globalTimer + 1
-        PianoRollContext.current.previewGT = globalTimer
-        PianoRollContext.current.editingGT = globalTimer
-        PianoRollContext.current.frames[globalTimer] = input
+        currentSheet.endGT = globalTimer + 1
+        currentSheet.previewGT = globalTimer
+        currentSheet.editingGT = globalTimer
+        currentSheet.frames[globalTimer] = input
     end
 
-    return PianoRollContext.current.frames[globalTimer]
+    return currentSheet.frames[globalTimer]
 end
 
 local function DrawFactory(theme)
@@ -106,7 +108,7 @@ return {
         })
 
         -- show only the project page if no piano rolls exist
-        if PianoRollContext.current == nil then SelectedTabIndex = 1 end
+        if PianoRollContext:Current() == nil then SelectedTabIndex = 1 end
         Tabs[SelectedTabIndex].Render(draw)
 
         -- hack to make the listbox transparent

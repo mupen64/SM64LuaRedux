@@ -227,9 +227,10 @@ local function ControlsForSelected(draw)
 
     local changes = CloneInto(TASState, newValues)
     local anyChanges = AnyEntries(changes)
+    local currentSheet = PianoRollContext:AssertedCurrent()
     if anyChanges and pianoRoll.selection ~= nil then
         for i = pianoRoll.selection:min(), pianoRoll.selection:max(), 1 do
-            local dest = PianoRollContext.current.frames[i]
+            local dest = currentSheet.frames[i]
             -- we need to restore the button state in case PianoRollContext.copyEntireState is true
             local btns = dest.joy
             CloneInto(dest, PianoRollContext.copyEntireState and TASState or changes)
@@ -238,7 +239,7 @@ local function ControlsForSelected(draw)
     end
 
     if anyChanges then
-        PianoRollContext.current:jumpTo(PianoRollContext.current.previewGT)
+        currentSheet:jumpTo(currentSheet.previewGT)
     end
 
     local controlHeight = 0.75
@@ -247,7 +248,7 @@ local function ControlsForSelected(draw)
         rectangle = grid_rect(0, top + 0.25, 1.5, controlHeight),
         text = "Trim",
     }) then
-        PianoRollContext.current:trimEnd()
+        currentSheet:trimEnd()
     end
 
     PianoRollContext.copyEntireState = ugui.toggle_button({

@@ -1,29 +1,122 @@
+PianoRoll = dofile(views_path .. "PianoRoll/PianoRoll.lua")
+
+local function NewSheetMeta(name)
+    return {
+        name = name
+    }
+end
+
 ---@class Project
+---@field public meta table Metadata about the project that is stored into the piano roll project file (*.prp).
 ---@field public current PianoRoll|nil The currently selected and active piano roll.
----@field public all table
----@field public maxDisplayedFrames integer The maximum number of frames to display at once.
+---@field public all table All piano roll sheets as loaded from their respective *.prs files in order.
+---@field public projectLocation string The location of the piano roll project file (*.prp).
 ---@field public copyEntireState boolean If true, the entire TASState of the active edited frame is copied to all selected. If false, only the changes made will be copied instead.
 local __clsProject = {}
 
 function __clsProject.new()
     return {
-
-        current = nil,
+        meta = {
+            createdSheetCount = 0,
+            selectionIndex = 0,
+            sheets = {}
+        },
         all = {},
-        maxDisplayedFrames = 15,
         copyEntireState = true,
+        projectLocation = nil,
 
+        Current = __clsProject.Current,
         AssertedCurrent = __clsProject.AssertedCurrent,
+        SetCurrentName = __clsProject.SetCurrentName,
+        ProjectFolder = __clsProject.ProjectFolder,
+        Load = __clsProject.Load,
+        AddSheet = __clsProject.AddSheet,
+        MoveSheet = __clsProject.MoveSheet,
+        RemoveSheet = __clsProject.RemoveSheet,
+        Select = __clsProject.Select,
     }
 end
 
 ---Retrieves the current piano roll, raising error when it is nil
 ---@return PianoRoll current The current PianoRoll, never nil
 function __clsProject:AssertedCurrent()
-    if self.current == nil then
-        error("Expected PianoRollContext.current to not be nil.", 2)
+    local result = self:Current()
+    if result == nil then
+        error("Expected PianoRollContext:Current() to not be nil.", 2)
     end
-    return self.current
+    return result
+end
+
+---Retrieves the current piano roll, or nil if no sheet is selected
+---@return PianoRoll | nil current The current PianoRoll, may be nil
+function __clsProject:Current()
+    local sheetMeta = self.meta.sheets[self.meta.selectionIndex]
+    return sheetMeta ~= nil and self.all[sheetMeta.name] or nil
+end
+
+---Adds a new sheet to the end of the sheet list.
+function __clsProject:AddSheet()
+    self.meta.createdSheetCount = self.meta.createdSheetCount + 1
+    local newSheet = PianoRoll.new("Sheet " .. self.meta.createdSheetCount)
+    self.all[newSheet.name] = newSheet
+    self.meta.sheets[#self.meta.sheets+1] = NewSheetMeta(newSheet.name)
+end
+
+---Removes the sheet at the provided index
+---@param index number The 1 based index of the sheet to remove - must be within the range of [1; #meta.sheets]
+function __clsProject:RemoveSheet(index)
+    self.all[table.remove(self.meta.sheets, index).name] = nil
+    self:Select(#self.meta.sheets > 0 and (index % #self.meta.sheets) or 0)
+end
+
+---Moves the sheet at the provided index up or down in the list of sheets
+---@param sign number +1 to move the sheet down, or -1 to move the sheet up
+function __clsProject:MoveSheet(index, sign)
+    local tmp = self.meta.sheets[index]
+    self.meta.sheets[index] = self.meta.sheets[index + sign]
+    self.meta.sheets[index + sign] = tmp
+end
+
+---Sets the name of the currently selected sheet, such that it is still properly referenced by the project instance
+---@param name string The new name of the sheet
+function __clsProject:SetCurrentName(name)
+    local currentSheetMeta = self.meta.sheets[self.meta.selectionIndex]
+
+    -- short circuit if there is nothing to do
+    if name == currentSheetMeta.name then return end
+
+    local sheet = self.all[currentSheetMeta.name]
+    self.all[currentSheetMeta.name] = nil
+    self.all[name] = sheet
+    currentSheetMeta.name = name
+end
+
+---Selects the piano roll sheet at the provided index and runs it from its savestate to its current preview.
+---@param index number The 1 based index of the sheet to select.
+function __clsProject:Select(index)
+    self.meta.selectionIndex = index
+    local current = self:Current()
+    if current ~= nil then
+        current:jumpTo(current.previewGT)
+    end
+end
+
+---Retrieves the directory in which this project's project file resides
+function __clsProject:ProjectFolder()
+    return self.projectLocation:match("(.*[/\\])")
+end
+
+---Loads the piano roll sheets from the given meta data
+---@param meta table The Project.meta field as stored in a piano roll project (*.prp) file
+function __clsProject:Load(meta)
+    self.meta = meta
+    self.all = {}
+    local projectFolder = self:ProjectFolder()
+    for _, sheetMeta in ipairs(meta.sheets) do
+        local newSheet = PianoRoll.new(sheetMeta.name)
+        newSheet:load(projectFolder .. sheetMeta.name .. ".prs")
+        self.all[sheetMeta.name] = newSheet
+    end
 end
 
 return {

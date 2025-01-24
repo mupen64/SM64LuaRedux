@@ -39,6 +39,7 @@ local buttonSize = 0.22
 local frameColumnHeight = 0.5
 local scrollbarWidth = 0.3
 
+local maxDisplayedFrames = 15
 local scrollOffset = 0
 
 local buttonColors = {
@@ -54,11 +55,11 @@ local buttonColors = {
 ---logic---
 
 local function NumDisplayFrames()
-    return math.min(PianoRollContext.current:numFrames(), PianoRollContext.maxDisplayedFrames)
+    return math.min(PianoRollContext:AssertedCurrent():numFrames(), maxDisplayedFrames)
 end
 
 local function MaxScroll()
-    return PianoRollContext.current:numFrames() - PianoRollContext.maxDisplayedFrames
+    return PianoRollContext:AssertedCurrent():numFrames() - maxDisplayedFrames
 end
 
 local function UpdateScroll(wheel)
@@ -87,6 +88,7 @@ local function DrawHeaders(pianoRoll, draw, buttonDrawData)
         rectangle = grid_rect(4, row0, 4, 0.5),
         text = pianoRoll.name
     })
+    PianoRollContext:SetCurrentName(pianoRoll.name)
     ugui.standard_styler.params.font_size = prev_font_size
 
     draw:text(grid_rect(col0, row1, col1 - col0, 1), "start", "Frame")
@@ -123,7 +125,7 @@ local function DrawColorCodes()
             uid = UID.FrameListScrollbar,
             rectangle = scrollbarRect,
             value = scrollOffset / maxScroll,
-            ratio = 1 / (PianoRollContext.current:numFrames() / numDisplayFrames),
+            ratio = 1 / (PianoRollContext:AssertedCurrent():numFrames() / numDisplayFrames),
         })
         scrollOffset = math.floor(relativeScroll * maxScroll + 0.5)
     end
@@ -159,14 +161,15 @@ end
 
 local placing = 0
 local function PlaceAndUnplaceButtons(frameRect, buttonDrawData)
+    local currentSheet = PianoRollContext:AssertedCurrent()
     local mouseX = ugui_environment.mouse_position.x
     local relativeY = ugui_environment.mouse_position.y - frameRect.y
     local inRange = mouseX >= frameRect.x and mouseX <= frameRect.x + frameRect.width and relativeY >= 0
     local frameIndex = math.floor(relativeY / frameRect.height)
-    local hoveringGlobalTimer = frameIndex + scrollOffset + PianoRollContext.current.startGT
-    local frame = PianoRollContext.current.frames[hoveringGlobalTimer]
+    local hoveringGlobalTimer = frameIndex + scrollOffset + currentSheet.startGT
+    local frame = currentSheet.frames[hoveringGlobalTimer]
     local anyChange = false
-    inRange = inRange and frameIndex < PianoRollContext.maxDisplayedFrames
+    inRange = inRange and frameIndex < maxDisplayedFrames
     UpdateScroll(inRange and ugui_environment.wheel or 0)
     if inRange then
         -- act as if the mouse wheel was not moved in order to prevent other controls from scrolling on accident
@@ -215,7 +218,7 @@ local function DrawFramesGui(pianoRoll, draw, buttonDrawData)
         local shade = globalTimer % 2 == 0 and 123 or 80
         local blueMultiplier = globalTimer < globalTimerValue and 2 or 1
 
-        if i >= PianoRollContext.maxDisplayedFrames then
+        if i >= maxDisplayedFrames then
             local extraFrames = pianoRoll.endGT - globalTimer
             if extraFrames > 0 then
                 BreitbandGraphics.fill_rectangle(span(0, col_1), {r=138, g=148, b=138, a=66})
@@ -307,18 +310,18 @@ function __clsLuaGui.Render() end
 ---@type LuaGui
 return {
     Render = function(draw)
-        local pianoRoll = PianoRollContext:AssertedCurrent()
+        local currentSheet = PianoRollContext:AssertedCurrent()
 
         local buttonDrawData = DrawColorCodes()
-        DrawHeaders(pianoRoll, draw, buttonDrawData)
+        DrawHeaders(currentSheet, draw, buttonDrawData)
 
         local prev_joystick_tip_size = ugui.standard_styler.joystick_tip_size
         ugui.standard_styler.joystick_tip_size = 4 * Drawing.scale
-        local anyChanges = DrawFramesGui(pianoRoll, draw, buttonDrawData)
+        local anyChanges = DrawFramesGui(currentSheet, draw, buttonDrawData)
         ugui.standard_styler.joystick_tip_size = prev_joystick_tip_size
 
         if anyChanges then
-            PianoRollContext.current:jumpTo(PianoRollContext.current.previewGT)
+            currentSheet:jumpTo(currentSheet.previewGT)
         end
     end,
 }

@@ -118,12 +118,11 @@ function __clsPianoRoll:save(file)
     persistence.store(
         file,
         {
-            frames      = PianoRollContext.current.frames,
-            name        = PianoRollContext.current.name,
-            startGT     = PianoRollContext.current.startGT,
-            endGT       = PianoRollContext.current.endGT,
-            editingGT   = PianoRollContext.current.editingGT,
-            previewGT   = PianoRollContext.current.previewGT,
+            frames      = self.frames,
+            name        = self.name,
+            startGT     = self.startGT,
+            editingIndex   = self.editingIndex,
+            previewIndex   = self.previewIndex,
         }
     )
 end
@@ -132,8 +131,7 @@ function __clsPianoRoll:load(file)
     local contents = persistence.load(file);
     if contents ~= nil then
         self._savestateFile = file .. ".savestate"
-        CloneInto(PianoRollContext.current, contents)
-        self:jumpTo(PianoRollContext.current.previewGT)
+        CloneInto(self, contents)
     end
 end
 

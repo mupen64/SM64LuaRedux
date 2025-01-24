@@ -9,6 +9,9 @@ return {
     VarWatch = EnumNext(),
     SelectTab = EnumNext(),
     ToggleHelp = EnumNext(),
+    NewProject = EnumNext(),
+    OpenProject = EnumNext(),
+    SaveProject = EnumNext(),
     ProjectSheetBase = EnumNext(1024), -- TODO: allocate an exact amount, assuming a scroll bar for too many sheets in one project
     HelpNext = EnumNext(),
     HelpBack = EnumNext(),
