@@ -313,10 +313,10 @@ function __clsFrameListGui.Render(draw)
     local buttonDrawData = DrawColorCodes()
     DrawHeaders(currentSheet, draw, buttonDrawData)
 
-    local prev_joystick_tip_size = ugui.standard_styler.joystick_tip_size
-    ugui.standard_styler.joystick_tip_size = 4 * Drawing.scale
+    local prev_joystick_tip_size = ugui.standard_styler.params.joystick.tip_size
+    ugui.standard_styler.params.joystick.tip_size = 4 * Drawing.scale
     local anyChanges = DrawFramesGui(currentSheet, draw, buttonDrawData)
-    ugui.standard_styler.joystick_tip_size = prev_joystick_tip_size
+    ugui.standard_styler.params.joystick.tip_size = prev_joystick_tip_size
 
     if anyChanges then
         currentSheet:jumpTo(currentSheet.previewIndex)
