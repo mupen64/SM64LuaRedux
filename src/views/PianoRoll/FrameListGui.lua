@@ -55,11 +55,11 @@ local buttonColors = {
 ---logic---
 
 local function NumDisplayFrames()
-    return math.min(PianoRollContext:AssertedCurrent():numFrames(), maxDisplayedFrames)
+    return math.min(PianoRollProject:AssertedCurrent():numFrames(), maxDisplayedFrames)
 end
 
 local function MaxScroll()
-    return PianoRollContext:AssertedCurrent():numFrames() - maxDisplayedFrames
+    return PianoRollProject:AssertedCurrent():numFrames() - maxDisplayedFrames
 end
 
 local function UpdateScroll(wheel)
@@ -88,9 +88,8 @@ local function DrawHeaders(pianoRoll, draw, buttonDrawData)
         rectangle = grid_rect(4, row0, 4, 0.5),
         text = pianoRoll.name
     })
-    PianoRollContext:SetCurrentName(pianoRoll.name)
+    PianoRollProject:SetCurrentName(pianoRoll.name)
     ugui.standard_styler.params.font_size = prev_font_size
-
     draw:text(grid_rect(col0, row1, col1 - col0, 1), "start", "Frame")
     draw:text(grid_rect(col1, row1, col6 - col1, 1), "start", "Joystick")
 
@@ -125,7 +124,7 @@ local function DrawColorCodes()
             uid = UID.FrameListScrollbar,
             rectangle = scrollbarRect,
             value = scrollOffset / maxScroll,
-            ratio = 1 / (PianoRollContext:AssertedCurrent():numFrames() / numDisplayFrames),
+            ratio = 1 / (PianoRollProject:AssertedCurrent():numFrames() / numDisplayFrames),
         })
         scrollOffset = math.floor(relativeScroll * maxScroll + 0.5)
     end
@@ -161,7 +160,7 @@ end
 
 local placing = 0
 local function PlaceAndUnplaceButtons(frameRect, buttonDrawData)
-    local currentSheet = PianoRollContext:AssertedCurrent()
+    local currentSheet = PianoRollProject:AssertedCurrent()
     local mouseX = ugui_environment.mouse_position.x
     local relativeY = ugui_environment.mouse_position.y - frameRect.y
     local inRange = mouseX >= frameRect.x and mouseX <= frameRect.x + frameRect.width and relativeY >= 0
@@ -310,7 +309,7 @@ function __clsLuaGui.Render() end
 ---@type LuaGui
 return {
     Render = function(draw)
-        local currentSheet = PianoRollContext:AssertedCurrent()
+        local currentSheet = PianoRollProject:AssertedCurrent()
 
         local buttonDrawData = DrawColorCodes()
         DrawHeaders(currentSheet, draw, buttonDrawData)

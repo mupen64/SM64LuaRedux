@@ -95,7 +95,7 @@ local function ControlsForSelected(draw)
     local largeControlHeight = 1.0
     local top = 10
 
-    local pianoRoll = PianoRollContext:AssertedCurrent()
+    local pianoRoll = PianoRollProject:AssertedCurrent()
 
     local newValues = {}
     CloneInto(newValues, TASState)
@@ -227,13 +227,13 @@ local function ControlsForSelected(draw)
 
     local changes = CloneInto(TASState, newValues)
     local anyChanges = AnyEntries(changes)
-    local currentSheet = PianoRollContext:AssertedCurrent()
+    local currentSheet = PianoRollProject:AssertedCurrent()
     if anyChanges and pianoRoll.selection ~= nil then
         for i = pianoRoll.selection:min(), pianoRoll.selection:max(), 1 do
             local dest = currentSheet.frames[i]
-            -- we need to restore the button state in case PianoRollContext.copyEntireState is true
+            -- we need to restore the button state in case PianoRollProject.copyEntireState is true
             local btns = dest.joy
-            CloneInto(dest, PianoRollContext.copyEntireState and TASState or changes)
+            CloneInto(dest, PianoRollProject.copyEntireState and TASState or changes)
             dest.joy = btns
         end
     end
@@ -251,11 +251,11 @@ local function ControlsForSelected(draw)
         currentSheet:trimEnd()
     end
 
-    PianoRollContext.copyEntireState = ugui.toggle_button({
+    PianoRollProject.copyEntireState = ugui.toggle_button({
         uid = UID.CopyEntireState,
         rectangle = grid_rect(4.5, top + 0.25, 3.5, controlHeight),
         text = "Copy entire state",
-        is_checked = PianoRollContext.copyEntireState,
+        is_checked = PianoRollProject.copyEntireState,
     })
 end
 

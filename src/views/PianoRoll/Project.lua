@@ -42,7 +42,7 @@ end
 function __clsProject:AssertedCurrent()
     local result = self:Current()
     if result == nil then
-        error("Expected PianoRollContext:Current() to not be nil.", 2)
+        error("Expected PianoRollProject:Current() to not be nil.", 2)
     end
     return result
 end

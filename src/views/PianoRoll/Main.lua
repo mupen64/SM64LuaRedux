@@ -3,7 +3,7 @@ local Project = dofile(views_path .. "PianoRoll/Project.lua")
 
 ---utility functions---
 
-PianoRollContext = Project.new()
+PianoRollProject = Project.new()
 PianoRollDialog = nil
 
 function CloneInto(destination, source)
@@ -41,7 +41,7 @@ local SelectedTabIndex = 1
 
 emu.atupdatescreen(function()
     -- prevent reentrant calls caused by GUI actions while the game is running
-    local currentSheet = PianoRollContext:Current()
+    local currentSheet = PianoRollProject:Current()
     if currentSheet ~= nil and not currentSheet._busy then
         currentSheet:update()
     end
@@ -55,7 +55,7 @@ end)
 ---
 ---@return table|nil override A table that can be assigned to TASState, additionally holding a field 'joy' that can be passed to joypad.set(...).
 function CurrentPianoRollOverride()
-    local currentSheet = PianoRollContext:Current()
+    local currentSheet = PianoRollProject:Current()
     if (currentSheet == nil) then return nil end
     local globalTimer = memory.readdword(Addresses[Settings.address_source_index].global_timer)
     if currentSheet ~= nil and globalTimer >= currentSheet.endGT then
@@ -108,7 +108,7 @@ return {
         })
 
         -- show only the project page if no piano rolls exist
-        if PianoRollContext:Current() == nil then SelectedTabIndex = 1 end
+        if PianoRollProject:Current() == nil then SelectedTabIndex = 1 end
         Tabs[SelectedTabIndex].Render(draw)
 
         -- hack to make the listbox transparent
