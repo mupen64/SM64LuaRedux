@@ -141,19 +141,19 @@ local function RenderSheetList(draw)
     end
 
     top = 3
-    local availablePianoRolls = {}
+    local availableSheets = {}
     for i = 1, #PianoRollProject.meta.sheets, 1 do
-        availablePianoRolls[i] = PianoRollProject.meta.sheets[i].name
+        availableSheets[i] = PianoRollProject.meta.sheets[i].name
     end
-    availablePianoRolls[#availablePianoRolls + 1] = "Add..."
+    availableSheets[#availableSheets + 1] = "Add..."
 
     local uid = UID.ProjectSheetBase
-    for i = 1, #availablePianoRolls, 1 do
+    for i = 1, #availableSheets, 1 do
         local y = top + (i - 1) * controlHeight
         if ugui.toggle_button({
             uid = uid,
             rectangle = grid_rect(0, y, 3, controlHeight),
-            text = availablePianoRolls[i],
+            text = availableSheets[i],
             is_checked = i == PianoRollProject.meta.selectionIndex,
         }) then
             if i == #PianoRollProject.meta.sheets + 1 then -- add new sheet

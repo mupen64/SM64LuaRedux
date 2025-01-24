@@ -3,7 +3,7 @@ local FrameListGui = dofile(views_path .. "PianoRoll/FrameListGui.lua")
 
 local function AnyEntries(table) for _ in pairs(table) do return true end return false end
 
-local function MagnitudeControls(draw, pianoRoll, newValues, top)
+local function MagnitudeControls(draw, sheet, newValues, top)
     local mediumControlHeight = 0.75
 
     draw:text(grid_rect(2, top, 2, mediumControlHeight), "end", "Magnitude:")
@@ -36,7 +36,7 @@ local function MagnitudeControls(draw, pianoRoll, newValues, top)
     end
 end
 
-local function AtanControls(draw, pianoRoll, newValues, top)
+local function AtanControls(draw, sheet, newValues, top)
     local controlHeight = 0.75
     local newAtan = ugui.toggle_button({
         uid = UID.AtanStrain,
@@ -44,10 +44,10 @@ local function AtanControls(draw, pianoRoll, newValues, top)
         text='Atan',
         is_checked = newValues.atan_strain
     })
-    if pianoRoll.selection ~= nil and newAtan and not newValues.atan_strain then
+    if sheet.selection ~= nil and newAtan and not newValues.atan_strain then
         -- TODO: document why these +1 are correct (if they are lol)
-        newValues.atan_start = pianoRoll.selection:min() + pianoRoll.startGT + 1
-        newValues.atan_n = pianoRoll.selection:max() - pianoRoll.selection:min() + 1
+        newValues.atan_start = sheet.selection:min() + sheet.startGT + 1
+        newValues.atan_n = sheet.selection:max() - sheet.selection:min() + 1
         newValues.dyaw = true
         newValues.movement_mode = MovementModes.match_angle
     end
@@ -96,7 +96,7 @@ local function ControlsForSelected(draw)
     local largeControlHeight = 1.0
     local top = 10
 
-    local pianoRoll = PianoRollProject:AssertedCurrent()
+    local sheet = PianoRollProject:AssertedCurrent()
 
     local newValues = {}
     CloneInto(newValues, TASState)
@@ -221,16 +221,16 @@ local function ControlsForSelected(draw)
         is_checked = newValues.dyaw
     })
 
-    MagnitudeControls(draw, pianoRoll, newValues, top + 3)
-    AtanControls(draw, pianoRoll, newValues, top + 4)
+    MagnitudeControls(draw, sheet, newValues, top + 3)
+    AtanControls(draw, sheet, newValues, top + 4)
 
     ugui.standard_styler.params.spinner.button_size = previousThickness
 
     local changes = CloneInto(TASState, newValues)
     local anyChanges = AnyEntries(changes)
     local currentSheet = PianoRollProject:AssertedCurrent()
-    if anyChanges and pianoRoll.selection ~= nil then
-        for i = pianoRoll.selection:min(), pianoRoll.selection:max(), 1 do
+    if anyChanges and sheet.selection ~= nil then
+        for i = sheet.selection:min(), sheet.selection:max(), 1 do
             local dest = currentSheet.frames[i]
             -- we need to restore the button state in case PianoRollProject.copyEntireState is true
             local btns = dest.joy

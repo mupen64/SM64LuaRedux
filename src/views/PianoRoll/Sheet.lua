@@ -33,20 +33,20 @@ local function CopyFile(srcPath, destPath)
 end
 
 
----@class PianoRoll
+---@class Sheet
 ---@field public previewIndex integer The 0-based index of the to which to advance to when changes to the piano roll have been made.
 ---@field public startGT integer The global timer value indicating the inclusive start of this piano roll.
 ---@field public editingIndex integer The 0-based index of the frame of this piano roll that is currently being edited.
 ---@field public selection Selection | nil A single selection range for which to apply changes in the joystick gui to.
 ---@field public frames table An array of TASStates to execute per global timer increment after startGT.
 ---@field public name string A name for the piano roll for convenience.
-local __clsPianoRoll = {}
+local __clsSheet = {}
 
----@return PianoRoll result Creates a new PianoRoll starting at the current global timer value
-function __clsPianoRoll.new(name)
+---@return Sheet result Creates a new Sheet starting at the current global timer value
+function __clsSheet.new(name)
     local globalTimer = Memory.current.mario_global_timer
 
-    ---@type PianoRoll
+    ---@type Sheet
     local newInstance = {
         startGT = globalTimer,
         previewIndex = 0,
@@ -60,28 +60,28 @@ function __clsPianoRoll.new(name)
         _busy = false,
         _updatePending = false,
         _rebasing = false,
-        numFrames = __clsPianoRoll.numFrames,
-        edit = __clsPianoRoll.edit,
-        update = __clsPianoRoll.update,
-        jumpTo = __clsPianoRoll.jumpTo,
-        trimEnd = __clsPianoRoll.trimEnd,
-        rebase = __clsPianoRoll.rebase,
-        save = __clsPianoRoll.save,
-        load = __clsPianoRoll.load,
+        numFrames = __clsSheet.numFrames,
+        edit = __clsSheet.edit,
+        update = __clsSheet.update,
+        jumpTo = __clsSheet.jumpTo,
+        trimEnd = __clsSheet.trimEnd,
+        rebase = __clsSheet.rebase,
+        save = __clsSheet.save,
+        load = __clsSheet.load,
     }
     savestate.savefile(newInstance._savestateFile)
     return newInstance
 end
 
-function __clsPianoRoll:numFrames() return self.frames[0] ~= nil and #self.frames + 1 or 0 end
+function __clsSheet:numFrames() return self.frames[0] ~= nil and #self.frames + 1 or 0 end
 
-function __clsPianoRoll:edit(frameIndex)
+function __clsSheet:edit(frameIndex)
     self.editingIndex = frameIndex
     TASState = self.frames[frameIndex] or TASState
     self._oldClock = os.clock()
 end
 
-function __clsPianoRoll:jumpTo(targetIndex, loadState)
+function __clsSheet:jumpTo(targetIndex, loadState)
     if self._busy then
         self._updatePending = true
         return
@@ -116,7 +116,7 @@ function __clsPianoRoll:jumpTo(targetIndex, loadState)
     emu.atinput(runUntilSelected)
 end
 
-function __clsPianoRoll:save(file)
+function __clsSheet:save(file)
     local savestateFile = file .. ".savestate"
     if self._savestateFile ~= savestateFile and CopyFile(self._savestateFile, savestateFile) then
         self._savestateFile = savestateFile
@@ -134,7 +134,7 @@ function __clsPianoRoll:save(file)
     )
 end
 
-function __clsPianoRoll:load(file, setStFile)
+function __clsSheet:load(file, setStFile)
     local contents = persistence.load(file);
     if contents ~= nil then
         if setStFile then self._savestateFile = file .. ".savestate" end
@@ -142,7 +142,7 @@ function __clsPianoRoll:load(file, setStFile)
     end
 end
 
-function __clsPianoRoll:update()
+function __clsSheet:update()
     local anyChange = CloneInto(self._oldTASState, TASState)
     local now = os.clock()
     if anyChange then
@@ -154,11 +154,11 @@ function __clsPianoRoll:update()
     end
 end
 
-function __clsPianoRoll:trimEnd()
+function __clsSheet:trimEnd()
     self.frames = table.move(self.frames, 0, self.previewIndex, 0, {})
 end
 
-function __clsPianoRoll:rebase(path)
+function __clsSheet:rebase(path)
     if CopyFile(path, self._savestateFile) then
         self._rebasing = true
         self:jumpTo(self.previewIndex)
@@ -167,7 +167,7 @@ function __clsPianoRoll:rebase(path)
 end
 
 return {
-    new = __clsPianoRoll.new
+    new = __clsSheet.new
 },
 {
     new = __clsSelection.new

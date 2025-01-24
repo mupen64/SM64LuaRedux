@@ -1,4 +1,4 @@
-PianoRoll = dofile(views_path .. "PianoRoll/PianoRoll.lua")
+Sheet = dofile(views_path .. "PianoRoll/Sheet.lua")
 
 local function NewSheetMeta(name)
     return {
@@ -8,7 +8,7 @@ end
 
 ---@class Project
 ---@field public meta table Metadata about the project that is stored into the piano roll project file (*.prp).
----@field public current PianoRoll|nil The currently selected and active piano roll.
+---@field public current Sheet|nil The currently selected and active piano roll.
 ---@field public all table All piano roll sheets as loaded from their respective *.prs files in order.
 ---@field public projectLocation string The location of the piano roll project file (*.prp).
 ---@field public copyEntireState boolean If true, the entire TASState of the active edited frame is copied to all selected. If false, only the changes made will be copied instead.
@@ -39,7 +39,7 @@ function __clsProject.new()
 end
 
 ---Retrieves the current piano roll, raising error when it is nil
----@return PianoRoll current The current PianoRoll, never nil
+---@return Sheet current The current Sheet, never nil
 function __clsProject:AssertedCurrent()
     local result = self:Current()
     if result == nil then
@@ -49,7 +49,7 @@ function __clsProject:AssertedCurrent()
 end
 
 ---Retrieves the current piano roll, or nil if no sheet is selected
----@return PianoRoll | nil current The current PianoRoll, may be nil
+---@return Sheet | nil current The current Sheet, may be nil
 function __clsProject:Current()
     local sheetMeta = self.meta.sheets[self.meta.selectionIndex]
     return sheetMeta ~= nil and self.all[sheetMeta.name] or nil
@@ -58,7 +58,7 @@ end
 ---Adds a new sheet to the end of the sheet list.
 function __clsProject:AddSheet()
     self.meta.createdSheetCount = self.meta.createdSheetCount + 1
-    local newSheet = PianoRoll.new("Sheet " .. self.meta.createdSheetCount)
+    local newSheet = Sheet.new("Sheet " .. self.meta.createdSheetCount)
     self.all[newSheet.name] = newSheet
     self.meta.sheets[#self.meta.sheets+1] = NewSheetMeta(newSheet.name)
 end
@@ -122,7 +122,7 @@ function __clsProject:Load(meta)
     self.all = {}
     local projectFolder = self:ProjectFolder()
     for _, sheetMeta in ipairs(meta.sheets) do
-        local newSheet = PianoRoll.new(sheetMeta.name)
+        local newSheet = Sheet.new(sheetMeta.name)
         newSheet:load(projectFolder .. sheetMeta.name .. ".prs", true)
         self.all[sheetMeta.name] = newSheet
     end

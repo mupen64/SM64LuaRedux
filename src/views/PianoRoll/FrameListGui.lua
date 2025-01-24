@@ -1,5 +1,5 @@
 local UID = dofile(views_path .. "PianoRoll/UID.lua")
-local _, Selection = dofile(views_path .. "PianoRoll/PianoRoll.lua")
+local _, Selection = dofile(views_path .. "PianoRoll/Sheet.lua")
 
 ---constants---
 
@@ -74,22 +74,25 @@ local function InterpolateVectorsToInt(a, b, f)
     return result
 end
 
-local function DrawHeaders(pianoRoll, draw, buttonDrawData)
+local function DrawHeaders(sheet, draw, buttonDrawData)
     local backgroundColor = InterpolateVectorsToInt(draw.backgroundColor, {r = 127, g = 127, b = 127}, 0.25)
     BreitbandGraphics.fill_rectangle(grid_rect(0, row0, col_1, row2 - row0, 0), backgroundColor)
 
-    draw:text(grid_rect(0, row0, 2, 1), "start", "Start: " .. pianoRoll.startGT)
+    draw:text(grid_rect(0, row0, 2, 1), "start", "Start: " .. sheet.startGT)
+
     draw:text(grid_rect(3, row0, 1, 0.5), "start", "Name")
     local prev_font_size = ugui.standard_styler.params.font_size
     ugui.standard_styler.params.font_size = ugui.standard_styler.params.font_size * 0.75
-    pianoRoll.name = ugui.textbox({
+    sheet.name = ugui.textbox({
         uid = UID.PianoRollName,
         is_enabled = true,
         rectangle = grid_rect(4, row0, 4, 0.5),
-        text = pianoRoll.name
+        text = sheet.name
     })
-    PianoRollProject:SetCurrentName(pianoRoll.name)
+    PianoRollProject:SetCurrentName(sheet.name)
     ugui.standard_styler.params.font_size = prev_font_size
+    ugui.standard_styler.font_size = prev_font_size
+
     draw:text(grid_rect(col0, row1, col1 - col0, 1), "start", "Frame")
     draw:text(grid_rect(col1, row1, col6 - col1, 1), "start", "Joystick")
 
@@ -196,10 +199,10 @@ local function PlaceAndUnplaceButtons(frameRect, buttonDrawData)
     return anyChange
 end
 
-local function DrawFramesGui(pianoRoll, draw, buttonDrawData)
+local function DrawFramesGui(sheet, draw, buttonDrawData)
 
-    if ugui.internal.is_mouse_just_up() and pianoRoll.selection ~= nil then
-        pianoRoll:edit(pianoRoll.selection.endIndex)
+    if ugui.internal.is_mouse_just_up() and sheet.selection ~= nil then
+        sheet:edit(sheet.selection.endIndex)
     end
 
     local frameRect = grid_rect(col0, row2, col_1 - col0 - scrollbarWidth, frameColumnHeight, 0)
@@ -211,14 +214,14 @@ local function DrawFramesGui(pianoRoll, draw, buttonDrawData)
     end
 
     local globalTimerValue = Memory.current.mario_global_timer
-    for i = 0, pianoRoll:numFrames() - 1, 1 do
+    for i = 0, sheet:numFrames() - 1, 1 do
         local frameNumber = i + scrollOffset
-        local globalTimer = pianoRoll.startGT + frameNumber
+        local globalTimer = sheet.startGT + frameNumber
         local shade = globalTimer % 2 == 0 and 123 or 80
         local blueMultiplier = globalTimer < globalTimerValue and 2 or 1
 
         if i >= maxDisplayedFrames then
-            local extraFrames = pianoRoll:numFrames() - frameNumber
+            local extraFrames = sheet:numFrames() - frameNumber
             if extraFrames > 0 then
                 BreitbandGraphics.fill_rectangle(span(0, col_1), {r=138, g=148, b=138, a=66})
                 draw:text(span(col1, col_1), "start", "+ " .. extraFrames .. " frames")
@@ -226,13 +229,13 @@ local function DrawFramesGui(pianoRoll, draw, buttonDrawData)
             break
         end
 
-        local input = pianoRoll.frames[frameNumber]
+        local input = sheet.frames[frameNumber]
         local uidBase = UID.UIDCOUNT + i * 20
         local frameBox = span(col0 + 0.25, col1)
         draw:text(frameBox, "end", frameNumber .. ":")
 
         if ugui.internal.is_mouse_just_down() and BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, frameBox) then
-            pianoRoll:jumpTo(frameNumber)
+            sheet:jumpTo(frameNumber)
         end
 
         ugui.joystick({
@@ -246,12 +249,12 @@ local function DrawFramesGui(pianoRoll, draw, buttonDrawData)
 
         if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, joystickBox) then
             if ugui.internal.is_mouse_just_down()  then
-                pianoRoll.selection = Selection.new(input.goal_angle, frameNumber)
-            elseif pianoRoll.selection ~= nil and ugui.internal.environment.is_primary_down then
-                pianoRoll.selection.endIndex = frameNumber
+                sheet.selection = Selection.new(input.goal_angle, frameNumber)
+            elseif sheet.selection ~= nil and ugui.internal.environment.is_primary_down then
+                sheet.selection.endIndex = frameNumber
             end
         end
-        if pianoRoll.selection ~= nil and pianoRoll.selection:min() <= frameNumber and pianoRoll.selection:max() >= frameNumber then
+        if sheet.selection ~= nil and sheet.selection:min() <= frameNumber and sheet.selection:max() >= frameNumber then
             BreitbandGraphics.fill_rectangle(joystickBox, {r = 0, g = 200, b = 0, a = 100})
         end
 
@@ -273,11 +276,11 @@ local function DrawFramesGui(pianoRoll, draw, buttonDrawData)
             BreitbandGraphics.draw_ellipse(rect, {r=0, g=0, b=0, a=input.joy[v.input] and 255 or 80}, 1)
         end
 
-        if (frameNumber == pianoRoll.previewIndex) then
+        if (frameNumber == sheet.previewIndex) then
             BreitbandGraphics.draw_rectangle(frameRect, {r=255, g=0, b=0}, 1)
         end
 
-        if (frameNumber == pianoRoll.editingIndex) then
+        if (frameNumber == sheet.editingIndex) then
             BreitbandGraphics.draw_rectangle(frameRect, {r=100, g=255, b=100}, 1)
         end
 
