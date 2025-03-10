@@ -16,22 +16,6 @@ function CloneInto(destination, source)
     return changes
 end
 
-function RecordPianoRollInput(input)
-    for k,v in pairs(TASState) do
-        input[k] = v
-    end
-    input.joy = {}
-    CloneInto(input.joy, joypad.get(1))
-
-    if TASState.movement_mode == MovementModes.disabled or movie.get_readonly() then
-        input.movement_mode = MovementModes.manual
-        input.manual_joystick_x = Joypad.input.X
-        input.manual_joystick_y = Joypad.input.Y
-    end
-    input.preview_joystick_x = input.manual_joystick_x
-    input.preview_joystick_y = input.manual_joystick_y
-end
-
 --implementation details
 
 local Tabs = dofile(views_path .. "PianoRoll/Tabs.lua")
@@ -68,28 +52,10 @@ end)
 ---
 ---If the current piano roll does not define what to do for this frame, or there is no current piano roll, nil is returned instead.
 ---
----@return table|nil override A table that can be assigned to TASState, additionally holding a field 'joy' that can be passed to joypad.set(...).
+---@return Section|nil override The section to apply for the current frame.
 function CurrentPianoRollOverride()
     local currentSheet = PianoRollProject:Current()
-    if (currentSheet == nil) then return nil end
-    local globalTimer = memory.readdword(Addresses[Settings.address_source_index].global_timer)
-    if currentSheet._rebasing then
-        currentSheet.startGT = globalTimer
-        currentSheet._rebasing = false
-    end
-    local numFrames = currentSheet:numFrames()
-    if currentSheet ~= nil and currentSheet.startGT + numFrames <= globalTimer then
-        local input = {}
-        RecordPianoRollInput(input)
-        repeat
-            currentSheet.previewIndex = numFrames
-            currentSheet.editingIndex = numFrames
-            currentSheet.frames[numFrames] = input
-            numFrames = numFrames + 1
-        until currentSheet.startGT + numFrames > globalTimer -- TODO: this may cause issues with overflowing global timer - a sturdier method is needed
-    end
-
-    return currentSheet.frames[globalTimer - currentSheet.startGT]
+    return currentSheet and currentSheet:currentSection() or nil
 end
 
 return {

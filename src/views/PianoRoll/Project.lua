@@ -1,4 +1,4 @@
-Sheet = dofile(views_path .. "PianoRoll/Sheet.lua")
+Section, Sheet = dofile(views_path .. "PianoRoll/Sheet.lua")
 
 local function NewSheetMeta(name)
     return {

@@ -1,24 +1,3 @@
----@class Selection
----@field public startIndex integer The 0-based index of the frame that was clicked to begin creating this selection, which may be greater than endIndex
----@field public endIndex integer The 0-based index of the frame on which this selection's range was ended, which may be less than startIndex
-local __clsSelection = {}
-
-function __clsSelection.new(state, frameNumber)
-    return {
-        state = state,
-        startIndex = frameNumber,
-        endIndex = frameNumber,
-        min = __clsSelection.min,
-        max = __clsSelection.max,
-    }
-end
-
----The smaller value of startIndex and endIndex
-function __clsSelection:min() return math.min(self.startIndex, self.endIndex) end
-
----The greater value of startIndex and endIndex
-function __clsSelection:max() return math.max(self.startIndex, self.endIndex) end
-
 local function CopyFile(srcPath, destPath)
     local infile = io.open(srcPath, "rb")
     local outfile = io.open(destPath, "wb")
@@ -32,27 +11,65 @@ local function CopyFile(srcPath, destPath)
     return true
 end
 
+---@class Section
+---@field endAction string The name of the action that, when reached in playback, ends this section
+---@field timeout integer The maximum number of frames this section goes on for
+---@field tasState table The TAS state to apply for the entire duration of this section - note that arctan straining will refer to timeout for its length
+---@field joy table The joypad data, that is, pressed buttons and joystick values.
+local __clsSection = {}
+
+local function NewSection(endAction, timeout)
+    local tmp = {}
+    CloneInto(tmp, Joypad.input)
+    ---@type Section
+    return {
+        endAction = endAction,
+        timeout = timeout,
+        tasState = NewTASState(),
+        joy = tmp,
+    }
+end
+
+---@class Selection
+---@field public startIndex integer The 1-based index of the section that was clicked to begin creating this selection, which may be greater than endIndex
+---@field public endIndex integer The 1-based index of the section on which this selection's range was ended, which may be less than startIndex
+local __clsSelection = {}
+
+local function NewSelection(state, sectionIndex)
+    return {
+        state = state,
+        startIndex = sectionIndex,
+        endIndex = sectionIndex,
+        min = __clsSelection.min,
+        max = __clsSelection.max,
+    }
+end
+
+---The smaller value of startIndex and endIndex
+function __clsSelection:min() return math.min(self.startIndex, self.endIndex) end
+
+---The greater value of startIndex and endIndex
+function __clsSelection:max() return math.max(self.startIndex, self.endIndex) end
 
 ---@class Sheet
----@field public previewIndex integer The 0-based index of the to which to advance to when changes to the piano roll have been made.
----@field public startGT integer The global timer value indicating the inclusive start of this piano roll.
----@field public editingIndex integer The 0-based index of the frame of this piano roll that is currently being edited.
+---@field public previewIndex integer The 1-based index of the section to which to advance to when changes to the piano roll have been made.
+---@field public editingIndex integer The 1-based index of the section of this piano roll that is currently being edited.
 ---@field public selection Selection | nil A single selection range for which to apply changes in the joystick gui to.
----@field public frames table An array of TASStates to execute per global timer increment after startGT.
+---@field public sections table An array of TASStates with their associated section definition to execute in order.
 ---@field public name string A name for the piano roll for convenience.
+---@field private _sectionIndex integer The nth section that is currently being played
 local __clsSheet = {}
 
----@return Sheet result Creates a new Sheet starting at the current global timer value
-function __clsSheet.new(name)
+local function NewSheet(name)
     local globalTimer = Memory.current.mario_global_timer
 
     ---@type Sheet
     local newInstance = {
         startGT = globalTimer,
-        previewIndex = 0,
-        editingIndex = 0,
+        previewIndex = 1,
+        editingIndex = 1,
         selection = nil,
-        frames = {},
+        sections = { NewSection("idle", 150) },
         name = name,
         _savestateFile = name .. ".tmp.savestate",
         _oldTASState = {},
@@ -60,11 +77,12 @@ function __clsSheet.new(name)
         _busy = false,
         _updatePending = false,
         _rebasing = false,
-        numFrames = __clsSheet.numFrames,
+        _sectionIndex = 1,
+        numSections = __clsSheet.numSections,
+        currentSection = __clsSheet.currentSection,
         edit = __clsSheet.edit,
         update = __clsSheet.update,
         jumpTo = __clsSheet.jumpTo,
-        trimEnd = __clsSheet.trimEnd,
         rebase = __clsSheet.rebase,
         save = __clsSheet.save,
         load = __clsSheet.load,
@@ -73,11 +91,12 @@ function __clsSheet.new(name)
     return newInstance
 end
 
-function __clsSheet:numFrames() return self.frames[0] ~= nil and #self.frames + 1 or 0 end
+function __clsSheet:numSections() return #self.sections end
 
-function __clsSheet:edit(frameIndex)
-    self.editingIndex = frameIndex
-    TASState = self.frames[frameIndex] or TASState
+function __clsSheet:currentSection() return self.sections[self._sectionIndex] end
+
+function __clsSheet:edit(sectionIndex)
+    self.editingIndex = sectionIndex
     self._oldClock = os.clock()
 end
 
@@ -86,7 +105,7 @@ function __clsSheet:jumpTo(targetIndex, loadState)
         self._updatePending = true
         return
     end
-    if self:numFrames() == 0 then return end
+    if self:numSections() == 0 then return end
     self.previewIndex = targetIndex
     self._busy = true
     self._updatePending = false
@@ -99,14 +118,21 @@ function __clsSheet:jumpTo(targetIndex, loadState)
     local previousTASState = TASState
     local was_ff = emu.get_ff()
     emu.set_ff(true)
+
+    self._sectionIndex = 1
+    local frameCounter = 0
     local runUntilSelected
     runUntilSelected = function()
         TASState = previousTASState
-        local globalTimer = memory.readdword(Addresses[Settings.address_source_index].global_timer)
-        local frame = self.frames[globalTimer - self.startGT]
-        frame.preview_joystick_x = Joypad.input.X
-        frame.preview_joystick_y = Joypad.input.Y
-        if globalTimer >= self.startGT + self.previewIndex then
+        local section = self.sections[self._sectionIndex]
+        local tasState = section.tasState
+        tasState.preview_action = Memory.current.mario_action
+        frameCounter = frameCounter + 1
+        if frameCounter >= section.timeout or Locales.raw().ACTIONS[Memory.current.mario_action] == section.endAction then
+            self._sectionIndex = self._sectionIndex + 1
+            frameCounter = 0
+        end
+        if self._sectionIndex > self.previewIndex then
             emu.pause(false)
             emu.set_ff(was_ff)
             emu.atinput(runUntilSelected, true)
@@ -125,11 +151,11 @@ function __clsSheet:save(file)
     persistence.store(
         file,
         {
-            frames      = self.frames,
-            name        = self.name,
-            startGT     = self.startGT,
-            editingIndex   = self.editingIndex,
-            previewIndex   = self.previewIndex,
+            sections     = self.sections,
+            name         = self.name,
+            startGT      = self.startGT,
+            editingIndex = self.editingIndex,
+            previewIndex = self.previewIndex,
         }
     )
 end
@@ -154,10 +180,6 @@ function __clsSheet:update()
     end
 end
 
-function __clsSheet:trimEnd()
-    self.frames = table.move(self.frames, 0, self.previewIndex, 0, {})
-end
-
 function __clsSheet:rebase(path)
     if CopyFile(path, self._savestateFile) then
         self._rebasing = true
@@ -166,9 +188,7 @@ function __clsSheet:rebase(path)
     end
 end
 
-return {
-    new = __clsSheet.new
-},
-{
-    new = __clsSelection.new
-}
+return
+{ new = NewSection },
+{ new = NewSheet },
+{ new = NewSelection }

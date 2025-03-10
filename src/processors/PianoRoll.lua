@@ -2,7 +2,7 @@ return {
     process = function(input)
         local override = CurrentPianoRollOverride()
         if override then
-            TASState = override
+            TASState = override.tasState
             return override.joy
         else
             TASState = DefaultTASState

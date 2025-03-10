@@ -132,9 +132,11 @@ local function ControlsForSelected(draw)
     local sheet = PianoRollProject:AssertedCurrent()
 
     local newValues = {}
-    CloneInto(newValues, TASState)
+    local editedSection = sheet.sections[sheet.editingIndex]
+    local oldValues = editedSection and editedSection.tasState or TASState
+    CloneInto(newValues, oldValues)
 
-    local displayPosition = {x = TASState.manual_joystick_x or 0, y = -(TASState.manual_joystick_y or 0)}
+    local displayPosition = {x = oldValues.manual_joystick_x or 0, y = -(oldValues.manual_joystick_y or 0)}
     local newPosition = ugui.joystick({
         uid = UID.Joypad,
         rectangle = grid_rect(0, top + 1, 2, 2),
@@ -142,8 +144,8 @@ local function ControlsForSelected(draw)
     })
     if newPosition.x ~= displayPosition.x or newPosition.y ~= displayPosition.y then
         newValues.movement_mode = MovementModes.manual
-        newValues.manual_joystick_x = math.min(127, math.floor(newPosition.x + 0.5)) or TASState.manual_joystick_x
-        newValues.manual_joystick_y = math.min(127, -math.floor(newPosition.y + 0.5)) or TASState.manual_joystick_y
+        newValues.manual_joystick_x = math.min(127, math.floor(newPosition.x + 0.5)) or oldValues.manual_joystick_x
+        newValues.manual_joystick_y = math.min(127, -math.floor(newPosition.y + 0.5)) or oldValues.manual_joystick_y
     end
     local previousThickness = ugui.standard_styler.params.spinner.button_size
     ugui.standard_styler.params.spinner.button_size = 4
@@ -259,16 +261,13 @@ local function ControlsForSelected(draw)
 
     ugui.standard_styler.params.spinner.button_size = previousThickness
 
-    local changes = CloneInto(TASState, newValues)
+    local changes = CloneInto(oldValues, newValues)
     local anyChanges = AnyEntries(changes)
     local currentSheet = PianoRollProject:AssertedCurrent()
     if anyChanges and sheet.selection ~= nil then
         for i = sheet.selection:min(), sheet.selection:max(), 1 do
-            local dest = currentSheet.frames[i]
-            -- we need to restore the button state in case PianoRollProject.copyEntireState is true
-            local btns = dest.joy
-            CloneInto(dest, PianoRollProject.copyEntireState and TASState or changes)
-            dest.joy = btns
+            local dest = currentSheet.sections[i]
+            CloneInto(dest.tasState, PianoRollProject.copyEntireState and oldValues or changes)
         end
     end
 
