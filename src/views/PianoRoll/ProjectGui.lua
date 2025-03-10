@@ -187,46 +187,47 @@ local function RenderSheetList(draw)
         if i > #PianoRollProject.meta.sheets then break end
 
         local x = 3
-        local function drawUtilityButton(text, enabled, width)
+        local function drawUtilityButton(text, tooltip, enabled, width)
             width = width or 0.5
             local result = ugui.button({
                 uid = uid,
                 rectangle = grid_rect(x, y, width, controlHeight),
                 text = text,
-                is_enabled = enabled
+                is_enabled = enabled,
+                tooltip = tooltip,
             })
             uid = uid + 1
             x = x + width
             return result
         end
 
-        if (drawUtilityButton("^", i > 1)) then
+        if (drawUtilityButton("^", "move up", i > 1)) then
             PianoRollProject:MoveSheet(i, -1)
         end
 
-        if (drawUtilityButton("v", i < #PianoRollProject.meta.sheets)) then
+        if (drawUtilityButton("v", "move down", i < #PianoRollProject.meta.sheets)) then
             PianoRollProject:MoveSheet(i, 1)
         end
 
-        if (drawUtilityButton("-")) then
+        if (drawUtilityButton("-", "delete")) then
             PianoRollDialog = RenderConfirmDeletionPrompt(i)
         end
 
-        if (drawUtilityButton(".st", true, 0.75)) then
+        if (drawUtilityButton(".st", "rebase", true, 0.75)) then
             local path = iohelper.filediag("*.st;*.savestate", 0)
             if string.len(path) > 0 then
                 PianoRollProject:Rebase(i, path)
             end
         end
 
-        if (drawUtilityButton(".prs", true, 0.75)) then
+        if (drawUtilityButton(".prs", "replace inputs", true, 0.75)) then
             local path = iohelper.filediag("*.prs", 0)
             if string.len(path) > 0 then
                 PianoRollProject.all[PianoRollProject.meta.sheets[i].name]:load(path, false)
             end
         end
 
-        if (drawUtilityButton(">")) then
+        if (drawUtilityButton(">", "play without loading .st")) then
             PianoRollProject:Select(i, false)
         end
     end
