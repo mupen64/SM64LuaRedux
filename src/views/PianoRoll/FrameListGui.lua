@@ -1,7 +1,6 @@
 local name = "FrameList"
 
 local UID = dofile(views_path .. "PianoRoll/UID.lua")[name]
-local _, _, Selection = dofile(views_path .. "PianoRoll/Sheet.lua")
 
 ---constants---
 
@@ -44,6 +43,7 @@ local scrollbarWidth = 0.3
 local maxDisplayedSections = 15
 local scrollOffset = 0
 
+local NUM_UIDS_PER_ROW = 2
 local buttonColors = {
     {background={r=000, g=000, b=255, a=100}, button={r=000, g=000, b=190, a=255}}, -- A
     {background={r=000, g=177, b=022, a=100}, button={r=000, g=230, b=044, a=255}}, -- B
@@ -55,24 +55,44 @@ local buttonColors = {
 }
 
 local function AllocateUids(EnumNext)
-    local base = EnumNext(maxDisplayedSections * 20)
+    local base = EnumNext(maxDisplayedSections * NUM_UIDS_PER_ROW)
     return {
         SheetName = EnumNext(),
         Scrollbar = EnumNext(),
         Row = function(index)
-            return base + index * 20 --TODO: allocate an exact amount
+            return base + (index - 1) * NUM_UIDS_PER_ROW
         end,
     }
 end
 
 ---logic---
 
+---@function Iterates all sections as an input row, including their follow-up frames for non-collapsed sections
+---@param sheet Sheet The sheet over whose sections to iterate
+local function IterateInputRows(sheet, callback)
+    local totalInputsCounted = 1
+    local totalSectionsCounted = 1
+    for sectionIndex = 1, sheet:numSections(), 1 do
+        local section = sheet.sections[sectionIndex]
+        for inputIndex = 1, #section.inputs, 1 do
+            if callback and callback(section, section.inputs[inputIndex], totalSectionsCounted, totalInputsCounted, inputIndex) then
+                return totalInputsCounted
+            end
+
+            totalInputsCounted = totalInputsCounted + 1
+            if section.collapsed then break end
+        end
+        totalSectionsCounted = totalSectionsCounted + 1
+    end
+    return totalInputsCounted - 1
+end
+
 local function NumDisplaySections()
-    return math.min(PianoRollProject:AssertedCurrent():numSections(), maxDisplayedSections)
+    return math.min(IterateInputRows(PianoRollProject:AssertedCurrent()), maxDisplayedSections)
 end
 
 local function MaxScroll()
-    return PianoRollProject:AssertedCurrent():numSections() - maxDisplayedSections
+    return IterateInputRows(PianoRollProject:AssertedCurrent()) - maxDisplayedSections
 end
 
 local function UpdateScroll(wheel)
@@ -135,7 +155,7 @@ local function DrawScrollbar()
             uid = UID.Scrollbar,
             rectangle = scrollbarRect,
             value = scrollOffset / maxScroll,
-            ratio = 1 / (PianoRollProject:AssertedCurrent():numSections() / numDisplaySections),
+            ratio = 1 / (IterateInputRows(PianoRollProject:AssertedCurrent()) / numDisplaySections),
         })
         scrollOffset = math.floor(relativeScroll * maxScroll + 0.5)
     end
@@ -182,15 +202,13 @@ end
 
 local placing = 0
 local function PlaceAndUnplaceButtons(sectionRect, buttonDrawData)
-    local currentSheet = PianoRollProject:AssertedCurrent()
     local mouseX = ugui_environment.mouse_position.x
     local relativeY = ugui_environment.mouse_position.y - sectionRect.y
     local inRange = mouseX >= sectionRect.x and mouseX <= sectionRect.x + sectionRect.width and relativeY >= 0
-    local frameIndex = math.ceil(relativeY / sectionRect.height)
-    local hoveringIndex = frameIndex + scrollOffset
-    local section = currentSheet.sections[hoveringIndex]
+    local unscrolledHoverIndex = math.ceil(relativeY / sectionRect.height)
+    local hoveringIndex = unscrolledHoverIndex + scrollOffset
     local anyChange = false
-    inRange = inRange and frameIndex <= maxDisplayedSections
+    inRange = inRange and unscrolledHoverIndex <= maxDisplayedSections
     UpdateScroll(inRange and ugui_environment.wheel or 0)
     if inRange then
         -- act as if the mouse wheel was not moved in order to prevent other controls from scrolling on accident
@@ -200,32 +218,30 @@ local function PlaceAndUnplaceButtons(sectionRect, buttonDrawData)
 
     if not buttonDrawData then return end
 
-    if inRange and section ~= nil then
-        for buttonIndex, v in ipairs(Buttons) do
-            local inRangeX = mouseX >= buttonDrawData[buttonIndex].x and mouseX < buttonDrawData[buttonIndex + 1].x
-            if ugui.internal.is_mouse_just_down() and inRangeX then
-                placing = section.joy[v.input] and -1 or 1
-                section.joy[v.input] = placing
-                anyChange = true
-            elseif ugui.internal.environment.is_primary_down and placing ~= 0 then
-                if inRangeX then
-                    anyChange = section.joy[v.input] ~= (placing == 1)
-                    section.joy[v.input] = placing == 1
+    IterateInputRows(PianoRollProject:AssertedCurrent(), function(section, input, sectionIndex, inputIndex)
+        if inputIndex == hoveringIndex and inRange and section ~= nil then
+            for buttonIndex, v in ipairs(Buttons) do
+                local inRangeX = mouseX >= buttonDrawData[buttonIndex].x and mouseX < buttonDrawData[buttonIndex + 1].x
+                if ugui.internal.is_mouse_just_down() and inRangeX then
+                    placing = input.joy[v.input] and -1 or 1
+                    input.joy[v.input] = placing
+                    anyChange = true
+                elseif ugui.internal.environment.is_primary_down and placing ~= 0 then
+                    if inRangeX then
+                        anyChange = input.joy[v.input] ~= (placing == 1)
+                        input.joy[v.input] = placing == 1
+                    end
+                else
+                    placing = 0
                 end
-            else
-                placing = 0
             end
         end
-    end
+    end)
     return anyChange
 end
 
+---@param sheet Sheet
 local function DrawSectionsGui(sheet, draw, buttonDrawData, drawFrameContent)
-
-    if ugui.internal.is_mouse_just_up() and sheet.selection ~= nil then
-        sheet:edit(sheet.selection.endIndex)
-    end
-
     local sectionRect = grid_rect(col0, row2, col_1 - col0 - scrollbarWidth, frameColumnHeight, 0)
     local anyChange = PlaceAndUnplaceButtons(sectionRect, buttonDrawData)
 
@@ -234,35 +250,49 @@ local function DrawSectionsGui(sheet, draw, buttonDrawData, drawFrameContent)
         return {x = r.x, y = sectionRect.y, width = r.width, height = height and r.height or sectionRect.height}
     end
 
-    for i = 1, sheet:numSections(), 1 do
-        local sectionNumber = i + scrollOffset
-        local shade = sectionNumber % 2 == 0 and 123 or 80
-        local blueMultiplier = 1 --TODO: color code section success
+    ---@param section Section
+    IterateInputRows(sheet, function(section, input, sectionIndex, totalInputs, inputSubIndex)
+        if totalInputs <= scrollOffset then return false end
 
-        if i >= maxDisplayedSections then
-            local extraSections = sheet:numSections() - sectionNumber
-            if extraSections > 0 then
-                BreitbandGraphics.fill_rectangle(span(0, col_1), {r=138, g=148, b=138, a=66})
-                draw:text(span(col1, col_1), "start", "+ " .. extraSections .. " sections")
-            end
-            break
+        --TODO: color code section success
+        local shade = totalInputs % 2 == 0 and 123 or 80
+        local blueMultiplier = inputSubIndex == 1 and 2 or 1
+
+        if totalInputs > maxDisplayedSections + scrollOffset then
+            local extraSections = sheet:numSections() - sectionIndex
+            BreitbandGraphics.fill_rectangle(span(0, col_1), {r=138, g=148, b=138, a=66})
+            draw:text(span(col1, col_1), "start", "+ " .. extraSections .. " sections")
+            return true
         end
 
-        local section = sheet.sections[sectionNumber]
-        local input = section.tasState
-        local uidBase = UID.Row(i)
+        local tasState = input.tasState
         local frameBox = span(col0 + 0.25, col1)
-        draw:text(frameBox, "end", sectionNumber .. ":")
+
+        local uidBase = UID.Row(totalInputs - scrollOffset)
+        local uidOffset = -1
+        local function NextUid() uidOffset = uidOffset + 1 return uidOffset + uidBase end
+
+        if inputSubIndex == 1 then
+            section.collapsed = not ugui.toggle_button({
+                uid = NextUid(),
+                rectangle = span(col0, col0 + 0.25),
+                text = "",
+                is_checked = not section.collapsed
+            });
+        end
+
+        draw:text(frameBox, "end", sectionIndex .. ":")
 
         if ugui.internal.is_mouse_just_down() and BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, frameBox) then
-            sheet.previewIndex = sectionNumber;
+            sheet.previewIndex = sectionIndex;
+            sheet.previewSubIndex = inputSubIndex;
             sheet:runToPreview()
         end
 
         ugui.joystick({
-            uid = uidBase + 1,
+            uid = NextUid(),
             rectangle = span(col1, col2, frameColumnHeight),
-            position = {x = section.joy.X, y = -section.joy.Y},
+            position = {x = input.joy.X, y = -input.joy.Y},
         })
 
         local joystickBox = span(col1, col2)
@@ -270,23 +300,31 @@ local function DrawSectionsGui(sheet, draw, buttonDrawData, drawFrameContent)
 
         if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, joystickBox) then
             if ugui.internal.is_mouse_just_down() then
-                sheet.selection = Selection.new(input.goal_angle, sectionNumber)
-            elseif sheet.selection ~= nil and ugui.internal.environment.is_primary_down then
-                sheet.selection.endIndex = sectionNumber
+                for _, section in pairs(sheet.sections) do
+                    for _, input in pairs(section.inputs) do
+                        input.editing = false
+                    end
+                end
+                input.editing = true
+            elseif ugui.internal.environment.is_primary_down then
+                sheet.editingIndex = sectionIndex
+                sheet.editingSubIndex = inputSubIndex
+                input.editing = true
             end
         end
-        if sheet.selection ~= nil and sheet.selection:min() <= sectionNumber and sheet.selection:max() >= sectionNumber then
+
+        if input.editing then
             BreitbandGraphics.fill_rectangle(joystickBox, {r = 0, g = 200, b = 0, a = 100})
         end
 
         if drawFrameContent then
-            drawFrameContent(draw, span(col2, col_1), sectionNumber)
+            drawFrameContent(draw, span(col2, col_1), section)
         else
-            draw:text(span(col2, col3), "center", ModeTexts[input.movement_mode + 1])
+            draw:text(span(col2, col3), "center", ModeTexts[tasState.movement_mode + 1])
 
-            if input.movement_mode == MovementModes.match_angle then
-                draw:text(span(col4, col5), "end", tostring(input.goal_angle))
-                draw:text(span(col5, col6), "end", input.strain_left and '<' or (input.strain_right and '>' or '-'))
+            if tasState.movement_mode == MovementModes.match_angle then
+                draw:text(span(col4, col5), "end", tostring(tasState.goal_angle))
+                draw:text(span(col5, col6), "end", tasState.strain_left and '<' or (tasState.strain_right and '>' or '-'))
             end
 
             local unit = Settings.grid_size * Drawing.scale
@@ -294,23 +332,23 @@ local function DrawSectionsGui(sheet, draw, buttonDrawData, drawFrameContent)
             local rect = {x = 0, y = sectionRect.y + (frameColumnHeight - buttonSize) * 0.5 * unit, width = sz, height = sz}
             for buttonIndex, v in ipairs(Buttons) do
                 rect.x = buttonDrawData[buttonIndex].x + unit * (buttonColumnWidth - buttonSize) * 0.5
-                if section.joy[v.input] then
+                if input.joy[v.input] then
                     BreitbandGraphics.fill_ellipse(rect, buttonColors[buttonDrawData[buttonIndex].colorIndex].button)
                 end
-                BreitbandGraphics.draw_ellipse(rect, {r=0, g=0, b=0, a=section.joy[v.input] and 255 or 80}, 1)
+                BreitbandGraphics.draw_ellipse(rect, {r=0, g=0, b=0, a=input.joy[v.input] and 255 or 80}, 1)
             end
         end
 
-        if (sectionNumber == sheet.previewIndex) then
+        if sectionIndex == sheet.previewIndex and (sheet.previewSubIndex or inputSubIndex) == inputSubIndex then
             BreitbandGraphics.draw_rectangle(sectionRect, {r=255, g=0, b=0}, 1)
         end
 
-        if (sectionNumber == sheet.editingIndex) then
+        if sectionIndex == sheet.editingIndex and inputSubIndex == sheet.editingSubIndex then
             BreitbandGraphics.draw_rectangle(sectionRect, {r=100, g=255, b=100}, 1)
         end
 
         sectionRect.y = sectionRect.y + sectionRect.height
-    end
+    end)
 
     return anyChange
 end

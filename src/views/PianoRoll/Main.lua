@@ -55,7 +55,7 @@ end)
 ---@return Section|nil override The section to apply for the current frame.
 function CurrentPianoRollOverride()
     local currentSheet = PianoRollProject:Current()
-    return currentSheet and currentSheet:currentSection() or nil
+    return currentSheet and currentSheet:evaluateFrame() or nil
 end
 
 return {

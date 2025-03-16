@@ -11,51 +11,38 @@ local function CopyFile(srcPath, destPath)
     return true
 end
 
+---@class SectionInputs
+---@field tasState table TAS states to derive the control stick inputs from - note that arctan straining will refer to the section's timeout for its length
+---@field joy table The joypad data, that is, pressed buttons and joystick values.
+---@field editing boolean Whether the input is selected for editing.
+local __clsSectionInputs = {}
+
 ---@class Section
 ---@field endAction string The name of the action that, when reached in playback, ends this section
 ---@field timeout integer The maximum number of frames this section goes on for
----@field tasState table The TAS state to apply for the entire duration of this section - note that arctan straining will refer to timeout for its length
----@field joy table The joypad data, that is, pressed buttons and joystick values.
+---@field inputs SectionInputs[] The TAS states and button presses for the earliest frames of this section. If the segment as longer than this array, its last element being held out until the end of this section.
+---@field collapsed boolean Whether the section's earliest inputs should be hidden in the FrameListGui
 local __clsSection = {}
 
 local function NewSection(endAction, timeout)
     local tmp = {}
+    local tmp2 = {}
     CloneInto(tmp, Joypad.input)
     ---@type Section
     return {
         endAction = endAction,
         timeout = timeout,
-        tasState = NewTASState(),
-        joy = tmp,
+        inputs = { { tasState = NewTASState(), joy = tmp, } },
+        collapsed = false,
     }
 end
-
----@class Selection
----@field public startIndex integer The 1-based index of the section that was clicked to begin creating this selection, which may be greater than endIndex
----@field public endIndex integer The 1-based index of the section on which this selection's range was ended, which may be less than startIndex
-local __clsSelection = {}
-
-local function NewSelection(state, sectionIndex)
-    return {
-        state = state,
-        startIndex = sectionIndex,
-        endIndex = sectionIndex,
-        min = __clsSelection.min,
-        max = __clsSelection.max,
-    }
-end
-
----The smaller value of startIndex and endIndex
-function __clsSelection:min() return math.min(self.startIndex, self.endIndex) end
-
----The greater value of startIndex and endIndex
-function __clsSelection:max() return math.max(self.startIndex, self.endIndex) end
 
 ---@class Sheet
 ---@field public previewIndex integer The 1-based index of the section to which to advance to when changes to the piano roll have been made.
+---@field public previewSubIndex integer The 1-based index of the previewed section's frame to which to advance to when changes to the piano roll have been made.
 ---@field public editingIndex integer The 1-based index of the section of this piano roll that is currently being edited.
----@field public selection Selection | nil A single selection range for which to apply changes in the joystick gui to.
----@field public sections table An array of TASStates with their associated section definition to execute in order.
+---@field public editingSubIndex integer The 1-based index of the edited section's frame that is currently being edited.
+---@field public sections Section[] An array of TASStates with their associated section definition to execute in order.
 ---@field public name string A name for the piano roll for convenience.
 ---@field private _sectionIndex integer The nth section that is currently being played
 local __clsSheet = {}
@@ -67,8 +54,9 @@ local function NewSheet(name)
     local newInstance = {
         startGT = globalTimer,
         previewIndex = 1,
+        previewSubIndex = 0,
         editingIndex = 1,
-        selection = nil,
+        editingSubIndex = 1,
         sections = { NewSection("idle", 150) },
         name = name,
         _savestateFile = name .. ".tmp.savestate",
@@ -78,9 +66,10 @@ local function NewSheet(name)
         _updatePending = false,
         _rebasing = false,
         _sectionIndex = 1,
+        _frameCounter = 1,
+        _previousTASState = nil,
         numSections = __clsSheet.numSections,
-        currentSection = __clsSheet.currentSection,
-        edit = __clsSheet.edit,
+        evaluateFrame = __clsSheet.evaluateFrame,
         update = __clsSheet.update,
         runToPreview = __clsSheet.runToPreview,
         rebase = __clsSheet.rebase,
@@ -93,11 +82,30 @@ end
 
 function __clsSheet:numSections() return #self.sections end
 
-function __clsSheet:currentSection() return self.sections[self._sectionIndex] end
+function __clsSheet:evaluateFrame()
+    local section = self.sections[self._sectionIndex]
+    if section == nil then return nil end
 
-function __clsSheet:edit(sectionIndex)
-    self.editingIndex = sectionIndex
-    self._oldClock = os.clock()
+    local tasState = section.inputs[math.min(self._frameCounter, #section.inputs)].tasState
+    local currentAction = Locales.raw().ACTIONS[memory.readdword(Addresses[Settings.address_source_index].mario_action)]
+    tasState.preview_action = currentAction
+    if self._frameCounter >= section.timeout or currentAction == section.endAction then
+        self._sectionIndex = self._sectionIndex + 1
+        self._frameCounter = 0
+    end
+    if self._sectionIndex > self.previewIndex
+        or (self._sectionIndex == self.previewIndex
+            and self.previewSubIndex
+            and self._frameCounter >= self.previewSubIndex
+            ) then
+        emu.pause(false)
+        emu.set_ff(false)
+        self._busy = false
+    end
+
+    self._frameCounter = self._frameCounter + 1
+    section = self.sections[self._sectionIndex]
+    return section and section.inputs[math.min(self._frameCounter, #section.inputs)] or nil
 end
 
 function __clsSheet:runToPreview(loadState)
@@ -114,31 +122,11 @@ function __clsSheet:runToPreview(loadState)
         print("loading file \"" .. self._savestateFile .. "\"")
     end
     emu.pause(true)
-    local previousTASState = TASState
-    local was_ff = emu.get_ff()
     emu.set_ff(true)
 
+    self._previousTASState = TASState
     self._sectionIndex = 1
-    local frameCounter = 0
-    local runUntilSelected
-    runUntilSelected = function()
-        TASState = previousTASState
-        local section = self.sections[self._sectionIndex]
-        local tasState = section.tasState
-        tasState.preview_action = Memory.current.mario_action
-        frameCounter = frameCounter + 1
-        if frameCounter >= section.timeout or Locales.raw().ACTIONS[Memory.current.mario_action] == section.endAction then
-            self._sectionIndex = self._sectionIndex + 1
-            frameCounter = 0
-        end
-        if self._sectionIndex > self.previewIndex then
-            emu.pause(false)
-            emu.set_ff(was_ff)
-            emu.atinput(runUntilSelected, true)
-            self._busy = false
-        end
-    end
-    emu.atinput(runUntilSelected)
+    self._frameCounter = 1
 end
 
 function __clsSheet:save(file)
@@ -152,9 +140,10 @@ function __clsSheet:save(file)
         {
             sections     = self.sections,
             name         = self.name,
-            startGT      = self.startGT,
             editingIndex = self.editingIndex,
+            editingSubIndex = self.editingSubIndex,
             previewIndex = self.previewIndex,
+            previewSubIndex = self.previewSubIndex,
         }
     )
 end

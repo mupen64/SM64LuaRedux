@@ -12,6 +12,8 @@ local function AllocateUids(EnumNext)
     return {
         InsertSection = EnumNext(),
         DeleteSection = EnumNext(),
+        AddInput = EnumNext(),
+        DeleteInput = EnumNext(),
         EndAction = EnumNext(),
         AvailableActions = EnumNext(MAX_ACTION_GUESSES),
         Timeout = EnumNext(),
@@ -30,13 +32,10 @@ local function ControlsForSelected(draw)
         uid = UID.InsertSection,
         rectangle = grid_rect(0, top, 1.5, largeControlHeight),
         text = "Insert",
+        is_enabled = sheet.sections[sheet.editingIndex]
     }) then
         local newSection = Section.new("idle", 150)
-        if #sheet.sections == 0 then
-            sheet.sections = { newSection }
-        else
-            table.insert(sheet.sections, sheet.editingIndex + 1, newSection)
-        end
+        table.insert(sheet.sections, sheet.editingIndex + 1, newSection)
         anyChanges = true
     end
 
@@ -45,15 +44,34 @@ local function ControlsForSelected(draw)
         rectangle = grid_rect(1.5, top, 1.5, largeControlHeight),
         text = "Delete"
     }) then
-        local startIndex = sheet.selection.startIndex
-        local endIndex = sheet.selection.endIndex
-        for _ = startIndex, endIndex, 1 do
-            table.remove(sheet.sections, startIndex)
-        end
+        ---@param x Section
+        sheet.sections = lualinq.where(sheet.sections, function(x) return not x.inputs[1].editing end)
+    end
+
+    local section = sheet.sections[sheet.editingIndex]
+    if section == nil then return end
+
+    if ugui.button({
+        uid = UID.AddInput,
+        rectangle = grid_rect(4, top, 1.5, largeControlHeight),
+        text = "+Input"
+    }) then
+        local tmp = {}
+        CloneInto(tmp, Joypad.input)
+        section.inputs[#section.inputs + 1] = { tasState = NewTASState(), joy = tmp }
+        anyChanges = true
+    end
+
+    if ugui.button({
+        uid = UID.DeleteInput,
+        rectangle = grid_rect(5.5, top, 1.5, largeControlHeight),
+        text = "-Input",
+        is_enabled = #section.inputs > 1
+    }) then
+        table.remove(section.inputs, #section.inputs)
     end
 
     top = top + 1
-    local section = sheet.sections[sheet.editingIndex]
     if endActionSearchText == nil then
         -- end action "dropdown" is not visible
         if ugui.button({
@@ -105,9 +123,8 @@ local function ControlsForSelected(draw)
 end
 
 
-local function DrawFrameContent(draw, rect, frameNumber)
-    local currentSheet = PianoRollProject:AssertedCurrent()
-    local previewAction = currentSheet.sections[frameNumber].endAction
+local function DrawFrameContent(draw, rect, section)
+    local previewAction = section.endAction
     draw:text(rect, "left", "until '" .. previewAction .. "'")
 end
 

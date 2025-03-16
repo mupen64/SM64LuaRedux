@@ -133,7 +133,8 @@ local function ControlsForSelected(draw)
 
     local newValues = {}
     local editedSection = sheet.sections[sheet.editingIndex]
-    local oldValues = editedSection and editedSection.tasState or TASState
+    local editedInput = editedSection and editedSection.inputs[sheet.editingSubIndex] or nil
+    local oldValues = editedInput and editedInput.tasState or TASState
     CloneInto(newValues, oldValues)
 
     local displayPosition = {x = oldValues.manual_joystick_x or 0, y = -(oldValues.manual_joystick_y or 0)}
@@ -264,10 +265,13 @@ local function ControlsForSelected(draw)
     local changes = CloneInto(oldValues, newValues)
     local anyChanges = AnyEntries(changes)
     local currentSheet = PianoRollProject:AssertedCurrent()
-    if anyChanges and sheet.selection ~= nil then
-        for i = sheet.selection:min(), sheet.selection:max(), 1 do
-            local dest = currentSheet.sections[i]
-            CloneInto(dest.tasState, PianoRollProject.copyEntireState and oldValues or changes)
+    if anyChanges and editedInput then
+        for _, section in pairs(sheet.sections) do
+            for _, input in pairs(section.inputs) do
+                if input.editing then
+                    CloneInto(input.tasState, PianoRollProject.copyEntireState and oldValues or changes)
+                end
+            end
         end
     end
 
