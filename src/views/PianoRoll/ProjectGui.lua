@@ -106,7 +106,7 @@ local function RenderSheetList(draw)
     if ugui.button({
         uid = UID.NewProject,
         rectangle = grid_rect(0, top + 1, 1.5, controlHeight),
-        text = "New"
+        text = Locales.str("PIANO_ROLL_PROJECT_NEW"),
     }) then
         local path = iohelper.filediag("*.prp", 1)
         if string.len(path) > 0 then
@@ -119,7 +119,7 @@ local function RenderSheetList(draw)
     if ugui.button({
         uid = UID.OpenProject,
         rectangle = grid_rect(1.5, top + 1, 1.5, controlHeight),
-        text = "Open"
+        text = Locales.str("PIANO_ROLL_PROJECT_OPEN"),
     }) then
         local path = iohelper.filediag("*.prp", 0)
         if string.len(path) > 0 then
@@ -131,7 +131,7 @@ local function RenderSheetList(draw)
     if ugui.button({
         uid = UID.SaveProject,
         rectangle = grid_rect(3, top + 1, 1.5, controlHeight),
-        text = "Save"
+        text = Locales.str("PIANO_ROLL_PROJECT_SAVE"),
     }) then
         if PianoRollProject.projectLocation == nil then
             local path = iohelper.filediag("*.prp", 0)
@@ -152,7 +152,7 @@ local function RenderSheetList(draw)
     if ugui.button({
         uid = UID.PurgeProject,
         rectangle = grid_rect(4.5, top + 1, 1.5, controlHeight),
-        text = "Purge",
+        text = Locales.str("PIANO_ROLL_PROJECT_PURGE"),
         is_enabled = PianoRollProject.projectLocation ~= nil,
     }) then
         PianoRollDialog = RenderConfirmPurgeDialog
@@ -163,7 +163,7 @@ local function RenderSheetList(draw)
     for i = 1, #PianoRollProject.meta.sheets, 1 do
         availableSheets[i] = PianoRollProject.meta.sheets[i].name
     end
-    availableSheets[#availableSheets + 1] = "Add..."
+    availableSheets[#availableSheets + 1] = Locales.str("PIANO_ROLL_PROJECT_ADD_SHEET")
 
     local uid = UID.ProjectSheetBase
     for i = 1, #availableSheets, 1 do
@@ -201,33 +201,33 @@ local function RenderSheetList(draw)
             return result
         end
 
-        if (drawUtilityButton("^", "move up", i > 1)) then
+        if (drawUtilityButton("^", Locales.str("PIANO_ROLL_PROJECT_TOOLTIP_MOVE_SHEET_UP"), i > 1)) then
             PianoRollProject:MoveSheet(i, -1)
         end
 
-        if (drawUtilityButton("v", "move down", i < #PianoRollProject.meta.sheets)) then
+        if (drawUtilityButton("v", Locales.str("PIANO_ROLL_PROJECT_TOOLTIP_MOVE_SHEET_DOWN"), i < #PianoRollProject.meta.sheets)) then
             PianoRollProject:MoveSheet(i, 1)
         end
 
-        if (drawUtilityButton("-", "delete")) then
+        if (drawUtilityButton("-", Locales.str("PIANO_ROLL_PROJECT_TOOLTIP_DELETE_SHEET"))) then
             PianoRollDialog = RenderConfirmDeletionPrompt(i)
         end
 
-        if (drawUtilityButton(".st", "rebase", true, 0.75)) then
+        if (drawUtilityButton(".st", Locales.str("PIANO_ROLL_PROJECT_TOOLTIP_REBASE_SHEET"), true, 0.75)) then
             local path = iohelper.filediag("*.st;*.savestate", 0)
             if string.len(path) > 0 then
                 PianoRollProject:Rebase(i, path)
             end
         end
 
-        if (drawUtilityButton(".prs", "replace inputs", true, 0.75)) then
+        if (drawUtilityButton(".prs", Locales.str("PIANO_ROLL_PROJECT_TOOLTIP_REPLACE_INPUTS"), true, 0.75)) then
             local path = iohelper.filediag("*.prs", 0)
             if string.len(path) > 0 then
                 PianoRollProject.all[PianoRollProject.meta.sheets[i].name]:load(path, false)
             end
         end
 
-        if (drawUtilityButton(">", "play without loading .st")) then
+        if (drawUtilityButton(">", Locales.str("PIANO_ROLL_PROJECT_TOOLTIP_PLAY_WITHOUT_ST"))) then
             PianoRollProject:Select(i, false)
         end
     end
