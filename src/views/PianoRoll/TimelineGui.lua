@@ -31,7 +31,7 @@ local function ControlsForSelected(draw)
     if ugui.button({
         uid = UID.InsertSection,
         rectangle = grid_rect(0, top, 1.5, largeControlHeight),
-        text = "Insert",
+        text = Locales.str("PIANO_ROLL_TIMELINE_INSERT"),
         is_enabled = sheet.sections[sheet.editingIndex]
     }) then
         local newSection = Section.new("idle", 150)
@@ -42,7 +42,7 @@ local function ControlsForSelected(draw)
     if ugui.button({
         uid = UID.DeleteSection,
         rectangle = grid_rect(1.5, top, 1.5, largeControlHeight),
-        text = "Delete"
+        text = Locales.str("PIANO_ROLL_TIMELINE_DELETE"),
     }) then
         ---@param x Section
         sheet.sections = lualinq.where(sheet.sections, function(x) return not x.inputs[1].editing end)
@@ -54,7 +54,7 @@ local function ControlsForSelected(draw)
     if ugui.button({
         uid = UID.AddInput,
         rectangle = grid_rect(4, top, 1.5, largeControlHeight),
-        text = "+Input"
+        text = Locales.str("PIANO_ROLL_TIMELINE_ADD_INPUT"),
     }) then
         local tmp = {}
         CloneInto(tmp, Joypad.input)
@@ -65,7 +65,7 @@ local function ControlsForSelected(draw)
     if ugui.button({
         uid = UID.DeleteInput,
         rectangle = grid_rect(5.5, top, 1.5, largeControlHeight),
-        text = "-Input",
+        text = Locales.str("PIANO_ROLL_TIMELINE_REMOVE_INPUT"),
         is_enabled = #section.inputs > 1
     }) then
         table.remove(section.inputs, #section.inputs)
