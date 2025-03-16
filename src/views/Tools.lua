@@ -6,7 +6,7 @@ local GHOST_ROW = 9
 local EXPERIMENTS_ROW = 11
 
 return {
-    name = "Tools",
+    name = Locales.str("TOOLS_TAB_NAME"),
     draw = function()
         local theme = Styles.theme()
         local foreground_color = BreitbandGraphics.invert_color(theme.background_color)
@@ -19,19 +19,19 @@ return {
             foreground_color,
             theme.font_size * Drawing.scale * 1.25,
             theme.font_name,
-            "RNG")
+            Locales.str("TOOLS_RNG"))
 
         Settings.override_rng = ugui.toggle_button({
             uid = 55,
             rectangle = grid_rect(0, RNG_ROW, 2, 1),
-            text = "Lock to",
+            text = Locales.str("TOOLS_RNG_LOCK"),
             is_checked = Settings.override_rng,
         })
         Settings.override_rng_use_index = ugui.toggle_button({
             uid = 60,
             is_enabled = Settings.override_rng,
             rectangle = grid_rect(6, RNG_ROW, 2, 1),
-            text = "Use Index",
+            text = Locales.str("TOOLS_RNG_USE_INDEX"),
             is_checked = Settings.override_rng_use_index,
         })
         Settings.override_rng_value = math.floor(ugui.spinner({
@@ -51,11 +51,11 @@ return {
             foreground_color,
             theme.font_size * Drawing.scale * 1.25,
             theme.font_name,
-            "Auto-Grind")
+            Locales.str("TOOLS_AUTO_GRIND"))
         if ugui.button({
                 uid = 0,
                 rectangle = grid_rect(0, AUTO_GRIND_ROW, 3, 1),
-                text = Settings.grind and "Stop" or "Start",
+                text = Settings.grind and Locales.str("GENERIC_STOP") or Locales.str("GENERIC_START"),
             }) then
             Settings.grind = not Settings.grind
             if Settings.grind then
@@ -66,13 +66,13 @@ return {
         Settings.grind_left = ugui.toggle_button({
             uid = 5,
             rectangle = grid_rect(6, AUTO_GRIND_ROW, 1, 1),
-            text = "<",
+            text = "[icon:arrow_left]",
             is_checked = Settings.grind_left
         })
         Settings.grind_left = not ugui.toggle_button({
             uid = 10,
             rectangle = grid_rect(7, AUTO_GRIND_ROW, 1, 1),
-            text = ">",
+            text = "[icon:arrow_right]",
             is_checked = not Settings.grind_left
         })
         Settings.grind_divisor = math.abs(ugui.numberbox({
@@ -90,11 +90,11 @@ return {
             foreground_color,
             theme.font_size * Drawing.scale * 1.25,
             theme.font_name,
-            "Lookahead")
+            Locales.str("TOOLS_LOOKAHEAD"))
         local lookahead = ugui.toggle_button({
             uid = 20,
             rectangle = grid_rect(0, LOOKAHEAD_ROW, 3, 1),
-            text = "Enable",
+            text = Locales.str("TOOLS_LOOKAHEAD_ENABLE"),
             is_checked = Settings.lookahead
         })
         if not Settings.lookahead and lookahead then
@@ -117,13 +117,13 @@ return {
             foreground_color,
             theme.font_size * Drawing.scale * 1.25,
             theme.font_name,
-            "Dumping")
+            Locales.str("TOOLS_DUMPING"))
 
         local previous_dump_enabled = Settings.dump_enabled
         local now_dump_enabled = ugui.toggle_button({
             uid = 50,
             rectangle = grid_rect(0, DUMPING_ROW, 4, 1),
-            text = Settings.dump_enabled and 'Stop' or 'Start',
+            text = Settings.dump_enabled and Locales.str("GENERIC_STOP") or Locales.str("GENERIC_START"),
             is_checked = previous_dump_enabled
         })
 
@@ -144,12 +144,12 @@ return {
             foreground_color,
             theme.font_size * Drawing.scale * 1.25,
             theme.font_name,
-            "Ghost")
+            Locales.str("TOOLS_GHOST"))
 
         if ugui.button({
                 uid = 100,
                 rectangle = grid_rect(0, GHOST_ROW, 4, 1),
-                text = Ghost.is_recording and "Stop Recording" or "Start Recording",
+                text = Ghost.is_recording and Locales.str("TOOLS_GHOST_STOP") or Locales.str("TOOLS_GHOST_START"),
             }) then
             Ghost.toggle_recording()
         end
@@ -162,31 +162,31 @@ return {
             foreground_color,
             theme.font_size * Drawing.scale * 1.25,
             theme.font_name,
-            "Experiments")
+            Locales.str("TOOLS_EXPERIMENTS"))
 
         Settings.worldviz_enabled = ugui.toggle_button({
             uid = 30,
             rectangle = grid_rect(0, EXPERIMENTS_ROW + 2, 4, 1),
-            text = "World Visualizer",
+            text = Locales.str("TOOLS_WORLD_VISUALIZER"),
             is_checked = Settings.worldviz_enabled
         })
         Settings.auto_firsties = ugui.toggle_button({
             uid = 35,
             rectangle = grid_rect(3, EXPERIMENTS_ROW + 1, 3, 1),
-            text = "Auto-firsties",
+            text = Locales.str("TOOLS_AUTO_FIRSTIES"),
             is_checked = Settings.auto_firsties
         })
         Settings.mini_visualizer = ugui.toggle_button({
             uid = 36,
             rectangle = grid_rect(0, EXPERIMENTS_ROW + 1, 3, 1),
-            text = "Input Overlay",
+            text = Locales.str("TOOLS_MINI_OVERLAY"),
             is_checked = Settings.mini_visualizer
         })
         local previous_track_moved_distance = Settings.track_moved_distance
         Settings.track_moved_distance = ugui.toggle_button({
             uid = 40,
             rectangle = grid_rect(0, EXPERIMENTS_ROW, 3, 1),
-            text = 'Moved Dist',
+            text = Locales.str("TOOLS_MOVED_DIST"),
             is_checked = Settings.track_moved_distance
         })
         if Settings.track_moved_distance and not previous_track_moved_distance then

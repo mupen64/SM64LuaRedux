@@ -21,8 +21,6 @@ local function get_objects()
             y = memory.readfloat(gObjlist + 0xA4 + i * objsize),
             z = memory.readfloat(gObjlist + 0xA8 + i * objsize),
             ptr = gObjlist + i * objsize,
-            far = 5000,
-            close = 50
         }
         i = i + 1
     end
@@ -60,40 +58,52 @@ local function project(vec3)
     return p
 end
 
-local function draw_moved_dist_start_marker(rect)
-    local text = "Moved Dist Start"
-    local theme = Styles.theme()
-    local foreground_color = BreitbandGraphics.invert_color(theme.background_color)
-    local text_scale = math.max(1.25, 20 / rect.width)
+local function is_inside_frustum(vec)
+    return vec.z > 50 and vec.z < 5000
+end
 
-    local size = BreitbandGraphics.get_text_size(text, theme.font_size * Drawing.scale * text_scale,
-        theme.font_name)
+local function draw_moved_dist()
+    if not Settings.track_moved_distance then
+        return
+    end
+    
+    local start_x = Settings.moved_distance_axis.x
+    local start_y = Settings.moved_distance_axis.y
+    local start_z = Settings.moved_distance_axis.z
+    local end_x = Settings.moved_distance_axis.x
+    local end_y = Settings.moved_distance_axis.y
+    local end_z = Settings.moved_distance_axis.z
+    if Settings.moved_distance_x then
+        end_x = Memory.current.mario_x
+    end
+    if Settings.moved_distance_y then
+        end_y = Memory.current.mario_y
+    end
+    if Settings.moved_distance_z then
+        end_z = Memory.current.mario_z
+    end
+    local p1 = project({
+        x = start_x,
+        y = start_y,
+        z = start_z,
+    })
+    local p2 = project({
+        x = end_x,
+        y = end_y,
+        z = end_z,
+    })
 
-    local padding = ugui.standard_styler.params.textbox.padding.x
-
-    size.width = size.width + padding
-    size.height = size.height + padding
-
-
-    local container_rect = {
-        x = rect.x - size.width / 2,
-        y = rect.y - size.height / 2,
-        width = rect.width + size.width,
-        height = rect.height + size.height
+    local offset = 30000 / p1.z
+    local rect = {
+        x = math.floor(p1.x - offset / 2),
+        y = math.floor(p1.y - offset / 2),
+        width = math.floor(offset),
+        height = math.floor(offset),
     }
-    BreitbandGraphics.fill_rectangle(container_rect, theme.background_color)
-
-    BreitbandGraphics.fill_ellipse(rect, { r = 0, g = 0, b = 255, a = 128 })
-
-    BreitbandGraphics.draw_text(
-        container_rect,
-        "center",
-        "center",
-        { aliased = not theme.cleartype },
-        foreground_color,
-        theme.font_size * Drawing.scale * text_scale,
-        theme.font_name,
-        text)
+    if is_inside_frustum(p1) and is_inside_frustum(p2) then
+        BreitbandGraphics.fill_ellipse(rect, { r = 255, g = 0, b = 0, a = 128 })
+        BreitbandGraphics.draw_line(p1, p2, BreitbandGraphics.colors.blue, 4)
+    end
 end
 
 WorldVisualizer.draw = function()
@@ -101,28 +111,16 @@ WorldVisualizer.draw = function()
         return
     end
 
-
-
     camera_depth = (Drawing.initial_size.height - 29) / (2 * math.tan(math.rad(Memory.current.camera_fov / 2)))
     camera_yaw = Memory.current.camera_yaw / 182.04
     camera_pitch = Memory.current.camera_pitch / 182.04
 
-
     local objects = get_objects()
-
-    objects[#objects + 1] = {
-        x = Settings.moved_distance_axis.x,
-        y = Settings.moved_distance_axis.y,
-        z = Settings.moved_distance_axis.z,
-        close = 50,
-        far = 5000,
-        draw = draw_moved_dist_start_marker,
-    }
 
     for _, o in pairs(objects) do
         local p = project(o);
 
-        if p.z < o.close or p.z > o.far then
+        if not is_inside_frustum(p) then
             goto continue
         end
 
@@ -135,12 +133,10 @@ WorldVisualizer.draw = function()
             height = math.floor(offset),
         }
 
-        if o.draw then
-            o.draw(rect)
-        else
-            BreitbandGraphics.draw_rectangle(rect, o.color or BreitbandGraphics.colors.red, 1)
-        end
+        BreitbandGraphics.draw_rectangle(rect, o.color or BreitbandGraphics.colors.red, 1)
 
         ::continue::
     end
+
+    draw_moved_dist()
 end

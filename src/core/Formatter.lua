@@ -28,7 +28,12 @@ end
 
 ---Formats a number (standard bounds 0-1) as a percentage
 ---@param value number The value to be formatted
+---@param inf_threshold number? The threshold after which the percentage is considered infinite. Defaults to 1000000.
 ---@return string The value's string representation
-Formatter.percent = function(value)
+Formatter.percent = function(value, inf_threshold)
+    inf_threshold = inf_threshold or 1000000
+    if value > inf_threshold then
+        return "∞%"
+    end
     return MoreMaths.round(value * 100, Settings.format_decimal_points) .. "%"
 end

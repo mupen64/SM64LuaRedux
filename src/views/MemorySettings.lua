@@ -1,10 +1,10 @@
 return {
-    name = "Memory",
+    name = Locales.str("SETTINGS_MEMORY_TAB_NAME"),
     draw = function()
         if ugui.button({
                 uid = 600,
                 rectangle = grid_rect(0, 0, 4, 1),
-                text = "Select map file...",
+                text = Locales.str("SETTINGS_MEMORY_FILE_SELECT"),
                 is_enabled = false
             }) then
             local path = iohelper.filediag("*.map", 0)
@@ -26,7 +26,7 @@ return {
         if ugui.button({
                 uid = 700,
                 rectangle = grid_rect(0, 1, 4, 1),
-                text = "Autodetect now",
+                text = Locales.str("SETTINGS_MEMORY_DETECT_NOW"),
             }) then
             Settings.address_source_index = Memory.find_matching_address_source_index()
         end
@@ -34,7 +34,7 @@ return {
         Settings.autodetect_address = ugui.toggle_button({
             uid = 750,
             rectangle = grid_rect(4, 1, 4, 1),
-            text = "Autodetect on start",
+            text = Locales.str("SETTINGS_MEMORY_DETECT_ON_START"),
             is_checked = Settings.autodetect_address
         })
     end

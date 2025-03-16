@@ -1,5 +1,5 @@
 return {
-    name = "Timer",
+    name = Locales.str("TIMER_TAB_NAME"),
     draw = function()
         local theme = Styles.theme()
 
@@ -7,7 +7,7 @@ return {
                 uid = 10,
 
                 rectangle = grid_rect(0, 0, 2, 1),
-                text = "Start"
+                text = Locales.str("TIMER_START")
             }) then
             Timer.start()
         end
@@ -15,7 +15,7 @@ return {
                 uid = 15,
 
                 rectangle = grid_rect(2, 0, 2, 1),
-                text = "Stop"
+                text = Locales.str("TIMER_STOP")
             }) then
             Timer.stop()
         end
@@ -23,14 +23,14 @@ return {
                 uid = 20,
 
                 rectangle = grid_rect(4, 0, 2, 1),
-                text = "Reset"
+                text = Locales.str("TIMER_RESET")
             }) then
             Timer.reset()
         end
         is_control_automatic = ugui.toggle_button({
             uid = 25,
             rectangle = grid_rect(6, 0, 2, 1),
-            text = is_control_automatic and "Auto" or "Manual",
+            text = is_control_automatic and Locales.str("TIMER_AUTO") or Locales.str("TIMER_MANUAL"),
             is_checked = is_control_automatic
         })
         ugui.joystick({

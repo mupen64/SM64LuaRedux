@@ -35,13 +35,14 @@ Settings = {
     worldviz_enabled = false,
     truncate_effective_angle = false,
     active_style_index = 2,
+    locale_index = 1,
     tab_index = 1,
+    navbar_visible = true,
     settings_tab_index = 1,
     autodetect_address = true,
     auto_firsties = false,
     mini_visualizer = false,
     repaint_throttle = 2,
-    read_memory_every_vi = false,
     -- Writes memory values, input data, and frame indicies to a buffer each frame
     dump_enabled = false,
     dump_start_frame = 0,
@@ -50,6 +51,9 @@ Settings = {
     hotkeys_enabled = true,
     hotkeys_assigning = false,
     hotkeys_selected_index = 1,
+    hotkeys_allow_with_active_control = true,
+    spd_efficiency_fraction = false,
+    persist_tas_state = true,
     variables = {
         {
             identifier = "yaw_facing",
@@ -106,6 +110,10 @@ Settings = {
         {
             identifier = "rng",
             visible = true,
+        },
+        {
+            identifier = "global_timer",
+            visible = false,
         },
         {
             identifier = "moved_dist",
@@ -201,6 +209,20 @@ Settings = {
             identifier = "angle_up",
             mode = HOTKEY_MODE_REPEAT,
             keys = {
+            },
+        },
+        {
+            identifier = "toggle_spdkick",
+            keys = {
+                "control",
+                "K",
+            },
+        },
+        {
+            identifier = "toggle_navbar",
+            keys = {
+                "shift",
+                "T",
             },
         },
     },

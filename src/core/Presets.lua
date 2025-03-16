@@ -6,7 +6,6 @@ local default_preset = create_default_preset()
 
 Presets = {
     persistent = {
-        protocol = 12,
         current_index = 1,
         presets = {},
     },
@@ -23,10 +22,22 @@ function Presets.get_default_preset()
 end
 
 function Presets.apply(i)
+    -- HACK: The TASState isn't currently serialized properly.
+    -- Here, the TASState contents are injected into the presets and are also restored when loading.
+    for key, value in pairs(TASState) do
+        Settings["tasstate_" .. key] = value
+    end
+
     Presets.persistent.current_index = ugui.internal.clamp(i, 1, #Presets.persistent.presets)
     Settings = Presets.persistent.presets[Presets.persistent.current_index]
     Styles.update_style()
-    VarWatch_update()
+
+    -- HACK: See above
+    if Settings.persist_tas_state then
+        for key, value in pairs(TASState) do
+            TASState[key] = Settings["tasstate_" .. key] == nil and NewTASState()[key] or Settings["tasstate_" .. key]
+        end
+    end
 end
 
 function Presets.reset(i)
@@ -35,6 +46,7 @@ end
 
 function Presets.save()
     print("Saving preset...")
+    Presets.apply(Presets.persistent.current_index)
     persistence.store("presets.lua", Presets.persistent)
 end
 
@@ -43,11 +55,18 @@ function Presets.restore()
     local deserialized = persistence.load("presets.lua")
     if (deserialized == nil) then return end
 
-    -- We can't load old protocol presets
-    if deserialized.protocol < Presets.persistent.protocol then
-        print("Preset is outdated")
-        return
-    end
+    deserialized = deep_merge(Presets.persistent, deserialized)
 
     Presets.persistent = deserialized
+
+    -- Purge all hotkeys which dont have a corresponding hotkey_funcs entry
+    for _, preset in pairs(Presets.persistent.presets) do
+        local hotkeys = ugui.internal.deep_clone(preset.hotkeys)
+        for i, hotkey in pairs(hotkeys) do
+            if not Hotkeys.hotkey_exists(hotkey.identifier) then
+                print(string.format("Hotkey %s doesn't exist anymore, purging it.", hotkey.identifier))
+                table.remove(preset.hotkeys, i)
+            end
+        end
+    end
 end

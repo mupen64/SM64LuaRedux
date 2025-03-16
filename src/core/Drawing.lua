@@ -21,6 +21,21 @@ function Drawing.size_down()
     wgui.resize(wgui.info().width - (wgui.info().width - Drawing.initial_size.width), wgui.info().height)
 end
 
+local function adjust_rect(rect)
+    for _, value in pairs(Drawing.offset_stack) do
+        rect.x = rect.x + value.x
+        rect.y = rect.y + value.y
+    end
+    return rect
+end
+local function adjust_raw_rect(rect)
+    for _, value in pairs(Drawing.offset_stack) do
+        rect[1] = rect[1] + value.x
+        rect[2] = rect[2] + value.y
+    end
+    return rect
+end
+
 function grid(x, y, x_span, y_span, abs, gap)
     if not gap then
         gap = Settings.grid_gap
@@ -49,7 +64,7 @@ function grid(x, y, x_span, y_span, abs, gap)
     rect[3] = rect[3] * Drawing.scale
     rect[4] = rect[4] * Drawing.scale
 
-    return { math.floor(rect[1]), math.floor(rect[2]), math.floor(rect[3]), math.floor(rect[4]) }
+    return adjust_raw_rect({ math.floor(rect[1]), math.floor(rect[2]), math.floor(rect[3]), math.floor(rect[4]) })
 end
 
 function Drawing.push_offset(x, y)
@@ -63,30 +78,48 @@ function Drawing.pop_offset()
     table.remove(Drawing.offset_stack, #Drawing.offset_stack)
 end
 
-local function adjust_rect(rect)
-    for _, value in pairs(Drawing.offset_stack) do
-        rect.x = rect.x + value.x
-        rect.y = rect.y + value.y
+---Draws a setting item list.
+---@param items { text: string, func: fun(rect: Rectangle) }[] An array of setting items with their names and control spawning functions.
+---@param pos Vector2 The initial position of the settings list in grid coordinates.
+function Drawing.setting_list(items, pos)
+    local theme = Styles.theme()
+    local foreground_color = BreitbandGraphics.invert_color(theme.background_color)
+    local y = pos.y
+    for i = 1, #items, 1 do
+        local item = items[i]
+
+        BreitbandGraphics.draw_text(
+            grid_rect(pos.x, y, 8, 0.5),
+            "start",
+            "center",
+            { aliased = not theme.cleartype },
+            foreground_color,
+            theme.font_size * Drawing.scale * 1.25,
+            theme.font_name,
+            item.text)
+
+        item.func(grid_rect(pos.x, y + 0.6, 4, 1))
+
+        y = y + 1.75
     end
-    return rect
 end
 
 function grid_rect(x, y, x_span, y_span, gap)
     local value = grid(x, y, x_span, y_span, false, gap)
-    return adjust_rect({
+    return {
         x = value[1],
         y = value[2],
         width = value[3],
         height = value[4],
-    })
+    }
 end
 
 function grid_rect_abs(x, y, x_span, y_span, gap)
     local value = grid(x, y, x_span, y_span, true, gap)
-    return adjust_rect({
+    return {
         x = value[1],
         y = value[2],
         width = value[3],
         height = value[4],
-    })
+    }
 end

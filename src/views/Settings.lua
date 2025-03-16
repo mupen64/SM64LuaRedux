@@ -6,7 +6,7 @@ local views = {
 }
 
 return {
-    name = "Settings",
+    name = Locales.str("SETTINGS_TAB_NAME"),
     draw = function()
         local data = ugui.tabcontrol({
             uid = 100,

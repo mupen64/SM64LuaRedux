@@ -93,7 +93,7 @@ local function DrawFactory(theme)
 end
 
 return {
-    name = "Piano Roll",
+    name = Locales.str("PIANO_ROLL_TAB_NAME"),
     draw = function()
 
         -- if we're showing any dialog, stop rendering anything else
@@ -118,7 +118,6 @@ return {
 
         -- hack to make the listbox transparent
         Memory.update()
-        VarWatch_update()
         local previousAlpha = BreitbandGraphics.colors.white.a
         BreitbandGraphics.colors.white.a = 110
         ugui.listbox({

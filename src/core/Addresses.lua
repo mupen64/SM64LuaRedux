@@ -1,6 +1,6 @@
 return {
     {
-        name = "USA",
+        name = Locales.str("ADDRESS_USA"),
         camera_fov = 0x8033C5A4,
         camera_angle = 0x8033C714,
         camera_transition_type = 0x8033BAB1,
@@ -45,7 +45,7 @@ return {
         pattern_value = 2410020892,
     },
     {
-        name = "Japan",
+        name = Locales.str("ADDRESS_JAPAN"),
         camera_fov = 0x8033B234,
         camera_angle = 0x8033B3A4,
         camera_transition_type = 0x8033A741,
@@ -90,7 +90,7 @@ return {
         pattern_value = 1174429700,
     },
 	{
-        name = "Shindou",
+        name = Locales.str("ADDRESS_SHINDOU"),
         camera_fov = 0x8031EEB4,
         camera_angle = 0x8031EE6C,
         camera_transition_type = 0x8031E301,
@@ -135,7 +135,7 @@ return {
         pattern_value = 2401566724,
     },
 	{
-        name = "Europe",
+        name = Locales.str("ADDRESS_PAL"),
         camera_fov = 0x8030A924,
         camera_angle = 0x8030A8DC,
         camera_transition_type = 0x80309D71,
