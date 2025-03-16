@@ -256,7 +256,7 @@ local function DrawSectionsGui(sheet, draw, buttonDrawData, drawFrameContent)
 
         --TODO: color code section success
         local shade = totalInputs % 2 == 0 and 123 or 80
-        local blueMultiplier = inputSubIndex == 1 and 2 or 1
+        local blueMultiplier = sectionIndex % 2 == 1 and 2 or 1
 
         if totalInputs > maxDisplayedSections + scrollOffset then
             local extraSections = sheet:numSections() - sectionIndex
@@ -266,7 +266,7 @@ local function DrawSectionsGui(sheet, draw, buttonDrawData, drawFrameContent)
         end
 
         local tasState = input.tasState
-        local frameBox = span(col0 + 0.25, col1)
+        local frameBox = span(col0 + 0.3, col1)
 
         local uidBase = UID.Row(totalInputs - scrollOffset)
         local uidOffset = -1
@@ -275,8 +275,8 @@ local function DrawSectionsGui(sheet, draw, buttonDrawData, drawFrameContent)
         if inputSubIndex == 1 then
             section.collapsed = not ugui.toggle_button({
                 uid = NextUid(),
-                rectangle = span(col0, col0 + 0.25),
-                text = "",
+                rectangle = span(col0, col0 + 0.3),
+                text = section.collapsed and "[icon:arrow_right]" or "[icon:arrow_down]",
                 is_checked = not section.collapsed
             });
         end
