@@ -98,7 +98,7 @@ function __clsProject:Select(index, loadState)
     self.meta.selectionIndex = index
     local current = self:Current()
     if current ~= nil then
-        current:jumpTo(current.previewIndex, loadState)
+        current:runToPreview(loadState)
     end
 end
 

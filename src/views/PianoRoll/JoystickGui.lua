@@ -272,7 +272,7 @@ local function ControlsForSelected(draw)
     end
 
     if anyChanges then
-        currentSheet:jumpTo(currentSheet.previewIndex)
+        currentSheet:runToPreview()
     end
 
     local controlHeight = 0.75

@@ -255,7 +255,8 @@ local function DrawSectionsGui(sheet, draw, buttonDrawData, drawFrameContent)
         draw:text(frameBox, "end", sectionNumber .. ":")
 
         if ugui.internal.is_mouse_just_down() and BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, frameBox) then
-            sheet:jumpTo(sectionNumber)
+            sheet.previewIndex = sectionNumber;
+            sheet:runToPreview()
         end
 
         ugui.joystick({
@@ -331,7 +332,7 @@ function __clsFrameListGui.Render(draw, drawFrameContent)
     ugui.standard_styler.params.joystick.tip_size = prev_joystick_tip_size
 
     if anyChanges then
-        currentSheet:jumpTo(currentSheet.previewIndex)
+        currentSheet:runToPreview()
     end
 end
 

@@ -82,7 +82,7 @@ local function NewSheet(name)
         currentSection = __clsSheet.currentSection,
         edit = __clsSheet.edit,
         update = __clsSheet.update,
-        jumpTo = __clsSheet.jumpTo,
+        runToPreview = __clsSheet.runToPreview,
         rebase = __clsSheet.rebase,
         save = __clsSheet.save,
         load = __clsSheet.load,
@@ -100,13 +100,12 @@ function __clsSheet:edit(sectionIndex)
     self._oldClock = os.clock()
 end
 
-function __clsSheet:jumpTo(targetIndex, loadState)
+function __clsSheet:runToPreview(loadState)
     if self._busy then
         self._updatePending = true
         return
     end
     if self:numSections() == 0 then return end
-    self.previewIndex = targetIndex
     self._busy = true
     self._updatePending = false
 
@@ -176,14 +175,14 @@ function __clsSheet:update()
         self._updatePending = true
     elseif self._updatePending then
         self._oldClock = now
-        self:jumpTo(self.previewIndex)
+        self:runToPreview()
     end
 end
 
 function __clsSheet:rebase(path)
     if CopyFile(path, self._savestateFile) then
         self._rebasing = true
-        self:jumpTo(self.previewIndex)
+        self:runToPreview()
         print("rebased \"" .. self.name .. "\" onto \"" .. path .. "\"")
     end
 end
