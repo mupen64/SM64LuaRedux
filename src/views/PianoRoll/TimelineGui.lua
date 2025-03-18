@@ -25,12 +25,13 @@ local function ControlsForSelected(draw)
     local sheet = PianoRollProject:AssertedCurrent()
 
     local anyChanges = false
+    local hasValidSelection = sheet.sections[sheet.editingIndex] and sheet.editingSubIndex == 1
 
     if ugui.button({
         uid = UID.InsertSection,
         rectangle = grid_rect(0, top, 1.5, largeControlHeight),
         text = Locales.str("PIANO_ROLL_TIMELINE_INSERT"),
-        is_enabled = sheet.sections[sheet.editingIndex]
+        is_enabled = hasValidSelection,
     }) then
         local newSection = Section.new("idle", 150)
         table.insert(sheet.sections, sheet.editingIndex + 1, newSection)
@@ -41,6 +42,7 @@ local function ControlsForSelected(draw)
         uid = UID.DeleteSection,
         rectangle = grid_rect(1.5, top, 1.5, largeControlHeight),
         text = Locales.str("PIANO_ROLL_TIMELINE_DELETE"),
+        is_enabled = hasValidSelection,
     }) then
         ---@param x Section
         sheet.sections = lualinq.where(sheet.sections, function(x) return not x.inputs[1].editing end)
@@ -110,7 +112,7 @@ return {
     name = name,
     Render = function(draw)
         ControlsForSelected()
-        FrameListGui.Render(draw, DrawFrameContent)
+        FrameListGui.Render(draw, DrawFrameContent, false)
     end,
     AllocateUids = AllocateUids,
 }
