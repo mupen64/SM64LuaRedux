@@ -81,7 +81,7 @@ local function ControlsForSelected(draw)
     local editedInput = editedSection and editedSection.inputs[sheet.editingSubIndex] or nil
 
     if editedInput == nil then
-        draw:text(grid_rect(0, top, 8, mediumControlHeight), "center", Locales.str("PIANO_ROLL_NO_SELECTION"))
+        draw:text(grid_rect(0, top, 8, 1), "center", Locales.str("PIANO_ROLL_NO_SELECTION"))
         return
     end
 
