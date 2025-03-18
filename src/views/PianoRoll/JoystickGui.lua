@@ -22,10 +22,6 @@ local function AllocateUids(EnumNext)
         DYaw = EnumNext(),
         SpeedKick = EnumNext(),
         ResetMag = EnumNext(),
-        AtanStrain = EnumNext(),
-        AtanN = EnumNext(3),
-        AtanD = EnumNext(3),
-        AtanE = EnumNext(3),
         TrimEnd = EnumNext(),
     }
 end
@@ -67,60 +63,6 @@ local function MagnitudeControls(draw, sheet, newValues, top)
     }) then
         newValues.goal_mag = 127
     end
-end
-
-local function AtanControls(draw, sheet, newValues, top)
-    local controlHeight = 0.75
-    local newAtan = ugui.toggle_button({
-        uid = UID.AtanStrain,
-        rectangle = grid_rect(0, top, 1.5, controlHeight),
-        text=Locales.str("PIANO_ROLL_CONTROL_ATAN"),
-        is_checked = newValues.atan_strain
-    })
-    if sheet.selection ~= nil and newAtan and not newValues.atan_strain then
-        -- TODO: document why these +1 are correct (if they are lol)
-        newValues.atan_start = sheet.selection:min() + sheet.startGT + 1
-        newValues.atan_n = sheet.selection:max() - sheet.selection:min() + 1
-        newValues.dyaw = true
-        newValues.movement_mode = MovementModes.match_angle
-    end
-    newValues.atan_strain = newAtan
-    if newValues.movement_mode ~= MovementModes.match_angle then
-        newValues.atan_strain = false
-    end
-
-    draw:text(grid_rect(1.5, top, 0.75, controlHeight), "end", "Qf:")
-    local quarterStep = (newValues.atan_n % 1) * 4
-    local newQuarterstep = ugui.spinner({
-        uid = UID.AtanN,
-
-        rectangle = grid_rect(2.25, top, 1.25, controlHeight),
-        value = quarterStep == 0 and 4 or quarterStep,
-        minimum_value = 1,
-        maximum_value = 4,
-    })
-    newValues.atan_n = math.ceil(newValues.atan_n - 1) + newQuarterstep / 4
-
-    draw:text(grid_rect(3.5, top, 0.75, controlHeight), "end", "D:")
-    newValues.atan_d = ugui.spinner({
-        uid = UID.AtanD,
-
-        rectangle = grid_rect(4.25, top, 2.25, controlHeight),
-        value = newValues.atan_d,
-        minimum_value = -1000000,
-        maximum_value = 1000000,
-        increment = math.pow(10, Settings.atan_exp),
-    })
-
-    draw:text(grid_rect(6.5, top, 0.5, controlHeight), "end", "E:")
-    Settings.atan_exp = ugui.spinner({
-        uid = UID.AtanE,
-
-        rectangle = grid_rect(7, top, 1, controlHeight),
-        value = Settings.atan_exp,
-        minimum_value = -9,
-        maximum_value = 5,
-    })
 end
 
 local function ControlsForSelected(draw)
@@ -258,7 +200,6 @@ local function ControlsForSelected(draw)
     })
 
     MagnitudeControls(draw, sheet, newValues, top + 3)
-    AtanControls(draw, sheet, newValues, top + 4)
 
     ugui.standard_styler.params.spinner.button_size = previousThickness
 
