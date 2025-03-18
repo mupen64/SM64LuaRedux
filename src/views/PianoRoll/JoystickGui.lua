@@ -8,6 +8,10 @@ local mediumControlHeight = 0.75
 local function AllocateUids(EnumNext)
     return {
         CopyEntireState = EnumNext(),
+
+        InsertInput = EnumNext(),
+        DeleteInput = EnumNext(),
+
         Joypad = EnumNext(),
         JoypadSpinnerX = EnumNext(3),
         JoypadSpinnerY = EnumNext(3),
@@ -221,13 +225,33 @@ local function ControlsForSelected(draw)
         end
     end
 
+    top = top + 0.25
+    if ugui.button({
+        uid = UID.InsertInput,
+        rectangle = grid_rect(0, top, 1.5, mediumControlHeight),
+        text = Locales.str("PIANO_ROLL_JOYSTICK_INSERT_INPUT"),
+    }) then
+        table.insert(editedSection.inputs, currentSheet.editingSubIndex, ugui.internal.deep_clone(editedInput))
+        anyChanges = true
+    end
+
+    if ugui.button({
+        uid = UID.DeleteInput,
+        rectangle = grid_rect(1.5, top, 1.5, mediumControlHeight),
+        text = Locales.str("PIANO_ROLL_JOYSTICK_REMOVE_INPUT"),
+        is_enabled = #editedSection.inputs > 1
+    }) then
+        table.remove(editedSection.inputs, currentSheet.editingSubIndex)
+        anyChanges = true
+    end
+
     if anyChanges then
         currentSheet:runToPreview()
     end
 
     PianoRollProject.copyEntireState = ugui.toggle_button({
         uid = UID.CopyEntireState,
-        rectangle = grid_rect(4.5, top + 0.25, 3.5, mediumControlHeight),
+        rectangle = grid_rect(4.5, top, 3.5, mediumControlHeight),
         text = "Copy entire state",
         is_checked = PianoRollProject.copyEntireState,
     })
