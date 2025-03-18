@@ -3,9 +3,15 @@ local name = "Joystick"
 local UID = dofile(views_path .. "PianoRoll/UID.lua")[name]
 local FrameListGui = dofile(views_path .. "PianoRoll/FrameListGui.lua")
 
+local mediumControlHeight = 0.75
+
 local function AllocateUids(EnumNext)
     return {
         CopyEntireState = EnumNext(),
+
+        InsertInput = EnumNext(),
+        DeleteInput = EnumNext(),
+
         Joypad = EnumNext(),
         JoypadSpinnerX = EnumNext(3),
         JoypadSpinnerY = EnumNext(3),
@@ -22,19 +28,12 @@ local function AllocateUids(EnumNext)
         DYaw = EnumNext(),
         SpeedKick = EnumNext(),
         ResetMag = EnumNext(),
-        AtanStrain = EnumNext(),
-        AtanN = EnumNext(3),
-        AtanD = EnumNext(3),
-        AtanE = EnumNext(3),
-        TrimEnd = EnumNext(),
     }
 end
 
 local function AnyEntries(table) for _ in pairs(table) do return true end return false end
 
 local function MagnitudeControls(draw, sheet, newValues, top)
-    local mediumControlHeight = 0.75
-
     draw:text(grid_rect(2, top, 2, mediumControlHeight), "end", Locales.str("PIANO_ROLL_CONTROL_MAG"))
     newValues.goal_mag = ugui.numberbox({
         uid = UID.GoalMag,
@@ -51,7 +50,7 @@ local function MagnitudeControls(draw, sheet, newValues, top)
     if ugui.button({
         uid = UID.SpeedKick,
         rectangle = grid_rect(5.5, top, 1.5, mediumControlHeight),
-        text=Locales.str("PIANO_ROLL_CONTROL_SPDKICK"),
+        text = Locales.str("PIANO_ROLL_CONTROL_SPDKICK"),
     }) then
         if newValues.goal_mag ~= 48 then
             newValues.goal_mag = 48
@@ -63,64 +62,10 @@ local function MagnitudeControls(draw, sheet, newValues, top)
     if ugui.button({
         uid = UID.ResetMag,
         rectangle = grid_rect(7, top, 1, mediumControlHeight),
-        text=Locales.str("MAG_RESET"),
+        text = Locales.str("MAG_RESET"),
     }) then
         newValues.goal_mag = 127
     end
-end
-
-local function AtanControls(draw, sheet, newValues, top)
-    local controlHeight = 0.75
-    local newAtan = ugui.toggle_button({
-        uid = UID.AtanStrain,
-        rectangle = grid_rect(0, top, 1.5, controlHeight),
-        text=Locales.str("PIANO_ROLL_CONTROL_ATAN"),
-        is_checked = newValues.atan_strain
-    })
-    if sheet.selection ~= nil and newAtan and not newValues.atan_strain then
-        -- TODO: document why these +1 are correct (if they are lol)
-        newValues.atan_start = sheet.selection:min() + sheet.startGT + 1
-        newValues.atan_n = sheet.selection:max() - sheet.selection:min() + 1
-        newValues.dyaw = true
-        newValues.movement_mode = MovementModes.match_angle
-    end
-    newValues.atan_strain = newAtan
-    if newValues.movement_mode ~= MovementModes.match_angle then
-        newValues.atan_strain = false
-    end
-
-    draw:text(grid_rect(1.5, top, 0.75, controlHeight), "end", "Qf:")
-    local quarterStep = (newValues.atan_n % 1) * 4
-    local newQuarterstep = ugui.spinner({
-        uid = UID.AtanN,
-
-        rectangle = grid_rect(2.25, top, 1.25, controlHeight),
-        value = quarterStep == 0 and 4 or quarterStep,
-        minimum_value = 1,
-        maximum_value = 4,
-    })
-    newValues.atan_n = math.ceil(newValues.atan_n - 1) + newQuarterstep / 4
-
-    draw:text(grid_rect(3.5, top, 0.75, controlHeight), "end", "D:")
-    newValues.atan_d = ugui.spinner({
-        uid = UID.AtanD,
-
-        rectangle = grid_rect(4.25, top, 2.25, controlHeight),
-        value = newValues.atan_d,
-        minimum_value = -1000000,
-        maximum_value = 1000000,
-        increment = math.pow(10, Settings.atan_exp),
-    })
-
-    draw:text(grid_rect(6.5, top, 0.5, controlHeight), "end", "E:")
-    Settings.atan_exp = ugui.spinner({
-        uid = UID.AtanE,
-
-        rectangle = grid_rect(7, top, 1, controlHeight),
-        value = Settings.atan_exp,
-        minimum_value = -9,
-        maximum_value = 5,
-    })
 end
 
 local function ControlsForSelected(draw)
@@ -134,7 +79,13 @@ local function ControlsForSelected(draw)
     local newValues = {}
     local editedSection = sheet.sections[sheet.editingIndex]
     local editedInput = editedSection and editedSection.inputs[sheet.editingSubIndex] or nil
-    local oldValues = editedInput and editedInput.tasState or TASState
+
+    if editedInput == nil then
+        draw:text(grid_rect(0, top, 8, 1), "center", Locales.str("PIANO_ROLL_NO_SELECTION"))
+        return
+    end
+
+    local oldValues = editedInput.tasState
     CloneInto(newValues, oldValues)
 
     local displayPosition = {x = oldValues.manual_joystick_x or 0, y = -(oldValues.manual_joystick_y or 0)}
@@ -217,7 +168,7 @@ local function ControlsForSelected(draw)
     if ugui.toggle_button({
         uid = UID.MovementModeManual,
         rectangle = grid_rect(5, top + 1, 1.5, largeControlHeight),
-        text=Locales.str("PIANO_ROLL_CONTROL_MANUAL"),
+        text = Locales.str("PIANO_ROLL_CONTROL_MANUAL"),
         is_checked = newValues.movement_mode == MovementModes.manual
     }) then
         newValues.movement_mode = MovementModes.manual
@@ -226,7 +177,7 @@ local function ControlsForSelected(draw)
     if ugui.toggle_button({
         uid = UID.MovementModeMatchYaw,
         rectangle = grid_rect(6.5, top + 1, 1.5, largeControlHeight),
-        text=Locales.str("PIANO_ROLL_CONTROL_MATCH_YAW"),
+        text = Locales.str("PIANO_ROLL_CONTROL_MATCH_YAW"),
         is_checked = newValues.movement_mode == MovementModes.match_yaw
     }) then
         newValues.movement_mode = MovementModes.match_yaw
@@ -235,7 +186,7 @@ local function ControlsForSelected(draw)
     if ugui.toggle_button({
         uid = UID.MovementModeMatchAngle,
         rectangle = grid_rect(5, top + 2, 1.5, largeControlHeight),
-        text=Locales.str("PIANO_ROLL_CONTROL_MATCH_ANGLE"),
+        text = Locales.str("PIANO_ROLL_CONTROL_MATCH_ANGLE"),
         is_checked = newValues.movement_mode == MovementModes.match_angle
     }) then
         newValues.movement_mode = MovementModes.match_angle
@@ -244,7 +195,7 @@ local function ControlsForSelected(draw)
     if ugui.toggle_button({
         uid = UID.MovementModeReverseAngle,
         rectangle = grid_rect(6.5, top + 2, 1.5, largeControlHeight),
-        text=Locales.str("PIANO_ROLL_CONTROL_REVERSE_ANGLE"),
+        text = Locales.str("PIANO_ROLL_CONTROL_REVERSE_ANGLE"),
         is_checked = newValues.movement_mode == MovementModes.reverse_angle
     }) then
         newValues.movement_mode = MovementModes.reverse_angle
@@ -253,12 +204,11 @@ local function ControlsForSelected(draw)
     newValues.dyaw = ugui.toggle_button({
         uid = UID.DYaw,
         rectangle = grid_rect(2, top + 2, 1, largeControlHeight),
-        text=Locales.str("PIANO_ROLL_CONTROL_DYAW"),
+        text = Locales.str("PIANO_ROLL_CONTROL_DYAW"),
         is_checked = newValues.dyaw
     })
 
     MagnitudeControls(draw, sheet, newValues, top + 3)
-    AtanControls(draw, sheet, newValues, top + 4)
 
     ugui.standard_styler.params.spinner.button_size = previousThickness
 
@@ -275,22 +225,33 @@ local function ControlsForSelected(draw)
         end
     end
 
+    top = top + 0.25
+    if ugui.button({
+        uid = UID.InsertInput,
+        rectangle = grid_rect(0, top, 1.5, mediumControlHeight),
+        text = Locales.str("PIANO_ROLL_JOYSTICK_INSERT_INPUT"),
+    }) then
+        table.insert(editedSection.inputs, currentSheet.editingSubIndex, ugui.internal.deep_clone(editedInput))
+        anyChanges = true
+    end
+
+    if ugui.button({
+        uid = UID.DeleteInput,
+        rectangle = grid_rect(1.5, top, 1.5, mediumControlHeight),
+        text = Locales.str("PIANO_ROLL_JOYSTICK_REMOVE_INPUT"),
+        is_enabled = #editedSection.inputs > 1
+    }) then
+        table.remove(editedSection.inputs, currentSheet.editingSubIndex)
+        anyChanges = true
+    end
+
     if anyChanges then
         currentSheet:runToPreview()
     end
 
-    local controlHeight = 0.75
-    if ugui.button({
-        uid = UID.TrimEnd,
-        rectangle = grid_rect(0, top + 0.25, 1.5, controlHeight),
-        text = "Trim",
-    }) then
-        currentSheet:trimEnd()
-    end
-
     PianoRollProject.copyEntireState = ugui.toggle_button({
         uid = UID.CopyEntireState,
-        rectangle = grid_rect(4.5, top + 0.25, 3.5, controlHeight),
+        rectangle = grid_rect(4.5, top, 3.5, mediumControlHeight),
         text = "Copy entire state",
         is_checked = PianoRollProject.copyEntireState,
     })

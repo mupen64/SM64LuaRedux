@@ -12,8 +12,6 @@ local function AllocateUids(EnumNext)
     return {
         InsertSection = EnumNext(),
         DeleteSection = EnumNext(),
-        AddInput = EnumNext(),
-        DeleteInput = EnumNext(),
         EndAction = EnumNext(),
         AvailableActions = EnumNext(MAX_ACTION_GUESSES),
         Timeout = EnumNext(),
@@ -27,12 +25,17 @@ local function ControlsForSelected(draw)
     local sheet = PianoRollProject:AssertedCurrent()
 
     local anyChanges = false
+    local hasValidSelection = sheet.sections[sheet.editingIndex] and sheet.editingSubIndex == 1
+
+    if not hasValidSelection then
+        draw:text(grid_rect(0, top, 8, 1), "center", Locales.str("PIANO_ROLL_NO_SELECTION"))
+        return
+    end
 
     if ugui.button({
         uid = UID.InsertSection,
         rectangle = grid_rect(0, top, 1.5, largeControlHeight),
         text = Locales.str("PIANO_ROLL_TIMELINE_INSERT"),
-        is_enabled = sheet.sections[sheet.editingIndex]
     }) then
         local newSection = Section.new("idle", 150)
         table.insert(sheet.sections, sheet.editingIndex + 1, newSection)
@@ -50,26 +53,6 @@ local function ControlsForSelected(draw)
 
     local section = sheet.sections[sheet.editingIndex]
     if section == nil then return end
-
-    if ugui.button({
-        uid = UID.AddInput,
-        rectangle = grid_rect(4, top, 1.5, largeControlHeight),
-        text = Locales.str("PIANO_ROLL_TIMELINE_ADD_INPUT"),
-    }) then
-        local tmp = {}
-        CloneInto(tmp, Joypad.input)
-        section.inputs[#section.inputs + 1] = { tasState = NewTASState(), joy = tmp }
-        anyChanges = true
-    end
-
-    if ugui.button({
-        uid = UID.DeleteInput,
-        rectangle = grid_rect(5.5, top, 1.5, largeControlHeight),
-        text = Locales.str("PIANO_ROLL_TIMELINE_REMOVE_INPUT"),
-        is_enabled = #section.inputs > 1
-    }) then
-        table.remove(section.inputs, #section.inputs)
-    end
 
     top = top + 1
     if endActionSearchText == nil then
@@ -131,8 +114,8 @@ end
 return {
     name = name,
     Render = function(draw)
-        ControlsForSelected()
-        FrameListGui.Render(draw, DrawFrameContent)
+        ControlsForSelected(draw)
+        FrameListGui.Render(draw, DrawFrameContent, false)
     end,
     AllocateUids = AllocateUids,
 }
