@@ -3,6 +3,8 @@ local name = "Joystick"
 local UID = dofile(views_path .. "PianoRoll/UID.lua")[name]
 local FrameListGui = dofile(views_path .. "PianoRoll/FrameListGui.lua")
 
+local mediumControlHeight = 0.75
+
 local function AllocateUids(EnumNext)
     return {
         CopyEntireState = EnumNext(),
@@ -22,15 +24,12 @@ local function AllocateUids(EnumNext)
         DYaw = EnumNext(),
         SpeedKick = EnumNext(),
         ResetMag = EnumNext(),
-        TrimEnd = EnumNext(),
     }
 end
 
 local function AnyEntries(table) for _ in pairs(table) do return true end return false end
 
 local function MagnitudeControls(draw, sheet, newValues, top)
-    local mediumControlHeight = 0.75
-
     draw:text(grid_rect(2, top, 2, mediumControlHeight), "end", Locales.str("PIANO_ROLL_CONTROL_MAG"))
     newValues.goal_mag = ugui.numberbox({
         uid = UID.GoalMag,
@@ -220,18 +219,9 @@ local function ControlsForSelected(draw)
         currentSheet:runToPreview()
     end
 
-    local controlHeight = 0.75
-    if ugui.button({
-        uid = UID.TrimEnd,
-        rectangle = grid_rect(0, top + 0.25, 1.5, controlHeight),
-        text = "Trim",
-    }) then
-        currentSheet:trimEnd()
-    end
-
     PianoRollProject.copyEntireState = ugui.toggle_button({
         uid = UID.CopyEntireState,
-        rectangle = grid_rect(4.5, top + 0.25, 3.5, controlHeight),
+        rectangle = grid_rect(4.5, top + 0.25, 3.5, mediumControlHeight),
         text = "Copy entire state",
         is_checked = PianoRollProject.copyEntireState,
     })
