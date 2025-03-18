@@ -75,7 +75,13 @@ local function ControlsForSelected(draw)
     local newValues = {}
     local editedSection = sheet.sections[sheet.editingIndex]
     local editedInput = editedSection and editedSection.inputs[sheet.editingSubIndex] or nil
-    local oldValues = editedInput and editedInput.tasState or TASState
+
+    if editedInput == nil then
+        draw:text(grid_rect(0, top, 8, mediumControlHeight), "center", Locales.str("PIANO_ROLL_NO_SELECTION"))
+        return
+    end
+
+    local oldValues = editedInput.tasState
     CloneInto(newValues, oldValues)
 
     local displayPosition = {x = oldValues.manual_joystick_x or 0, y = -(oldValues.manual_joystick_y or 0)}
