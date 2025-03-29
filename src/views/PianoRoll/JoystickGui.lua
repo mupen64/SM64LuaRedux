@@ -7,8 +7,6 @@ local mediumControlHeight = 0.75
 
 local function AllocateUids(EnumNext)
     return {
-        CopyEntireState = EnumNext(),
-
         InsertInput = EnumNext(),
         DeleteInput = EnumNext(),
 
@@ -219,7 +217,7 @@ local function ControlsForSelected(draw)
         for _, section in pairs(sheet.sections) do
             for _, input in pairs(section.inputs) do
                 if input.editing then
-                    CloneInto(input.tasState, PianoRollProject.copyEntireState and oldValues or changes)
+                    CloneInto(input.tasState, Settings.piano_roll.edit_entire_state and oldValues or changes)
                 end
             end
         end
@@ -248,13 +246,6 @@ local function ControlsForSelected(draw)
     if anyChanges then
         currentSheet:runToPreview()
     end
-
-    PianoRollProject.copyEntireState = ugui.toggle_button({
-        uid = UID.CopyEntireState,
-        rectangle = grid_rect(4.5, top, 3.5, mediumControlHeight),
-        text = "Copy entire state",
-        is_checked = PianoRollProject.copyEntireState,
-    })
 end
 
 return {

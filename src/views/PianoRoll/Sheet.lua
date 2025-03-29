@@ -122,7 +122,7 @@ function __clsSheet:runToPreview(loadState)
         print("loading file \"" .. self._savestateFile .. "\"")
     end
     emu.pause(true)
-    emu.set_ff(true)
+    emu.set_ff(Settings.piano_roll.fast_foward)
 
     self._previousTASState = TASState
     self._sectionIndex = 1
