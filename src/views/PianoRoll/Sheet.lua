@@ -96,7 +96,7 @@ function __clsSheet:evaluateFrame()
     if self._sectionIndex > self.previewIndex
         or (self._sectionIndex == self.previewIndex
             and self.previewSubIndex
-            and self._frameCounter >= self.previewSubIndex
+            and self._frameCounter >= self.previewSubIndex - 1
             ) then
         emu.pause(false)
         emu.set_ff(false)
