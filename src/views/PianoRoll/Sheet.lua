@@ -1,14 +1,15 @@
-local function CopyFile(srcPath, destPath)
-    local infile = io.open(srcPath, "rb")
-    local outfile = io.open(destPath, "wb")
-    if (infile == nil or outfile == nil) then
-        print("Failed to copy \"" .. srcPath .. "\" to \"" .. destPath .. "\"")
-        return false
-    end
-    outfile:write(infile:read("a"))
-    infile:close()
-    outfile:close()
-    return true
+function readAll(file)
+    local f = assert(io.open(file, "rb"))
+    local content = f:read("*all")
+    f:close()
+    return content
+end
+
+function writeAll(file, content)
+    local f = assert(io.open(file, "wb"))
+    f:write(content)
+    f:close()
+    return content
 end
 
 ---@class SectionInputs
@@ -47,7 +48,7 @@ end
 ---@field private _sectionIndex integer The nth section that is currently being played
 local __clsSheet = {}
 
-local function NewSheet(name)
+local function NewSheet(name, createSavestate)
     local globalTimer = Memory.current.mario_global_timer
 
     ---@type Sheet
@@ -59,7 +60,7 @@ local function NewSheet(name)
         editingSubIndex = 1,
         sections = { NewSection("idle", 150) },
         name = name,
-        _savestateFile = name .. ".tmp.savestate",
+        _savestate = nil,
         _oldTASState = {},
         _oldClock = 0,
         _busy = false,
@@ -76,7 +77,10 @@ local function NewSheet(name)
         save = __clsSheet.save,
         load = __clsSheet.load,
     }
-    savestate.savefile(newInstance._savestateFile)
+    if createSavestate then
+        savestate.do_memory({}, "save", function(result, data) newInstance._savestate = data end)
+    end
+
     return newInstance
 end
 
@@ -118,11 +122,14 @@ function __clsSheet:runToPreview(loadState)
     self._updatePending = false
 
     if loadState == nil and true or loadState then
-        savestate.loadfile(self._savestateFile)
-        print("loading file \"" .. self._savestateFile .. "\"")
+        savestate.do_memory(self._savestate, "load", function()
+            emu.pause(true)
+            emu.set_ff(Settings.piano_roll.fast_foward)
+        end)
+    else
+        emu.pause(true)
+        emu.set_ff(Settings.piano_roll.fast_foward)
     end
-    emu.pause(true)
-    emu.set_ff(Settings.piano_roll.fast_foward)
 
     self._previousTASState = TASState
     self._sectionIndex = 1
@@ -130,11 +137,7 @@ function __clsSheet:runToPreview(loadState)
 end
 
 function __clsSheet:save(file)
-    local savestateFile = file .. ".savestate"
-    if self._savestateFile ~= savestateFile and CopyFile(self._savestateFile, savestateFile) then
-        self._savestateFile = savestateFile
-    end
-
+    writeAll(file .. ".savestate", self._savestate)
     persistence.store(
         file,
         {
@@ -148,10 +151,10 @@ function __clsSheet:save(file)
     )
 end
 
-function __clsSheet:load(file, setStFile)
+function __clsSheet:load(file)
     local contents = persistence.load(file);
     if contents ~= nil then
-        if setStFile then self._savestateFile = file .. ".savestate" end
+        self._savestate = readAll(file .. ".savestate")
         CloneInto(self, contents)
     end
 end
@@ -169,11 +172,10 @@ function __clsSheet:update()
 end
 
 function __clsSheet:rebase(path)
-    if CopyFile(path, self._savestateFile) then
-        self._rebasing = true
-        self:runToPreview()
-        print("rebased \"" .. self.name .. "\" onto \"" .. path .. "\"")
-    end
+    self._savestate = readAll(path)
+    self._rebasing = true
+    self:runToPreview()
+    print("rebased \"" .. self.name .. "\" onto \"" .. path .. "\"")
 end
 
 return

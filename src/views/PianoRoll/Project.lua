@@ -58,7 +58,7 @@ end
 ---Adds a new sheet to the end of the sheet list.
 function __clsProject:AddSheet()
     self.meta.createdSheetCount = self.meta.createdSheetCount + 1
-    local newSheet = Sheet.new("Sheet " .. self.meta.createdSheetCount)
+    local newSheet = Sheet.new("Sheet " .. self.meta.createdSheetCount, true)
     self.all[newSheet.name] = newSheet
     self.meta.sheets[#self.meta.sheets+1] = NewSheetMeta(newSheet.name)
 end
@@ -95,6 +95,8 @@ end
 ---Selects the piano roll sheet at the provided index and runs it from its savestate to its current preview.
 ---@param index number The 1-based index of the sheet to select.
 function __clsProject:Select(index, loadState)
+    local previous = self:Current()
+    if previous ~= nil then previous._busy = false end
     self.meta.selectionIndex = index
     local current = self:Current()
     if current ~= nil then
