@@ -104,12 +104,11 @@ function __clsProject:Select(index, loadState)
     end
 end
 
----Selects and rebases the piano roll sheet at the provided index onto the provided savestate.
+---Selects and rebases the piano roll sheet at the provided index onto the current state of the game.
 ---@param index number The 1-based index of the sheet to select.
----@param savestatePath number The location of the .st or .savestate file to rebase onto.
-function __clsProject:Rebase(index, savestatePath)
+function __clsProject:Rebase(index)
     self.meta.selectionIndex = index
-    self.all[self.meta.sheets[index].name]:rebase(savestatePath)
+    self.all[self.meta.sheets[index].name]:rebase()
 end
 
 ---Retrieves the directory in which this project's project file resides

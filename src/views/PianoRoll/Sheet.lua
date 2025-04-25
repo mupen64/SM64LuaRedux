@@ -171,11 +171,11 @@ function __clsSheet:update()
     end
 end
 
-function __clsSheet:rebase(path)
-    self._savestate = readAll(path)
-    self._rebasing = true
-    self:runToPreview()
-    print("rebased \"" .. self.name .. "\" onto \"" .. path .. "\"")
+function __clsSheet:rebase()
+    savestate.do_memory({}, "save", function(result, data)
+        self._savestate = data
+        self:runToPreview()
+    end)
 end
 
 return

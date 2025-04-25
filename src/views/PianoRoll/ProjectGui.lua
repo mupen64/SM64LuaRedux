@@ -214,10 +214,7 @@ local function RenderSheetList(draw)
         end
 
         if (drawUtilityButton(".st", Locales.str("PIANO_ROLL_PROJECT_TOOLTIP_REBASE_SHEET"), true, 0.75)) then
-            local path = iohelper.filediag("*.st;*.savestate", 0)
-            if string.len(path) > 0 then
-                PianoRollProject:Rebase(i, path)
-            end
+            PianoRollProject:Rebase(i)
         end
 
         if (drawUtilityButton(".prs", Locales.str("PIANO_ROLL_PROJECT_TOOLTIP_REPLACE_INPUTS"), true, 0.75)) then
