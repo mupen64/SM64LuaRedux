@@ -12,6 +12,7 @@ local function AllocateUids(EnumNext)
         OpenProject = EnumNext(),
         SaveProject = EnumNext(),
         PurgeProject = EnumNext(),
+        DisableProjectSheets = EnumNext(),
         ProjectSheetBase = EnumNext(1024), -- TODO: allocate an exact amount, assuming a scroll bar for too many sheets in one project
         HelpNext = EnumNext(),
         HelpBack = EnumNext(),
@@ -98,7 +99,8 @@ local function RenderSheetList(draw)
             foregroundColor,
             theme.font_size * 1.2 * Drawing.scale,
             theme.font_name,
-            "No piano roll sheets available.\nCreate one to proceed.")
+            Locales.str("PIANO_ROLL_PROJECT_NO_SHEETS_AVAILABLE")
+        )
     end
 
     local top = 1
@@ -158,12 +160,24 @@ local function RenderSheetList(draw)
         PianoRollDialog = RenderConfirmPurgeDialog
     end
 
-    top = 3
     local availableSheets = {}
     for i = 1, #PianoRollProject.meta.sheets, 1 do
         availableSheets[i] = PianoRollProject.meta.sheets[i].name
     end
     availableSheets[#availableSheets + 1] = Locales.str("PIANO_ROLL_PROJECT_ADD_SHEET")
+
+    top = 3
+    if #availableSheets > 1 then
+        if (ugui.toggle_button({
+            uid = UID.DisableProjectSheets,
+            rectangle = grid_rect(0, top, 3, controlHeight),
+            text = Locales.str("PIANO_ROLL_PROJECT_DISABLE"),
+            is_checked = PianoRollProject.disabled
+        })) then
+            PianoRollProject.disabled = true
+        end
+        top = top + controlHeight
+    end
 
     local uid = UID.ProjectSheetBase
     for i = 1, #availableSheets, 1 do
@@ -172,12 +186,12 @@ local function RenderSheetList(draw)
             uid = uid,
             rectangle = grid_rect(0, y, 3, controlHeight),
             text = availableSheets[i],
-            is_checked = i == PianoRollProject.meta.selectionIndex,
+            is_checked = not PianoRollProject.disabled and i == PianoRollProject.meta.selectionIndex,
         }) then
             if i == #PianoRollProject.meta.sheets + 1 then -- add new sheet
                 PianoRollProject:AddSheet()
                 PianoRollProject:Select(#PianoRollProject.meta.sheets)
-            elseif i ~= PianoRollProject.meta.selectionIndex then -- select sheet
+            elseif PianoRollProject.disabled or i ~= PianoRollProject.meta.selectionIndex then -- select sheet
                 PianoRollProject:Select(i)
             end
         end
@@ -227,6 +241,7 @@ local function RenderSheetList(draw)
         if (drawUtilityButton(">", Locales.str("PIANO_ROLL_PROJECT_TOOLTIP_PLAY_WITHOUT_ST"))) then
             PianoRollProject:Select(i, false)
         end
+        ::continue::
     end
 end
 

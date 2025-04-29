@@ -24,6 +24,7 @@ function __clsProject.new()
         all = {},
         copyEntireState = true,
         projectLocation = nil,
+        disabled = false,
 
         Current = __clsProject.Current,
         AssertedCurrent = __clsProject.AssertedCurrent,
@@ -95,6 +96,7 @@ end
 ---Selects the piano roll sheet at the provided index and runs it from its savestate to its current preview.
 ---@param index number The 1-based index of the sheet to select.
 function __clsProject:Select(index, loadState)
+    self.disabled = false
     local previous = self:Current()
     if previous ~= nil then previous._busy = false end
     self.meta.selectionIndex = index
