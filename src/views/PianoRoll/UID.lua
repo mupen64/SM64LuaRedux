@@ -24,6 +24,7 @@ __PianoRollUids = {}
 __PianoRollUids = {
     VarWatch = EnumNext(),
     SelectTab = EnumNext(),
+    ToggleHelp = EnumNext(),
     FrameList = FromRenderer(dofile(views_path .. "PianoRoll/FrameListGui.lua")),
 }
 

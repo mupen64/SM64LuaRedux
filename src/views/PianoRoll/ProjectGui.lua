@@ -2,12 +2,10 @@ local name = "Project"
 
 local UID = dofile(views_path .. "PianoRoll/UID.lua")[name]
 local Project = dofile(views_path .. "PianoRoll/Project.lua")
-local Help = dofile(views_path .. "PianoRoll/Help.lua")
 local persistence = dofile(lib_path .. "persistence.lua")
 
 local function AllocateUids(EnumNext)
     return {
-        ToggleHelp = EnumNext(),
         NewProject = EnumNext(),
         OpenProject = EnumNext(),
         SaveProject = EnumNext(),
@@ -245,25 +243,9 @@ local function RenderSheetList(draw)
     end
 end
 
-local function RenderFooter()
-    local top = 16 - controlHeight
-    if ugui.button(
-        {
-            uid = UID.ToggleHelp,
-
-            rectangle = grid_rect(0, top, 1.5, controlHeight),
-            text = "Help",
-        }
-    ) then
-        PianoRollDialog = Help.Render
-    end
-end
-
 return {
     name = name,
-    Render = function(draw)
-        RenderSheetList(draw)
-        RenderFooter()
-    end,
+    Render = RenderSheetList,
     AllocateUids = AllocateUids,
+    HelpKey = "PROJECT_GUI",
 }

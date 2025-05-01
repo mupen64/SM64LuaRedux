@@ -34,11 +34,6 @@ return {
     SWIM = "Swim",
     -- Piano Roll Tab
     PIANO_ROLL_HELP_HEADER_TITLE = "Piano Roll Help",
-    PIANO_ROLL_HELP_HEADER_ABOUT = "About",
-    PIANO_ROLL_HELP_HEADER_BEGIN = "Getting started",
-    PIANO_ROLL_HELP_HEADER_EDIT = "Editing values",
-    PIANO_ROLL_HELP_HEADER_MANAGE = "Managing sheets",
-    PIANO_ROLL_HELP_HEADER_CAVEATS = "Caveats",
     PIANO_ROLL_HELP_SHOW = "What?",
     PIANO_ROLL_HELP_EXIT = "Exit",
     PIANO_ROLL_HELP_PREV_PAGE = "back",
@@ -68,7 +63,7 @@ return {
     PIANO_ROLL_PROJECT_SAVE = "Save",
     PIANO_ROLL_PROJECT_PURGE = "Purge",
     PIANO_ROLL_PROJECT_DISABLE = "Disable",
-    PIANO_ROLL_PROJECT_ADD_SHEET = "Add...",
+    PIANO_ROLL_PROJECT_ADD_SHEET = "Add Sheet...",
     PIANO_ROLL_PROJECT_TOOLTIP_REBASE_SHEET = "Set start to now",
     PIANO_ROLL_PROJECT_TOOLTIP_REPLACE_INPUTS = "Replace inputs",
     PIANO_ROLL_PROJECT_TOOLTIP_PLAY_WITHOUT_ST = "Play without loading .st",
@@ -166,52 +161,79 @@ return {
     ADDRESS_PAL = "Europe",
     -- putting this at the bottom as to not clutter
     PIANO_ROLL_HELP_EXPLANATIONS = {
--- About
+        PROJECT_GUI = {
+            HEADING = "Piano Roll Projects",
+            PAGES = {
+                {
+                    HEADING = "About",
+                    TEXT =
 [[
-This page lets you play back a sequence of TAS inputs starting from a specific "base frame" with immediate effect.
+This page lets you play back a sequence of TAS inputs starting from a specific state with immediate effect.
 
 The purpose of this is to quickly iterate over the effects of small changes "in the past" in order to more efficiently iterate over different implementations of the same strategy.
 
-Click "next" to learn more about how to use this tool.
+By managing so-called "Piano Roll Projects", it is possible to author entire runs in terms of semantics consisting of just a few sections.
+
+This tool is separated into several pages that you can cycle through at the top. Once you have started work on a Piano Roll Project, a dedicated help page will be available for each page just like for this one.
+
+Click "next" to learn more about how to get started.
 ]],
-
--- Getting started
+                },
+                {
+                    HEADING = "Getting Started",
+                    TEXT =
 [[
-Press the [+] Button in the bottom right corner to create a new "Piano Roll" sheet.
-This new sheet will be starting at the current frame, identified by the game's global timer value.
-Frame advance a couple times and optionally make some inputs with TASinput as usual to get some frames to mess with.
-(You will likely be using this page exclusively from there on anyways.)
+The main entity you will be working with is the "Sheet".
+A Sheet describes a sequence of inputs, that, starting from a specific point, will (attempt to) perform a certain sequence of actions that make up a segment of a complete run.
+Sheets are divided further into sections, with each section ending when either a certain number of frames have passed, or a certain other condition is met.
 
-Click the "Frame" column to select a frame to preview.
-Whenever you make any change to any inputs (e.g. change any button inputs), the game is going to be replayed to the preview frame (highlighted in red) from the start of the sheet with the new inputs.
+This page allows you to manage several related Sheets in a so called "Piano Roll Project".
+Piano Roll Projects are really just a collection of Sheets that are saved in a directory next to the piano roll project file (*.prp).
+You can create, save and load projects using the respective buttons at the top.
 
-You can select a range of joystick inputs to edit by leftclicking and dragging over the mini-joysticks in the desired range.
-Then use the joystick controls at the bottom to decide how those frames should be treated.
+The "New" button will ask for a location for the new project. It is recommended that you create a new empty directory for the new project, as having multiple projects in the same directory could have them unintendedly interfere with each other.
+The "Save" button will always save over the currently loaded project file without confirmation, unless you haven't opened or created any project yet.
 ]],
-
--- Editing values
+                },
+            },
+        },
+        JOYSTICK_GUI = {
+            HEADING = "Input editor",
+            PAGES = {
+                {
+                    HEADING = "Overview",
+                    TEXT =
 [[
-The frame highlighted in green is the "active" frame.
-Its values will be displayed, and when you make any changes, its values will copied to the selected range.
+Click the "#Section" column in the Section List to select a frame to preview.
+You can expand and collapse sections that have more than one initial input frame.
 
-If the 'Copy entire state' toggle is off, only the changes made to the active frame will be copied to the selected range.
+Whenever you make changes to any inputs (e.g. change any button inputs), the game is going to be replayed to the preview frame (highlighted in red) from the start of the Sheet with the new inputs.
+
+The "+Input" and "-Input" buttons add and remove a frame at the selected frame in the selected section respectively.
+This is useful to initiate a new action such as a long jump, for example after landing from a previous rollout.
+
+The controls at the bottom behave similarly to the standard "TAS" view you might be familiar with, just in a more condensed layout.
+]],
+                },
+                {
+                    HEADING = "Editing",
+                    TEXT =
+[[
+You can select a range of joystick inputs to edit by left clicking and dragging over the mini-joysticks in the desired range.
+The selected range will follow the "active" frame highlighted by a green border.
+Its values will be displayed in the joystick controls at the bottom, and when you make any changes, those values will copied to the selected range.
+
+If the 'Edit entire state' toggle in the settings page is off, only the changes made to the active frame (rather than all its values) will be copied to the selected range.
 
 When the active frame and the preview frame are the same, the highlight will become a yellow-ish green.
+
+To edit button inputs, simply click and drag over the small circles on the right.
+This is not affected by and does not affect your selection or active frame.
 ]],
-
--- Managing sheets
-[[
-You can add as many piano roll sheets as you want.
-Note the textbox in the top right that allows you to assign them names.
-Click the [-] button to delete a sheet. You will be prompted for confirmation to prevent accidental deletions.
-
-You can also save and load piano roll sheets.
-When saving a piano roll sheet, a savestate with the same name as the piano roll sheet file will be created, and the sheet will be executed from that savestate.
-This allows you to share piano roll sheets in a similar way to .m64 movies.
-
-You can always cycle to "Off" to disable Piano Rolls entirely.
-]]
-},
+                },
+            },
+        },
+    },
     ACTIONS = {
         [0x00000000] = "uninitialized",
         [0x0C400201] = "idle",

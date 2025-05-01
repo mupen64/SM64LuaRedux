@@ -1,5 +1,6 @@
 local UID = dofile(views_path .. "PianoRoll/UID.lua")
 local Project = dofile(views_path .. "PianoRoll/Project.lua")
+local Help = dofile(views_path .. "PianoRoll/Help.lua")
 
 ---utility functions---
 
@@ -73,10 +74,22 @@ return {
         SelectedTabIndex = ugui.carrousel_button({
             uid = UID.SelectTab,
 
-            rectangle = grid_rect(0, 0, 8, 1),
+            rectangle = grid_rect(0, 0, 7, 1),
             items = lualinq.select(Tabs, function(e) return e.name end),
             selected_index = SelectedTabIndex
         })
+
+        if ugui.button(
+            {
+                uid = UID.ToggleHelp,
+
+                rectangle = grid_rect(7, 0, 1, 1),
+                text = "?",
+                is_enabled = Tabs[SelectedTabIndex].HelpKey ~= nil,
+            }
+        ) then
+            PianoRollDialog = Help.Render(Tabs[SelectedTabIndex].HelpKey)
+        end
 
         -- show only the project page if no piano rolls exist
         if PianoRollProject:Current() == nil then SelectedTabIndex = 1 end

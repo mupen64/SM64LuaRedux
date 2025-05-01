@@ -1,4 +1,4 @@
-local name = "Joystick"
+local name = "Inputs"
 
 local UID = dofile(views_path .. "PianoRoll/UID.lua")[name]
 local FrameListGui = dofile(views_path .. "PianoRoll/FrameListGui.lua")
@@ -255,4 +255,5 @@ return {
         FrameListGui.Render(draw)
     end,
     AllocateUids = AllocateUids,
+    HelpKey = "JOYSTICK_GUI"
 }
