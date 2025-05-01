@@ -130,23 +130,24 @@ local function DrawHeaders(sheet, draw, buttonDrawData)
     end
 end
 
-local function DrawScrollbar(numDisplaySections)
+local function DrawScrollbar(numRows)
     local baseline = grid_rect(col_1, row2, buttonColumnWidth, frameColumnHeight, 0)
     local unit = Settings.grid_size * Drawing.scale
+    local numActuallyShownRows = math.min(maxDisplayedSections, numRows)
     local scrollbarRect = {
         x = baseline.x - scrollbarWidth * unit,
         y = baseline.y,
         width = scrollbarWidth * unit,
-        height = baseline.height * numDisplaySections
+        height = baseline.height * numActuallyShownRows,
     }
 
-    local maxScroll = numDisplaySections - maxDisplayedSections
-    if numDisplaySections > 0 and maxScroll > 0 then
+    local maxScroll = numRows - maxDisplayedSections
+    if numRows > 0 and maxScroll > 0 then
         local relativeScroll = ugui.scrollbar({
             uid = UID.Scrollbar,
             rectangle = scrollbarRect,
             value = scrollOffset / maxScroll,
-            ratio = 1 / (IterateInputRows(PianoRollProject:AssertedCurrent()) / numDisplaySections),
+            ratio = numActuallyShownRows / numRows,
         })
         scrollOffset = math.floor(relativeScroll * maxScroll + 0.5)
     end
