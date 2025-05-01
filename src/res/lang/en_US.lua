@@ -250,6 +250,23 @@ The exact details of this page are currently very much "Work In Progress".
                 },
             },
         },
+        SETTINGS_GUI = {
+            HEADING = "Preferences",
+            PAGES = {
+                {
+                    HEADING = "Overview",
+                    TEXT =
+[[
+This page displays and edits settings that are not stored in a Piano Roll Project, and instead persist in your local settings instead.
+Each setting may get an individual help page here in the future. For now, here is a brief list of what each setting does:
+
+- Edit entire state: Copy the entire joystick state of the active frame to the selected range in the "Inputs" page. When turned off, only the actual changes made will be copied to the selected range.
+
+- Fast Forward: Play the game back and maximum speed when making changes. When turned off, the game will play back in real time instead.
+]],
+                },
+            },
+        },
     },
     ACTIONS = {
         [0x00000000] = "uninitialized",

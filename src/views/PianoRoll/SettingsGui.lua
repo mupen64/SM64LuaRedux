@@ -1,4 +1,4 @@
-local name = "Settings"
+local name = "Preferences"
 
 local UID = dofile(views_path .. "PianoRoll/UID.lua")[name]
 
@@ -35,4 +35,5 @@ return {
     name = name,
     Render = RenderOptionsList,
     AllocateUids = AllocateUids,
+    HelpKey = "SETTINGS_GUI"
 }
