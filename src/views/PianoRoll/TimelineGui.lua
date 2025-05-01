@@ -118,4 +118,5 @@ return {
         FrameListGui.Render(draw, DrawFrameContent, false)
     end,
     AllocateUids = AllocateUids,
+    HelpKey = "TIMELINE_GUI",
 }

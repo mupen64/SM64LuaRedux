@@ -233,6 +233,23 @@ This is not affected by and does not affect your selection or active frame.
                 },
             },
         },
+        TIMELINE_GUI = {
+            HEADING = "Timeline editor",
+            PAGES = {
+                {
+                    HEADING = "Overview",
+                    TEXT =
+[[
+This page handles the sequence of sections and their semantics.
+You can add and remove sections and define when and why they end and move on to the next section.
+
+Like on the "Inputs" page, any change will cause the current Sheet to be replayed to the selected preview frame.
+
+The exact details of this page are currently very much "Work In Progress".
+]],
+                },
+            },
+        },
     },
     ACTIONS = {
         [0x00000000] = "uninitialized",
