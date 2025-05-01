@@ -266,8 +266,9 @@ local function DrawSectionsGui(sheet, draw, sectionRect, buttonDrawData, drawFra
                 uid = NextUid(),
                 rectangle = span(col0, col0 + 0.3),
                 text = section.collapsed and "[icon:arrow_right]" or "[icon:arrow_down]",
-                is_checked = not section.collapsed
-            });
+                is_checked = not section.collapsed,
+                is_enabled = #section.inputs > 1
+            }) or #section.inputs == 1;
         end
 
         draw:text(frameBox, "end", sectionIndex .. ":")
