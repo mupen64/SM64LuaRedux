@@ -50,7 +50,7 @@ return {
     PIANO_ROLL_SHEET_DELETE_NO = "No",
     PIANO_ROLL_FRAMELIST_START = "Start: ",
     PIANO_ROLL_FRAMELIST_NAME = "Name",
-    PIANO_ROLL_FRAMELIST_FRAME = "Frame",
+    PIANO_ROLL_FRAMELIST_SECTION = "#Section",
     PIANO_ROLL_FRAMELIST_STICK = "Joystick",
     PIANO_ROLL_TOOL_COPY_ENTIRE_STATE = "Copy entire state",
     PIANO_ROLL_NO_SELECTION = "No selection was made.\nClick on the joystick in an input row to start editing.",

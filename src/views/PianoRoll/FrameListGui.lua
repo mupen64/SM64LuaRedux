@@ -23,12 +23,12 @@ local Buttons = {
 }
 
 local col0 = 0.0
-local col1 = 1.0
-local col2 = 1.5
-local col3 = 1.8
-local col4 = 2.0
-local col5 = 2.8
-local col6 = 3.0
+local col1 = 1.3
+local col2 = 1.8
+local col3 = 2.1
+local col4 = 2.3
+local col5 = 3.1
+local col6 = 3.3
 local col_1 = 8.0
 
 local row0 = 1.00
@@ -118,7 +118,7 @@ local function DrawHeaders(sheet, draw, buttonDrawData)
     ugui.standard_styler.params.font_size = prev_font_size
     ugui.standard_styler.font_size = prev_font_size
 
-    draw:text(grid_rect(col0, row1, col1 - col0, 1), "start", Locales.str("PIANO_ROLL_FRAMELIST_FRAME"))
+    draw:text(grid_rect(col0, row1, col1 - col0, 1), "start", Locales.str("PIANO_ROLL_FRAMELIST_SECTION"))
     draw:text(grid_rect(col1, row1, col6 - col1, 1), "start", Locales.str("PIANO_ROLL_FRAMELIST_STICK"))
 
     if not buttonDrawData then return end
