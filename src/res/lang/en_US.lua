@@ -34,7 +34,7 @@ return {
     SWIM = "Swim",
     -- Piano Roll Tab
     PIANO_ROLL_HELP_HEADER_TITLE = "Piano Roll Help",
-    PIANO_ROLL_HELP_SHOW = "What?",
+    PIANO_ROLL_HELP_SHOW = "Show Help",
     PIANO_ROLL_HELP_EXIT = "Exit",
     PIANO_ROLL_HELP_PREV_PAGE = "back",
     PIANO_ROLL_HELP_NEXT_PAGE = "next",

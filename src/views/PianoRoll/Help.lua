@@ -18,7 +18,8 @@ return {
                     uid = UID.ToggleHelp,
 
                     rectangle = buttonPosition,
-                    text = "[icon:crossmark]", -- TODO: make this icon work
+                    text = "[icon:door_opening]",
+                    tooltip = Locales.str("PIANO_ROLL_HELP_EXIT")
                 }
             ) then
                 PianoRollDialog = nil

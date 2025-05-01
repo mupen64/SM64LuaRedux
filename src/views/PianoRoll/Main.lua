@@ -19,6 +19,17 @@ end
 
 --implementation details
 
+local uguiIconDraw = ugui.standard_styler.draw_icon
+
+ugui.standard_styler.draw_icon = function(rectangle, color, visual_state, key)
+    if key == "door_opening" then
+        rectangle = {x = rectangle.x - rectangle.width * 0.5, y = rectangle.y - rectangle.height * 0.5, width = rectangle.width * 2, height = rectangle.height * 2}
+        BreitbandGraphics.draw_image(rectangle, nil, views_path .. "PianoRoll/test.png", color, "linear")
+    else
+        uguiIconDraw(rectangle, color, visual_state, key)
+    end
+end
+
 local Tabs = dofile(views_path .. "PianoRoll/Tabs.lua")
 local SelectedTabIndex = 1
 
@@ -85,6 +96,7 @@ return {
 
                 rectangle = grid_rect(7, 0, 1, 1),
                 text = "?",
+                tooltip = Locales.str("PIANO_ROLL_HELP_SHOW"),
                 is_enabled = Tabs[SelectedTabIndex].HelpKey ~= nil,
             }
         ) then
