@@ -214,6 +214,21 @@ Do not play back .m64 movies while authoring Sheets, as this will produce unpred
 When playing back a .m64 file, make sure that the "Disable" option is selected in the Project's Sheet list.
 ]],
                 },
+                {
+                    HEADING = "Using git",
+                    TEXT =
+[[
+The Piano Roll Project file and its associated Sheet files follow a human readable file format.
+In order to keep track of the work done on a TAS, I recommend initializing a local git repository in the the directory where the .prp file is located.
+This way, you can save your project and make a commit whenever you have made significant progress, and manage different branches to compare strategies.
+This helps with keeping track of progress, preventing loss of work, and keeping things organized.
+
+To make a commit, simply hit "Save" and commit all changes.
+After checking out a commit or branch, you will need to "Open" the .prp file again to load everything from your drive into memory.
+
+You may even find it beneficial to manage other files with git, too, such as ghosts, recorded .m64 files, STROOP tracker configurations or Strat write-ups!
+]],
+                },
             },
         },
         JOYSTICK_GUI = {
