@@ -198,6 +198,22 @@ The "New" button will ask for a location for the new project. It is recommended 
 The "Save" button will always save over the currently loaded project file without confirmation, unless you haven't opened or created any project yet.
 ]],
                 },
+                {
+                    HEADING = "Recording .m64 files",
+                    TEXT =
+[[
+Once you are satisfied with your work, you will probably want to record it into a .m64 file.
+To do this, open a .m64 file in mupen as normal and let it play until a state that matches the savestate of the first sheet you want to play back.
+Then enter read/write mode so that frames can be recorded.
+You may also achieve this by simply starting a new recording from the savestate of the first sheet.
+
+Then, hit the right pointing arrows ("Play without loading .st") for each sheet in order. (Make sure to let them play to the end before hitting the next one)
+This, of course, assumes that the Sheets are "stitched together" correctly, i.e. that each Sheet you click starts where the previous Sheet ends (i.e. where its preview frame ends up being).
+
+Do not play back .m64 movies while authoring Sheets, as this will produce unpredictable inputs.
+When playing back a .m64 file, make sure that the "Disable" option is selected in the Project's Sheet list.
+]],
+                },
             },
         },
         JOYSTICK_GUI = {
