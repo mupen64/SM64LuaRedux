@@ -73,6 +73,9 @@ return {
     PIANO_ROLL_PROJECT_TOOLTIP_MOVE_SHEET_DOWN = "Move down",
     PIANO_ROLL_TIMELINE_INSERT = "Insert",
     PIANO_ROLL_TIMELINE_DELETE = "Delete",
+    PIANO_ROLL_TIMELINE_KIND = "Kind:",
+    PIANO_ROLL_TIMELINE_TIMEOUT = "Timeout:",
+    PIANO_ROLL_TIMELINE_END_ACTION = "End action:",
     PIANO_ROLL_JOYSTICK_INSERT_INPUT = "+Input",
     PIANO_ROLL_JOYSTICK_REMOVE_INPUT = "-Input",
     -- Settings Tab
@@ -243,9 +246,11 @@ This is not affected by and does not affect your selection or active frame.
 This page handles the sequence of sections and their semantics.
 You can add and remove sections and define when and why they end and move on to the next section.
 
+A section will end either when Mario enters the "End action", or when the number of "Timeout" frames have passed without entering the End action.
+
 Like on the "Inputs" page, any change will cause the current Sheet to be replayed to the selected preview frame.
 
-The exact details of this page are currently very much "Work In Progress".
+Note that the exact details of this page are currently very much "Work In Progress", and will likely change in the future.
 ]],
                 },
             },
