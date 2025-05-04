@@ -72,7 +72,7 @@ local function ControlsForSelected(draw)
     local col_timeout = 4
 
     local anyChanges = false
-    local hasValidSelection = sheet.sections[sheet.activeFrame.sectionIndex] and sheet.activeFrame.frameIndex == 1
+    local hasValidSelection = sheet.sections[sheet.activeFrame.sectionIndex]
 
     if not hasValidSelection then
         draw:text(grid_rect(0, top, 8, 1), "center", Locales.str("PIANO_ROLL_NO_SELECTION"))

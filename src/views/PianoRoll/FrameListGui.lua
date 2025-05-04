@@ -69,7 +69,8 @@ end
 
 ---@function Iterates all sections as an input row, including their follow-up frames for non-collapsed sections
 ---@param sheet Sheet The sheet over whose sections to iterate
-local function IterateInputRows(sheet, callback, showExpanded)
+---@param showExpanded boolean Whether follow-up frames of non-collapsed sections should be iterated
+local function IterateInputRows(sheet, showExpanded, callback)
     local totalInputsCounted = 1
     local totalSectionsCounted = 1
     for sectionIndex = 1, sheet:numSections(), 1 do
@@ -193,7 +194,7 @@ local function DrawColorCodes(baseline, scrollbarRect, numDisplaySections)
 end
 
 local placing = 0
-local function PlaceAndUnplaceButtons(sectionRect, buttonDrawData, numRows)
+local function HandleScrollAndButtons(sectionRect, buttonDrawData, numRows)
     local mouseX = ugui_environment.mouse_position.x
     local relativeY = ugui_environment.mouse_position.y - sectionRect.y
     local inRange = mouseX >= sectionRect.x and mouseX <= sectionRect.x + sectionRect.width and relativeY >= 0
@@ -210,7 +211,7 @@ local function PlaceAndUnplaceButtons(sectionRect, buttonDrawData, numRows)
 
     if not buttonDrawData then return end
 
-    IterateInputRows(PianoRollProject:AssertedCurrent(), function(section, input, sectionIndex, inputIndex)
+    IterateInputRows(PianoRollProject:AssertedCurrent(), true, function(section, input, sectionIndex, inputIndex)
         if inputIndex == hoveringIndex and inRange and section ~= nil then
             for buttonIndex, v in ipairs(Buttons) do
                 local inRangeX = mouseX >= buttonDrawData[buttonIndex].x and mouseX < buttonDrawData[buttonIndex + 1].x
@@ -241,7 +242,7 @@ local function DrawSectionsGui(sheet, draw, sectionRect, buttonDrawData, drawFra
     end
 
     ---@param section Section
-    IterateInputRows(sheet, function(section, input, sectionIndex, totalInputs, inputSubIndex)
+    IterateInputRows(sheet, showExpanded, function(section, input, sectionIndex, totalInputs, inputSubIndex)
         if totalInputs <= scrollOffset then return false end
 
         --TODO: color code section success
@@ -328,16 +329,16 @@ local function DrawSectionsGui(sheet, draw, sectionRect, buttonDrawData, drawFra
             end
         end
 
-        if sectionIndex == sheet.previewFrame.sectionIndex and (sheet.previewFrame.frameIndex or inputSubIndex) == inputSubIndex then
+        if sectionIndex == sheet.previewFrame.sectionIndex and (not showExpanded or sheet.previewFrame.frameIndex == inputSubIndex) then
             BreitbandGraphics.draw_rectangle(sectionRect, {r=255, g=0, b=0}, 1)
         end
 
-        if sectionIndex == sheet.activeFrame.sectionIndex and inputSubIndex == sheet.activeFrame.frameIndex then
+        if sectionIndex == sheet.activeFrame.sectionIndex and (not showExpanded or sheet.activeFrame.frameIndex == inputSubIndex) then
             BreitbandGraphics.draw_rectangle(sectionRect, {r=100, g=255, b=100}, 1)
         end
 
         sectionRect.y = sectionRect.y + sectionRect.height
-    end, showExpanded)
+    end)
 end
 
 ---@class FrameListGui
@@ -349,13 +350,13 @@ function __clsFrameListGui.Render(draw, drawFrameContent, showExpanded)
 
     showExpanded = showExpanded == nil and true or false
 
-    local numRows = IterateInputRows(PianoRollProject:AssertedCurrent(), nil, showExpanded)
+    local numRows = IterateInputRows(PianoRollProject:AssertedCurrent(), showExpanded, nil)
     local baseline, scrollbarRect = DrawScrollbar(numRows)
     local buttonDrawData = drawFrameContent == nil and DrawColorCodes(baseline, scrollbarRect, math.min(numRows, maxDisplayedSections)) or nil
     DrawHeaders(currentSheet, draw, buttonDrawData)
 
     local sectionRect = grid_rect(col0, row2, col_1 - col0 - scrollbarWidth, frameColumnHeight, 0)
-    if PlaceAndUnplaceButtons(sectionRect, buttonDrawData, numRows) then
+    if HandleScrollAndButtons(sectionRect, buttonDrawData, numRows) then
         currentSheet:runToPreview()
     end
 
