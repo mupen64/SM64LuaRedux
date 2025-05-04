@@ -27,7 +27,6 @@ local __clsSection = {}
 
 local function NewSection(endAction, timeout)
     local tmp = {}
-    local tmp2 = {}
     CloneInto(tmp, Joypad.input)
     ---@type Section
     return {
@@ -39,10 +38,8 @@ local function NewSection(endAction, timeout)
 end
 
 ---@class Sheet
----@field public previewIndex integer The 1-based index of the section to which to advance to when changes to the piano roll have been made.
----@field public previewSubIndex integer The 1-based index of the previewed section's frame to which to advance to when changes to the piano roll have been made.
----@field public editingIndex integer The 1-based index of the section of this piano roll that is currently being edited.
----@field public editingSubIndex integer The 1-based index of the edited section's frame that is currently being edited.
+---@field public previewFrame SelectionFrame The frame top which to proceed when re-running the game after a change.
+---@field public activeFrame SelectionFrame The frame whose controls to display in the "Inputs" and "Timeline" pages.
 ---@field public sections Section[] An array of TASStates with their associated section definition to execute in order.
 ---@field public name string A name for the piano roll for convenience.
 ---@field private _sectionIndex integer The nth section that is currently being played
@@ -54,10 +51,8 @@ local function NewSheet(name, createSavestate)
     ---@type Sheet
     local newInstance = {
         startGT = globalTimer,
-        previewIndex = 1,
-        previewSubIndex = 0,
-        editingIndex = 1,
-        editingSubIndex = 1,
+        previewFrame = { sectionIndex = 1, frameIndex = 1 },
+        activeFrame = { sectionIndex = 1, frameIndex = 1 },
         sections = { NewSection("idle", 150) },
         name = name,
         _savestate = nil,
@@ -97,10 +92,10 @@ function __clsSheet:evaluateFrame()
         self._sectionIndex = self._sectionIndex + 1
         self._frameCounter = 0
     end
-    if self._sectionIndex > self.previewIndex
-        or (self._sectionIndex == self.previewIndex
-            and self.previewSubIndex
-            and self._frameCounter >= self.previewSubIndex - 1
+    if self._sectionIndex > self.previewFrame.sectionIndex
+        or (self._sectionIndex == self.previewFrame.sectionIndex
+            and self.previewFrame.frameIndex
+            and self._frameCounter >= self.previewFrame.frameIndex - 1
             ) then
         emu.pause(false)
         emu.set_ff(false)
@@ -143,10 +138,8 @@ function __clsSheet:save(file)
         {
             sections     = self.sections,
             name         = self.name,
-            editingIndex = self.editingIndex,
-            editingSubIndex = self.editingSubIndex,
-            previewIndex = self.previewIndex,
-            previewSubIndex = self.previewSubIndex,
+            activeFrame  = self.activeFrame,
+            previewFrame = self.previewFrame,
         }
     )
 end
@@ -180,5 +173,4 @@ end
 
 return
 { new = NewSection },
-{ new = NewSheet },
-{ new = NewSelection }
+{ new = NewSheet }

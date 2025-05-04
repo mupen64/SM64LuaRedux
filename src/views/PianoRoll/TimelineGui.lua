@@ -72,7 +72,7 @@ local function ControlsForSelected(draw)
     local col_timeout = 4
 
     local anyChanges = false
-    local hasValidSelection = sheet.sections[sheet.editingIndex] and sheet.editingSubIndex == 1
+    local hasValidSelection = sheet.sections[sheet.activeFrame.sectionIndex] and sheet.activeFrame.frameIndex == 1
 
     if not hasValidSelection then
         draw:text(grid_rect(0, top, 8, 1), "center", Locales.str("PIANO_ROLL_NO_SELECTION"))
@@ -85,7 +85,7 @@ local function ControlsForSelected(draw)
         text = Locales.str("PIANO_ROLL_TIMELINE_INSERT"),
     }) then
         local newSection = Section.new("idle", 150)
-        table.insert(sheet.sections, sheet.editingIndex + 1, newSection)
+        table.insert(sheet.sections, sheet.activeFrame.sectionIndex + 1, newSection)
         anyChanges = true
     end
 
@@ -98,7 +98,7 @@ local function ControlsForSelected(draw)
         sheet.sections = lualinq.where(sheet.sections, function(x) return not x.inputs[1].editing end)
     end
 
-    local section = sheet.sections[sheet.editingIndex]
+    local section = sheet.sections[sheet.activeFrame.sectionIndex]
     if section == nil then return end
 
     top = top + 1

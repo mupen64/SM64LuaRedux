@@ -275,8 +275,7 @@ local function DrawSectionsGui(sheet, draw, sectionRect, buttonDrawData, drawFra
         draw:text(frameBox, "end", sectionIndex .. ":")
 
         if ugui.internal.is_mouse_just_down() and BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, frameBox) then
-            sheet.previewIndex = sectionIndex;
-            sheet.previewSubIndex = inputSubIndex;
+            sheet.previewFrame = { sectionIndex = sectionIndex, frameIndex =  inputSubIndex }
             sheet:runToPreview()
         end
 
@@ -298,8 +297,7 @@ local function DrawSectionsGui(sheet, draw, sectionRect, buttonDrawData, drawFra
                 end
                 input.editing = true
             elseif ugui.internal.environment.is_primary_down then
-                sheet.editingIndex = sectionIndex
-                sheet.editingSubIndex = inputSubIndex
+                sheet.activeFrame = { sectionIndex = sectionIndex, frameIndex = inputSubIndex }
                 input.editing = true
             end
         end
@@ -330,11 +328,11 @@ local function DrawSectionsGui(sheet, draw, sectionRect, buttonDrawData, drawFra
             end
         end
 
-        if sectionIndex == sheet.previewIndex and (sheet.previewSubIndex or inputSubIndex) == inputSubIndex then
+        if sectionIndex == sheet.previewFrame.sectionIndex and (sheet.previewFrame.frameIndex or inputSubIndex) == inputSubIndex then
             BreitbandGraphics.draw_rectangle(sectionRect, {r=255, g=0, b=0}, 1)
         end
 
-        if sectionIndex == sheet.editingIndex and inputSubIndex == sheet.editingSubIndex then
+        if sectionIndex == sheet.activeFrame.sectionIndex and inputSubIndex == sheet.activeFrame.frameIndex then
             BreitbandGraphics.draw_rectangle(sectionRect, {r=100, g=255, b=100}, 1)
         end
 

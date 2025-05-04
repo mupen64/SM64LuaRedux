@@ -75,8 +75,8 @@ local function ControlsForSelected(draw)
     local sheet = PianoRollProject:AssertedCurrent()
 
     local newValues = {}
-    local editedSection = sheet.sections[sheet.editingIndex]
-    local editedInput = editedSection and editedSection.inputs[sheet.editingSubIndex] or nil
+    local editedSection = sheet.sections[sheet.activeFrame.sectionIndex]
+    local editedInput = editedSection and editedSection.inputs[sheet.activeFrame.frameIndex] or nil
 
     if editedInput == nil then
         draw:text(grid_rect(0, top, 8, 1), "center", Locales.str("PIANO_ROLL_NO_SELECTION"))
@@ -229,7 +229,7 @@ local function ControlsForSelected(draw)
         rectangle = grid_rect(0, top, 1.5, mediumControlHeight),
         text = Locales.str("PIANO_ROLL_JOYSTICK_INSERT_INPUT"),
     }) then
-        table.insert(editedSection.inputs, currentSheet.editingSubIndex, ugui.internal.deep_clone(editedInput))
+        table.insert(editedSection.inputs, currentSheet.activeFrame.frameIndex, ugui.internal.deep_clone(editedInput))
         anyChanges = true
     end
 
@@ -239,7 +239,7 @@ local function ControlsForSelected(draw)
         text = Locales.str("PIANO_ROLL_JOYSTICK_REMOVE_INPUT"),
         is_enabled = #editedSection.inputs > 1
     }) then
-        table.remove(editedSection.inputs, currentSheet.editingSubIndex)
+        table.remove(editedSection.inputs, currentSheet.activeFrame.frameIndex)
         anyChanges = true
     end
 

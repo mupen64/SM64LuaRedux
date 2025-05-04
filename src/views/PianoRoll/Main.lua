@@ -4,6 +4,7 @@ local Help = dofile(views_path .. "PianoRoll/Help.lua")
 
 ---utility functions---
 
+---@type Project
 PianoRollProject = Project.new()
 PianoRollDialog = nil
 
@@ -64,7 +65,7 @@ end)
 ---
 ---If the current piano roll does not define what to do for this frame, or there is no current piano roll, nil is returned instead.
 ---
----@return Section|nil override The section to apply for the current frame.
+---@return SectionInputs|nil override The inputs to apply for the current frame.
 function CurrentPianoRollOverride()
     local currentSheet = PianoRollProject:Current()
     return currentSheet and not PianoRollProject.disabled and currentSheet:evaluateFrame() or nil
