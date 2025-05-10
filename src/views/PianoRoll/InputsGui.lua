@@ -55,7 +55,7 @@ local function AnyEntries(table) for _ in pairs(table) do return true end return
 local endActionSearchText = nil
 
 local function ControlsForEndAction(section, draw, column, top)
-    draw:text(grid_rect(column, top, 4, labelHeight), "start", Locales.str("PIANO_ROLL_TIMELINE_END_ACTION"))
+    draw:text(grid_rect(column, top, 4, labelHeight), "start", Locales.str("PIANO_ROLL_INPUTS_END_ACTION"))
     if endActionSearchText == nil then
         -- end action "dropdown" is not visible
         if ugui.button({
@@ -113,7 +113,7 @@ local function SectionControlsForSelected(draw)
     if ugui.button({
         uid = UID.InsertSection,
         rectangle = grid_rect(0, top, 1.5, largeControlHeight),
-        text = Locales.str("PIANO_ROLL_TIMELINE_INSERT"),
+        text = Locales.str("PIANO_ROLL_INPUTS_INSERT_SECTION"),
     }) then
         local newSection = Section.new("idle", 150)
         table.insert(sheet.sections, sheet.activeFrame.sectionIndex + 1, newSection)
@@ -123,7 +123,7 @@ local function SectionControlsForSelected(draw)
     if ugui.button({
         uid = UID.DeleteSection,
         rectangle = grid_rect(1.5, top, 1.5, largeControlHeight),
-        text = Locales.str("PIANO_ROLL_TIMELINE_DELETE"),
+        text = Locales.str("PIANO_ROLL_INPUTS_DELETE_SECTION"),
     }) then
         table.remove(sheet.sections, sheet.activeFrame.sectionIndex)
         anyChanges = true
@@ -134,7 +134,7 @@ local function SectionControlsForSelected(draw)
 
     top = top + 1
 
-    draw:text(grid_rect(col_timeout, top, 2, labelHeight), "start", Locales.str("PIANO_ROLL_TIMELINE_TIMEOUT"))
+    draw:text(grid_rect(col_timeout, top, 2, labelHeight), "start", Locales.str("PIANO_ROLL_INPUTS_TIMEOUT"))
     local oldTimeout = section.timeout
     section.timeout = ugui.numberbox({
         uid = UID.Timeout,
@@ -351,7 +351,7 @@ local function ControlsForSelected(draw)
     if ugui.button({
         uid = UID.InsertInput,
         rectangle = grid_rect(0, top, 1.5, mediumControlHeight),
-        text = Locales.str("PIANO_ROLL_JOYSTICK_INSERT_INPUT"),
+        text = Locales.str("PIANO_ROLL_INPUTS_INSERT_INPUT"),
     }) then
         table.insert(editedSection.inputs, currentSheet.activeFrame.frameIndex, ugui.internal.deep_clone(editedInput))
         anyChanges = true
@@ -360,7 +360,7 @@ local function ControlsForSelected(draw)
     if ugui.button({
         uid = UID.DeleteInput,
         rectangle = grid_rect(1.5, top, 1.5, mediumControlHeight),
-        text = Locales.str("PIANO_ROLL_JOYSTICK_REMOVE_INPUT"),
+        text = Locales.str("PIANO_ROLL_INPUTS_DELETE_INPUT"),
         is_enabled = #editedSection.inputs > 1
     }) then
         table.remove(editedSection.inputs, currentSheet.activeFrame.frameIndex)
@@ -387,5 +387,5 @@ return {
         FrameListGui.Render(draw, selectedViewIndex)
     end,
     AllocateUids = AllocateUids,
-    HelpKey = "JOYSTICK_GUI"
+    HelpKey = "INPUTS_GUI"
 }

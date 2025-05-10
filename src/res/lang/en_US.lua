@@ -72,12 +72,12 @@ return {
     PIANO_ROLL_PROJECT_TOOLTIP_ADD_SHEET = "Add",
     PIANO_ROLL_PROJECT_TOOLTIP_MOVE_SHEET_UP = "Move up",
     PIANO_ROLL_PROJECT_TOOLTIP_MOVE_SHEET_DOWN = "Move down",
-    PIANO_ROLL_TIMELINE_INSERT = "+Section",
-    PIANO_ROLL_TIMELINE_DELETE = "-Section",
-    PIANO_ROLL_TIMELINE_TIMEOUT = "Timeout:",
-    PIANO_ROLL_TIMELINE_END_ACTION = "End action:",
-    PIANO_ROLL_JOYSTICK_INSERT_INPUT = "+Input",
-    PIANO_ROLL_JOYSTICK_REMOVE_INPUT = "-Input",
+    PIANO_ROLL_INPUTS_INSERT_SECTION = "+Section",
+    PIANO_ROLL_INPUTS_DELETE_SECTION = "-Section",
+    PIANO_ROLL_INPUTS_TIMEOUT = "Timeout:",
+    PIANO_ROLL_INPUTS_END_ACTION = "End action:",
+    PIANO_ROLL_INPUTS_INSERT_INPUT = "+Input",
+    PIANO_ROLL_INPUTS_DELETE_INPUT = "-Input",
     -- Settings Tab
     SETTINGS_VISUALS_TAB_NAME = "Visuals",
     SETTINGS_VARWATCH_TAB_NAME = "Varwatch",
@@ -231,7 +231,7 @@ You may even find it beneficial to manage other files with git, too, such as gho
                 },
             },
         },
-        JOYSTICK_GUI = {
+        INPUTS_GUI = {
             HEADING = "Input editor",
             PAGES = {
                 {
