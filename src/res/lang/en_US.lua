@@ -47,6 +47,7 @@ return {
     PIANO_ROLL_FRAMELIST_NAME = "Name",
     PIANO_ROLL_FRAMELIST_SECTION = "#Section",
     PIANO_ROLL_FRAMELIST_STICK = "Joystick",
+    PIANO_ROLL_FRAMELIST_UNTIL = "Until",
     PIANO_ROLL_TOOL_COPY_ENTIRE_STATE = "Copy entire state",
     PIANO_ROLL_NO_SELECTION = "No selection was made.\nClick on the joystick in an input row to start editing.",
     PIANO_ROLL_CONTROL_MANUAL = "Manual",

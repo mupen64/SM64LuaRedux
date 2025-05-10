@@ -54,6 +54,8 @@ local buttonColors = {
     {background={r=055, g=055, b=055, a=100}, button={r=035, g=035, b=035, a=255}}, -- 4 DPad Buttons
 }
 
+local VIEW_MODE_HEADERS = { "PIANO_ROLL_FRAMELIST_STICK", "PIANO_ROLL_FRAMELIST_UNTIL" }
+
 local function AllocateUids(EnumNext)
     local base = EnumNext(maxDisplayedSections * NUM_UIDS_PER_ROW)
     return {
@@ -100,7 +102,7 @@ local function InterpolateVectorsToInt(a, b, f)
     return result
 end
 
-local function DrawHeaders(sheet, draw, buttonDrawData)
+local function DrawHeaders(sheet, draw, viewIndex, buttonDrawData)
     local backgroundColor = InterpolateVectorsToInt(draw.backgroundColor, {r = 127, g = 127, b = 127}, 0.25)
     BreitbandGraphics.fill_rectangle(grid_rect(0, row0, col_1, row2 - row0, 0), backgroundColor)
 
@@ -120,7 +122,7 @@ local function DrawHeaders(sheet, draw, buttonDrawData)
     ugui.standard_styler.font_size = prev_font_size
 
     draw:text(grid_rect(col0, row1, col1 - col0, 1), "start", Locales.str("PIANO_ROLL_FRAMELIST_SECTION"))
-    draw:text(grid_rect(col1, row1, col6 - col1, 1), "start", Locales.str("PIANO_ROLL_FRAMELIST_STICK"))
+    draw:text(grid_rect(col1, row1, col6 - col1, 1), "start", Locales.str(VIEW_MODE_HEADERS[viewIndex]))
 
     if not buttonDrawData then return end
 
@@ -234,7 +236,7 @@ local function HandleScrollAndButtons(sectionRect, buttonDrawData, numRows)
 end
 
 ---@param sheet Sheet
-local function DrawSectionsGui(sheet, draw, sectionRect, buttonDrawData, drawFrameContent, showExpanded)
+local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawData, showExpanded)
 
     local function span(x1, x2, height)
         local r = grid_rect(x1, 0, x2 - x1, height, 0)
@@ -263,6 +265,8 @@ local function DrawSectionsGui(sheet, draw, sectionRect, buttonDrawData, drawFra
         local uidOffset = -1
         local function NextUid() uidOffset = uidOffset + 1 return uidOffset + uidBase end
 
+        BreitbandGraphics.fill_rectangle(sectionRect, {r=shade, g=shade, b=shade * blueMultiplier, a=66})
+
         if inputSubIndex == 1 and showExpanded then
             section.collapsed = not ugui.toggle_button({
                 uid = NextUid(),
@@ -280,53 +284,52 @@ local function DrawSectionsGui(sheet, draw, sectionRect, buttonDrawData, drawFra
             sheet:runToPreview()
         end
 
-        ugui.joystick({
-            uid = NextUid(),
-            rectangle = span(col1, col2, frameColumnHeight),
-            position = {x = input.joy.X, y = -input.joy.Y},
-        })
+        if viewIndex == 1 then
+            local joystickBox = span(col1, col2)
+            ugui.joystick({
+                uid = NextUid(),
+                rectangle = span(col1, col2, frameColumnHeight),
+                position = {x = input.joy.X, y = -input.joy.Y},
+            })
 
-        local joystickBox = span(col1, col2)
-        BreitbandGraphics.fill_rectangle(sectionRect, {r=shade, g=shade, b=shade * blueMultiplier, a=66})
-
-        if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, joystickBox) then
-            if ugui.internal.is_mouse_just_down() then
-                for _, section in pairs(sheet.sections) do
-                    for _, input in pairs(section.inputs) do
-                        input.editing = false
+            if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, joystickBox) then
+                if ugui.internal.is_mouse_just_down() then
+                    for _, section in pairs(sheet.sections) do
+                        for _, input in pairs(section.inputs) do
+                            input.editing = false
+                        end
                     end
+                    input.editing = true
+                elseif ugui.internal.environment.is_primary_down then
+                    sheet.activeFrame = { sectionIndex = sectionIndex, frameIndex = inputSubIndex }
+                    input.editing = true
                 end
-                input.editing = true
-            elseif ugui.internal.environment.is_primary_down then
-                sheet.activeFrame = { sectionIndex = sectionIndex, frameIndex = inputSubIndex }
-                input.editing = true
             end
-        end
 
-        if input.editing then
-            BreitbandGraphics.fill_rectangle(joystickBox, {r = 0, g = 200, b = 0, a = 100})
-        end
+            if input.editing then
+                BreitbandGraphics.fill_rectangle(joystickBox, {r = 0, g = 200, b = 0, a = 100})
+            end
 
-        if drawFrameContent then
-            drawFrameContent(draw, span(col2, col_1), section)
-        else
             draw:text(span(col2, col3), "center", ModeTexts[tasState.movement_mode + 1])
 
             if tasState.movement_mode == MovementModes.match_angle then
                 draw:text(span(col4, col5), "end", tostring(tasState.goal_angle))
                 draw:text(span(col5, col6), "end", tasState.strain_left and '<' or (tasState.strain_right and '>' or '-'))
             end
+        elseif viewIndex == 2 then
+            draw:text(span(col1, col6), "start", section.endAction)
+        end
 
-            local unit = Settings.grid_size * Drawing.scale
-            local sz = buttonSize * unit
-            local rect = {x = 0, y = sectionRect.y + (frameColumnHeight - buttonSize) * 0.5 * unit, width = sz, height = sz}
-            for buttonIndex, v in ipairs(Buttons) do
-                rect.x = buttonDrawData[buttonIndex].x + unit * (buttonColumnWidth - buttonSize) * 0.5
-                if input.joy[v.input] then
-                    BreitbandGraphics.fill_ellipse(rect, buttonColors[buttonDrawData[buttonIndex].colorIndex].button)
-                end
-                BreitbandGraphics.draw_ellipse(rect, {r=0, g=0, b=0, a=input.joy[v.input] and 255 or 80}, 1)
+        -- draw buttons
+        local unit = Settings.grid_size * Drawing.scale
+        local sz = buttonSize * unit
+        local rect = {x = 0, y = sectionRect.y + (frameColumnHeight - buttonSize) * 0.5 * unit, width = sz, height = sz}
+        for buttonIndex, v in ipairs(Buttons) do
+            rect.x = buttonDrawData[buttonIndex].x + unit * (buttonColumnWidth - buttonSize) * 0.5
+            if input.joy[v.input] then
+                BreitbandGraphics.fill_ellipse(rect, buttonColors[buttonDrawData[buttonIndex].colorIndex].button)
             end
+            BreitbandGraphics.draw_ellipse(rect, {r=0, g=0, b=0, a=input.joy[v.input] and 255 or 80}, 1)
         end
 
         if sectionIndex == sheet.previewFrame.sectionIndex and (not showExpanded or sheet.previewFrame.frameIndex == inputSubIndex) then
@@ -344,16 +347,14 @@ end
 ---@class FrameListGui
 local __clsFrameListGui = {}
 
---- Renders the piano roll, indicating whether an update by the user has been made that should cause a rerun
-function __clsFrameListGui.Render(draw, drawFrameContent, showExpanded)
+--- Renders the sheets, indicating whether an update by the user has been made that should cause a rerun
+function __clsFrameListGui.Render(draw, viewIndex, showExpanded)
     local currentSheet = PianoRollProject:AssertedCurrent()
-
-    showExpanded = showExpanded == nil and true or false
 
     local numRows = IterateInputRows(PianoRollProject:AssertedCurrent(), showExpanded, nil)
     local baseline, scrollbarRect = DrawScrollbar(numRows)
-    local buttonDrawData = drawFrameContent == nil and DrawColorCodes(baseline, scrollbarRect, math.min(numRows, maxDisplayedSections)) or nil
-    DrawHeaders(currentSheet, draw, buttonDrawData)
+    local buttonDrawData = DrawColorCodes(baseline, scrollbarRect, math.min(numRows, maxDisplayedSections)) or nil
+    DrawHeaders(currentSheet, draw, viewIndex, buttonDrawData)
 
     local sectionRect = grid_rect(col0, row2, col_1 - col0 - scrollbarWidth, frameColumnHeight, 0)
     if HandleScrollAndButtons(sectionRect, buttonDrawData, numRows) then
@@ -362,7 +363,7 @@ function __clsFrameListGui.Render(draw, drawFrameContent, showExpanded)
 
     local prev_joystick_tip_size = ugui.standard_styler.params.joystick.tip_size
     ugui.standard_styler.params.joystick.tip_size = 4 * Drawing.scale
-    DrawSectionsGui(currentSheet, draw, sectionRect, buttonDrawData, drawFrameContent, showExpanded)
+    DrawSectionsGui(currentSheet, draw, viewIndex, sectionRect, buttonDrawData, showExpanded)
     ugui.standard_styler.params.joystick.tip_size = prev_joystick_tip_size
 end
 

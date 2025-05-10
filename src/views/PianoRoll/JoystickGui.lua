@@ -384,7 +384,7 @@ return {
              selected_index = selectedViewIndex,
             })
         drawFuncs[selectedViewIndex](draw)
-        FrameListGui.Render(draw)
+        FrameListGui.Render(draw, selectedViewIndex, selectedViewIndex == 1)
     end,
     AllocateUids = AllocateUids,
     HelpKey = "JOYSTICK_GUI"
