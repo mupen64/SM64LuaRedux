@@ -71,9 +71,8 @@ return {
     PIANO_ROLL_PROJECT_TOOLTIP_ADD_SHEET = "Add",
     PIANO_ROLL_PROJECT_TOOLTIP_MOVE_SHEET_UP = "Move up",
     PIANO_ROLL_PROJECT_TOOLTIP_MOVE_SHEET_DOWN = "Move down",
-    PIANO_ROLL_TIMELINE_INSERT = "Insert",
-    PIANO_ROLL_TIMELINE_DELETE = "Delete",
-    PIANO_ROLL_TIMELINE_KIND = "Kind:",
+    PIANO_ROLL_TIMELINE_INSERT = "+Section",
+    PIANO_ROLL_TIMELINE_DELETE = "-Section",
     PIANO_ROLL_TIMELINE_TIMEOUT = "Timeout:",
     PIANO_ROLL_TIMELINE_END_ACTION = "End action:",
     PIANO_ROLL_JOYSTICK_INSERT_INPUT = "+Input",
@@ -263,25 +262,6 @@ When the active frame and the preview frame are the same, the highlight will bec
 
 To edit button inputs, simply click and drag over the small circles on the right.
 This is not affected by and does not affect your selection or active frame.
-]],
-                },
-            },
-        },
-        TIMELINE_GUI = {
-            HEADING = "Timeline editor",
-            PAGES = {
-                {
-                    HEADING = "Overview",
-                    TEXT =
-[[
-This page handles the sequence of sections and their semantics.
-You can add and remove sections and define when and why they end and move on to the next section.
-
-A section will end either when Mario enters the "End action", or when the number of "Timeout" frames have passed without entering the End action.
-
-Like on the "Inputs" page, any change will cause the current Sheet to be replayed to the selected preview frame.
-
-Note that the exact details of this page are currently very much "Work In Progress", and will likely change in the future.
 ]],
                 },
             },

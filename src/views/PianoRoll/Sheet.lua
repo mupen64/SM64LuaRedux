@@ -39,7 +39,7 @@ end
 
 ---@class Sheet
 ---@field public previewFrame SelectionFrame The frame top which to proceed when re-running the game after a change.
----@field public activeFrame SelectionFrame The frame whose controls to display in the "Inputs" and "Timeline" pages.
+---@field public activeFrame SelectionFrame The frame whose controls to display in the "Inputs" page.
 ---@field public sections Section[] An array of TASStates with their associated section definition to execute in order.
 ---@field public name string A name for the piano roll for convenience.
 ---@field private _sectionIndex integer The nth section that is currently being played
