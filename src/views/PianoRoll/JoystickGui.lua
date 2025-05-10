@@ -125,8 +125,8 @@ local function SectionControlsForSelected(draw)
         rectangle = grid_rect(1.5, top, 1.5, largeControlHeight),
         text = Locales.str("PIANO_ROLL_TIMELINE_DELETE"),
     }) then
-        ---@param x Section
-        sheet.sections = lualinq.where(sheet.sections, function(x) return not x.inputs[1].editing end)
+        table.remove(sheet.sections, sheet.activeFrame.sectionIndex)
+        anyChanges = true
     end
 
     local section = sheet.sections[sheet.activeFrame.sectionIndex]
@@ -384,7 +384,7 @@ return {
              selected_index = selectedViewIndex,
             })
         drawFuncs[selectedViewIndex](draw)
-        FrameListGui.Render(draw, selectedViewIndex, selectedViewIndex == 1)
+        FrameListGui.Render(draw, selectedViewIndex)
     end,
     AllocateUids = AllocateUids,
     HelpKey = "JOYSTICK_GUI"

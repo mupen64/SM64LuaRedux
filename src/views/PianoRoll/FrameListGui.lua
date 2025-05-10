@@ -71,8 +71,7 @@ end
 
 ---@function Iterates all sections as an input row, including their follow-up frames for non-collapsed sections
 ---@param sheet Sheet The sheet over whose sections to iterate
----@param showExpanded boolean Whether follow-up frames of non-collapsed sections should be iterated
-local function IterateInputRows(sheet, showExpanded, callback)
+local function IterateInputRows(sheet, callback)
     local totalInputsCounted = 1
     local totalSectionsCounted = 1
     for sectionIndex = 1, sheet:numSections(), 1 do
@@ -83,7 +82,7 @@ local function IterateInputRows(sheet, showExpanded, callback)
             end
 
             totalInputsCounted = totalInputsCounted + 1
-            if showExpanded == false or section.collapsed then break end
+            if section.collapsed then break end
         end
         totalSectionsCounted = totalSectionsCounted + 1
     end
@@ -213,7 +212,7 @@ local function HandleScrollAndButtons(sectionRect, buttonDrawData, numRows)
 
     if not buttonDrawData then return end
 
-    IterateInputRows(PianoRollProject:AssertedCurrent(), true, function(section, input, sectionIndex, inputIndex)
+    IterateInputRows(PianoRollProject:AssertedCurrent(), function(section, input, sectionIndex, inputIndex)
         if inputIndex == hoveringIndex and inRange and section ~= nil then
             for buttonIndex, v in ipairs(Buttons) do
                 local inRangeX = mouseX >= buttonDrawData[buttonIndex].x and mouseX < buttonDrawData[buttonIndex + 1].x
@@ -236,7 +235,7 @@ local function HandleScrollAndButtons(sectionRect, buttonDrawData, numRows)
 end
 
 ---@param sheet Sheet
-local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawData, showExpanded)
+local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawData)
 
     local function span(x1, x2, height)
         local r = grid_rect(x1, 0, x2 - x1, height, 0)
@@ -244,7 +243,7 @@ local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawDa
     end
 
     ---@param section Section
-    IterateInputRows(sheet, showExpanded, function(section, input, sectionIndex, totalInputs, inputSubIndex)
+    IterateInputRows(sheet, function(section, input, sectionIndex, totalInputs, inputSubIndex)
         if totalInputs <= scrollOffset then return false end
 
         --TODO: color code section success
@@ -267,7 +266,7 @@ local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawDa
 
         BreitbandGraphics.fill_rectangle(sectionRect, {r=shade, g=shade, b=shade * blueMultiplier, a=66})
 
-        if inputSubIndex == 1 and showExpanded then
+        if inputSubIndex == 1 then
             section.collapsed = not ugui.toggle_button({
                 uid = NextUid(),
                 rectangle = span(col0, col0 + 0.3),
@@ -317,7 +316,14 @@ local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawDa
                 draw:text(span(col5, col6), "end", tasState.strain_left and '<' or (tasState.strain_right and '>' or '-'))
             end
         elseif viewIndex == 2 then
-            draw:text(span(col1, col6), "start", section.endAction)
+            local endActionBox = span(col1, col6)
+            draw:text(endActionBox, "start", section.endAction)
+
+            if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, endActionBox) then
+                if ugui.internal.is_mouse_just_down() then
+                    sheet.activeFrame = { sectionIndex = sectionIndex, frameIndex = 1 }
+                end
+            end
         end
 
         -- draw buttons
@@ -332,11 +338,11 @@ local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawDa
             BreitbandGraphics.draw_ellipse(rect, {r=0, g=0, b=0, a=input.joy[v.input] and 255 or 80}, 1)
         end
 
-        if sectionIndex == sheet.previewFrame.sectionIndex and (not showExpanded or sheet.previewFrame.frameIndex == inputSubIndex) then
+        if sectionIndex == sheet.previewFrame.sectionIndex and sheet.previewFrame.frameIndex == inputSubIndex then
             BreitbandGraphics.draw_rectangle(sectionRect, {r=255, g=0, b=0}, 1)
         end
 
-        if sectionIndex == sheet.activeFrame.sectionIndex and (not showExpanded or sheet.activeFrame.frameIndex == inputSubIndex) then
+        if sectionIndex == sheet.activeFrame.sectionIndex and sheet.activeFrame.frameIndex == inputSubIndex then
             BreitbandGraphics.draw_rectangle(sectionRect, {r=100, g=255, b=100}, 1)
         end
 
@@ -348,10 +354,10 @@ end
 local __clsFrameListGui = {}
 
 --- Renders the sheets, indicating whether an update by the user has been made that should cause a rerun
-function __clsFrameListGui.Render(draw, viewIndex, showExpanded)
+function __clsFrameListGui.Render(draw, viewIndex)
     local currentSheet = PianoRollProject:AssertedCurrent()
 
-    local numRows = IterateInputRows(PianoRollProject:AssertedCurrent(), showExpanded, nil)
+    local numRows = IterateInputRows(PianoRollProject:AssertedCurrent(), nil)
     local baseline, scrollbarRect = DrawScrollbar(numRows)
     local buttonDrawData = DrawColorCodes(baseline, scrollbarRect, math.min(numRows, maxDisplayedSections)) or nil
     DrawHeaders(currentSheet, draw, viewIndex, buttonDrawData)
@@ -363,7 +369,7 @@ function __clsFrameListGui.Render(draw, viewIndex, showExpanded)
 
     local prev_joystick_tip_size = ugui.standard_styler.params.joystick.tip_size
     ugui.standard_styler.params.joystick.tip_size = 4 * Drawing.scale
-    DrawSectionsGui(currentSheet, draw, viewIndex, sectionRect, buttonDrawData, showExpanded)
+    DrawSectionsGui(currentSheet, draw, viewIndex, sectionRect, buttonDrawData)
     ugui.standard_styler.params.joystick.tip_size = prev_joystick_tip_size
 end
 
