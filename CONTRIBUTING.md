@@ -1,3 +1,7 @@
+# Inherited Rules
+
+This project is part of the Mupen64 project family and inherits rules from the [Mupen64 contribution guidelines](https://github.com/mkdasher/mupen64-rr-lua-/wiki/Contributing).
+
 # Project Scope
 
 SM64 Lua Redux is an SM64 utility Lua script built for the Mupen64 emulator.
@@ -23,7 +27,3 @@ Globals: `PascalCase`
 Enum tables: `MACRO_CASE`
 
 Constants: `MACRO_CASE`
-
-# Commit Style
-
-Adhere to [conventionalcommits](https://www.conventionalcommits.org/en/v1.0.0/).
