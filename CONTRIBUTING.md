@@ -1,3 +1,15 @@
+# Copyright Header
+
+Every non-library file must contain the following header:
+
+```lua
+--
+-- Copyright (c) 2025, Mupen64 maintainers.
+--
+-- SPDX-License-Identifier: GPL-2.0-or-later
+--
+```
+
 # Inherited Rules
 
 This project is part of the Mupen64 project family and inherits rules from the [Mupen64 contribution guidelines](https://github.com/mkdasher/mupen64-rr-lua-/wiki/Contributing).
