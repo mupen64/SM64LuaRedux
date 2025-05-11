@@ -10,7 +10,7 @@ It should:
 
 # Type Annotations
 
-Use type annotations wherever automatic type inference fails and developers would otherwise be required to scan big chunks of code to manually infer a type.
+Use type annotations wherever automatic type inference fails (or produces unnecessarily complex results) and developers would otherwise be required to scan big chunks of code to manually infer a type.
 
 Particularly `dofile` results should be type-annotated wherever possible.
 
