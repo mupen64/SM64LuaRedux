@@ -292,7 +292,7 @@ local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawDa
             })
 
             if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, joystickBox) then
-                if ugui.internal.is_mouse_just_down() then
+                if ugui.internal.is_mouse_just_down() and not ugui_environment.held_keys["control"] then
                     for _, section in pairs(sheet.sections) do
                         for _, input in pairs(section.inputs) do
                             input.editing = false
