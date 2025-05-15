@@ -271,6 +271,7 @@ local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawDa
                 uid = NextUid(),
                 rectangle = span(col0, col0 + 0.3),
                 text = section.collapsed and "[icon:arrow_right]" or "[icon:arrow_down]",
+                tooltip = Locales.str(section.collapsed and "PIANO_ROLL_INPUTS_EXPAND_SECTION" or "PIANO_ROLL_INPUTS_COLLAPSE_SECTION"),
                 is_checked = not section.collapsed,
                 is_enabled = #section.inputs > 1
             }) or #section.inputs == 1;

@@ -19,7 +19,7 @@ return {
 
                     rectangle = buttonPosition,
                     text = "[icon:door_opening]",
-                    tooltip = Locales.str("PIANO_ROLL_HELP_EXIT")
+                    tooltip = Locales.str("PIANO_ROLL_HELP_EXIT_TOOL_TIP")
                 }
             ) then
                 PianoRollDialog = nil

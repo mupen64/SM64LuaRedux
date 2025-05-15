@@ -61,7 +61,8 @@ local function ControlsForEndAction(section, draw, column, top)
         if ugui.button({
             uid = UID.EndAction,
             rectangle = grid_rect(column, top + labelHeight, 4, largeControlHeight),
-            text = section.endAction
+            text = section.endAction,
+            tooltip = Locales.str("PIANO_ROLL_INPUTS_END_ACTION_TOOL_TIP"),
         }) then
             endActionSearchText = ""
             ugui.internal.active_control = UID.EndActionTextbox
@@ -74,6 +75,7 @@ local function ControlsForEndAction(section, draw, column, top)
             uid = UID.EndActionTextbox,
             rectangle = grid_rect(column, top + labelHeight, 4, largeControlHeight),
             text = endActionSearchText,
+            tooltip = Locales.str("PIANO_ROLL_INPUTS_END_ACTION_TYPE_TO_SEARCH_TOOL_TIP"),
         }):lower()
         local i = 0
         local matchPattern = "^" .. endActionSearchText
@@ -82,7 +84,7 @@ local function ControlsForEndAction(section, draw, column, top)
                 if ugui.button({
                     uid = UID.AvailableActions + i,
                     rectangle = grid_rect(column, top + labelHeight + largeControlHeight + i * smallControlHeight, 4, smallControlHeight),
-                    text = actionName
+                    text = actionName,
                 }) then
                     endActionSearchText = nil
                     section.endAction = actionName
@@ -114,6 +116,7 @@ local function SectionControlsForSelected(draw)
         uid = UID.InsertSection,
         rectangle = grid_rect(0, top, 1.5, largeControlHeight),
         text = Locales.str("PIANO_ROLL_INPUTS_INSERT_SECTION"),
+        tooltip = Locales.str("PIANO_ROLL_INPUTS_INSERT_SECTION_TOOL_TIP"),
     }) then
         local newSection = Section.new("idle", 150)
         table.insert(sheet.sections, sheet.activeFrame.sectionIndex + 1, newSection)
@@ -124,6 +127,7 @@ local function SectionControlsForSelected(draw)
         uid = UID.DeleteSection,
         rectangle = grid_rect(1.5, top, 1.5, largeControlHeight),
         text = Locales.str("PIANO_ROLL_INPUTS_DELETE_SECTION"),
+        tooltip = Locales.str("PIANO_ROLL_INPUTS_DELETE_SECTION_TOOL_TIP"),
     }) then
         table.remove(sheet.sections, sheet.activeFrame.sectionIndex)
         anyChanges = true
@@ -141,6 +145,7 @@ local function SectionControlsForSelected(draw)
         rectangle = grid_rect(col_timeout, top + labelHeight, 2, largeControlHeight),
         value = section.timeout,
         places = 4,
+        tooltip = Locales.str("PIANO_ROLL_INPUTS_TIMEOUT_TOOL_TIP"),
     })
     anyChanges = anyChanges or oldTimeout ~= section.timeout
 
@@ -159,7 +164,7 @@ local function MagnitudeControls(draw, sheet, newValues, top)
         uid = UID.GoalMag,
         rectangle = grid_rect(4, top, 1.5, mediumControlHeight),
         places = 3,
-        value = math.max(0, math.min(127, newValues.goal_mag))
+        value = math.max(0, math.min(127, newValues.goal_mag)),
     })
     -- a value starting with a 9 likely indicates that the user scrolled down
     -- on the most significant digit while its value was 0, so we "clamp" to 0 here
@@ -352,6 +357,7 @@ local function ControlsForSelected(draw)
         uid = UID.InsertInput,
         rectangle = grid_rect(0, top, 1.5, mediumControlHeight),
         text = Locales.str("PIANO_ROLL_INPUTS_INSERT_INPUT"),
+        tooltip = Locales.str("PIANO_ROLL_INPUTS_INSERT_INPUT_TOOL_TIP"),
     }) then
         table.insert(editedSection.inputs, currentSheet.activeFrame.frameIndex, ugui.internal.deep_clone(editedInput))
         anyChanges = true
@@ -361,6 +367,7 @@ local function ControlsForSelected(draw)
         uid = UID.DeleteInput,
         rectangle = grid_rect(1.5, top, 1.5, mediumControlHeight),
         text = Locales.str("PIANO_ROLL_INPUTS_DELETE_INPUT"),
+        tooltip = Locales.str("PIANO_ROLL_INPUTS_DELETE_INPUT_TOOL_TIP"),
         is_enabled = #editedSection.inputs > 1
     }) then
         table.remove(editedSection.inputs, currentSheet.activeFrame.frameIndex)

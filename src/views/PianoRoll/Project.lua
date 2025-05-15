@@ -1,4 +1,7 @@
-Section, Sheet = dofile(views_path .. "PianoRoll/Sheet.lua")
+---@type Section
+Section,
+---@type Sheet
+Sheet = dofile(views_path .. "PianoRoll/Sheet.lua")
 
 local function NewSheetMeta(name)
     return {
@@ -125,8 +128,9 @@ function __clsProject:Load(meta)
     self.all = {}
     local projectFolder = self:ProjectFolder()
     for _, sheetMeta in ipairs(meta.sheets) do
+        ---@type Sheet
         local newSheet = Sheet.new(sheetMeta.name)
-        newSheet:load(projectFolder .. sheetMeta.name .. ".prs", true)
+        newSheet:load(projectFolder .. sheetMeta.name .. ".prs")
         self.all[sheetMeta.name] = newSheet
     end
 end

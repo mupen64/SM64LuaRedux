@@ -42,7 +42,7 @@ local function CreateConfirmDialog(prompt, onConfirmed)
         if ugui.button({
             uid = UID.ConfirmationYes,
             rectangle = grid_rect(4, top, 2, controlHeight),
-            text = 'Yes'
+            text = Locales.str("YES"),
         }) then
             onConfirmed()
             PianoRollDialog = nil
@@ -50,7 +50,7 @@ local function CreateConfirmDialog(prompt, onConfirmed)
         if ugui.button({
             uid = UID.ConfirmationNo,
             rectangle = grid_rect(2, top, 2, controlHeight),
-            text = 'No'
+            text = Locales.str("NO"),
         }) then
             PianoRollDialog = nil
         end
@@ -107,6 +107,7 @@ local function RenderSheetList(draw)
         uid = UID.NewProject,
         rectangle = grid_rect(0, top + 1, 1.5, controlHeight),
         text = Locales.str("PIANO_ROLL_PROJECT_NEW"),
+        tooltip = Locales.str("PIANO_ROLL_PROJECT_NEW_TOOL_TIP"),
     }) then
         local path = iohelper.filediag("*.prp", 1)
         if string.len(path) > 0 then
@@ -120,6 +121,7 @@ local function RenderSheetList(draw)
         uid = UID.OpenProject,
         rectangle = grid_rect(1.5, top + 1, 1.5, controlHeight),
         text = Locales.str("PIANO_ROLL_PROJECT_OPEN"),
+        tooltip = Locales.str("PIANO_ROLL_PROJECT_OPEN_TOOL_TIP"),
     }) then
         local path = iohelper.filediag("*.prp", 0)
         if string.len(path) > 0 then
@@ -132,6 +134,7 @@ local function RenderSheetList(draw)
         uid = UID.SaveProject,
         rectangle = grid_rect(3, top + 1, 1.5, controlHeight),
         text = Locales.str("PIANO_ROLL_PROJECT_SAVE"),
+        tooltip = Locales.str("PIANO_ROLL_PROJECT_SAVE_TOOL_TIP"),
     }) then
         if PianoRollProject.projectLocation == nil then
             local path = iohelper.filediag("*.prp", 0)
@@ -153,6 +156,7 @@ local function RenderSheetList(draw)
         uid = UID.PurgeProject,
         rectangle = grid_rect(4.5, top + 1, 1.5, controlHeight),
         text = Locales.str("PIANO_ROLL_PROJECT_PURGE"),
+        tooltip = Locales.str("PIANO_ROLL_PROJECT_PURGE_TOOL_TIP"),
         is_enabled = PianoRollProject.projectLocation ~= nil,
     }) then
         PianoRollDialog = RenderConfirmPurgeDialog
@@ -170,6 +174,7 @@ local function RenderSheetList(draw)
             uid = UID.DisableProjectSheets,
             rectangle = grid_rect(0, top, 3, controlHeight),
             text = Locales.str("PIANO_ROLL_PROJECT_DISABLE"),
+            tooltip = Locales.str("PIANO_ROLL_PROJECT_DISABLE_TOOL_TIP"),
             is_checked = PianoRollProject.disabled
         })) then
             PianoRollProject.disabled = true
@@ -205,38 +210,38 @@ local function RenderSheetList(draw)
                 uid = uid,
                 rectangle = grid_rect(x, y, width, controlHeight),
                 text = text,
-                is_enabled = enabled,
                 tooltip = tooltip,
+                is_enabled = enabled,
             })
             uid = uid + 1
             x = x + width
             return result
         end
 
-        if (drawUtilityButton("^", Locales.str("PIANO_ROLL_PROJECT_TOOLTIP_MOVE_SHEET_UP"), i > 1)) then
+        if (drawUtilityButton("^", Locales.str("PIANO_ROLL_PROJECT_MOVE_SHEET_UP_TOOL_TIP"), i > 1)) then
             PianoRollProject:MoveSheet(i, -1)
         end
 
-        if (drawUtilityButton("v", Locales.str("PIANO_ROLL_PROJECT_TOOLTIP_MOVE_SHEET_DOWN"), i < #PianoRollProject.meta.sheets)) then
+        if (drawUtilityButton("v", Locales.str("PIANO_ROLL_PROJECT_MOVE_SHEET_DOWN_TOOL_TIP"), i < #PianoRollProject.meta.sheets)) then
             PianoRollProject:MoveSheet(i, 1)
         end
 
-        if (drawUtilityButton("-", Locales.str("PIANO_ROLL_PROJECT_TOOLTIP_DELETE_SHEET"))) then
+        if (drawUtilityButton("-", Locales.str("PIANO_ROLL_PROJECT_DELETE_SHEET_TOOL_TIP"))) then
             PianoRollDialog = RenderConfirmDeletionPrompt(i)
         end
 
-        if (drawUtilityButton(".st", Locales.str("PIANO_ROLL_PROJECT_TOOLTIP_REBASE_SHEET"), true, 0.75)) then
+        if (drawUtilityButton(".st", Locales.str("PIANO_ROLL_PROJECT_REBASE_SHEET_TOOL_TIP"), true, 0.75)) then
             PianoRollProject:Rebase(i)
         end
 
-        if (drawUtilityButton(".prs", Locales.str("PIANO_ROLL_PROJECT_TOOLTIP_REPLACE_INPUTS"), true, 0.75)) then
+        if (drawUtilityButton(".prs", Locales.str("PIANO_ROLL_PROJECT_REPLACE_INPUTS_TOOL_TIP"), true, 0.75)) then
             local path = iohelper.filediag("*.prs", 0)
             if string.len(path) > 0 then
                 PianoRollProject.all[PianoRollProject.meta.sheets[i].name]:load(path, false)
             end
         end
 
-        if (drawUtilityButton(">", Locales.str("PIANO_ROLL_PROJECT_TOOLTIP_PLAY_WITHOUT_ST"))) then
+        if (drawUtilityButton(">", Locales.str("PIANO_ROLL_PROJECT_PLAY_WITHOUT_ST_TOOL_TIP"))) then
             PianoRollProject:Select(i, false)
         end
         ::continue::

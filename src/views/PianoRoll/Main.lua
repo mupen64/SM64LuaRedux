@@ -97,7 +97,7 @@ return {
 
                 rectangle = grid_rect(7, 0, 1, 1),
                 text = "?",
-                tooltip = Locales.str("PIANO_ROLL_HELP_SHOW"),
+                tooltip = Locales.str("PIANO_ROLL_HELP_SHOW_TOOL_TIP"),
                 is_enabled = Tabs[SelectedTabIndex].HelpKey ~= nil,
             }
         ) then
