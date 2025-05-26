@@ -34,6 +34,11 @@ local function AllocateUids(EnumNext)
         MovementModeMatchAngle = EnumNext(),
         MovementModeReverseAngle = EnumNext(),
         DYaw = EnumNext(),
+        Atan = EnumNext(),
+        AtanN = EnumNext(3),
+        AtanD = EnumNext(3),
+        AtanS = EnumNext(3),
+        AtanE = EnumNext(3),
         SpeedKick = EnumNext(),
         ResetMag = EnumNext(),
 
@@ -193,8 +198,69 @@ local function MagnitudeControls(draw, sheet, newValues, top)
     end
 end
 
-local function ControlsForSelected(draw)
+local function AtanControls(draw, sheet, newValues, top)
+    local labelOffset = -0.5
+    local newAtan = ugui.toggle_button({
+        uid = UID.Atan,
+        rectangle = grid_rect(0, top, 1.5, mediumControlHeight),
+        text=Locales.str("PIANO_ROLL_CONTROL_ATAN"),
+        is_checked = newValues.atan_strain
+    })
+    if newAtan and not newValues.atan_strain then
+        newValues.atan_start = Memory.current.mario_global_timer
+    end
+    newValues.atan_strain = newAtan
+    if newValues.movement_mode ~= MovementModes.match_angle then
+        newValues.atan_strain = false
+    end
 
+    draw:text(grid_rect(1.5, top + labelOffset, 0.75, mediumControlHeight), "start", "N:")
+    newValues.atan_n = ugui.spinner({
+        uid = UID.AtanN,
+
+        rectangle = grid_rect(1.5, top, 1.25, mediumControlHeight),
+        value = newValues.atan_n,
+        minimum_value = 1,
+        maximum_value = 4000,
+        increment = math.max(0.25, math.pow(10, Settings.atan_exp)),
+    })
+
+    draw:text(grid_rect(2.75, top + labelOffset, 0.75, mediumControlHeight), "start", "D:")
+    newValues.atan_d = ugui.spinner({
+        uid = UID.AtanD,
+
+        rectangle = grid_rect(2.75, top, 1.75, mediumControlHeight),
+        value = newValues.atan_d,
+        minimum_value = -1000000,
+        maximum_value = 1000000,
+        increment = math.pow(10, Settings.atan_exp),
+    })
+
+    draw:text(grid_rect(4.5, top + labelOffset, 2.35, mediumControlHeight), "start", "Start:")
+    newValues.atan_start = ugui.spinner({
+        uid = UID.AtanS,
+
+        rectangle = grid_rect(4.5, top, 2.35, mediumControlHeight),
+        value = newValues.atan_start,
+        minimum_value = 0,
+        maximum_value = 0xFFFFFFFF,
+        increment = math.pow(10, Settings.atan_exp),
+    })
+
+    draw:text(grid_rect(7, top + labelOffset, 0.5, mediumControlHeight), "start", "E:")
+    Settings.atan_exp = ugui.spinner({
+        uid = UID.AtanE,
+
+        rectangle = grid_rect(7, top, 1, mediumControlHeight),
+        value = Settings.atan_exp,
+        minimum_value = -9,
+        maximum_value = 5,
+        increment = 1,
+    })
+end
+
+
+local function ControlsForSelected(draw)
     local smallControlHeight = 0.5
     local largeControlHeight = 1.0
     local top = TOP
@@ -336,6 +402,7 @@ local function ControlsForSelected(draw)
     })
 
     MagnitudeControls(draw, sheet, newValues, top + 3)
+    AtanControls(draw, sheet, newValues, top + 4)
 
     ugui.standard_styler.params.spinner.button_size = previousThickness
 
