@@ -10,13 +10,12 @@ local VIs = 0
 local PredictedVIs = 0
 local State = 0
 local StartVI = 0
-local is_control_automatic = true
 local curVI = 0
 local frames = 0
 
 local function timerAutoDetect()
     if ((State == 1) and ((Memory.current.mario_object_effective == 0) or (curVI < StartVI))) then -- Reset timer on star select, or if state before start time is loaded
-        Timer.reset()
+    Timer.reset()
     end
     if ((State ~= 1) and (Memory.current.camera_transition_progress ~= nil) and (Memory.current.mario_object_effective ~= 0) and (transitionTimes[Memory.current.camera_transition_type] == Memory.current.camera_transition_progress) and (Memory.current.mario_action ~= 0x1300)) then -- Start timer on fade in
         Timer.start()
@@ -52,11 +51,9 @@ Timer.get_frames = function()
     return frames
 end
 
-Timer.update = function(
-
-)
+Timer.update = function()
     curVI = emu.framecount()
-    if (State == 1) then
+    if (State == 1) then 
         if (curVI <= StartVI) then
             VIs = 0
             frames = 0
@@ -66,7 +63,7 @@ Timer.update = function(
             frames = frames + 1
         end
     end
-    if (is_control_automatic) then
+    if Settings.timer_auto then
         timerAutoDetect()
     end
 end

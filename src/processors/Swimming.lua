@@ -12,7 +12,9 @@ return {
 
 		if Memory.current.mario_action == SWIMMING_ANIMATION_2
 			or Memory.current.mario_action == WATER_ACTION_END
-			or Memory.current.mario_action == WATER_IDLE then
+			or Memory.current.mario_action == WATER_IDLE
+			or Memory.current.mario_action == 0x300024D4
+			or Memory.current.mario_action == 0x380022C1 then
 			input[Settings.swimming_button] = 1
 		end
 		return input

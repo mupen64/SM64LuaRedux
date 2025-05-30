@@ -27,11 +27,11 @@ return {
             }) then
             Timer.reset()
         end
-        is_control_automatic = ugui.toggle_button({
+        Settings.timer_auto = ugui.toggle_button({
             uid = 25,
             rectangle = grid_rect(6, 0, 2, 1),
-            text = is_control_automatic and Locales.str("TIMER_AUTO") or Locales.str("TIMER_MANUAL"),
-            is_checked = is_control_automatic
+            text = Settings.timer_auto and Locales.str("TIMER_AUTO") or Locales.str("TIMER_MANUAL"),
+            is_checked = Settings.timer_auto
         })
         ugui.joystick({
             uid = 30,

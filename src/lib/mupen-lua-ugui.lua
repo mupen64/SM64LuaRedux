@@ -78,6 +78,8 @@ end
 ---@class Joystick : Control
 ---@field public position Vector2 The joystick's position with the range 0-128 on both axes.
 ---@field public mag number? The joystick's magnitude circle radius with the range `0-128`. If nil, no magnitude circle will be drawn.
+---@field public x_snap integer? The snap distance to 0 on the X axis. If nil, no snap will be applied.
+---@field public y_snap integer? The snap distance to 0 on the Y axis. If nil, no snap will be applied.
 ---A joystick which can be interacted with.
 
 ---@class Trackbar : Control
@@ -124,7 +126,7 @@ end
 
 ---@class Spinner : Control
 ---@field public value number The spinner's numerical value.
----@field public increment number The increment applied when the + or - buttons are clicked.
+---@field public increment number? The increment applied when the + or - buttons are clicked (negated when - is clicked). If nil, 1 is assumed.
 ---@field public minimum_value number? The minimum value.
 ---@field public maximum_value number? The maximum value.
 ---@field public is_horizontal boolean? Whether the increment buttons are stacked horizontally.
@@ -2122,6 +2124,13 @@ ugui.joystick = function(control)
         position.y = ugui.internal.clamp(
             ugui.internal.remap(ugui.internal.environment.mouse_position.y - control.rectangle.y, 0,
                 control.rectangle.height, -128, 128), -128, 128)
+        if control.x_snap and position.x > -control.x_snap and position.x < control.x_snap then
+            position.x = 0
+        end
+        if control.y_snap and position.y > -control.y_snap and position.y < control.y_snap then
+            position.y = 0
+        end
+        
     end
 
     ugui.internal.handle_tooltip(control)
