@@ -1,4 +1,4 @@
----@class PreferencesTab:Tab
+---@class PreferencesTab : Tab
 local __clsPreferencesTab = {}
 
 __impl = __clsPreferencesTab

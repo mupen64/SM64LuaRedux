@@ -1,4 +1,4 @@
----@class ProjectTab:Tab
+---@class ProjectTab : Tab
 local __clsProjectTab = {}
 
 __impl = __clsProjectTab

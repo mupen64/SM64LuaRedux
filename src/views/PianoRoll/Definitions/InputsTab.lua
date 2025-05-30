@@ -1,4 +1,4 @@
----@class InputsTab:Tab
+---@class InputsTab : Tab
 local __clsInputsTab = {}
 
 __impl = __clsInputsTab
