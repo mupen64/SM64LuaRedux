@@ -279,6 +279,17 @@ To edit button inputs, simply click and drag over the small circles on the right
 This is not affected by and does not affect your selection or active frame.
 ]],
                 },
+                {
+                    HEADING = "Arctan straining",
+                    TEXT =
+[[
+Arctan straining works similarly to how it does in the TAS tab.
+Note, however, that when you TURN ON Arctan straining, the starting frame will be set to whatever global timer value the game is currently in, namely most likely the preview frame's global timer.
+Thus, make sure to set your preview frame to the START of the Arctan strain when you need to turn Arctan straining off and on again to affect more frames.
+
+This is subject to change in favor of a more comfortable and intuitive way to control the arctan parameters in the future.
+]]
+                }
             },
         },
         SETTINGS_GUI = {
