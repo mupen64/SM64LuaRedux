@@ -1,8 +1,13 @@
-local name = "Preferences"
+---@type PreferencesTab
+---@diagnostic disable-next-line: assign-type-mismatch
+local __impl = __impl
 
-local UID = dofile(views_path .. "PianoRoll/UID.lua")[name]
+__impl.name = "Preferences"
+__impl.HelpKey = "PREFERENCES_TAB"
 
-local function AllocateUids(EnumNext)
+local UID = dofile(views_path .. "PianoRoll/UID.lua")[__impl.name]
+
+function __impl.AllocateUids(EnumNext)
     return {
         ToggleEditEntireState = EnumNext(),
         ToggleFastForward = EnumNext(),
@@ -11,7 +16,7 @@ end
 
 local controlHeight = 0.75
 
-local function RenderOptionsList(draw)
+function __impl.Render(draw)
     local top = 1
     Settings.piano_roll.edit_entire_state = ugui.toggle_button(
         {
@@ -30,10 +35,3 @@ local function RenderOptionsList(draw)
         }
     )
 end
-
-return {
-    name = name,
-    Render = RenderOptionsList,
-    AllocateUids = AllocateUids,
-    HelpKey = "SETTINGS_GUI"
-}

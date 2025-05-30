@@ -292,7 +292,7 @@ This is subject to change in favor of a more comfortable and intuitive way to co
                 }
             },
         },
-        SETTINGS_GUI = {
+        PREFERENCES_TAB = {
             HEADING = "Preferences",
             PAGES = {
                 {
