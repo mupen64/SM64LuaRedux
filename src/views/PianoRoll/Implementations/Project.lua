@@ -1,10 +1,9 @@
 ---@type Project
+---@diagnostic disable-next-line: assign-type-mismatch
 local __impl = __impl
 
----@type Section
-Section,
 ---@type Sheet
-Sheet = dofile(views_path .. "PianoRoll/Sheet.lua")
+local Sheet = dofile(views_path .. "PianoRoll/Definitions/Sheet.lua")
 
 local function NewSheetMeta(name)
     return {
@@ -104,8 +103,7 @@ function __impl:Load(meta)
     self.all = {}
     local projectFolder = self:ProjectFolder()
     for _, sheetMeta in ipairs(meta.sheets) do
-        ---@type Sheet
-        local newSheet = Sheet.new(sheetMeta.name)
+        local newSheet = Sheet.new(sheetMeta.name, false)
         newSheet:load(projectFolder .. sheetMeta.name .. ".prs")
         self.all[sheetMeta.name] = newSheet
     end

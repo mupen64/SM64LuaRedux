@@ -1,0 +1,55 @@
+---@diagnostic disable:missing-return
+
+---@class Sheet
+---@field public previewFrame SelectionFrame The frame top which to proceed when re-running the game after a change.
+---@field public activeFrame SelectionFrame The frame whose controls to display in the "Inputs" page.
+---@field public sections Section[] An array of TASStates with their associated section definition to execute in order.
+---@field public name string A name for the sheet for convenience.
+---@field private _sectionIndex integer The nth section that is currently being played.
+---@field private _frameCounter integer The nth frame of the current section that is currently being played.
+---@field private _busy boolean Whether the sheet is waiting for the game to run until its preview frame.
+---@field private _updatePending boolean Whether a change has been made that demands rerunning the sheet until its preview frame.
+---@field private _savestate unknown The savestate this sheet runs from.
+local __clsSheet = {}
+
+---Constructs a new sheet with the given name and a single section.
+---
+---If `createSavestate` is set, the sheet will be "based" on the game's current state.
+---Otherwise, a savestate MUST be supplied either
+---via [load](lua://__clsSheet.load) or [rebase](lua://__clsSheet.rebase)
+---before calling [runToPreview](lua://__clsSheet.runToPreview).
+---@param name string The name of the sheet.
+---@param createSavestate boolean Whether to create a savestate.
+---@return Sheet sheet The new sheet.
+function __clsSheet.new(name, createSavestate) end
+
+-- TODO: remove this in favor of using #sections directly
+function __clsSheet:numSections() end
+
+---Retrieves the inputs for the next frame and advances this sheet's internal counters
+---such that the sequential invocations will yield the appropriate frames to advance the game with.
+---@return SectionInputs inputs The inputs to advance the game's next frame with.
+function __clsSheet:evaluateFrame() end
+
+---Runs the game until the preview frame of this sheet.
+function __clsSheet:runToPreview(loadState) end
+
+---Saves this sheet's data and associated savestate into `file` and `file`.savestate respectively.
+---@param file string The file path to save to (absolute or relative).
+function __clsSheet:save(file) end
+
+---Loads this sheet's data and associated savestate from `file` and `file`.savestate respectively.
+---@param file string The file path to load from (absolute or relative).
+function __clsSheet:load(file) end
+
+-- TODO: figure out if this even needs to exist anymore
+function __clsSheet:update() end
+
+---Replaces the savestate this sheet runs from with the game's current state.
+function __clsSheet:rebase() end
+
+__impl = __clsSheet
+dofile(views_path .. "PianoRoll/Implementations/Sheet.lua")
+__impl = nil
+
+return __clsSheet

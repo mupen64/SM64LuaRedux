@@ -1,45 +1,20 @@
----@class SectionInputs
----@field tasState table TAS states to derive the control stick inputs from - note that arctan straining will refer to the section's timeout for its length
----@field joy table The joypad data, that is, pressed buttons and joystick values.
----@field editing boolean Whether the input is selected for editing.
-local __clsSectionInputs = {}
+---@diagnostic disable:invisible
 
----@class Section
----@field endAction string The name of the action that, when reached in playback, ends this section
----@field timeout integer The maximum number of frames this section goes on for
----@field inputs SectionInputs[] The TAS states and button presses for the earliest frames of this section. If the segment as longer than this array, its last element being held out until the end of this section.
----@field collapsed boolean Whether the section's earliest inputs should be hidden in the FrameListGui
-local __clsSection = {}
+---@type Sheet
+---@diagnostic disable-next-line:assign-type-mismatch
+local __impl = __impl
 
-local function NewSection(endAction, timeout)
-    local tmp = {}
-    CloneInto(tmp, Joypad.input)
-    ---@type Section
-    return {
-        endAction = endAction,
-        timeout = timeout,
-        inputs = { { tasState = NewTASState(), joy = tmp, } },
-        collapsed = false,
-    }
-end
+---@type Section
+local Section = dofile(views_path .. "PianoRoll/Definitions/Section.lua")
 
----@class Sheet
----@field public previewFrame SelectionFrame The frame top which to proceed when re-running the game after a change.
----@field public activeFrame SelectionFrame The frame whose controls to display in the "Inputs" page.
----@field public sections Section[] An array of TASStates with their associated section definition to execute in order.
----@field public name string A name for the piano roll for convenience.
----@field private _sectionIndex integer The nth section that is currently being played
-local __clsSheet = {}
-
-local function NewSheet(name, createSavestate)
+function __impl.new(name, createSavestate)
     local globalTimer = Memory.current.mario_global_timer
 
-    ---@type Sheet
     local newInstance = {
         startGT = globalTimer,
         previewFrame = { sectionIndex = 1, frameIndex = 1 },
         activeFrame = { sectionIndex = 1, frameIndex = 1 },
-        sections = { NewSection("idle", 150) },
+        sections = { Section.new("idle", 150) },
         name = name,
         _savestate = nil,
         _oldTASState = {},
@@ -49,14 +24,13 @@ local function NewSheet(name, createSavestate)
         _rebasing = false,
         _sectionIndex = 1,
         _frameCounter = 1,
-        _previousTASState = nil,
-        numSections = __clsSheet.numSections,
-        evaluateFrame = __clsSheet.evaluateFrame,
-        update = __clsSheet.update,
-        runToPreview = __clsSheet.runToPreview,
-        rebase = __clsSheet.rebase,
-        save = __clsSheet.save,
-        load = __clsSheet.load,
+        numSections = __impl.numSections,
+        evaluateFrame = __impl.evaluateFrame,
+        update = __impl.update,
+        runToPreview = __impl.runToPreview,
+        rebase = __impl.rebase,
+        save = __impl.save,
+        load = __impl.load,
     }
     if createSavestate then
         savestate.do_memory({}, "save", function(result, data) newInstance._savestate = data end)
@@ -65,9 +39,9 @@ local function NewSheet(name, createSavestate)
     return newInstance
 end
 
-function __clsSheet:numSections() return #self.sections end
+function __impl:numSections() return #self.sections end
 
-function __clsSheet:evaluateFrame()
+function __impl:evaluateFrame()
     local section = self.sections[self._sectionIndex]
     if section == nil then return nil end
 
@@ -93,7 +67,7 @@ function __clsSheet:evaluateFrame()
     return section and section.inputs[math.min(self._frameCounter, #section.inputs)] or nil
 end
 
-function __clsSheet:runToPreview(loadState)
+function __impl:runToPreview(loadState)
     if self._busy then
         self._updatePending = true
         return
@@ -112,12 +86,11 @@ function __clsSheet:runToPreview(loadState)
         emu.set_ff(Settings.piano_roll.fast_foward)
     end
 
-    self._previousTASState = TASState
     self._sectionIndex = 1
     self._frameCounter = 1
 end
 
-function __clsSheet:save(file)
+function __impl:save(file)
     writeAll(file .. ".savestate", self._savestate)
     persistence.store(
         file,
@@ -130,7 +103,7 @@ function __clsSheet:save(file)
     )
 end
 
-function __clsSheet:load(file)
+function __impl:load(file)
     local contents = persistence.load(file);
     if contents ~= nil then
         self._savestate = readAll(file .. ".savestate")
@@ -138,7 +111,7 @@ function __clsSheet:load(file)
     end
 end
 
-function __clsSheet:update()
+function __impl:update()
     local anyChange = CloneInto(self._oldTASState, TASState)
     local now = os.clock()
     if anyChange then
@@ -150,13 +123,9 @@ function __clsSheet:update()
     end
 end
 
-function __clsSheet:rebase()
+function __impl:rebase()
     savestate.do_memory({}, "save", function(result, data)
         self._savestate = data
         self:runToPreview()
     end)
 end
-
-return
-{ new = NewSection },
-{ new = NewSheet }
