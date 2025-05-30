@@ -3,7 +3,7 @@
 local __impl = __impl
 
 __impl.name = "Inputs"
-__impl.HelpKey = "INPUTS_TAB"
+__impl.help_key = "INPUTS_TAB"
 
 ---@type FrameListGui
 local FrameListGui = dofile(views_path .. "PianoRoll/Definitions/FrameListGui.lua")
@@ -24,7 +24,7 @@ local MAX_ACTION_GUESSES <const> = 5
 
 local selectedViewIndex = 1
 
-function __impl.AllocateUids(EnumNext)
+function __impl.allocate_uids(EnumNext)
     return {
         ViewCarrousel = EnumNext(),
         InsertInput = EnumNext(),
@@ -115,7 +115,7 @@ local function ControlsForEndAction(section, draw, column, top)
 end
 
 local function SectionControlsForSelected(draw)
-    local sheet = PianoRollProject:AssertedCurrent()
+    local sheet = PianoRollProject:asserted_current()
 
     local top = TOP
     local col_timeout = 4
@@ -168,7 +168,7 @@ local function SectionControlsForSelected(draw)
     ControlsForEndAction(section, draw, 0, top)
 
     if anyChanges then
-        sheet:runToPreview()
+        sheet:run_to_preview()
     end
 end
 
@@ -275,7 +275,7 @@ local function ControlsForSelected(draw)
     local largeControlHeight = 1.0
     local top = TOP
 
-    local sheet = PianoRollProject:AssertedCurrent()
+    local sheet = PianoRollProject:asserted_current()
 
     local newValues = {}
     local editedSection = sheet.sections[sheet.activeFrame.sectionIndex]
@@ -418,7 +418,7 @@ local function ControlsForSelected(draw)
 
     local changes = CloneInto(oldValues, newValues)
     local anyChanges = AnyEntries(changes)
-    local currentSheet = PianoRollProject:AssertedCurrent()
+    local currentSheet = PianoRollProject:asserted_current()
     if anyChanges and editedInput then
         for _, section in pairs(sheet.sections) do
             for _, input in pairs(section.inputs) do
@@ -452,11 +452,11 @@ local function ControlsForSelected(draw)
     end
 
     if anyChanges then
-        currentSheet:runToPreview()
+        currentSheet:run_to_preview()
     end
 end
 
-function __impl.Render(draw)
+function __impl.render(draw)
     local drawFuncs = { ControlsForSelected, SectionControlsForSelected }
     selectedViewIndex = ugui.carrousel_button({
          uid = UID.ViewCarrousel,
@@ -466,6 +466,6 @@ function __impl.Render(draw)
          selected_index = selectedViewIndex,
         })
     drawFuncs[selectedViewIndex](draw)
-    FrameListGui.viewIndex = selectedViewIndex
-    FrameListGui.Render(draw)
+    FrameListGui.view_index = selectedViewIndex
+    FrameListGui.render(draw)
 end

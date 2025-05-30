@@ -13,7 +13,7 @@ end
 ---@return table lookup The lookup table for that specific Gui's allocated uids
 local function FromGui(gui)
     local table = {}
-    for k, v in pairs(gui.AllocateUids(EnumNext)) do
+    for k, v in pairs(gui.allocate_uids(EnumNext)) do
         table[k] = v
     end
     return table

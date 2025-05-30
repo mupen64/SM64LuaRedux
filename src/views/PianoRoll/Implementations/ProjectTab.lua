@@ -3,14 +3,14 @@
 local __impl = __impl
 
 __impl.name = "Project"
-__impl.HelpKey = "PROJECT_TAB"
+__impl.help_key = "PROJECT_TAB"
 
 local Project = dofile(views_path .. "PianoRoll/Definitions/Project.lua")
 local persistence = dofile(lib_path .. "persistence.lua")
 
 local UID <const> = dofile(views_path .. "PianoRoll/UID.lua")[__impl.name]
 
-function __impl.AllocateUids(EnumNext)
+function __impl.allocate_uids(EnumNext)
     return {
         NewProject = EnumNext(),
         OpenProject = EnumNext(),
@@ -64,7 +64,7 @@ end
 local function RenderConfirmDeletionPrompt(sheetIndex)
     return CreateConfirmDialog(
         "[Confirm deletion]\n\nAre you sure you want to delete \"" .. PianoRollProject.meta.sheets[sheetIndex].name .. "\"?\nThis action cannot be undone.",
-        function() PianoRollProject:RemoveSheet(sheetIndex) end
+        function() PianoRollProject:remove_sheet(sheetIndex) end
     )
 end
 
@@ -75,7 +75,7 @@ local RenderConfirmPurgeDialog = CreateConfirmDialog(
     .."This action cannot be undone.",
     function()
         local ignoredFiles = {}
-        local projectFolder = PianoRollProject:ProjectFolder()
+        local projectFolder = PianoRollProject:project_folder()
         for _, sheetMeta in ipairs(PianoRollProject.meta.sheets) do
             ignoredFiles[sheetMeta.name .. ".prs"] = true
             ignoredFiles[sheetMeta.name .. ".prs.savestate"] = true
@@ -89,7 +89,7 @@ local RenderConfirmPurgeDialog = CreateConfirmDialog(
     end
 )
 
-function __impl.Render(draw)
+function __impl.render(draw)
     local theme = Styles.theme()
     local foregroundColor = theme.listbox.text[1]
     if #PianoRollProject.meta.sheets == 0 then
@@ -117,7 +117,7 @@ function __impl.Render(draw)
         if string.len(path) > 0 then
             PianoRollProject = Project.new()
             PianoRollProject.projectLocation = path
-            PianoRollProject:AddSheet()
+            PianoRollProject:add_sheet()
             persistence.store(path, PianoRollProject.meta)
         end
     end
@@ -131,7 +131,7 @@ function __impl.Render(draw)
         if string.len(path) > 0 then
             PianoRollProject = Project.new()
             PianoRollProject.projectLocation = path
-            PianoRollProject:Load(persistence.load(path))
+            PianoRollProject:load(persistence.load(path))
         end
     end
     if ugui.button({
@@ -149,7 +149,7 @@ function __impl.Render(draw)
             persistence.store(path, PianoRollProject.meta)
         end
         persistence.store(PianoRollProject.projectLocation, PianoRollProject.meta)
-        local projectFolder = PianoRollProject:ProjectFolder()
+        local projectFolder = PianoRollProject:project_folder()
         for _, sheetMeta in ipairs(PianoRollProject.meta.sheets) do
             PianoRollProject.all[sheetMeta.name]:save(projectFolder .. sheetMeta.name .. ".prs")
         end
@@ -196,10 +196,10 @@ function __impl.Render(draw)
             is_checked = not PianoRollProject.disabled and i == PianoRollProject.meta.selectionIndex,
         }) then
             if i == #PianoRollProject.meta.sheets + 1 then -- add new sheet
-                PianoRollProject:AddSheet()
-                PianoRollProject:Select(#PianoRollProject.meta.sheets)
+                PianoRollProject:add_sheet()
+                PianoRollProject:select(#PianoRollProject.meta.sheets)
             elseif PianoRollProject.disabled or i ~= PianoRollProject.meta.selectionIndex then -- select sheet
-                PianoRollProject:Select(i)
+                PianoRollProject:select(i)
             end
         end
         uid = uid + 1
@@ -223,11 +223,11 @@ function __impl.Render(draw)
         end
 
         if (drawUtilityButton("^", Locales.str("PIANO_ROLL_PROJECT_MOVE_SHEET_UP_TOOL_TIP"), i > 1)) then
-            PianoRollProject:MoveSheet(i, -1)
+            PianoRollProject:move_sheet(i, -1)
         end
 
         if (drawUtilityButton("v", Locales.str("PIANO_ROLL_PROJECT_MOVE_SHEET_DOWN_TOOL_TIP"), i < #PianoRollProject.meta.sheets)) then
-            PianoRollProject:MoveSheet(i, 1)
+            PianoRollProject:move_sheet(i, 1)
         end
 
         if (drawUtilityButton("-", Locales.str("PIANO_ROLL_PROJECT_DELETE_SHEET_TOOL_TIP"))) then
@@ -235,7 +235,7 @@ function __impl.Render(draw)
         end
 
         if (drawUtilityButton(".st", Locales.str("PIANO_ROLL_PROJECT_REBASE_SHEET_TOOL_TIP"), true, 0.75)) then
-            PianoRollProject:Rebase(i)
+            PianoRollProject:rebase(i)
         end
 
         if (drawUtilityButton(".prs", Locales.str("PIANO_ROLL_PROJECT_REPLACE_INPUTS_TOOL_TIP"), true, 0.75)) then
@@ -246,7 +246,7 @@ function __impl.Render(draw)
         end
 
         if (drawUtilityButton(">", Locales.str("PIANO_ROLL_PROJECT_PLAY_WITHOUT_ST_TOOL_TIP"))) then
-            PianoRollProject:Select(i, false)
+            PianoRollProject:select(i, false)
         end
         ::continue::
     end

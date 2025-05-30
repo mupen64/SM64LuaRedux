@@ -3,11 +3,11 @@
 local __impl = __impl
 
 __impl.name = "Preferences"
-__impl.HelpKey = "PREFERENCES_TAB"
+__impl.help_key = "PREFERENCES_TAB"
 
 local UID <const> = dofile(views_path .. "PianoRoll/UID.lua")[__impl.name]
 
-function __impl.AllocateUids(EnumNext)
+function __impl.allocate_uids(EnumNext)
     return {
         ToggleEditEntireState = EnumNext(),
         ToggleFastForward = EnumNext(),
@@ -16,7 +16,7 @@ end
 
 local controlHeight = 0.75
 
-function __impl.Render(draw)
+function __impl.render(draw)
     local top = 1
     Settings.piano_roll.edit_entire_state = ugui.toggle_button(
         {

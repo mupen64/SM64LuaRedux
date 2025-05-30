@@ -67,7 +67,7 @@ end
 
 emu.atupdatescreen(function()
     -- prevent reentrant calls caused by GUI actions while the game is running
-    local currentSheet = PianoRollProject:Current()
+    local currentSheet = PianoRollProject:current()
     if currentSheet ~= nil and not currentSheet._busy then
         currentSheet:update()
     end
@@ -81,8 +81,8 @@ end)
 ---
 ---@return SectionInputs|nil override The inputs to apply for the current frame.
 function CurrentPianoRollOverride()
-    local currentSheet = PianoRollProject:Current()
-    return currentSheet and not PianoRollProject.disabled and currentSheet:evaluateFrame() or nil
+    local currentSheet = PianoRollProject:current()
+    return currentSheet and not PianoRollProject.disabled and currentSheet:evaluate_frame() or nil
 end
 
 return {
@@ -112,15 +112,15 @@ return {
                 rectangle = grid_rect(7, 0, 1, 1),
                 text = "?",
                 tooltip = Locales.str("PIANO_ROLL_HELP_SHOW_TOOL_TIP"),
-                is_enabled = Tabs[SelectedTabIndex].HelpKey ~= nil,
+                is_enabled = Tabs[SelectedTabIndex].help_key ~= nil,
             }
         ) then
-            PianoRollDialog = Help.GetDialog(Tabs[SelectedTabIndex].HelpKey)
+            PianoRollDialog = Help.GetDialog(Tabs[SelectedTabIndex].help_key)
         end
 
         -- show only the project page if no piano rolls exist
-        if PianoRollProject:Current() == nil then SelectedTabIndex = 1 end
-        Tabs[SelectedTabIndex].Render(draw)
+        if PianoRollProject:current() == nil then SelectedTabIndex = 1 end
+        Tabs[SelectedTabIndex].render(draw)
 
         -- hack to make the listbox transparent
         Memory.update()

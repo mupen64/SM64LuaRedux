@@ -24,10 +24,10 @@ function __impl.new(name, createSavestate)
         _rebasing = false,
         _sectionIndex = 1,
         _frameCounter = 1,
-        numSections = __impl.numSections,
-        evaluateFrame = __impl.evaluateFrame,
+        num_sections = __impl.num_sections,
+        evaluate_frame = __impl.evaluate_frame,
         update = __impl.update,
-        runToPreview = __impl.runToPreview,
+        run_to_preview = __impl.run_to_preview,
         rebase = __impl.rebase,
         save = __impl.save,
         load = __impl.load,
@@ -39,9 +39,9 @@ function __impl.new(name, createSavestate)
     return newInstance
 end
 
-function __impl:numSections() return #self.sections end
+function __impl:num_sections() return #self.sections end
 
-function __impl:evaluateFrame()
+function __impl:evaluate_frame()
     local section = self.sections[self._sectionIndex]
     if section == nil then return nil end
 
@@ -67,12 +67,12 @@ function __impl:evaluateFrame()
     return section and section.inputs[math.min(self._frameCounter, #section.inputs)] or nil
 end
 
-function __impl:runToPreview(loadState)
+function __impl:run_to_preview(loadState)
     if self._busy then
         self._updatePending = true
         return
     end
-    if self:numSections() == 0 then return end
+    if self:num_sections() == 0 then return end
     self._busy = true
     self._updatePending = false
 
@@ -119,13 +119,13 @@ function __impl:update()
         self._updatePending = true
     elseif self._updatePending then
         self._oldClock = now
-        self:runToPreview()
+        self:run_to_preview()
     end
 end
 
 function __impl:rebase()
     savestate.do_memory({}, "save", function(result, data)
         self._savestate = data
-        self:runToPreview()
+        self:run_to_preview()
     end)
 end

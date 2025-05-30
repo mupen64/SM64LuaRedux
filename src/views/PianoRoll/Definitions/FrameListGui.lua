@@ -2,9 +2,9 @@
 ---Angle and control sticks; 1: Section end action
 
 ---@class FrameListGui:Gui
----@field viewIndex FrameListViewIndex The index of the information kind to show.
+---@field view_index FrameListViewIndex The index of the information kind to show.
 local __clsFrameListGui = {
-    viewIndex = 0
+    view_index = 0
 }
 
 __impl = __clsFrameListGui

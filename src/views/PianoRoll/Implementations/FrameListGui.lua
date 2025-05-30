@@ -61,7 +61,7 @@ local VIEW_MODE_HEADERS <const> = { "PIANO_ROLL_FRAMELIST_STICK", "PIANO_ROLL_FR
 
 local scrollOffset = 0
 
-function __impl.AllocateUids(EnumNext)
+function __impl.allocate_uids(EnumNext)
     local base = EnumNext(MAX_DISPLAYED_SECTIONS * NUM_UIDS_PER_ROW)
     return {
         SheetName = EnumNext(),
@@ -77,7 +77,7 @@ end
 local function IterateInputRows(sheet, callback)
     local totalInputsCounted = 1
     local totalSectionsCounted = 1
-    for sectionIndex = 1, sheet:numSections(), 1 do
+    for sectionIndex = 1, sheet:num_sections(), 1 do
         local section = sheet.sections[sectionIndex]
         for inputIndex = 1, #section.inputs, 1 do
             if callback and callback(section, section.inputs[inputIndex], totalSectionsCounted, totalInputsCounted, inputIndex) then
@@ -119,7 +119,7 @@ local function DrawHeaders(sheet, draw, viewIndex, buttonDrawData)
         rectangle = grid_rect(4, ROW0, 4, 0.5),
         text = sheet.name
     })
-    PianoRollProject:SetCurrentName(sheet.name)
+    PianoRollProject:set_current_name(sheet.name)
     ugui.standard_styler.params.font_size = prev_font_size
     ugui.standard_styler.font_size = prev_font_size
 
@@ -215,7 +215,7 @@ local function HandleScrollAndButtons(sectionRect, buttonDrawData, numRows)
 
     if not buttonDrawData then return end
 
-    IterateInputRows(PianoRollProject:AssertedCurrent(), function(section, input, sectionIndex, inputIndex)
+    IterateInputRows(PianoRollProject:asserted_current(), function(section, input, sectionIndex, inputIndex)
         if inputIndex == hoveringIndex and inRange and section ~= nil then
             for buttonIndex, v in ipairs(BUTTONS) do
                 local inRangeX = mouseX >= buttonDrawData[buttonIndex].x and mouseX < buttonDrawData[buttonIndex + 1].x
@@ -254,7 +254,7 @@ local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawDa
         local blueMultiplier = sectionIndex % 2 == 1 and 2 or 1
 
         if totalInputs > MAX_DISPLAYED_SECTIONS + scrollOffset then
-            local extraSections = sheet:numSections() - sectionIndex
+            local extraSections = sheet:num_sections() - sectionIndex
             BreitbandGraphics.fill_rectangle(span(0, COL_1), {r=138, g=148, b=138, a=66})
             draw:text(span(COL1, COL_1), "start", "+ " .. extraSections .. " sections")
             return true
@@ -284,7 +284,7 @@ local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawDa
 
         if ugui.internal.is_mouse_just_down() and BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, frameBox) then
             sheet.previewFrame = { sectionIndex = sectionIndex, frameIndex =  inputSubIndex }
-            sheet:runToPreview()
+            sheet:run_to_preview()
         end
 
         if viewIndex == 1 then
@@ -355,21 +355,21 @@ local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawDa
 end
 
 --- Renders the sheets, indicating whether an update by the user has been made that should cause a rerun
-function __impl.Render(draw)
-    local currentSheet = PianoRollProject:AssertedCurrent()
+function __impl.render(draw)
+    local currentSheet = PianoRollProject:asserted_current()
 
-    local numRows = IterateInputRows(PianoRollProject:AssertedCurrent(), nil)
+    local numRows = IterateInputRows(PianoRollProject:asserted_current(), nil)
     local baseline, scrollbarRect = DrawScrollbar(numRows)
     local buttonDrawData = DrawColorCodes(baseline, scrollbarRect, math.min(numRows, MAX_DISPLAYED_SECTIONS)) or nil
-    DrawHeaders(currentSheet, draw, __impl.viewIndex, buttonDrawData)
+    DrawHeaders(currentSheet, draw, __impl.view_index, buttonDrawData)
 
     local sectionRect = grid_rect(COL0, ROW2, COL_1 - COL0 - SCROLLBAR_WIDTH, FRAME_COLUMN_HEIGHT, 0)
     if HandleScrollAndButtons(sectionRect, buttonDrawData, numRows) then
-        currentSheet:runToPreview()
+        currentSheet:run_to_preview()
     end
 
     local prev_joystick_tip_size = ugui.standard_styler.params.joystick.tip_size
     ugui.standard_styler.params.joystick.tip_size = 4 * Drawing.scale
-    DrawSectionsGui(currentSheet, draw, __impl.viewIndex, sectionRect, buttonDrawData)
+    DrawSectionsGui(currentSheet, draw, __impl.view_index, sectionRect, buttonDrawData)
     ugui.standard_styler.params.joystick.tip_size = prev_joystick_tip_size
 end

@@ -17,22 +17,22 @@ local __clsSheet = {}
 ---If `createSavestate` is set, the sheet will be "based" on the game's current state.
 ---Otherwise, a savestate MUST be supplied either
 ---via [load](lua://__clsSheet.load) or [rebase](lua://__clsSheet.rebase)
----before calling [runToPreview](lua://__clsSheet.runToPreview).
+---before calling [runToPreview](lua://__clsSheet.run_to_preview).
 ---@param name string The name of the sheet.
 ---@param createSavestate boolean Whether to create a savestate.
 ---@return Sheet sheet The new sheet.
 function __clsSheet.new(name, createSavestate) end
 
 -- TODO: remove this in favor of using #sections directly
-function __clsSheet:numSections() end
+function __clsSheet:num_sections() end
 
 ---Retrieves the inputs for the next frame and advances this sheet's internal counters
 ---such that the sequential invocations will yield the appropriate frames to advance the game with.
 ---@return SectionInputs inputs The inputs to advance the game's next frame with.
-function __clsSheet:evaluateFrame() end
+function __clsSheet:evaluate_frame() end
 
 ---Runs the game until the preview frame of this sheet.
-function __clsSheet:runToPreview(loadState) end
+function __clsSheet:run_to_preview(loadState) end
 
 ---Saves this sheet's data and associated savestate into `file` and `file`.savestate respectively.
 ---@param file string The file path to save to (absolute or relative).
