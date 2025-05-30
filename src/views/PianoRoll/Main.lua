@@ -1,5 +1,5 @@
 local UID = dofile(views_path .. "PianoRoll/UID.lua")
-local Project = dofile(views_path .. "PianoRoll/Project.lua")
+local Project = dofile(views_path .. "PianoRoll/Definitions/Project.lua")
 local Help = dofile(views_path .. "PianoRoll/Help.lua")
 
 ---utility functions---

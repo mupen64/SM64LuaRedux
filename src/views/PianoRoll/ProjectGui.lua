@@ -1,7 +1,7 @@
 local name = "Project"
 
 local UID = dofile(views_path .. "PianoRoll/UID.lua")[name]
-local Project = dofile(views_path .. "PianoRoll/Project.lua")
+local Project = dofile(views_path .. "PianoRoll/Definitions/Project.lua")
 local persistence = dofile(lib_path .. "persistence.lua")
 
 local function AllocateUids(EnumNext)
