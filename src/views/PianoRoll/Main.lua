@@ -1,12 +1,18 @@
-local UID = dofile(views_path .. "PianoRoll/UID.lua")
-local Project = dofile(views_path .. "PianoRoll/Definitions/Project.lua")
-local Help = dofile(views_path .. "PianoRoll/Help.lua")
-
 ---utility functions---
 
----@type Project
-PianoRollProject = Project.new()
-PianoRollDialog = nil
+function readAll(file)
+    local f = assert(io.open(file, "rb"))
+    local content = f:read("*all")
+    f:close()
+    return content
+end
+
+function writeAll(file, content)
+    local f = assert(io.open(file, "wb"))
+    f:write(content)
+    f:close()
+    return content
+end
 
 function CloneInto(destination, source)
     local changes = {}
@@ -18,7 +24,15 @@ function CloneInto(destination, source)
     return changes
 end
 
---implementation details
+---implementation details---
+
+local UID = dofile(views_path .. "PianoRoll/UID.lua")
+local Project = dofile(views_path .. "PianoRoll/Definitions/Project.lua")
+local Help = dofile(views_path .. "PianoRoll/Help.lua")
+
+---@type Project
+PianoRollProject = Project.new()
+PianoRollDialog = nil
 
 local uguiIconDraw = ugui.standard_styler.draw_icon
 
