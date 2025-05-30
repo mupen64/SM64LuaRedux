@@ -14,14 +14,14 @@ function __impl.allocate_uids(EnumNext)
     }
 end
 
-local controlHeight = 0.75
+local control_height = 0.75
 
 function __impl.render(draw)
     local top = 1
     Settings.piano_roll.edit_entire_state = ugui.toggle_button(
         {
             uid = UID.ToggleEditEntireState,
-            rectangle = grid_rect(0, top, 8, controlHeight),
+            rectangle = grid_rect(0, top, 8, control_height),
             text = "Edit entire state",
             is_checked = Settings.piano_roll.edit_entire_state,
         }
@@ -29,7 +29,7 @@ function __impl.render(draw)
     Settings.piano_roll.fast_foward = ugui.toggle_button(
         {
             uid = UID.ToggleFastForward,
-            rectangle = grid_rect(0, top + controlHeight, 8, controlHeight),
+            rectangle = grid_rect(0, top + control_height, 8, control_height),
             text = "Fast Forward",
             is_checked = Settings.piano_roll.fast_foward,
         }

@@ -4,7 +4,7 @@ function CloneInto(destination, source)
     local changes = {}
     for k, v in pairs(source) do
         if v ~= destination[k] then changes[k] = v end
-        anyChanges = anyChanges or v ~= destination[k]
+        any_changes = any_changes or v ~= destination[k]
         destination[k] = v
     end
     return changes
@@ -20,14 +20,14 @@ local Help = dofile(views_path .. "PianoRoll/Help.lua")
 PianoRollProject = Project.new()
 PianoRollDialog = nil
 
-local uguiIconDraw = ugui.standard_styler.draw_icon
+local ugui_icon_draw = ugui.standard_styler.draw_icon
 
 ugui.standard_styler.draw_icon = function(rectangle, color, visual_state, key)
     if key == "door_opening" then
         rectangle = {x = rectangle.x - rectangle.width * 0.5, y = rectangle.y - rectangle.height * 0.5, width = rectangle.width * 2, height = rectangle.height * 2}
         BreitbandGraphics.draw_image(rectangle, nil, views_path .. "PianoRoll/Resources/door_opening.png", color, "linear")
     else
-        uguiIconDraw(rectangle, color, visual_state, key)
+        ugui_icon_draw(rectangle, color, visual_state, key)
     end
 end
 
@@ -36,26 +36,26 @@ local SelectedTabIndex = 1
 
 local function draw_factory(theme)
     return {
-        foregroundColor = BreitbandGraphics.invert_color(theme.background_color),
-        backgroundColor = theme.background_color,
-        fontSize = theme.font_size * Drawing.scale * 0.75,
+        foreground_color = BreitbandGraphics.invert_color(theme.background_color),
+        background_color = theme.background_color,
+        font_size = theme.font_size * Drawing.scale * 0.75,
         style = { aliased = theme.pixelated_text },
 
         text = function(self, rect, horizontal_alignment, text)
-            BreitbandGraphics.draw_text(rect, horizontal_alignment, "center", self.style, self.foregroundColor, self.fontSize, "Consolas", text)
+            BreitbandGraphics.draw_text(rect, horizontal_alignment, "center", self.style, self.foreground_color, self.font_size, "Consolas", text)
         end,
 
         small_text = function(self, rect, horizontal_alignment, text)
-            BreitbandGraphics.draw_text(rect, horizontal_alignment, "center", self.style, self.foregroundColor, self.fontSize * 0.75, "Consolas", text)
+            BreitbandGraphics.draw_text(rect, horizontal_alignment, "center", self.style, self.foreground_color, self.font_size * 0.75, "Consolas", text)
         end
     }
 end
 
 emu.atupdatescreen(function()
     -- prevent reentrant calls caused by GUI actions while the game is running
-    local currentSheet = PianoRollProject:current()
-    if currentSheet ~= nil and not currentSheet._busy then
-        currentSheet:update()
+    local current_sheet = PianoRollProject:current()
+    if current_sheet ~= nil and not current_sheet._busy then
+        current_sheet:update()
     end
 end)
 
@@ -67,8 +67,8 @@ end)
 ---
 ---@return SectionInputs|nil override The inputs to apply for the current frame.
 function CurrentPianoRollOverride()
-    local currentSheet = PianoRollProject:current()
-    return currentSheet and not PianoRollProject.disabled and currentSheet:evaluate_frame() or nil
+    local current_sheet = PianoRollProject:current()
+    return current_sheet and not PianoRollProject.disabled and current_sheet:evaluate_frame() or nil
 end
 
 return {
@@ -110,7 +110,7 @@ return {
 
         -- hack to make the listbox transparent
         Memory.update()
-        local previousAlpha = BreitbandGraphics.colors.white.a
+        local previous_alpha = BreitbandGraphics.colors.white.a
         BreitbandGraphics.colors.white.a = 110
         ugui.listbox({
             uid = UID.VarWatch,
@@ -118,6 +118,6 @@ return {
             selected_index = nil,
             items = VarWatch.processed_values,
         })
-        BreitbandGraphics.colors.white.a = previousAlpha
+        BreitbandGraphics.colors.white.a = previous_alpha
     end,
 }

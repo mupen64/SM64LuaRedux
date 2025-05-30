@@ -1,8 +1,8 @@
 ---@diagnostic disable:missing-return
 
 ---@class Sheet
----@field public previewFrame SelectionFrame The frame top which to proceed when re-running the game after a change.
----@field public activeFrame SelectionFrame The frame whose controls to display in the "Inputs" page.
+---@field public preview_frame SelectionFrame The frame top which to proceed when re-running the game after a change.
+---@field public active_frame SelectionFrame The frame whose controls to display in the "Inputs" page.
 ---@field public sections Section[] An array of TASStates with their associated section definition to execute in order.
 ---@field public name string A name for the sheet for convenience.
 ---@field private _sectionIndex integer The nth section that is currently being played.
@@ -17,11 +17,11 @@ local __clsSheet = {}
 ---If `createSavestate` is set, the sheet will be "based" on the game's current state.
 ---Otherwise, a savestate MUST be supplied either
 ---via [load](lua://__clsSheet.load) or [rebase](lua://__clsSheet.rebase)
----before calling [runToPreview](lua://__clsSheet.run_to_preview).
+---before calling [run_to_preview](lua://__clsSheet.run_to_preview).
 ---@param name string The name of the sheet.
----@param createSavestate boolean Whether to create a savestate.
+---@param create_savestate boolean Whether to create a savestate.
 ---@return Sheet sheet The new sheet.
-function __clsSheet.new(name, createSavestate) end
+function __clsSheet.new(name, create_savestate) end
 
 -- TODO: remove this in favor of using #sections directly
 function __clsSheet:num_sections() end
@@ -32,7 +32,7 @@ function __clsSheet:num_sections() end
 function __clsSheet:evaluate_frame() end
 
 ---Runs the game until the preview frame of this sheet.
-function __clsSheet:run_to_preview(loadState) end
+function __clsSheet:run_to_preview(load_state) end
 
 ---Saves this sheet's data and associated savestate into `file` and `file`.savestate respectively.
 ---@param file string The file path to save to (absolute or relative).

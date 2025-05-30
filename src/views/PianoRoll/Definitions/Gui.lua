@@ -4,9 +4,9 @@
 local __clsGui = {}
 
 ---Allocates UIDs for specific subtype
----@param enumNext fun(count?: integer): integer A function that will generate a new UID whenever called
+---@param enum_next fun(count?: integer): integer A function that will generate a new UID whenever called
 ---@return table lookup A table from names to UIDs
-function __clsGui.allocate_uids(enumNext) end
+function __clsGui.allocate_uids(enum_next) end
 
 ---Renders a specific Gui subtype
 ---@param draw any A utility object to streamline draw calls.

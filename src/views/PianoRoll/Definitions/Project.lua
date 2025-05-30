@@ -3,8 +3,8 @@
 ---@class Project
 ---@field public meta table Metadata about the project that is stored into the piano roll project file (*.prp).
 ---@field public all table All piano roll sheets as loaded from their respective *.prs files in order.
----@field public projectLocation string The location of the piano roll project file (*.prp).
----@field public copyEntireState boolean If true, the entire TASState of the active edited frame is copied to all selected. If false, only the changes made will be copied instead.
+---@field public project_location string The location of the piano roll project file (*.prp).
+---@field public copy_entire_state boolean If true, the entire TASState of the active edited frame is copied to all selected. If false, only the changes made will be copied instead.
 local __clsProject = {}
 
 ---Constructs a new Project with no sheets.
@@ -36,7 +36,7 @@ function __clsProject:set_current_name(name) end
 
 ---Selects the piano roll sheet at the provided index and runs it from its savestate to its current preview.
 ---@param index number The 1-based index of the sheet to select.
-function __clsProject:select(index, loadState) end
+function __clsProject:select(index, load_state) end
 
 ---Selects and rebases the piano roll sheet at the provided index onto the current state of the game.
 ---@param index number The 1-based index of the sheet to select.

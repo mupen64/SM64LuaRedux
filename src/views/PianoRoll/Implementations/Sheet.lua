@@ -21,13 +21,13 @@ local function write_all(file, content)
     return content
 end
 
-function __impl.new(name, createSavestate)
-    local globalTimer = Memory.current.mario_global_timer
+function __impl.new(name, create_savestate)
+    local global_timer = Memory.current.mario_global_timer
 
-    local newInstance = {
-        startGT = globalTimer,
-        previewFrame = { sectionIndex = 1, frameIndex = 1 },
-        activeFrame = { sectionIndex = 1, frameIndex = 1 },
+    local new_instance = {
+        start_g_t = global_timer,
+        preview_frame = { section_index = 1, frame_index = 1 },
+        active_frame = { section_index = 1, frame_index = 1 },
         sections = { Section.new("idle", 150) },
         name = name,
         _savestate = nil,
@@ -46,11 +46,11 @@ function __impl.new(name, createSavestate)
         save = __impl.save,
         load = __impl.load,
     }
-    if createSavestate then
-        savestate.do_memory({}, "save", function(result, data) newInstance._savestate = data end)
+    if create_savestate then
+        savestate.do_memory({}, "save", function(result, data) new_instance._savestate = data end)
     end
 
-    return newInstance
+    return new_instance
 end
 
 function __impl:num_sections() return #self.sections end
@@ -59,17 +59,17 @@ function __impl:evaluate_frame()
     local section = self.sections[self._sectionIndex]
     if section == nil then return nil end
 
-    local tasState = section.inputs[math.min(self._frameCounter, #section.inputs)].tasState
-    local currentAction = Locales.raw().ACTIONS[memory.readdword(Addresses[Settings.address_source_index].mario_action)]
-    tasState.preview_action = currentAction
-    if self._frameCounter >= section.timeout or currentAction == section.endAction then
+    local tas_state = section.inputs[math.min(self._frameCounter, #section.inputs)].tas_state
+    local current_action = Locales.raw().ACTIONS[memory.readdword(Addresses[Settings.address_source_index].mario_action)]
+    tas_state.preview_action = current_action
+    if self._frameCounter >= section.timeout or current_action == section.end_action then
         self._sectionIndex = self._sectionIndex + 1
         self._frameCounter = 0
     end
-    if self._sectionIndex > self.previewFrame.sectionIndex
-        or (self._sectionIndex == self.previewFrame.sectionIndex
-            and self.previewFrame.frameIndex
-            and self._frameCounter >= self.previewFrame.frameIndex - 1
+    if self._sectionIndex > self.preview_frame.section_index
+        or (self._sectionIndex == self.preview_frame.section_index
+            and self.preview_frame.frame_index
+            and self._frameCounter >= self.preview_frame.frame_index - 1
             ) then
         emu.pause(false)
         emu.set_ff(false)
@@ -81,7 +81,7 @@ function __impl:evaluate_frame()
     return section and section.inputs[math.min(self._frameCounter, #section.inputs)] or nil
 end
 
-function __impl:run_to_preview(loadState)
+function __impl:run_to_preview(load_state)
     if self._busy then
         self._updatePending = true
         return
@@ -90,7 +90,7 @@ function __impl:run_to_preview(loadState)
     self._busy = true
     self._updatePending = false
 
-    if loadState == nil and true or loadState then
+    if load_state == nil and true or load_state then
         savestate.do_memory(self._savestate, "load", function()
             emu.pause(true)
             emu.set_ff(Settings.piano_roll.fast_foward)
@@ -111,8 +111,8 @@ function __impl:save(file)
         {
             sections     = self.sections,
             name         = self.name,
-            activeFrame  = self.activeFrame,
-            previewFrame = self.previewFrame,
+            active_frame  = self.active_frame,
+            preview_frame = self.preview_frame,
         }
     )
 end
@@ -126,9 +126,9 @@ function __impl:load(file)
 end
 
 function __impl:update()
-    local anyChange = CloneInto(self._oldTASState, TASState)
+    local any_change = CloneInto(self._oldTASState, TASState)
     local now = os.clock()
-    if anyChange then
+    if any_change then
         self._oldClock = now
         self._updatePending = true
     elseif self._updatePending then
