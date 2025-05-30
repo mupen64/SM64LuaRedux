@@ -5,18 +5,22 @@ local __impl = __impl
 __impl.name = "Inputs"
 __impl.HelpKey = "INPUTS_TAB"
 
-local UID = dofile(views_path .. "PianoRoll/UID.lua")[__impl.name]
-
 ---@type FrameListGui
 local FrameListGui = dofile(views_path .. "PianoRoll/Definitions/FrameListGui.lua")
 
-local mediumControlHeight = 0.75
-local smallControlHeight = 0.50
-local largeControlHeight = 0.75
-local labelHeight = 0.25
+---constants---
 
-local TOP = 10.25
-local MAX_ACTION_GUESSES = 5
+local UID <const> = dofile(views_path .. "PianoRoll/UID.lua")[__impl.name]
+
+local MEDIUM_CONTROL_HEIGHT <const> = 0.75
+local SMALL_CONTROL_HEIGHT <const> = 0.50
+local LARGE_CONTROL_HEIGHT <const> = 0.75
+local LABEL_HEIGHT <const> = 0.25
+
+local TOP <const> = 10.25
+local MAX_ACTION_GUESSES <const> = 5
+
+---logic---
 
 local selectedViewIndex = 1
 
@@ -67,12 +71,12 @@ local function AnyEntries(table) for _ in pairs(table) do return true end return
 local endActionSearchText = nil
 
 local function ControlsForEndAction(section, draw, column, top)
-    draw:text(grid_rect(column, top, 4, labelHeight), "start", Locales.str("PIANO_ROLL_INPUTS_END_ACTION"))
+    draw:text(grid_rect(column, top, 4, LABEL_HEIGHT), "start", Locales.str("PIANO_ROLL_INPUTS_END_ACTION"))
     if endActionSearchText == nil then
         -- end action "dropdown" is not visible
         if ugui.button({
             uid = UID.EndAction,
-            rectangle = grid_rect(column, top + labelHeight, 4, largeControlHeight),
+            rectangle = grid_rect(column, top + LABEL_HEIGHT, 4, LARGE_CONTROL_HEIGHT),
             text = section.endAction,
             tooltip = Locales.str("PIANO_ROLL_INPUTS_END_ACTION_TOOL_TIP"),
         }) then
@@ -85,7 +89,7 @@ local function ControlsForEndAction(section, draw, column, top)
         -- end action "dropdown" is visible
         endActionSearchText = ugui.textbox({
             uid = UID.EndActionTextbox,
-            rectangle = grid_rect(column, top + labelHeight, 4, largeControlHeight),
+            rectangle = grid_rect(column, top + LABEL_HEIGHT, 4, LARGE_CONTROL_HEIGHT),
             text = endActionSearchText,
             tooltip = Locales.str("PIANO_ROLL_INPUTS_END_ACTION_TYPE_TO_SEARCH_TOOL_TIP"),
         }):lower()
@@ -95,7 +99,7 @@ local function ControlsForEndAction(section, draw, column, top)
             if actionName:find(matchPattern) ~= nil then
                 if ugui.button({
                     uid = UID.AvailableActions + i,
-                    rectangle = grid_rect(column, top + labelHeight + largeControlHeight + i * smallControlHeight, 4, smallControlHeight),
+                    rectangle = grid_rect(column, top + LABEL_HEIGHT + LARGE_CONTROL_HEIGHT + i * SMALL_CONTROL_HEIGHT, 4, SMALL_CONTROL_HEIGHT),
                     text = actionName,
                 }) then
                     endActionSearchText = nil
@@ -126,7 +130,7 @@ local function SectionControlsForSelected(draw)
 
     if ugui.button({
         uid = UID.InsertSection,
-        rectangle = grid_rect(0, top, 1.5, largeControlHeight),
+        rectangle = grid_rect(0, top, 1.5, LARGE_CONTROL_HEIGHT),
         text = Locales.str("PIANO_ROLL_INPUTS_INSERT_SECTION"),
         tooltip = Locales.str("PIANO_ROLL_INPUTS_INSERT_SECTION_TOOL_TIP"),
     }) then
@@ -137,7 +141,7 @@ local function SectionControlsForSelected(draw)
 
     if ugui.button({
         uid = UID.DeleteSection,
-        rectangle = grid_rect(1.5, top, 1.5, largeControlHeight),
+        rectangle = grid_rect(1.5, top, 1.5, LARGE_CONTROL_HEIGHT),
         text = Locales.str("PIANO_ROLL_INPUTS_DELETE_SECTION"),
         tooltip = Locales.str("PIANO_ROLL_INPUTS_DELETE_SECTION_TOOL_TIP"),
     }) then
@@ -150,11 +154,11 @@ local function SectionControlsForSelected(draw)
 
     top = top + 1
 
-    draw:text(grid_rect(col_timeout, top, 2, labelHeight), "start", Locales.str("PIANO_ROLL_INPUTS_TIMEOUT"))
+    draw:text(grid_rect(col_timeout, top, 2, LABEL_HEIGHT), "start", Locales.str("PIANO_ROLL_INPUTS_TIMEOUT"))
     local oldTimeout = section.timeout
     section.timeout = ugui.numberbox({
         uid = UID.Timeout,
-        rectangle = grid_rect(col_timeout, top + labelHeight, 2, largeControlHeight),
+        rectangle = grid_rect(col_timeout, top + LABEL_HEIGHT, 2, LARGE_CONTROL_HEIGHT),
         value = section.timeout,
         places = 4,
         tooltip = Locales.str("PIANO_ROLL_INPUTS_TIMEOUT_TOOL_TIP"),
@@ -171,10 +175,10 @@ end
 -- ### Joystick Controls ### ---
 
 local function MagnitudeControls(draw, sheet, newValues, top)
-    draw:text(grid_rect(2, top, 2, mediumControlHeight), "end", Locales.str("PIANO_ROLL_CONTROL_MAG"))
+    draw:text(grid_rect(2, top, 2, MEDIUM_CONTROL_HEIGHT), "end", Locales.str("PIANO_ROLL_CONTROL_MAG"))
     newValues.goal_mag = ugui.numberbox({
         uid = UID.GoalMag,
-        rectangle = grid_rect(4, top, 1.5, mediumControlHeight),
+        rectangle = grid_rect(4, top, 1.5, MEDIUM_CONTROL_HEIGHT),
         places = 3,
         value = math.max(0, math.min(127, newValues.goal_mag)),
     })
@@ -186,7 +190,7 @@ local function MagnitudeControls(draw, sheet, newValues, top)
 
     if ugui.button({
         uid = UID.SpeedKick,
-        rectangle = grid_rect(5.5, top, 1.5, mediumControlHeight),
+        rectangle = grid_rect(5.5, top, 1.5, MEDIUM_CONTROL_HEIGHT),
         text = Locales.str("PIANO_ROLL_CONTROL_SPDKICK"),
     }) then
         if newValues.goal_mag ~= 48 then
@@ -198,7 +202,7 @@ local function MagnitudeControls(draw, sheet, newValues, top)
 
     if ugui.button({
         uid = UID.ResetMag,
-        rectangle = grid_rect(7, top, 1, mediumControlHeight),
+        rectangle = grid_rect(7, top, 1, MEDIUM_CONTROL_HEIGHT),
         text = Locales.str("MAG_RESET"),
     }) then
         newValues.goal_mag = 127
@@ -209,7 +213,7 @@ local function AtanControls(draw, sheet, newValues, top)
     local labelOffset = -0.5
     local newAtan = ugui.toggle_button({
         uid = UID.Atan,
-        rectangle = grid_rect(0, top, 1.5, mediumControlHeight),
+        rectangle = grid_rect(0, top, 1.5, MEDIUM_CONTROL_HEIGHT),
         text=Locales.str("PIANO_ROLL_CONTROL_ATAN"),
         is_checked = newValues.atan_strain
     })
@@ -221,44 +225,44 @@ local function AtanControls(draw, sheet, newValues, top)
         newValues.atan_strain = false
     end
 
-    draw:text(grid_rect(1.5, top + labelOffset, 0.75, mediumControlHeight), "start", "N:")
+    draw:text(grid_rect(1.5, top + labelOffset, 0.75, MEDIUM_CONTROL_HEIGHT), "start", "N:")
     newValues.atan_n = ugui.spinner({
         uid = UID.AtanN,
 
-        rectangle = grid_rect(1.5, top, 1.25, mediumControlHeight),
+        rectangle = grid_rect(1.5, top, 1.25, MEDIUM_CONTROL_HEIGHT),
         value = newValues.atan_n,
         minimum_value = 1,
         maximum_value = 4000,
         increment = math.max(0.25, math.pow(10, Settings.atan_exp)),
     })
 
-    draw:text(grid_rect(2.75, top + labelOffset, 0.75, mediumControlHeight), "start", "D:")
+    draw:text(grid_rect(2.75, top + labelOffset, 0.75, MEDIUM_CONTROL_HEIGHT), "start", "D:")
     newValues.atan_d = ugui.spinner({
         uid = UID.AtanD,
 
-        rectangle = grid_rect(2.75, top, 1.75, mediumControlHeight),
+        rectangle = grid_rect(2.75, top, 1.75, MEDIUM_CONTROL_HEIGHT),
         value = newValues.atan_d,
         minimum_value = -1000000,
         maximum_value = 1000000,
         increment = math.pow(10, Settings.atan_exp),
     })
 
-    draw:text(grid_rect(4.5, top + labelOffset, 2.35, mediumControlHeight), "start", "Start:")
+    draw:text(grid_rect(4.5, top + labelOffset, 2.35, MEDIUM_CONTROL_HEIGHT), "start", "Start:")
     newValues.atan_start = ugui.spinner({
         uid = UID.AtanS,
 
-        rectangle = grid_rect(4.5, top, 2.35, mediumControlHeight),
+        rectangle = grid_rect(4.5, top, 2.35, MEDIUM_CONTROL_HEIGHT),
         value = newValues.atan_start,
         minimum_value = 0,
         maximum_value = 0xFFFFFFFF,
         increment = math.pow(10, Settings.atan_exp),
     })
 
-    draw:text(grid_rect(7, top + labelOffset, 0.5, mediumControlHeight), "start", "E:")
+    draw:text(grid_rect(7, top + labelOffset, 0.5, MEDIUM_CONTROL_HEIGHT), "start", "E:")
     Settings.atan_exp = ugui.spinner({
         uid = UID.AtanE,
 
-        rectangle = grid_rect(7, top, 1, mediumControlHeight),
+        rectangle = grid_rect(7, top, 1, MEDIUM_CONTROL_HEIGHT),
         value = Settings.atan_exp,
         minimum_value = -9,
         maximum_value = 5,
@@ -428,7 +432,7 @@ local function ControlsForSelected(draw)
     top = TOP
     if ugui.button({
         uid = UID.InsertInput,
-        rectangle = grid_rect(0, top, 1.5, mediumControlHeight),
+        rectangle = grid_rect(0, top, 1.5, MEDIUM_CONTROL_HEIGHT),
         text = Locales.str("PIANO_ROLL_INPUTS_INSERT_INPUT"),
         tooltip = Locales.str("PIANO_ROLL_INPUTS_INSERT_INPUT_TOOL_TIP"),
     }) then
@@ -438,7 +442,7 @@ local function ControlsForSelected(draw)
 
     if ugui.button({
         uid = UID.DeleteInput,
-        rectangle = grid_rect(1.5, top, 1.5, mediumControlHeight),
+        rectangle = grid_rect(1.5, top, 1.5, MEDIUM_CONTROL_HEIGHT),
         text = Locales.str("PIANO_ROLL_INPUTS_DELETE_INPUT"),
         tooltip = Locales.str("PIANO_ROLL_INPUTS_DELETE_INPUT_TOOL_TIP"),
         is_enabled = #editedSection.inputs > 1
@@ -456,7 +460,7 @@ function __impl.Render(draw)
     local drawFuncs = { ControlsForSelected, SectionControlsForSelected }
     selectedViewIndex = ugui.carrousel_button({
          uid = UID.ViewCarrousel,
-         rectangle = grid_rect(6, TOP, 2, mediumControlHeight),
+         rectangle = grid_rect(6, TOP, 2, MEDIUM_CONTROL_HEIGHT),
          value = selectedViewIndex,
          items = { "Joystick", "Section" },
          selected_index = selectedViewIndex,

@@ -1,4 +1,4 @@
-local UID = dofile(views_path .. "PianoRoll/UID.lua")
+local UID <const> = dofile(views_path .. "PianoRoll/UID.lua")
 
 return {
     GetDialog = function(key)

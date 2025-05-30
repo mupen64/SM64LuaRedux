@@ -5,7 +5,7 @@ local __impl = __impl
 __impl.name = "Preferences"
 __impl.HelpKey = "PREFERENCES_TAB"
 
-local UID = dofile(views_path .. "PianoRoll/UID.lua")[__impl.name]
+local UID <const> = dofile(views_path .. "PianoRoll/UID.lua")[__impl.name]
 
 function __impl.AllocateUids(EnumNext)
     return {

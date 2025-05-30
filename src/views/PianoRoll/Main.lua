@@ -26,7 +26,7 @@ end
 
 ---implementation details---
 
-local UID = dofile(views_path .. "PianoRoll/UID.lua")
+local UID <const> = dofile(views_path .. "PianoRoll/UID.lua")
 local Project = dofile(views_path .. "PianoRoll/Definitions/Project.lua")
 local Help = dofile(views_path .. "PianoRoll/Help.lua")
 

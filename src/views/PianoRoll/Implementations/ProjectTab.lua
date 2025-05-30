@@ -5,9 +5,10 @@ local __impl = __impl
 __impl.name = "Project"
 __impl.HelpKey = "PROJECT_TAB"
 
-local UID = dofile(views_path .. "PianoRoll/UID.lua")[__impl.name]
 local Project = dofile(views_path .. "PianoRoll/Definitions/Project.lua")
 local persistence = dofile(lib_path .. "persistence.lua")
+
+local UID <const> = dofile(views_path .. "PianoRoll/UID.lua")[__impl.name]
 
 function __impl.AllocateUids(EnumNext)
     return {

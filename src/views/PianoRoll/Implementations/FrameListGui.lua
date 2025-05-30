@@ -2,14 +2,12 @@
 ---@diagnostic disable-next-line: assign-type-mismatch
 local __impl = __impl
 
-local name = "FrameList"
-
-local UID = dofile(views_path .. "PianoRoll/UID.lua")[name]
-
 ---constants---
 
-local ModeTexts = { "-", "D", "M", "Y", "R", "A" }
-local Buttons = {
+local UID <const> = dofile(views_path .. "PianoRoll/UID.lua")["FrameList"]
+
+local MODE_TEXTS <const> = { "-", "D", "M", "Y", "R", "A" }
+local BUTTONS <const> = {
     {input = 'A', text = 'A'},
     {input = 'B', text = 'B'},
     {input = 'Z', text = 'Z'},
@@ -26,29 +24,28 @@ local Buttons = {
     {input = 'v', text = 'v'},
 }
 
-local col0 = 0.0
-local col1 = 1.3
-local col2 = 1.8
-local col3 = 2.1
-local col4 = 2.3
-local col5 = 3.1
-local col6 = 3.3
-local col_1 = 8.0
+local COL0 <const> = 0.0
+local COL1 <const> = 1.3
+local COL2 <const> = 1.8
+local COL3 <const> = 2.1
+local COL4 <const> = 2.3
+local COL5 <const> = 3.1
+local COL6 <const> = 3.3
+local COL_1 <const> = 8.0
 
-local row0 = 1.00
-local row1 = 1.50
-local row2 = 2.25
+local ROW0 <const> = 1.00
+local ROW1 <const> = 1.50
+local ROW2 <const> = 2.25
 
-local buttonColumnWidth = 0.3
-local buttonSize = 0.22
-local frameColumnHeight = 0.5
-local scrollbarWidth = 0.3
+local BUTTON_COLUMN_WIDTH <const> = 0.3
+local BUTTON_SIZE <const> = 0.22
+local FRAME_COLUMN_HEIGHT <const> = 0.5
+local SCROLLBAR_WIDTH <const> = 0.3
 
-local maxDisplayedSections = 15
-local scrollOffset = 0
+local MAX_DISPLAYED_SECTIONS <const> = 15
 
-local NUM_UIDS_PER_ROW = 2
-local buttonColors = {
+local NUM_UIDS_PER_ROW <const> = 2
+local BUTTON_COLORS <const> = {
     {background={r=000, g=000, b=255, a=100}, button={r=000, g=000, b=190, a=255}}, -- A
     {background={r=000, g=177, b=022, a=100}, button={r=000, g=230, b=044, a=255}}, -- B
     {background={r=111, g=111, b=111, a=100}, button={r=200, g=200, b=200, a=255}}, -- Z
@@ -58,10 +55,14 @@ local buttonColors = {
     {background={r=055, g=055, b=055, a=100}, button={r=035, g=035, b=035, a=255}}, -- 4 DPad Buttons
 }
 
-local VIEW_MODE_HEADERS = { "PIANO_ROLL_FRAMELIST_STICK", "PIANO_ROLL_FRAMELIST_UNTIL" }
+local VIEW_MODE_HEADERS <const> = { "PIANO_ROLL_FRAMELIST_STICK", "PIANO_ROLL_FRAMELIST_UNTIL" }
+
+---logic---
+
+local scrollOffset = 0
 
 function __impl.AllocateUids(EnumNext)
-    local base = EnumNext(maxDisplayedSections * NUM_UIDS_PER_ROW)
+    local base = EnumNext(MAX_DISPLAYED_SECTIONS * NUM_UIDS_PER_ROW)
     return {
         SheetName = EnumNext(),
         Scrollbar = EnumNext(),
@@ -70,8 +71,6 @@ function __impl.AllocateUids(EnumNext)
         end,
     }
 end
-
----logic---
 
 ---@function Iterates all sections as an input row, including their follow-up frames for non-collapsed sections
 ---@param sheet Sheet The sheet over whose sections to iterate
@@ -94,7 +93,7 @@ local function IterateInputRows(sheet, callback)
 end
 
 local function UpdateScroll(wheel, numRows)
-    scrollOffset = math.max(0, math.min(numRows - maxDisplayedSections, scrollOffset - wheel))
+    scrollOffset = math.max(0, math.min(numRows - MAX_DISPLAYED_SECTIONS, scrollOffset - wheel))
 end
 
 local function InterpolateVectorsToInt(a, b, f)
@@ -107,47 +106,47 @@ end
 
 local function DrawHeaders(sheet, draw, viewIndex, buttonDrawData)
     local backgroundColor = InterpolateVectorsToInt(draw.backgroundColor, {r = 127, g = 127, b = 127}, 0.25)
-    BreitbandGraphics.fill_rectangle(grid_rect(0, row0, col_1, row2 - row0, 0), backgroundColor)
+    BreitbandGraphics.fill_rectangle(grid_rect(0, ROW0, COL_1, ROW2 - ROW0, 0), backgroundColor)
 
-    draw:text(grid_rect(0, row0, 2, 1), "start", Locales.str("PIANO_ROLL_FRAMELIST_START") .. sheet.startGT)
+    draw:text(grid_rect(0, ROW0, 2, 1), "start", Locales.str("PIANO_ROLL_FRAMELIST_START") .. sheet.startGT)
 
-    draw:text(grid_rect(3, row0, 1, 0.5), "start", Locales.str("PIANO_ROLL_FRAMELIST_NAME"))
+    draw:text(grid_rect(3, ROW0, 1, 0.5), "start", Locales.str("PIANO_ROLL_FRAMELIST_NAME"))
     local prev_font_size = ugui.standard_styler.params.font_size
     ugui.standard_styler.params.font_size = ugui.standard_styler.params.font_size * 0.75
     sheet.name = ugui.textbox({
         uid = UID.SheetName,
         is_enabled = true,
-        rectangle = grid_rect(4, row0, 4, 0.5),
+        rectangle = grid_rect(4, ROW0, 4, 0.5),
         text = sheet.name
     })
     PianoRollProject:SetCurrentName(sheet.name)
     ugui.standard_styler.params.font_size = prev_font_size
     ugui.standard_styler.font_size = prev_font_size
 
-    draw:text(grid_rect(col0, row1, col1 - col0, 1), "start", Locales.str("PIANO_ROLL_FRAMELIST_SECTION"))
-    draw:text(grid_rect(col1, row1, col6 - col1, 1), "start", Locales.str(VIEW_MODE_HEADERS[viewIndex]))
+    draw:text(grid_rect(COL0, ROW1, COL1 - COL0, 1), "start", Locales.str("PIANO_ROLL_FRAMELIST_SECTION"))
+    draw:text(grid_rect(COL1, ROW1, COL6 - COL1, 1), "start", Locales.str(VIEW_MODE_HEADERS[viewIndex]))
 
     if not buttonDrawData then return end
 
-    local rect = grid_rect(0, row1, 0.333, 1)
-    for i, v in ipairs(Buttons) do
+    local rect = grid_rect(0, ROW1, 0.333, 1)
+    for i, v in ipairs(BUTTONS) do
         rect.x = buttonDrawData[i].x
         draw:text(rect, "center", v.text)
     end
 end
 
 local function DrawScrollbar(numRows)
-    local baseline = grid_rect(col_1, row2, buttonColumnWidth, frameColumnHeight, 0)
+    local baseline = grid_rect(COL_1, ROW2, BUTTON_COLUMN_WIDTH, FRAME_COLUMN_HEIGHT, 0)
     local unit = Settings.grid_size * Drawing.scale
-    local numActuallyShownRows = math.min(maxDisplayedSections, numRows)
+    local numActuallyShownRows = math.min(MAX_DISPLAYED_SECTIONS, numRows)
     local scrollbarRect = {
-        x = baseline.x - scrollbarWidth * unit,
+        x = baseline.x - SCROLLBAR_WIDTH * unit,
         y = baseline.y,
-        width = scrollbarWidth * unit,
+        width = SCROLLBAR_WIDTH * unit,
         height = baseline.height * numActuallyShownRows,
     }
 
-    local maxScroll = numRows - maxDisplayedSections
+    local maxScroll = numRows - MAX_DISPLAYED_SECTIONS
     if numRows > 0 and maxScroll > 0 then
         local relativeScroll = ugui.scrollbar({
             uid = UID.Scrollbar,
@@ -163,7 +162,7 @@ end
 
 local function DrawColorCodes(baseline, scrollbarRect, numDisplaySections)
     local rect = {
-        x = scrollbarRect.x - baseline.width * #Buttons,
+        x = scrollbarRect.x - baseline.width * #BUTTONS,
         y = baseline.y,
         width = baseline.width,
         height = baseline.height * numDisplaySections,
@@ -180,7 +179,7 @@ local function DrawColorCodes(baseline, scrollbarRect, numDisplaySections)
         end
         BreitbandGraphics.fill_rectangle(
             {x = rect.x, y = rect.y, width = rect.width * amount, height = rect.height},
-            buttonColors[colorIndex].background
+            BUTTON_COLORS[colorIndex].background
         )
         colorIndex = colorIndex + 1
         rect.x = rect.x + rect.width * amount
@@ -206,7 +205,7 @@ local function HandleScrollAndButtons(sectionRect, buttonDrawData, numRows)
     local unscrolledHoverIndex = math.ceil(relativeY / sectionRect.height)
     local hoveringIndex = unscrolledHoverIndex + scrollOffset
     local anyChange = false
-    inRange = inRange and unscrolledHoverIndex <= maxDisplayedSections
+    inRange = inRange and unscrolledHoverIndex <= MAX_DISPLAYED_SECTIONS
     UpdateScroll(inRange and ugui_environment.wheel or 0, numRows)
     if inRange then
         -- act as if the mouse wheel was not moved in order to prevent other controls from scrolling on accident
@@ -218,7 +217,7 @@ local function HandleScrollAndButtons(sectionRect, buttonDrawData, numRows)
 
     IterateInputRows(PianoRollProject:AssertedCurrent(), function(section, input, sectionIndex, inputIndex)
         if inputIndex == hoveringIndex and inRange and section ~= nil then
-            for buttonIndex, v in ipairs(Buttons) do
+            for buttonIndex, v in ipairs(BUTTONS) do
                 local inRangeX = mouseX >= buttonDrawData[buttonIndex].x and mouseX < buttonDrawData[buttonIndex + 1].x
                 if ugui.internal.is_mouse_just_down() and inRangeX then
                     placing = input.joy[v.input] and -1 or 1
@@ -254,15 +253,15 @@ local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawDa
         local shade = totalInputs % 2 == 0 and 123 or 80
         local blueMultiplier = sectionIndex % 2 == 1 and 2 or 1
 
-        if totalInputs > maxDisplayedSections + scrollOffset then
+        if totalInputs > MAX_DISPLAYED_SECTIONS + scrollOffset then
             local extraSections = sheet:numSections() - sectionIndex
-            BreitbandGraphics.fill_rectangle(span(0, col_1), {r=138, g=148, b=138, a=66})
-            draw:text(span(col1, col_1), "start", "+ " .. extraSections .. " sections")
+            BreitbandGraphics.fill_rectangle(span(0, COL_1), {r=138, g=148, b=138, a=66})
+            draw:text(span(COL1, COL_1), "start", "+ " .. extraSections .. " sections")
             return true
         end
 
         local tasState = input.tasState
-        local frameBox = span(col0 + 0.3, col1)
+        local frameBox = span(COL0 + 0.3, COL1)
 
         local uidBase = UID.Row(totalInputs - scrollOffset)
         local uidOffset = -1
@@ -273,7 +272,7 @@ local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawDa
         if inputSubIndex == 1 then
             section.collapsed = not ugui.toggle_button({
                 uid = NextUid(),
-                rectangle = span(col0, col0 + 0.3),
+                rectangle = span(COL0, COL0 + 0.3),
                 text = section.collapsed and "[icon:arrow_right]" or "[icon:arrow_down]",
                 tooltip = Locales.str(section.collapsed and "PIANO_ROLL_INPUTS_EXPAND_SECTION" or "PIANO_ROLL_INPUTS_COLLAPSE_SECTION"),
                 is_checked = not section.collapsed,
@@ -289,10 +288,10 @@ local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawDa
         end
 
         if viewIndex == 1 then
-            local joystickBox = span(col1, col2)
+            local joystickBox = span(COL1, COL2)
             ugui.joystick({
                 uid = NextUid(),
-                rectangle = span(col1, col2, frameColumnHeight),
+                rectangle = span(COL1, COL2, FRAME_COLUMN_HEIGHT),
                 position = {x = input.joy.X, y = -input.joy.Y},
             })
 
@@ -314,14 +313,14 @@ local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawDa
                 BreitbandGraphics.fill_rectangle(joystickBox, {r = 0, g = 200, b = 0, a = 100})
             end
 
-            draw:text(span(col2, col3), "center", ModeTexts[tasState.movement_mode + 1])
+            draw:text(span(COL2, COL3), "center", MODE_TEXTS[tasState.movement_mode + 1])
 
             if tasState.movement_mode == MovementModes.match_angle then
-                draw:text(span(col4, col5), "end", tostring(tasState.goal_angle))
-                draw:text(span(col5, col6), "end", tasState.strain_left and '<' or (tasState.strain_right and '>' or '-'))
+                draw:text(span(COL4, COL5), "end", tostring(tasState.goal_angle))
+                draw:text(span(COL5, COL6), "end", tasState.strain_left and '<' or (tasState.strain_right and '>' or '-'))
             end
         elseif viewIndex == 2 then
-            local endActionBox = span(col1, col6)
+            local endActionBox = span(COL1, COL6)
             draw:text(endActionBox, "start", section.endAction)
 
             if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, endActionBox) then
@@ -333,12 +332,12 @@ local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawDa
 
         -- draw buttons
         local unit = Settings.grid_size * Drawing.scale
-        local sz = buttonSize * unit
-        local rect = {x = 0, y = sectionRect.y + (frameColumnHeight - buttonSize) * 0.5 * unit, width = sz, height = sz}
-        for buttonIndex, v in ipairs(Buttons) do
-            rect.x = buttonDrawData[buttonIndex].x + unit * (buttonColumnWidth - buttonSize) * 0.5
+        local sz = BUTTON_SIZE * unit
+        local rect = {x = 0, y = sectionRect.y + (FRAME_COLUMN_HEIGHT - BUTTON_SIZE) * 0.5 * unit, width = sz, height = sz}
+        for buttonIndex, v in ipairs(BUTTONS) do
+            rect.x = buttonDrawData[buttonIndex].x + unit * (BUTTON_COLUMN_WIDTH - BUTTON_SIZE) * 0.5
             if input.joy[v.input] then
-                BreitbandGraphics.fill_ellipse(rect, buttonColors[buttonDrawData[buttonIndex].colorIndex].button)
+                BreitbandGraphics.fill_ellipse(rect, BUTTON_COLORS[buttonDrawData[buttonIndex].colorIndex].button)
             end
             BreitbandGraphics.draw_ellipse(rect, {r=0, g=0, b=0, a=input.joy[v.input] and 255 or 80}, 1)
         end
@@ -361,10 +360,10 @@ function __impl.Render(draw)
 
     local numRows = IterateInputRows(PianoRollProject:AssertedCurrent(), nil)
     local baseline, scrollbarRect = DrawScrollbar(numRows)
-    local buttonDrawData = DrawColorCodes(baseline, scrollbarRect, math.min(numRows, maxDisplayedSections)) or nil
+    local buttonDrawData = DrawColorCodes(baseline, scrollbarRect, math.min(numRows, MAX_DISPLAYED_SECTIONS)) or nil
     DrawHeaders(currentSheet, draw, __impl.viewIndex, buttonDrawData)
 
-    local sectionRect = grid_rect(col0, row2, col_1 - col0 - scrollbarWidth, frameColumnHeight, 0)
+    local sectionRect = grid_rect(COL0, ROW2, COL_1 - COL0 - SCROLLBAR_WIDTH, FRAME_COLUMN_HEIGHT, 0)
     if HandleScrollAndButtons(sectionRect, buttonDrawData, numRows) then
         currentSheet:runToPreview()
     end
