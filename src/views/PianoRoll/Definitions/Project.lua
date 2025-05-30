@@ -2,7 +2,6 @@
 
 ---@class Project
 ---@field public meta table Metadata about the project that is stored into the piano roll project file (*.prp).
----@field public current Sheet|nil The currently selected and active piano roll.
 ---@field public all table All piano roll sheets as loaded from their respective *.prs files in order.
 ---@field public projectLocation string The location of the piano roll project file (*.prp).
 ---@field public copyEntireState boolean If true, the entire TASState of the active edited frame is copied to all selected. If false, only the changes made will be copied instead.
