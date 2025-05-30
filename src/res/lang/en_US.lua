@@ -245,7 +245,7 @@ You may even find it beneficial to manage other files with git, too, such as gho
                 },
             },
         },
-        INPUTS_GUI = {
+        INPUTS_TAB = {
             HEADING = "Input editor",
             PAGES = {
                 {

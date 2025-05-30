@@ -1,6 +1,11 @@
-local name = "Inputs"
+---@type InputsTab
+---@diagnostic disable-next-line: assign-type-mismatch
+local __impl = __impl
 
-local UID = dofile(views_path .. "PianoRoll/UID.lua")[name]
+__impl.name = "Inputs"
+__impl.HelpKey = "INPUTS_TAB"
+
+local UID = dofile(views_path .. "PianoRoll/UID.lua")[__impl.name]
 
 ---@type FrameListGui
 local FrameListGui = dofile(views_path .. "PianoRoll/Definitions/FrameListGui.lua")
@@ -15,7 +20,7 @@ local MAX_ACTION_GUESSES = 5
 
 local selectedViewIndex = 1
 
-local function AllocateUids(EnumNext)
+function __impl.AllocateUids(EnumNext)
     return {
         ViewCarrousel = EnumNext(),
         InsertInput = EnumNext(),
@@ -261,7 +266,6 @@ local function AtanControls(draw, sheet, newValues, top)
     })
 end
 
-
 local function ControlsForSelected(draw)
     local smallControlHeight = 0.5
     local largeControlHeight = 1.0
@@ -448,21 +452,16 @@ local function ControlsForSelected(draw)
     end
 end
 
-return {
-    name = name,
-    Render = function(draw)
-        local drawFuncs = { ControlsForSelected, SectionControlsForSelected }
-        selectedViewIndex = ugui.carrousel_button({
-             uid = UID.ViewCarrousel,
-             rectangle = grid_rect(6, TOP, 2, mediumControlHeight),
-             value = selectedViewIndex,
-             items = { "Joystick", "Section" },
-             selected_index = selectedViewIndex,
-            })
-        drawFuncs[selectedViewIndex](draw)
-        FrameListGui.viewIndex = selectedViewIndex
-        FrameListGui.Render(draw)
-    end,
-    AllocateUids = AllocateUids,
-    HelpKey = "INPUTS_GUI"
-}
+function __impl.Render(draw)
+    local drawFuncs = { ControlsForSelected, SectionControlsForSelected }
+    selectedViewIndex = ugui.carrousel_button({
+         uid = UID.ViewCarrousel,
+         rectangle = grid_rect(6, TOP, 2, mediumControlHeight),
+         value = selectedViewIndex,
+         items = { "Joystick", "Section" },
+         selected_index = selectedViewIndex,
+        })
+    drawFuncs[selectedViewIndex](draw)
+    FrameListGui.viewIndex = selectedViewIndex
+    FrameListGui.Render(draw)
+end
