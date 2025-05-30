@@ -1,10 +1,15 @@
-local name = "Project"
+---@type ProjectTab
+---@diagnostic disable-next-line: assign-type-mismatch
+local __impl = __impl
 
-local UID = dofile(views_path .. "PianoRoll/UID.lua")[name]
+__impl.name = "Project"
+__impl.HelpKey = "PROJECT_TAB"
+
+local UID = dofile(views_path .. "PianoRoll/UID.lua")[__impl.name]
 local Project = dofile(views_path .. "PianoRoll/Definitions/Project.lua")
 local persistence = dofile(lib_path .. "persistence.lua")
 
-local function AllocateUids(EnumNext)
+function __impl.AllocateUids(EnumNext)
     return {
         NewProject = EnumNext(),
         OpenProject = EnumNext(),
@@ -85,7 +90,7 @@ local RenderConfirmPurgeDialog = CreateConfirmDialog(
     end
 )
 
-local function RenderSheetList(draw)
+function __impl.Render(draw)
     local theme = Styles.theme()
     local foregroundColor = theme.listbox.text[1]
     if #PianoRollProject.meta.sheets == 0 then
@@ -247,10 +252,3 @@ local function RenderSheetList(draw)
         ::continue::
     end
 end
-
-return {
-    name = name,
-    Render = RenderSheetList,
-    AllocateUids = AllocateUids,
-    HelpKey = "PROJECT_GUI",
-}

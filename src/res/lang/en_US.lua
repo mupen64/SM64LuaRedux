@@ -178,7 +178,7 @@ return {
     ADDRESS_PAL = "Europe",
     -- putting this at the bottom as to not clutter
     PIANO_ROLL_HELP_EXPLANATIONS = {
-        PROJECT_GUI = {
+        PROJECT_TAB = {
             HEADING = "Piano Roll Projects",
             PAGES = {
                 {
