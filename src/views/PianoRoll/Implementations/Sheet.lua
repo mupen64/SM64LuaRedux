@@ -31,13 +31,13 @@ function __impl.new(name, create_savestate)
         sections = { Section.new("idle", 150) },
         name = name,
         _savestate = nil,
-        _oldTASState = {},
-        _oldClock = 0,
+        _old_tas_state = {},
+        _old_clock = 0,
         _busy = false,
-        _updatePending = false,
+        _update_pending = false,
         _rebasing = false,
-        _sectionIndex = 1,
-        _frameCounter = 1,
+        _section_index = 1,
+        _frame_counter = 1,
         num_sections = __impl.num_sections,
         evaluate_frame = __impl.evaluate_frame,
         update = __impl.update,
@@ -56,39 +56,39 @@ end
 function __impl:num_sections() return #self.sections end
 
 function __impl:evaluate_frame()
-    local section = self.sections[self._sectionIndex]
+    local section = self.sections[self._section_index]
     if section == nil then return nil end
 
-    local tas_state = section.inputs[math.min(self._frameCounter, #section.inputs)].tas_state
+    local tas_state = section.inputs[math.min(self._frame_counter, #section.inputs)].tas_state
     local current_action = Locales.raw().ACTIONS[memory.readdword(Addresses[Settings.address_source_index].mario_action)]
     tas_state.preview_action = current_action
-    if self._frameCounter >= section.timeout or current_action == section.end_action then
-        self._sectionIndex = self._sectionIndex + 1
-        self._frameCounter = 0
+    if self._frame_counter >= section.timeout or current_action == section.end_action then
+        self._section_index = self._section_index + 1
+        self._frame_counter = 0
     end
-    if self._sectionIndex > self.preview_frame.section_index
-        or (self._sectionIndex == self.preview_frame.section_index
+    if self._section_index > self.preview_frame.section_index
+        or (self._section_index == self.preview_frame.section_index
             and self.preview_frame.frame_index
-            and self._frameCounter >= self.preview_frame.frame_index - 1
+            and self._frame_counter >= self.preview_frame.frame_index - 1
             ) then
         emu.pause(false)
         emu.set_ff(false)
         self._busy = false
     end
 
-    self._frameCounter = self._frameCounter + 1
-    section = self.sections[self._sectionIndex]
-    return section and section.inputs[math.min(self._frameCounter, #section.inputs)] or nil
+    self._frame_counter = self._frame_counter + 1
+    section = self.sections[self._section_index]
+    return section and section.inputs[math.min(self._frame_counter, #section.inputs)] or nil
 end
 
 function __impl:run_to_preview(load_state)
     if self._busy then
-        self._updatePending = true
+        self._update_pending = true
         return
     end
     if self:num_sections() == 0 then return end
     self._busy = true
-    self._updatePending = false
+    self._update_pending = false
 
     if load_state == nil and true or load_state then
         savestate.do_memory(self._savestate, "load", function()
@@ -100,8 +100,8 @@ function __impl:run_to_preview(load_state)
         emu.set_ff(Settings.piano_roll.fast_foward)
     end
 
-    self._sectionIndex = 1
-    self._frameCounter = 1
+    self._section_index = 1
+    self._frame_counter = 1
 end
 
 function __impl:save(file)
@@ -126,13 +126,13 @@ function __impl:load(file)
 end
 
 function __impl:update()
-    local any_change = CloneInto(self._oldTASState, TASState)
+    local any_change = CloneInto(self._old_tas_state, TASState)
     local now = os.clock()
     if any_change then
-        self._oldClock = now
-        self._updatePending = true
-    elseif self._updatePending then
-        self._oldClock = now
+        self._old_clock = now
+        self._update_pending = true
+    elseif self._update_pending then
+        self._old_clock = now
         self:run_to_preview()
     end
 end

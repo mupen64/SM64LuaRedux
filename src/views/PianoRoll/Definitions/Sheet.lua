@@ -5,10 +5,10 @@
 ---@field public active_frame SelectionFrame The frame whose controls to display in the "Inputs" page.
 ---@field public sections Section[] An array of TASStates with their associated section definition to execute in order.
 ---@field public name string A name for the sheet for convenience.
----@field private _sectionIndex integer The nth section that is currently being played.
----@field private _frameCounter integer The nth frame of the current section that is currently being played.
+---@field private _section_index integer The nth section that is currently being played.
+---@field private _frame_counter integer The nth frame of the current section that is currently being played.
 ---@field private _busy boolean Whether the sheet is waiting for the game to run until its preview frame.
----@field private _updatePending boolean Whether a change has been made that demands rerunning the sheet until its preview frame.
+---@field private _update_pending boolean Whether a change has been made that demands rerunning the sheet until its preview frame.
 ---@field private _savestate unknown The savestate this sheet runs from.
 local __clsSheet = {}
 
