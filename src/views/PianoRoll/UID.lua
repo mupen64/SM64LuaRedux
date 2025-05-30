@@ -25,7 +25,7 @@ __PianoRollUids = {
     VarWatch = EnumNext(),
     SelectTab = EnumNext(),
     ToggleHelp = EnumNext(),
-    FrameList = FromRenderer(dofile(views_path .. "PianoRoll/FrameListGui.lua")),
+    FrameList = FromRenderer(dofile(views_path .. "PianoRoll/Definitions/FrameListGui.lua")),
 }
 
 for _, tab in pairs(dofile(views_path .. "PianoRoll/Tabs.lua")) do

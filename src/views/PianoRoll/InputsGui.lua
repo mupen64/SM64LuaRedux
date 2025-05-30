@@ -1,7 +1,9 @@
 local name = "Inputs"
 
 local UID = dofile(views_path .. "PianoRoll/UID.lua")[name]
-local FrameListGui = dofile(views_path .. "PianoRoll/FrameListGui.lua")
+
+---@type FrameListGui
+local FrameListGui = dofile(views_path .. "PianoRoll/Definitions/FrameListGui.lua")
 
 local mediumControlHeight = 0.75
 local smallControlHeight = 0.50
@@ -458,7 +460,8 @@ return {
              selected_index = selectedViewIndex,
             })
         drawFuncs[selectedViewIndex](draw)
-        FrameListGui.Render(draw, selectedViewIndex)
+        FrameListGui.viewIndex = selectedViewIndex
+        FrameListGui.Render(draw)
     end,
     AllocateUids = AllocateUids,
     HelpKey = "INPUTS_GUI"

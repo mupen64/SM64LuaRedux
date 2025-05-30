@@ -1,3 +1,7 @@
+---@type FrameListGui
+---@diagnostic disable-next-line: assign-type-mismatch
+local __impl = __impl
+
 local name = "FrameList"
 
 local UID = dofile(views_path .. "PianoRoll/UID.lua")[name]
@@ -56,7 +60,7 @@ local buttonColors = {
 
 local VIEW_MODE_HEADERS = { "PIANO_ROLL_FRAMELIST_STICK", "PIANO_ROLL_FRAMELIST_UNTIL" }
 
-local function AllocateUids(EnumNext)
+function __impl.AllocateUids(EnumNext)
     local base = EnumNext(maxDisplayedSections * NUM_UIDS_PER_ROW)
     return {
         SheetName = EnumNext(),
@@ -351,17 +355,14 @@ local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawDa
     end)
 end
 
----@class FrameListGui
-local __clsFrameListGui = {}
-
 --- Renders the sheets, indicating whether an update by the user has been made that should cause a rerun
-function __clsFrameListGui.Render(draw, viewIndex)
+function __impl.Render(draw)
     local currentSheet = PianoRollProject:AssertedCurrent()
 
     local numRows = IterateInputRows(PianoRollProject:AssertedCurrent(), nil)
     local baseline, scrollbarRect = DrawScrollbar(numRows)
     local buttonDrawData = DrawColorCodes(baseline, scrollbarRect, math.min(numRows, maxDisplayedSections)) or nil
-    DrawHeaders(currentSheet, draw, viewIndex, buttonDrawData)
+    DrawHeaders(currentSheet, draw, __impl.viewIndex, buttonDrawData)
 
     local sectionRect = grid_rect(col0, row2, col_1 - col0 - scrollbarWidth, frameColumnHeight, 0)
     if HandleScrollAndButtons(sectionRect, buttonDrawData, numRows) then
@@ -370,12 +371,6 @@ function __clsFrameListGui.Render(draw, viewIndex)
 
     local prev_joystick_tip_size = ugui.standard_styler.params.joystick.tip_size
     ugui.standard_styler.params.joystick.tip_size = 4 * Drawing.scale
-    DrawSectionsGui(currentSheet, draw, viewIndex, sectionRect, buttonDrawData)
+    DrawSectionsGui(currentSheet, draw, __impl.viewIndex, sectionRect, buttonDrawData)
     ugui.standard_styler.params.joystick.tip_size = prev_joystick_tip_size
 end
-
----@type FrameListGui
-return {
-    Render = __clsFrameListGui.Render,
-    AllocateUids = AllocateUids,
-}

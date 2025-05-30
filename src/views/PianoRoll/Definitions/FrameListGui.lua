@@ -1,0 +1,14 @@
+---@alias FrameListViewIndex integer
+---Angle and control sticks; 1: Section end action
+
+---@class FrameListGui:Gui
+---@field viewIndex FrameListViewIndex The index of the information kind to show.
+local __clsFrameListGui = {
+    viewIndex = 0
+}
+
+__impl = __clsFrameListGui
+dofile(views_path .. "PianoRoll/Implementations/FrameListGui.lua")
+__impl = nil
+
+return __clsFrameListGui
