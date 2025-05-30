@@ -7,6 +7,20 @@ local __impl = __impl
 ---@type Section
 local Section = dofile(views_path .. "PianoRoll/Definitions/Section.lua")
 
+local function read_all(file)
+    local f = assert(io.open(file, "rb"))
+    local content = f:read("*all")
+    f:close()
+    return content
+end
+
+local function write_all(file, content)
+    local f = assert(io.open(file, "wb"))
+    f:write(content)
+    f:close()
+    return content
+end
+
 function __impl.new(name, createSavestate)
     local globalTimer = Memory.current.mario_global_timer
 
@@ -91,7 +105,7 @@ function __impl:run_to_preview(loadState)
 end
 
 function __impl:save(file)
-    writeAll(file .. ".savestate", self._savestate)
+    write_all(file .. ".savestate", self._savestate)
     persistence.store(
         file,
         {
@@ -106,7 +120,7 @@ end
 function __impl:load(file)
     local contents = persistence.load(file);
     if contents ~= nil then
-        self._savestate = readAll(file .. ".savestate")
+        self._savestate = read_all(file .. ".savestate")
         CloneInto(self, contents)
     end
 end

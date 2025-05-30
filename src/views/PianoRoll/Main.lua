@@ -1,19 +1,5 @@
 ---utility functions---
 
-function readAll(file)
-    local f = assert(io.open(file, "rb"))
-    local content = f:read("*all")
-    f:close()
-    return content
-end
-
-function writeAll(file, content)
-    local f = assert(io.open(file, "wb"))
-    f:write(content)
-    f:close()
-    return content
-end
-
 function CloneInto(destination, source)
     local changes = {}
     for k, v in pairs(source) do
