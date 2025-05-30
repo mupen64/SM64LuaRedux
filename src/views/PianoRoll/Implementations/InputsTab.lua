@@ -64,13 +64,13 @@ function __impl.allocate_uids(EnumNext)
     }
 end
 
-local function AnyEntries(table) for _ in pairs(table) do return true end return false end
+local function any_entries(table) for _ in pairs(table) do return true end return false end
 
 --- ### Section controls ### ---
 
 local endActionSearchText = nil
 
-local function ControlsForEndAction(section, draw, column, top)
+local function controls_for_end_action(section, draw, column, top)
     draw:text(grid_rect(column, top, 4, LABEL_HEIGHT), "start", Locales.str("PIANO_ROLL_INPUTS_END_ACTION"))
     if endActionSearchText == nil then
         -- end action "dropdown" is not visible
@@ -114,7 +114,7 @@ local function ControlsForEndAction(section, draw, column, top)
     end
 end
 
-local function SectionControlsForSelected(draw)
+local function section_controls_for_selected(draw)
     local sheet = PianoRollProject:asserted_current()
 
     local top = TOP
@@ -165,7 +165,7 @@ local function SectionControlsForSelected(draw)
     })
     anyChanges = anyChanges or oldTimeout ~= section.timeout
 
-    ControlsForEndAction(section, draw, 0, top)
+    controls_for_end_action(section, draw, 0, top)
 
     if anyChanges then
         sheet:run_to_preview()
@@ -174,7 +174,7 @@ end
 
 -- ### Joystick Controls ### ---
 
-local function MagnitudeControls(draw, sheet, newValues, top)
+local function magnitude_controls(draw, sheet, newValues, top)
     draw:text(grid_rect(2, top, 2, MEDIUM_CONTROL_HEIGHT), "end", Locales.str("PIANO_ROLL_CONTROL_MAG"))
     newValues.goal_mag = ugui.numberbox({
         uid = UID.GoalMag,
@@ -209,7 +209,7 @@ local function MagnitudeControls(draw, sheet, newValues, top)
     end
 end
 
-local function AtanControls(draw, sheet, newValues, top)
+local function atan_controls(draw, sheet, newValues, top)
     local labelOffset = -0.5
     local newAtan = ugui.toggle_button({
         uid = UID.Atan,
@@ -270,7 +270,7 @@ local function AtanControls(draw, sheet, newValues, top)
     })
 end
 
-local function ControlsForSelected(draw)
+local function controls_for_selected(draw)
     local smallControlHeight = 0.5
     local largeControlHeight = 1.0
     local top = TOP
@@ -411,13 +411,13 @@ local function ControlsForSelected(draw)
         is_checked = newValues.dyaw
     })
 
-    MagnitudeControls(draw, sheet, newValues, top + 3)
-    AtanControls(draw, sheet, newValues, top + 4)
+    magnitude_controls(draw, sheet, newValues, top + 3)
+    atan_controls(draw, sheet, newValues, top + 4)
 
     ugui.standard_styler.params.spinner.button_size = previousThickness
 
     local changes = CloneInto(oldValues, newValues)
-    local anyChanges = AnyEntries(changes)
+    local anyChanges = any_entries(changes)
     local currentSheet = PianoRollProject:asserted_current()
     if anyChanges and editedInput then
         for _, section in pairs(sheet.sections) do
@@ -457,7 +457,7 @@ local function ControlsForSelected(draw)
 end
 
 function __impl.render(draw)
-    local drawFuncs = { ControlsForSelected, SectionControlsForSelected }
+    local drawFuncs = { controls_for_selected, section_controls_for_selected }
     selectedViewIndex = ugui.carrousel_button({
          uid = UID.ViewCarrousel,
          rectangle = grid_rect(6, TOP, 2, MEDIUM_CONTROL_HEIGHT),

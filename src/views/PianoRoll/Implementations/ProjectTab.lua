@@ -26,7 +26,7 @@ end
 
 local controlHeight = 0.75
 
-local function CreateConfirmDialog(prompt, onConfirmed)
+local function create_confirm_dialog(prompt, onConfirmed)
     return function()
         local top = 15 - controlHeight
 
@@ -61,14 +61,14 @@ local function CreateConfirmDialog(prompt, onConfirmed)
     end
 end
 
-local function RenderConfirmDeletionPrompt(sheetIndex)
-    return CreateConfirmDialog(
+local function render_confirm_deletion_prompt(sheetIndex)
+    return create_confirm_dialog(
         "[Confirm deletion]\n\nAre you sure you want to delete \"" .. PianoRollProject.meta.sheets[sheetIndex].name .. "\"?\nThis action cannot be undone.",
         function() PianoRollProject:remove_sheet(sheetIndex) end
     )
 end
 
-local RenderConfirmPurgeDialog = CreateConfirmDialog(
+local RenderConfirmPurgeDialog = create_confirm_dialog(
     "[Confirm project purge]\n\n"
     .."Are you sure you want to purge unused sheets from the project directory?\n"
     .."Unrelated files (not ending with .prs or .prs.savestate) will not be touched.\n"
@@ -208,7 +208,7 @@ function __impl.render(draw)
         if i > #PianoRollProject.meta.sheets then break end
 
         local x = 3
-        local function drawUtilityButton(text, tooltip, enabled, width)
+        local function draw_utility_button(text, tooltip, enabled, width)
             width = width or 0.5
             local result = ugui.button({
                 uid = uid,
@@ -222,30 +222,30 @@ function __impl.render(draw)
             return result
         end
 
-        if (drawUtilityButton("^", Locales.str("PIANO_ROLL_PROJECT_MOVE_SHEET_UP_TOOL_TIP"), i > 1)) then
+        if (draw_utility_button("^", Locales.str("PIANO_ROLL_PROJECT_MOVE_SHEET_UP_TOOL_TIP"), i > 1)) then
             PianoRollProject:move_sheet(i, -1)
         end
 
-        if (drawUtilityButton("v", Locales.str("PIANO_ROLL_PROJECT_MOVE_SHEET_DOWN_TOOL_TIP"), i < #PianoRollProject.meta.sheets)) then
+        if (draw_utility_button("v", Locales.str("PIANO_ROLL_PROJECT_MOVE_SHEET_DOWN_TOOL_TIP"), i < #PianoRollProject.meta.sheets)) then
             PianoRollProject:move_sheet(i, 1)
         end
 
-        if (drawUtilityButton("-", Locales.str("PIANO_ROLL_PROJECT_DELETE_SHEET_TOOL_TIP"))) then
-            PianoRollDialog = RenderConfirmDeletionPrompt(i)
+        if (draw_utility_button("-", Locales.str("PIANO_ROLL_PROJECT_DELETE_SHEET_TOOL_TIP"))) then
+            PianoRollDialog = render_confirm_deletion_prompt(i)
         end
 
-        if (drawUtilityButton(".st", Locales.str("PIANO_ROLL_PROJECT_REBASE_SHEET_TOOL_TIP"), true, 0.75)) then
+        if (draw_utility_button(".st", Locales.str("PIANO_ROLL_PROJECT_REBASE_SHEET_TOOL_TIP"), true, 0.75)) then
             PianoRollProject:rebase(i)
         end
 
-        if (drawUtilityButton(".prs", Locales.str("PIANO_ROLL_PROJECT_REPLACE_INPUTS_TOOL_TIP"), true, 0.75)) then
+        if (draw_utility_button(".prs", Locales.str("PIANO_ROLL_PROJECT_REPLACE_INPUTS_TOOL_TIP"), true, 0.75)) then
             local path = iohelper.filediag("*.prs", 0)
             if string.len(path) > 0 then
                 PianoRollProject.all[PianoRollProject.meta.sheets[i].name]:load(path, false)
             end
         end
 
-        if (drawUtilityButton(">", Locales.str("PIANO_ROLL_PROJECT_PLAY_WITHOUT_ST_TOOL_TIP"))) then
+        if (draw_utility_button(">", Locales.str("PIANO_ROLL_PROJECT_PLAY_WITHOUT_ST_TOOL_TIP"))) then
             PianoRollProject:select(i, false)
         end
         ::continue::

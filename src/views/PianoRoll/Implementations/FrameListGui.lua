@@ -74,7 +74,7 @@ end
 
 ---@function Iterates all sections as an input row, including their follow-up frames for non-collapsed sections
 ---@param sheet Sheet The sheet over whose sections to iterate
-local function IterateInputRows(sheet, callback)
+local function iterate_input_rows(sheet, callback)
     local totalInputsCounted = 1
     local totalSectionsCounted = 1
     for sectionIndex = 1, sheet:num_sections(), 1 do
@@ -92,11 +92,11 @@ local function IterateInputRows(sheet, callback)
     return totalInputsCounted - 1
 end
 
-local function UpdateScroll(wheel, numRows)
+local function update_scroll(wheel, numRows)
     scrollOffset = math.max(0, math.min(numRows - MAX_DISPLAYED_SECTIONS, scrollOffset - wheel))
 end
 
-local function InterpolateVectorsToInt(a, b, f)
+local function interpolate_vectors_to_int(a, b, f)
     local result = {}
     for k, v in pairs(a) do
         result[k] = math.floor(v + (b[k] - v) * f)
@@ -104,8 +104,8 @@ local function InterpolateVectorsToInt(a, b, f)
     return result
 end
 
-local function DrawHeaders(sheet, draw, viewIndex, buttonDrawData)
-    local backgroundColor = InterpolateVectorsToInt(draw.backgroundColor, {r = 127, g = 127, b = 127}, 0.25)
+local function draw_headers(sheet, draw, viewIndex, buttonDrawData)
+    local backgroundColor = interpolate_vectors_to_int(draw.backgroundColor, {r = 127, g = 127, b = 127}, 0.25)
     BreitbandGraphics.fill_rectangle(grid_rect(0, ROW0, COL_1, ROW2 - ROW0, 0), backgroundColor)
 
     draw:text(grid_rect(0, ROW0, 2, 1), "start", Locales.str("PIANO_ROLL_FRAMELIST_START") .. sheet.startGT)
@@ -135,7 +135,7 @@ local function DrawHeaders(sheet, draw, viewIndex, buttonDrawData)
     end
 end
 
-local function DrawScrollbar(numRows)
+local function draw_scrollbar(numRows)
     local baseline = grid_rect(COL_1, ROW2, BUTTON_COLUMN_WIDTH, FRAME_COLUMN_HEIGHT, 0)
     local unit = Settings.grid_size * Drawing.scale
     local numActuallyShownRows = math.min(MAX_DISPLAYED_SECTIONS, numRows)
@@ -160,7 +160,7 @@ local function DrawScrollbar(numRows)
     return baseline, scrollbarRect
 end
 
-local function DrawColorCodes(baseline, scrollbarRect, numDisplaySections)
+local function draw_color_codes(baseline, scrollbarRect, numDisplaySections)
     local rect = {
         x = scrollbarRect.x - baseline.width * #BUTTONS,
         y = baseline.y,
@@ -172,7 +172,7 @@ local function DrawColorCodes(baseline, scrollbarRect, numDisplaySections)
     local colorIndex = 1
     local buttonDrawData = {}
 
-    local function DrawNext(amount)
+    local function draw_next(amount)
         for k = 0, amount - 1, 1 do
             buttonDrawData[i] = {x = rect.x + k * rect.width, colorIndex = colorIndex}
             i = i + 1
@@ -185,20 +185,20 @@ local function DrawColorCodes(baseline, scrollbarRect, numDisplaySections)
         rect.x = rect.x + rect.width * amount
     end
 
-    DrawNext(1) -- A
-    DrawNext(1) -- B
-    DrawNext(1) -- Z
-    DrawNext(1) -- Start
-    DrawNext(4) -- 4 C Buttons
-    DrawNext(2) -- L + R Buttons
-    DrawNext(4) -- 4 DPad Buttons
+    draw_next(1) -- A
+    draw_next(1) -- B
+    draw_next(1) -- Z
+    draw_next(1) -- Start
+    draw_next(4) -- 4 C Buttons
+    draw_next(2) -- L + R Buttons
+    draw_next(4) -- 4 DPad Buttons
     buttonDrawData[#buttonDrawData + 1] = { x = rect.x }
 
     return buttonDrawData
 end
 
 local placing = 0
-local function HandleScrollAndButtons(sectionRect, buttonDrawData, numRows)
+local function handle_scroll_and_buttons(sectionRect, buttonDrawData, numRows)
     local mouseX = ugui_environment.mouse_position.x
     local relativeY = ugui_environment.mouse_position.y - sectionRect.y
     local inRange = mouseX >= sectionRect.x and mouseX <= sectionRect.x + sectionRect.width and relativeY >= 0
@@ -206,7 +206,7 @@ local function HandleScrollAndButtons(sectionRect, buttonDrawData, numRows)
     local hoveringIndex = unscrolledHoverIndex + scrollOffset
     local anyChange = false
     inRange = inRange and unscrolledHoverIndex <= MAX_DISPLAYED_SECTIONS
-    UpdateScroll(inRange and ugui_environment.wheel or 0, numRows)
+    update_scroll(inRange and ugui_environment.wheel or 0, numRows)
     if inRange then
         -- act as if the mouse wheel was not moved in order to prevent other controls from scrolling on accident
         ugui_environment.wheel = 0
@@ -215,7 +215,7 @@ local function HandleScrollAndButtons(sectionRect, buttonDrawData, numRows)
 
     if not buttonDrawData then return end
 
-    IterateInputRows(PianoRollProject:asserted_current(), function(section, input, sectionIndex, inputIndex)
+    iterate_input_rows(PianoRollProject:asserted_current(), function(section, input, sectionIndex, inputIndex)
         if inputIndex == hoveringIndex and inRange and section ~= nil then
             for buttonIndex, v in ipairs(BUTTONS) do
                 local inRangeX = mouseX >= buttonDrawData[buttonIndex].x and mouseX < buttonDrawData[buttonIndex + 1].x
@@ -238,7 +238,7 @@ local function HandleScrollAndButtons(sectionRect, buttonDrawData, numRows)
 end
 
 ---@param sheet Sheet
-local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawData)
+local function draw_sections_gui(sheet, draw, viewIndex, sectionRect, buttonDrawData)
 
     local function span(x1, x2, height)
         local r = grid_rect(x1, 0, x2 - x1, height, 0)
@@ -246,7 +246,7 @@ local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawDa
     end
 
     ---@param section Section
-    IterateInputRows(sheet, function(section, input, sectionIndex, totalInputs, inputSubIndex)
+    iterate_input_rows(sheet, function(section, input, sectionIndex, totalInputs, inputSubIndex)
         if totalInputs <= scrollOffset then return false end
 
         --TODO: color code section success
@@ -265,13 +265,13 @@ local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawDa
 
         local uidBase = UID.Row(totalInputs - scrollOffset)
         local uidOffset = -1
-        local function NextUid() uidOffset = uidOffset + 1 return uidOffset + uidBase end
+        local function next_uid() uidOffset = uidOffset + 1 return uidOffset + uidBase end
 
         BreitbandGraphics.fill_rectangle(sectionRect, {r=shade, g=shade, b=shade * blueMultiplier, a=66})
 
         if inputSubIndex == 1 then
             section.collapsed = not ugui.toggle_button({
-                uid = NextUid(),
+                uid = next_uid(),
                 rectangle = span(COL0, COL0 + 0.3),
                 text = section.collapsed and "[icon:arrow_right]" or "[icon:arrow_down]",
                 tooltip = Locales.str(section.collapsed and "PIANO_ROLL_INPUTS_EXPAND_SECTION" or "PIANO_ROLL_INPUTS_COLLAPSE_SECTION"),
@@ -290,7 +290,7 @@ local function DrawSectionsGui(sheet, draw, viewIndex, sectionRect, buttonDrawDa
         if viewIndex == 1 then
             local joystickBox = span(COL1, COL2)
             ugui.joystick({
-                uid = NextUid(),
+                uid = next_uid(),
                 rectangle = span(COL1, COL2, FRAME_COLUMN_HEIGHT),
                 position = {x = input.joy.X, y = -input.joy.Y},
             })
@@ -358,18 +358,18 @@ end
 function __impl.render(draw)
     local currentSheet = PianoRollProject:asserted_current()
 
-    local numRows = IterateInputRows(PianoRollProject:asserted_current(), nil)
-    local baseline, scrollbarRect = DrawScrollbar(numRows)
-    local buttonDrawData = DrawColorCodes(baseline, scrollbarRect, math.min(numRows, MAX_DISPLAYED_SECTIONS)) or nil
-    DrawHeaders(currentSheet, draw, __impl.view_index, buttonDrawData)
+    local numRows = iterate_input_rows(PianoRollProject:asserted_current(), nil)
+    local baseline, scrollbarRect = draw_scrollbar(numRows)
+    local buttonDrawData = draw_color_codes(baseline, scrollbarRect, math.min(numRows, MAX_DISPLAYED_SECTIONS)) or nil
+    draw_headers(currentSheet, draw, __impl.view_index, buttonDrawData)
 
     local sectionRect = grid_rect(COL0, ROW2, COL_1 - COL0 - SCROLLBAR_WIDTH, FRAME_COLUMN_HEIGHT, 0)
-    if HandleScrollAndButtons(sectionRect, buttonDrawData, numRows) then
+    if handle_scroll_and_buttons(sectionRect, buttonDrawData, numRows) then
         currentSheet:run_to_preview()
     end
 
     local prev_joystick_tip_size = ugui.standard_styler.params.joystick.tip_size
     ugui.standard_styler.params.joystick.tip_size = 4 * Drawing.scale
-    DrawSectionsGui(currentSheet, draw, __impl.view_index, sectionRect, buttonDrawData)
+    draw_sections_gui(currentSheet, draw, __impl.view_index, sectionRect, buttonDrawData)
     ugui.standard_styler.params.joystick.tip_size = prev_joystick_tip_size
 end

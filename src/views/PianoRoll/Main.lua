@@ -48,7 +48,7 @@ end
 local Tabs = dofile(views_path .. "PianoRoll/Tabs.lua")
 local SelectedTabIndex = 1
 
-local function DrawFactory(theme)
+local function draw_factory(theme)
     return {
         foregroundColor = BreitbandGraphics.invert_color(theme.background_color),
         backgroundColor = theme.background_color,
@@ -95,7 +95,7 @@ return {
             return
         end
 
-        local draw = DrawFactory(Styles.theme())
+        local draw = draw_factory(Styles.theme())
 
         SelectedTabIndex = ugui.carrousel_button({
             uid = UID.SelectTab,

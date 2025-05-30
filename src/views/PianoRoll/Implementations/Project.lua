@@ -5,7 +5,7 @@ local __impl = __impl
 ---@type Sheet
 local Sheet = dofile(views_path .. "PianoRoll/Definitions/Sheet.lua")
 
-local function NewSheetMeta(name)
+local function new_sheet_meta(name)
     return {
         name = name
     }
@@ -52,7 +52,7 @@ function __impl:add_sheet()
     self.meta.createdSheetCount = self.meta.createdSheetCount + 1
     local newSheet = Sheet.new("Sheet " .. self.meta.createdSheetCount, true)
     self.all[newSheet.name] = newSheet
-    self.meta.sheets[#self.meta.sheets+1] = NewSheetMeta(newSheet.name)
+    self.meta.sheets[#self.meta.sheets+1] = new_sheet_meta(newSheet.name)
 end
 
 function __impl:remove_sheet(index)
