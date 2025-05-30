@@ -8,13 +8,12 @@ local function EnumNext(count)
     return current
 end
 
---TODO: document how this works
----Allocates uids for a table abiding to the "Renderer" class contract
----@param renderer any
----@return table
-local function FromRenderer(renderer)
+---Allocates uids for a Gui type
+---@param gui Gui The concrete subtype of Gui to allocate uids for
+---@return table lookup The lookup table for that specific Gui's allocated uids
+local function FromGui(gui)
     local table = {}
-    for k, v in pairs(renderer.AllocateUids(EnumNext)) do
+    for k, v in pairs(gui.AllocateUids(EnumNext)) do
         table[k] = v
     end
     return table
@@ -25,11 +24,11 @@ __PianoRollUids = {
     VarWatch = EnumNext(),
     SelectTab = EnumNext(),
     ToggleHelp = EnumNext(),
-    FrameList = FromRenderer(dofile(views_path .. "PianoRoll/Definitions/FrameListGui.lua")),
+    FrameList = FromGui(dofile(views_path .. "PianoRoll/Definitions/FrameListGui.lua")),
 }
 
 for _, tab in pairs(dofile(views_path .. "PianoRoll/Tabs.lua")) do
-    __PianoRollUids[tab.name] = FromRenderer(tab)
+    __PianoRollUids[tab.name] = FromGui(tab)
 end
 
 return __PianoRollUids
