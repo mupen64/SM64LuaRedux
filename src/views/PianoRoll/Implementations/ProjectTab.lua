@@ -17,8 +17,6 @@ function __impl.AllocateUids(EnumNext)
         PurgeProject = EnumNext(),
         DisableProjectSheets = EnumNext(),
         ProjectSheetBase = EnumNext(1024), -- TODO: allocate an exact amount, assuming a scroll bar for too many sheets in one project
-        HelpNext = EnumNext(),
-        HelpBack = EnumNext(),
         AddSheet = EnumNext(),
         ConfirmationYes = EnumNext(),
         ConfirmationNo = EnumNext(),

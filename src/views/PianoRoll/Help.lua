@@ -49,7 +49,7 @@ return {
 
             if ugui.button(
                 {
-                    uid = UID.Project.HelpBack,
+                    uid = UID.HelpBack,
 
                     rectangle = grid_rect(5, top, 1.5, controlHeight),
                     text = Locales.str("PIANO_ROLL_HELP_PREV_PAGE"),
@@ -61,7 +61,7 @@ return {
 
             if ugui.button(
                 {
-                    uid = UID.Project.HelpNext,
+                    uid = UID.HelpNext,
 
                     rectangle = grid_rect(6.5, top, 1.5, controlHeight),
                     text = Locales.str("PIANO_ROLL_HELP_NEXT_PAGE"),

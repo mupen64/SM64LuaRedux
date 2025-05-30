@@ -24,6 +24,8 @@ __PianoRollUids = {
     VarWatch = EnumNext(),
     SelectTab = EnumNext(),
     ToggleHelp = EnumNext(),
+    HelpNext = EnumNext(),
+    HelpBack = EnumNext(),
     FrameList = FromGui(dofile(views_path .. "PianoRoll/Definitions/FrameListGui.lua")),
 }
 
