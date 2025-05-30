@@ -61,11 +61,11 @@ local VIEW_MODE_HEADERS <const> = { "PIANO_ROLL_FRAMELIST_STICK", "PIANO_ROLL_FR
 
 local scroll_offset = 0
 
-function __impl.allocate_uids(EnumNext)
-    local base = EnumNext(MAX_DISPLAYED_SECTIONS * NUM_UIDS_PER_ROW)
+function __impl.allocate_uids(enum_next)
+    local base = enum_next(MAX_DISPLAYED_SECTIONS * NUM_UIDS_PER_ROW)
     return {
-        SheetName = EnumNext(),
-        Scrollbar = EnumNext(),
+        SheetName = enum_next(),
+        Scrollbar = enum_next(),
         Row = function(index)
             return base + (index - 1) * NUM_UIDS_PER_ROW
         end,

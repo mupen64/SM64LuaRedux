@@ -7,10 +7,10 @@ __impl.help_key = "PREFERENCES_TAB"
 
 local UID <const> = dofile(views_path .. "PianoRoll/UID.lua")[__impl.name]
 
-function __impl.allocate_uids(EnumNext)
+function __impl.allocate_uids(enum_next)
     return {
-        ToggleEditEntireState = EnumNext(),
-        ToggleFastForward = EnumNext(),
+        ToggleEditEntireState = enum_next(),
+        ToggleFastForward = enum_next(),
     }
 end
 

@@ -10,17 +10,17 @@ local persistence = dofile(lib_path .. "persistence.lua")
 
 local UID <const> = dofile(views_path .. "PianoRoll/UID.lua")[__impl.name]
 
-function __impl.allocate_uids(EnumNext)
+function __impl.allocate_uids(enum_next)
     return {
-        NewProject = EnumNext(),
-        OpenProject = EnumNext(),
-        SaveProject = EnumNext(),
-        PurgeProject = EnumNext(),
-        DisableProjectSheets = EnumNext(),
-        ProjectSheetBase = EnumNext(1024), -- TODO: allocate an exact amount, assuming a scroll bar for too many sheets in one project
-        AddSheet = EnumNext(),
-        ConfirmationYes = EnumNext(),
-        ConfirmationNo = EnumNext(),
+        NewProject = enum_next(),
+        OpenProject = enum_next(),
+        SaveProject = enum_next(),
+        PurgeProject = enum_next(),
+        DisableProjectSheets = enum_next(),
+        ProjectSheetBase = enum_next(1024), -- TODO: allocate an exact amount, assuming a scroll bar for too many sheets in one project
+        AddSheet = enum_next(),
+        ConfirmationYes = enum_next(),
+        ConfirmationNo = enum_next(),
     }
 end
 
