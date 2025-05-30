@@ -228,7 +228,6 @@ local function atan_controls(draw, sheet, new_values, top)
     draw:text(grid_rect(1.5, top + label_offset, 0.75, MEDIUM_CONTROL_HEIGHT), "start", "N:")
     new_values.atan_n = ugui.spinner({
         uid = UID.AtanN,
-
         rectangle = grid_rect(1.5, top, 1.25, MEDIUM_CONTROL_HEIGHT),
         value = new_values.atan_n,
         minimum_value = 1,
@@ -239,7 +238,6 @@ local function atan_controls(draw, sheet, new_values, top)
     draw:text(grid_rect(2.75, top + label_offset, 0.75, MEDIUM_CONTROL_HEIGHT), "start", "D:")
     new_values.atan_d = ugui.spinner({
         uid = UID.AtanD,
-
         rectangle = grid_rect(2.75, top, 1.75, MEDIUM_CONTROL_HEIGHT),
         value = new_values.atan_d,
         minimum_value = -1000000,
@@ -250,7 +248,6 @@ local function atan_controls(draw, sheet, new_values, top)
     draw:text(grid_rect(4.5, top + label_offset, 2.35, MEDIUM_CONTROL_HEIGHT), "start", "Start:")
     new_values.atan_start = ugui.spinner({
         uid = UID.AtanS,
-
         rectangle = grid_rect(4.5, top, 2.35, MEDIUM_CONTROL_HEIGHT),
         value = new_values.atan_start,
         minimum_value = 0,
@@ -261,7 +258,6 @@ local function atan_controls(draw, sheet, new_values, top)
     draw:text(grid_rect(7, top + label_offset, 0.5, MEDIUM_CONTROL_HEIGHT), "start", "E:")
     Settings.atan_exp = ugui.spinner({
         uid = UID.AtanE,
-
         rectangle = grid_rect(7, top, 1, MEDIUM_CONTROL_HEIGHT),
         value = Settings.atan_exp,
         minimum_value = -9,

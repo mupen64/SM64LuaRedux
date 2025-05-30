@@ -85,7 +85,6 @@ return {
 
         SelectedTabIndex = ugui.carrousel_button({
             uid = UID.SelectTab,
-
             rectangle = grid_rect(0, 0, 7, 1),
             items = lualinq.select(Tabs, function(e) return e.name end),
             selected_index = SelectedTabIndex
@@ -94,7 +93,6 @@ return {
         if ugui.button(
             {
                 uid = UID.ToggleHelp,
-
                 rectangle = grid_rect(7, 0, 1, 1),
                 text = "?",
                 tooltip = Locales.str("PIANO_ROLL_HELP_SHOW_TOOL_TIP"),

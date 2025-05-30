@@ -16,7 +16,6 @@ return {
             if ugui.button(
                 {
                     uid = UID.ToggleHelp,
-
                     rectangle = button_position,
                     text = "[icon:door_opening]",
                     tooltip = Locales.str("PIANO_ROLL_HELP_EXIT_TOOL_TIP")
@@ -50,7 +49,6 @@ return {
             if ugui.button(
                 {
                     uid = UID.HelpBack,
-
                     rectangle = grid_rect(5, top, 1.5, control_height),
                     text = Locales.str("PIANO_ROLL_HELP_PREV_PAGE"),
                     is_enabled = page > 1
@@ -62,7 +60,6 @@ return {
             if ugui.button(
                 {
                     uid = UID.HelpNext,
-
                     rectangle = grid_rect(6.5, top, 1.5, control_height),
                     text = Locales.str("PIANO_ROLL_HELP_NEXT_PAGE"),
                     is_enabled = page < #pages
