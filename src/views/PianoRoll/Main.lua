@@ -39,7 +39,7 @@ local uguiIconDraw = ugui.standard_styler.draw_icon
 ugui.standard_styler.draw_icon = function(rectangle, color, visual_state, key)
     if key == "door_opening" then
         rectangle = {x = rectangle.x - rectangle.width * 0.5, y = rectangle.y - rectangle.height * 0.5, width = rectangle.width * 2, height = rectangle.height * 2}
-        BreitbandGraphics.draw_image(rectangle, nil, views_path .. "PianoRoll/test.png", color, "linear")
+        BreitbandGraphics.draw_image(rectangle, nil, views_path .. "PianoRoll/Resources/door_opening.png", color, "linear")
     else
         uguiIconDraw(rectangle, color, visual_state, key)
     end
