@@ -1,7 +1,7 @@
 local UID = dofile(views_path .. "PianoRoll/UID.lua")
 
 return {
-    Render = function(key)
+    GetDialog = function(key)
         local page = 1
         local help = Locales.raw()["PIANO_ROLL_HELP_EXPLANATIONS"][key];
         local pages = help.PAGES

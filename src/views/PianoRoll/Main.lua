@@ -115,7 +115,7 @@ return {
                 is_enabled = Tabs[SelectedTabIndex].HelpKey ~= nil,
             }
         ) then
-            PianoRollDialog = Help.Render(Tabs[SelectedTabIndex].HelpKey)
+            PianoRollDialog = Help.GetDialog(Tabs[SelectedTabIndex].HelpKey)
         end
 
         -- show only the project page if no piano rolls exist
