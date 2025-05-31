@@ -1,6 +1,6 @@
 return {
     process = function(input)
-        local override = CurrentPianoRollOverride()
+        local override = CurrentSemanticWorkflowOverride()
         if override then
             TASState = override.tas_state
             return override.joy

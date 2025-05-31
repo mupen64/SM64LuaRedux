@@ -3,7 +3,7 @@
 local __impl = __impl
 
 ---@type Sheet
-local Sheet = dofile(views_path .. "PianoRoll/Definitions/Sheet.lua")
+local Sheet = dofile(views_path .. "SemanticWorkflow/Definitions/Sheet.lua")
 
 local function new_sheet_meta(name)
     return {

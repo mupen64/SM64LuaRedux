@@ -5,7 +5,7 @@
 local __impl = __impl
 
 ---@type Section
-local Section = dofile(views_path .. "PianoRoll/Definitions/Section.lua")
+local Section = dofile(views_path .. "SemanticWorkflow/Definitions/Section.lua")
 
 local function read_all(file)
     local f = assert(io.open(file, "rb"))

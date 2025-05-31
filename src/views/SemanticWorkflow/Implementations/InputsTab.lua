@@ -6,11 +6,11 @@ __impl.name = "Inputs"
 __impl.help_key = "INPUTS_TAB"
 
 ---@type FrameListGui
-local FrameListGui = dofile(views_path .. "PianoRoll/Definitions/FrameListGui.lua")
+local FrameListGui = dofile(views_path .. "SemanticWorkflow/Definitions/FrameListGui.lua")
 
 ---constants---
 
-local UID <const> = dofile(views_path .. "PianoRoll/UID.lua")[__impl.name]
+local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")[__impl.name]
 
 local MEDIUM_CONTROL_HEIGHT <const> = 0.75
 local SMALL_CONTROL_HEIGHT <const> = 0.50
@@ -115,7 +115,7 @@ local function controls_for_end_action(section, draw, column, top)
 end
 
 local function section_controls_for_selected(draw)
-    local sheet = PianoRollProject:asserted_current()
+    local sheet = SemanticWorkflowProject:asserted_current()
 
     local top = TOP
     local col_timeout = 4
@@ -271,7 +271,7 @@ local function controls_for_selected(draw)
     local large_control_height = 1.0
     local top = TOP
 
-    local sheet = PianoRollProject:asserted_current()
+    local sheet = SemanticWorkflowProject:asserted_current()
 
     local new_values = {}
     local edited_section = sheet.sections[sheet.active_frame.section_index]
@@ -414,7 +414,7 @@ local function controls_for_selected(draw)
 
     local changes = CloneInto(old_values, new_values)
     local any_changes = any_entries(changes)
-    local current_sheet = PianoRollProject:asserted_current()
+    local current_sheet = SemanticWorkflowProject:asserted_current()
     if any_changes and edited_input then
         for _, section in pairs(sheet.sections) do
             for _, input in pairs(section.inputs) do

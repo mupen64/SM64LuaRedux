@@ -8,7 +8,7 @@ local __clsFrameListGui = {
 }
 
 __impl = __clsFrameListGui
-dofile(views_path .. "PianoRoll/Implementations/FrameListGui.lua")
+dofile(views_path .. "SemanticWorkflow/Implementations/FrameListGui.lua")
 __impl = nil
 
 return __clsFrameListGui

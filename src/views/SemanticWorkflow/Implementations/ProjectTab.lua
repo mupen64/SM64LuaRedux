@@ -5,10 +5,10 @@ local __impl = __impl
 __impl.name = "Project"
 __impl.help_key = "PROJECT_TAB"
 
-local Project = dofile(views_path .. "PianoRoll/Definitions/Project.lua")
+local Project = dofile(views_path .. "SemanticWorkflow/Definitions/Project.lua")
 local persistence = dofile(lib_path .. "persistence.lua")
 
-local UID <const> = dofile(views_path .. "PianoRoll/UID.lua")[__impl.name]
+local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")[__impl.name]
 
 function __impl.allocate_uids(enum_next)
     return {
@@ -49,22 +49,22 @@ local function create_confirm_dialog(prompt, on_confirmed)
             text = Locales.str("YES"),
         }) then
             on_confirmed()
-            PianoRollDialog = nil
+            SemanticWorkflowDialog = nil
         end
         if ugui.button({
             uid = UID.ConfirmationNo,
             rectangle = grid_rect(2, top, 2, control_height),
             text = Locales.str("NO"),
         }) then
-            PianoRollDialog = nil
+            SemanticWorkflowDialog = nil
         end
     end
 end
 
 local function render_confirm_deletion_prompt(sheet_index)
     return create_confirm_dialog(
-        "[Confirm deletion]\n\nAre you sure you want to delete \"" .. PianoRollProject.meta.sheets[sheet_index].name .. "\"?\nThis action cannot be undone.",
-        function() PianoRollProject:remove_sheet(sheet_index) end
+        "[Confirm deletion]\n\nAre you sure you want to delete \"" .. SemanticWorkflowProject.meta.sheets[sheet_index].name .. "\"?\nThis action cannot be undone.",
+        function() SemanticWorkflowProject:remove_sheet(sheet_index) end
     )
 end
 
@@ -75,8 +75,8 @@ local RenderConfirmPurgeDialog = create_confirm_dialog(
     .."This action cannot be undone.",
     function()
         local ignored_files = {}
-        local project_folder = PianoRollProject:project_folder()
-        for _, sheet_meta in ipairs(PianoRollProject.meta.sheets) do
+        local project_folder = SemanticWorkflowProject:project_folder()
+        for _, sheet_meta in ipairs(SemanticWorkflowProject.meta.sheets) do
             ignored_files[sheet_meta.name .. ".prs"] = true
             ignored_files[sheet_meta.name .. ".prs.savestate"] = true
         end
@@ -92,7 +92,7 @@ local RenderConfirmPurgeDialog = create_confirm_dialog(
 function __impl.render(draw)
     local theme = Styles.theme()
     local foreground_color = theme.listbox.text[1]
-    if #PianoRollProject.meta.sheets == 0 then
+    if #SemanticWorkflowProject.meta.sheets == 0 then
         BreitbandGraphics.draw_text(
             grid_rect(0, 0, 8, 16),
             "center",
@@ -106,7 +106,7 @@ function __impl.render(draw)
     end
 
     local top = 1
-    draw:small_text(grid_rect(0, top, 8, control_height), "left", PianoRollProject.project_location)
+    draw:small_text(grid_rect(0, top, 8, control_height), "left", SemanticWorkflowProject.project_location)
     if ugui.button({
         uid = UID.NewProject,
         rectangle = grid_rect(0, top + 1, 1.5, control_height),
@@ -115,10 +115,10 @@ function __impl.render(draw)
     }) then
         local path = iohelper.filediag("*.prp", 1)
         if string.len(path) > 0 then
-            PianoRollProject = Project.new()
-            PianoRollProject.project_location = path
-            PianoRollProject:add_sheet()
-            persistence.store(path, PianoRollProject.meta)
+            SemanticWorkflowProject = Project.new()
+            SemanticWorkflowProject.project_location = path
+            SemanticWorkflowProject:add_sheet()
+            persistence.store(path, SemanticWorkflowProject.meta)
         end
     end
     if ugui.button({
@@ -129,9 +129,9 @@ function __impl.render(draw)
     }) then
         local path = iohelper.filediag("*.prp", 0)
         if string.len(path) > 0 then
-            PianoRollProject = Project.new()
-            PianoRollProject.project_location = path
-            PianoRollProject:load(persistence.load(path))
+            SemanticWorkflowProject = Project.new()
+            SemanticWorkflowProject.project_location = path
+            SemanticWorkflowProject:load(persistence.load(path))
         end
     end
     if ugui.button({
@@ -140,18 +140,18 @@ function __impl.render(draw)
         text = Locales.str("PIANO_ROLL_PROJECT_SAVE"),
         tooltip = Locales.str("PIANO_ROLL_PROJECT_SAVE_TOOL_TIP"),
     }) then
-        if PianoRollProject.project_location == nil then
+        if SemanticWorkflowProject.project_location == nil then
             local path = iohelper.filediag("*.prp", 0)
             if string.len(path) == 0 then
                 goto skipSave
             end
-            PianoRollProject.project_location = path
-            persistence.store(path, PianoRollProject.meta)
+            SemanticWorkflowProject.project_location = path
+            persistence.store(path, SemanticWorkflowProject.meta)
         end
-        persistence.store(PianoRollProject.project_location, PianoRollProject.meta)
-        local project_folder = PianoRollProject:project_folder()
-        for _, sheet_meta in ipairs(PianoRollProject.meta.sheets) do
-            PianoRollProject.all[sheet_meta.name]:save(project_folder .. sheet_meta.name .. ".prs")
+        persistence.store(SemanticWorkflowProject.project_location, SemanticWorkflowProject.meta)
+        local project_folder = SemanticWorkflowProject:project_folder()
+        for _, sheet_meta in ipairs(SemanticWorkflowProject.meta.sheets) do
+            SemanticWorkflowProject.all[sheet_meta.name]:save(project_folder .. sheet_meta.name .. ".prs")
         end
     end
     ::skipSave::
@@ -161,14 +161,14 @@ function __impl.render(draw)
         rectangle = grid_rect(4.5, top + 1, 1.5, control_height),
         text = Locales.str("PIANO_ROLL_PROJECT_PURGE"),
         tooltip = Locales.str("PIANO_ROLL_PROJECT_PURGE_TOOL_TIP"),
-        is_enabled = PianoRollProject.project_location ~= nil,
+        is_enabled = SemanticWorkflowProject.project_location ~= nil,
     }) then
-        PianoRollDialog = RenderConfirmPurgeDialog
+        SemanticWorkflowDialog = RenderConfirmPurgeDialog
     end
 
     local available_sheets = {}
-    for i = 1, #PianoRollProject.meta.sheets, 1 do
-        available_sheets[i] = PianoRollProject.meta.sheets[i].name
+    for i = 1, #SemanticWorkflowProject.meta.sheets, 1 do
+        available_sheets[i] = SemanticWorkflowProject.meta.sheets[i].name
     end
     available_sheets[#available_sheets + 1] = Locales.str("PIANO_ROLL_PROJECT_ADD_SHEET")
 
@@ -179,9 +179,9 @@ function __impl.render(draw)
             rectangle = grid_rect(0, top, 3, control_height),
             text = Locales.str("PIANO_ROLL_PROJECT_DISABLE"),
             tooltip = Locales.str("PIANO_ROLL_PROJECT_DISABLE_TOOL_TIP"),
-            is_checked = PianoRollProject.disabled
+            is_checked = SemanticWorkflowProject.disabled
         })) then
-            PianoRollProject.disabled = true
+            SemanticWorkflowProject.disabled = true
         end
         top = top + control_height
     end
@@ -193,19 +193,19 @@ function __impl.render(draw)
             uid = uid,
             rectangle = grid_rect(0, y, 3, control_height),
             text = available_sheets[i],
-            is_checked = not PianoRollProject.disabled and i == PianoRollProject.meta.selection_index,
+            is_checked = not SemanticWorkflowProject.disabled and i == SemanticWorkflowProject.meta.selection_index,
         }) then
-            if i == #PianoRollProject.meta.sheets + 1 then -- add new sheet
-                PianoRollProject:add_sheet()
-                PianoRollProject:select(#PianoRollProject.meta.sheets)
-            elseif PianoRollProject.disabled or i ~= PianoRollProject.meta.selection_index then -- select sheet
-                PianoRollProject:select(i)
+            if i == #SemanticWorkflowProject.meta.sheets + 1 then -- add new sheet
+                SemanticWorkflowProject:add_sheet()
+                SemanticWorkflowProject:select(#SemanticWorkflowProject.meta.sheets)
+            elseif SemanticWorkflowProject.disabled or i ~= SemanticWorkflowProject.meta.selection_index then -- select sheet
+                SemanticWorkflowProject:select(i)
             end
         end
         uid = uid + 1
 
         -- prevent rendering options for the "add..." button
-        if i > #PianoRollProject.meta.sheets then break end
+        if i > #SemanticWorkflowProject.meta.sheets then break end
 
         local x = 3
         local function draw_utility_button(text, tooltip, enabled, width)
@@ -223,30 +223,30 @@ function __impl.render(draw)
         end
 
         if (draw_utility_button("^", Locales.str("PIANO_ROLL_PROJECT_MOVE_SHEET_UP_TOOL_TIP"), i > 1)) then
-            PianoRollProject:move_sheet(i, -1)
+            SemanticWorkflowProject:move_sheet(i, -1)
         end
 
-        if (draw_utility_button("v", Locales.str("PIANO_ROLL_PROJECT_MOVE_SHEET_DOWN_TOOL_TIP"), i < #PianoRollProject.meta.sheets)) then
-            PianoRollProject:move_sheet(i, 1)
+        if (draw_utility_button("v", Locales.str("PIANO_ROLL_PROJECT_MOVE_SHEET_DOWN_TOOL_TIP"), i < #SemanticWorkflowProject.meta.sheets)) then
+            SemanticWorkflowProject:move_sheet(i, 1)
         end
 
         if (draw_utility_button("-", Locales.str("PIANO_ROLL_PROJECT_DELETE_SHEET_TOOL_TIP"))) then
-            PianoRollDialog = render_confirm_deletion_prompt(i)
+            SemanticWorkflowDialog = render_confirm_deletion_prompt(i)
         end
 
         if (draw_utility_button(".st", Locales.str("PIANO_ROLL_PROJECT_REBASE_SHEET_TOOL_TIP"), true, 0.75)) then
-            PianoRollProject:rebase(i)
+            SemanticWorkflowProject:rebase(i)
         end
 
         if (draw_utility_button(".prs", Locales.str("PIANO_ROLL_PROJECT_REPLACE_INPUTS_TOOL_TIP"), true, 0.75)) then
             local path = iohelper.filediag("*.prs", 0)
             if string.len(path) > 0 then
-                PianoRollProject.all[PianoRollProject.meta.sheets[i].name]:load(path, false)
+                SemanticWorkflowProject.all[SemanticWorkflowProject.meta.sheets[i].name]:load(path, false)
             end
         end
 
         if (draw_utility_button(">", Locales.str("PIANO_ROLL_PROJECT_PLAY_WITHOUT_ST_TOOL_TIP"))) then
-            PianoRollProject:select(i, false)
+            SemanticWorkflowProject:select(i, false)
         end
         ::continue::
     end

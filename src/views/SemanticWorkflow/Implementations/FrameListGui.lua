@@ -4,7 +4,7 @@ local __impl = __impl
 
 ---constants---
 
-local UID <const> = dofile(views_path .. "PianoRoll/UID.lua")["FrameList"]
+local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")["FrameList"]
 
 local MODE_TEXTS <const> = { "-", "D", "M", "Y", "R", "A" }
 local BUTTONS <const> = {
@@ -119,7 +119,7 @@ local function draw_headers(sheet, draw, view_index, button_draw_data)
         rectangle = grid_rect(4, ROW0, 4, 0.5),
         text = sheet.name
     })
-    PianoRollProject:set_current_name(sheet.name)
+    SemanticWorkflowProject:set_current_name(sheet.name)
     ugui.standard_styler.params.font_size = prev_font_size
     ugui.standard_styler.font_size = prev_font_size
 
@@ -215,7 +215,7 @@ local function handle_scroll_and_buttons(section_rect, button_draw_data, num_row
 
     if not button_draw_data then return end
 
-    iterate_input_rows(PianoRollProject:asserted_current(), function(section, input, section_index, input_index)
+    iterate_input_rows(SemanticWorkflowProject:asserted_current(), function(section, input, section_index, input_index)
         if input_index == hovering_index and in_range and section ~= nil then
             for button_index, v in ipairs(BUTTONS) do
                 local in_range_x = mouse_x >= button_draw_data[button_index].x and mouse_x < button_draw_data[button_index + 1].x
@@ -356,9 +356,9 @@ end
 
 --- Renders the sheets, indicating whether an update by the user has been made that should cause a rerun
 function __impl.render(draw)
-    local current_sheet = PianoRollProject:asserted_current()
+    local current_sheet = SemanticWorkflowProject:asserted_current()
 
-    local num_rows = iterate_input_rows(PianoRollProject:asserted_current(), nil)
+    local num_rows = iterate_input_rows(SemanticWorkflowProject:asserted_current(), nil)
     local baseline, scrollbar_rect = draw_scrollbar(num_rows)
     local button_draw_data = draw_color_codes(baseline, scrollbar_rect, math.min(num_rows, MAX_DISPLAYED_SECTIONS)) or nil
     draw_headers(current_sheet, draw, __impl.view_index, button_draw_data)

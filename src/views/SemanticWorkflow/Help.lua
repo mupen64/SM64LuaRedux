@@ -1,4 +1,4 @@
-local UID <const> = dofile(views_path .. "PianoRoll/UID.lua")
+local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")
 
 return {
     GetDialog = function(key)
@@ -21,7 +21,7 @@ return {
                     tooltip = Locales.str("PIANO_ROLL_HELP_EXIT_TOOL_TIP")
                 }
             ) then
-                PianoRollDialog = nil
+                SemanticWorkflowDialog = nil
             end
 
             BreitbandGraphics.draw_text(grid_rect(0, 0.1, 8, 1), "start", "start", {}, foreground_color, theme.font_size * 1.2 * Drawing.scale, theme.font_name, title)

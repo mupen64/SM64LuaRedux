@@ -12,26 +12,26 @@ end
 
 ---implementation details---
 
-local UID <const> = dofile(views_path .. "PianoRoll/UID.lua")
-local Project = dofile(views_path .. "PianoRoll/Definitions/Project.lua")
-local Help = dofile(views_path .. "PianoRoll/Help.lua")
+local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")
+local Project = dofile(views_path .. "SemanticWorkflow/Definitions/Project.lua")
+local Help = dofile(views_path .. "SemanticWorkflow/Help.lua")
 
 ---@type Project
-PianoRollProject = Project.new()
-PianoRollDialog = nil
+SemanticWorkflowProject = Project.new()
+SemanticWorkflowDialog = nil
 
 local ugui_icon_draw = ugui.standard_styler.draw_icon
 
 ugui.standard_styler.draw_icon = function(rectangle, color, visual_state, key)
     if key == "door_opening" then
         rectangle = {x = rectangle.x - rectangle.width * 0.5, y = rectangle.y - rectangle.height * 0.5, width = rectangle.width * 2, height = rectangle.height * 2}
-        BreitbandGraphics.draw_image(rectangle, nil, views_path .. "PianoRoll/Resources/door_opening.png", color, "linear")
+        BreitbandGraphics.draw_image(rectangle, nil, views_path .. "SemanticWorkflow/Resources/door_opening.png", color, "linear")
     else
         ugui_icon_draw(rectangle, color, visual_state, key)
     end
 end
 
-local Tabs = dofile(views_path .. "PianoRoll/Tabs.lua")
+local Tabs = dofile(views_path .. "SemanticWorkflow/Tabs.lua")
 local SelectedTabIndex = 1
 
 local function draw_factory(theme)
@@ -53,7 +53,7 @@ end
 
 emu.atupdatescreen(function()
     -- prevent reentrant calls caused by GUI actions while the game is running
-    local current_sheet = PianoRollProject:current()
+    local current_sheet = SemanticWorkflowProject:current()
     if current_sheet ~= nil and not current_sheet._busy then
         current_sheet:update()
     end
@@ -66,9 +66,9 @@ end)
 ---If the current piano roll does not define what to do for this frame, or there is no current piano roll, nil is returned instead.
 ---
 ---@return SectionInputs|nil override The inputs to apply for the current frame.
-function CurrentPianoRollOverride()
-    local current_sheet = PianoRollProject:current()
-    return current_sheet and not PianoRollProject.disabled and current_sheet:evaluate_frame() or nil
+function CurrentSemanticWorkflowOverride()
+    local current_sheet = SemanticWorkflowProject:current()
+    return current_sheet and not SemanticWorkflowProject.disabled and current_sheet:evaluate_frame() or nil
 end
 
 return {
@@ -76,8 +76,8 @@ return {
     draw = function()
 
         -- if we're showing any dialog, stop rendering anything else
-        if PianoRollDialog ~= nil then
-            PianoRollDialog()
+        if SemanticWorkflowDialog ~= nil then
+            SemanticWorkflowDialog()
             return
         end
 
@@ -99,11 +99,11 @@ return {
                 is_enabled = Tabs[SelectedTabIndex].help_key ~= nil,
             }
         ) then
-            PianoRollDialog = Help.GetDialog(Tabs[SelectedTabIndex].help_key)
+            SemanticWorkflowDialog = Help.GetDialog(Tabs[SelectedTabIndex].help_key)
         end
 
         -- show only the project page if no piano rolls exist
-        if PianoRollProject:current() == nil then SelectedTabIndex = 1 end
+        if SemanticWorkflowProject:current() == nil then SelectedTabIndex = 1 end
         Tabs[SelectedTabIndex].render(draw)
 
         -- hack to make the listbox transparent

@@ -51,7 +51,7 @@ function __clsProject:project_folder() end
 function __clsProject:load(meta) end
 
 __impl = __clsProject
-dofile(views_path .. "PianoRoll/Implementations/Project.lua")
+dofile(views_path .. "SemanticWorkflow/Implementations/Project.lua")
 __impl = nil
 
 return __clsProject
