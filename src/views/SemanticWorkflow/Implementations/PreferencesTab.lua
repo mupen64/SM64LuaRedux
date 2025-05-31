@@ -18,20 +18,20 @@ local control_height = 0.75
 
 function __impl.render(draw)
     local top = 1
-    Settings.piano_roll.edit_entire_state = ugui.toggle_button(
+    Settings.semantic_workflow.edit_entire_state = ugui.toggle_button(
         {
             uid = UID.ToggleEditEntireState,
             rectangle = grid_rect(0, top, 8, control_height),
             text = "Edit entire state",
-            is_checked = Settings.piano_roll.edit_entire_state,
+            is_checked = Settings.semantic_workflow.edit_entire_state,
         }
     )
-    Settings.piano_roll.fast_foward = ugui.toggle_button(
+    Settings.semantic_workflow.fast_foward = ugui.toggle_button(
         {
             uid = UID.ToggleFastForward,
             rectangle = grid_rect(0, top + control_height, 8, control_height),
             text = "Fast Forward",
-            is_checked = Settings.piano_roll.fast_foward,
+            is_checked = Settings.semantic_workflow.fast_foward,
         }
     )
 end

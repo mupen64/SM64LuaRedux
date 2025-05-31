@@ -419,7 +419,7 @@ local function controls_for_selected(draw)
         for _, section in pairs(sheet.sections) do
             for _, input in pairs(section.inputs) do
                 if input.editing then
-                    CloneInto(input.tas_state, Settings.piano_roll.edit_entire_state and old_values or changes)
+                    CloneInto(input.tas_state, Settings.semantic_workflow.edit_entire_state and old_values or changes)
                 end
             end
         end
