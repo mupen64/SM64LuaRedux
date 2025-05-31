@@ -72,7 +72,7 @@ function CurrentSemanticWorkflowOverride()
 end
 
 return {
-    name = Locales.str("PIANO_ROLL_TAB_NAME"),
+    name = Locales.str("SEMANTIC_WORKFLOW_TAB_NAME"),
     draw = function()
 
         -- if we're showing any dialog, stop rendering anything else
@@ -95,7 +95,7 @@ return {
                 uid = UID.ToggleHelp,
                 rectangle = grid_rect(7, 0, 1, 1),
                 text = "?",
-                tooltip = Locales.str("PIANO_ROLL_HELP_SHOW_TOOL_TIP"),
+                tooltip = Locales.str("SEMANTIC_WORKFLOW_HELP_SHOW_TOOL_TIP"),
                 is_enabled = Tabs[SelectedTabIndex].help_key ~= nil,
             }
         ) then

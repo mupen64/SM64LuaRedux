@@ -101,7 +101,7 @@ function __impl.render(draw)
             foreground_color,
             theme.font_size * 1.2 * Drawing.scale,
             theme.font_name,
-            Locales.str("PIANO_ROLL_PROJECT_NO_SHEETS_AVAILABLE")
+            Locales.str("SEMANTIC_WORKFLOW_PROJECT_NO_SHEETS_AVAILABLE")
         )
     end
 
@@ -110,8 +110,8 @@ function __impl.render(draw)
     if ugui.button({
         uid = UID.NewProject,
         rectangle = grid_rect(0, top + 1, 1.5, control_height),
-        text = Locales.str("PIANO_ROLL_PROJECT_NEW"),
-        tooltip = Locales.str("PIANO_ROLL_PROJECT_NEW_TOOL_TIP"),
+        text = Locales.str("SEMANTIC_WORKFLOW_PROJECT_NEW"),
+        tooltip = Locales.str("SEMANTIC_WORKFLOW_PROJECT_NEW_TOOL_TIP"),
     }) then
         local path = iohelper.filediag("*.prp", 1)
         if string.len(path) > 0 then
@@ -124,8 +124,8 @@ function __impl.render(draw)
     if ugui.button({
         uid = UID.OpenProject,
         rectangle = grid_rect(1.5, top + 1, 1.5, control_height),
-        text = Locales.str("PIANO_ROLL_PROJECT_OPEN"),
-        tooltip = Locales.str("PIANO_ROLL_PROJECT_OPEN_TOOL_TIP"),
+        text = Locales.str("SEMANTIC_WORKFLOW_PROJECT_OPEN"),
+        tooltip = Locales.str("SEMANTIC_WORKFLOW_PROJECT_OPEN_TOOL_TIP"),
     }) then
         local path = iohelper.filediag("*.prp", 0)
         if string.len(path) > 0 then
@@ -137,8 +137,8 @@ function __impl.render(draw)
     if ugui.button({
         uid = UID.SaveProject,
         rectangle = grid_rect(3, top + 1, 1.5, control_height),
-        text = Locales.str("PIANO_ROLL_PROJECT_SAVE"),
-        tooltip = Locales.str("PIANO_ROLL_PROJECT_SAVE_TOOL_TIP"),
+        text = Locales.str("SEMANTIC_WORKFLOW_PROJECT_SAVE"),
+        tooltip = Locales.str("SEMANTIC_WORKFLOW_PROJECT_SAVE_TOOL_TIP"),
     }) then
         if SemanticWorkflowProject.project_location == nil then
             local path = iohelper.filediag("*.prp", 0)
@@ -159,8 +159,8 @@ function __impl.render(draw)
     if ugui.button({
         uid = UID.PurgeProject,
         rectangle = grid_rect(4.5, top + 1, 1.5, control_height),
-        text = Locales.str("PIANO_ROLL_PROJECT_PURGE"),
-        tooltip = Locales.str("PIANO_ROLL_PROJECT_PURGE_TOOL_TIP"),
+        text = Locales.str("SEMANTIC_WORKFLOW_PROJECT_PURGE"),
+        tooltip = Locales.str("SEMANTIC_WORKFLOW_PROJECT_PURGE_TOOL_TIP"),
         is_enabled = SemanticWorkflowProject.project_location ~= nil,
     }) then
         SemanticWorkflowDialog = RenderConfirmPurgeDialog
@@ -170,15 +170,15 @@ function __impl.render(draw)
     for i = 1, #SemanticWorkflowProject.meta.sheets, 1 do
         available_sheets[i] = SemanticWorkflowProject.meta.sheets[i].name
     end
-    available_sheets[#available_sheets + 1] = Locales.str("PIANO_ROLL_PROJECT_ADD_SHEET")
+    available_sheets[#available_sheets + 1] = Locales.str("SEMANTIC_WORKFLOW_PROJECT_ADD_SHEET")
 
     top = 3
     if #available_sheets > 1 then
         if (ugui.toggle_button({
             uid = UID.DisableProjectSheets,
             rectangle = grid_rect(0, top, 3, control_height),
-            text = Locales.str("PIANO_ROLL_PROJECT_DISABLE"),
-            tooltip = Locales.str("PIANO_ROLL_PROJECT_DISABLE_TOOL_TIP"),
+            text = Locales.str("SEMANTIC_WORKFLOW_PROJECT_DISABLE"),
+            tooltip = Locales.str("SEMANTIC_WORKFLOW_PROJECT_DISABLE_TOOL_TIP"),
             is_checked = SemanticWorkflowProject.disabled
         })) then
             SemanticWorkflowProject.disabled = true
@@ -222,30 +222,30 @@ function __impl.render(draw)
             return result
         end
 
-        if (draw_utility_button("^", Locales.str("PIANO_ROLL_PROJECT_MOVE_SHEET_UP_TOOL_TIP"), i > 1)) then
+        if (draw_utility_button("^", Locales.str("SEMANTIC_WORKFLOW_PROJECT_MOVE_SHEET_UP_TOOL_TIP"), i > 1)) then
             SemanticWorkflowProject:move_sheet(i, -1)
         end
 
-        if (draw_utility_button("v", Locales.str("PIANO_ROLL_PROJECT_MOVE_SHEET_DOWN_TOOL_TIP"), i < #SemanticWorkflowProject.meta.sheets)) then
+        if (draw_utility_button("v", Locales.str("SEMANTIC_WORKFLOW_PROJECT_MOVE_SHEET_DOWN_TOOL_TIP"), i < #SemanticWorkflowProject.meta.sheets)) then
             SemanticWorkflowProject:move_sheet(i, 1)
         end
 
-        if (draw_utility_button("-", Locales.str("PIANO_ROLL_PROJECT_DELETE_SHEET_TOOL_TIP"))) then
+        if (draw_utility_button("-", Locales.str("SEMANTIC_WORKFLOW_PROJECT_DELETE_SHEET_TOOL_TIP"))) then
             SemanticWorkflowDialog = render_confirm_deletion_prompt(i)
         end
 
-        if (draw_utility_button(".st", Locales.str("PIANO_ROLL_PROJECT_REBASE_SHEET_TOOL_TIP"), true, 0.75)) then
+        if (draw_utility_button(".st", Locales.str("SEMANTIC_WORKFLOW_PROJECT_REBASE_SHEET_TOOL_TIP"), true, 0.75)) then
             SemanticWorkflowProject:rebase(i)
         end
 
-        if (draw_utility_button(".prs", Locales.str("PIANO_ROLL_PROJECT_REPLACE_INPUTS_TOOL_TIP"), true, 0.75)) then
+        if (draw_utility_button(".prs", Locales.str("SEMANTIC_WORKFLOW_PROJECT_REPLACE_INPUTS_TOOL_TIP"), true, 0.75)) then
             local path = iohelper.filediag("*.prs", 0)
             if string.len(path) > 0 then
                 SemanticWorkflowProject.all[SemanticWorkflowProject.meta.sheets[i].name]:load(path, false)
             end
         end
 
-        if (draw_utility_button(">", Locales.str("PIANO_ROLL_PROJECT_PLAY_WITHOUT_ST_TOOL_TIP"))) then
+        if (draw_utility_button(">", Locales.str("SEMANTIC_WORKFLOW_PROJECT_PLAY_WITHOUT_ST_TOOL_TIP"))) then
             SemanticWorkflowProject:select(i, false)
         end
         ::continue::
