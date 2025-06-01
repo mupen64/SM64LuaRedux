@@ -71,17 +71,17 @@ end
 local RenderConfirmPurgeDialog = create_confirm_dialog(
     "[Confirm project purge]\n\n"
     .."Are you sure you want to purge unused sheets from the project directory?\n"
-    .."Unrelated files (not ending with .prs or .prs.savestate) will not be touched.\n"
+    .."Unrelated files (not ending with .sws or .sws.savestate) will not be touched.\n"
     .."This action cannot be undone.",
     function()
         local ignored_files = {}
         local project_folder = SemanticWorkflowProject:project_folder()
         for _, sheet_meta in ipairs(SemanticWorkflowProject.meta.sheets) do
-            ignored_files[sheet_meta.name .. ".prs"] = true
-            ignored_files[sheet_meta.name .. ".prs.savestate"] = true
+            ignored_files[sheet_meta.name .. ".sws"] = true
+            ignored_files[sheet_meta.name .. ".sws.savestate"] = true
         end
         for file in io.popen("dir \"" .. project_folder .. "\" /b"):lines() do
-            if ignored_files[file] == nil and (file:match("(.)prs$") ~= nil or file:match("(.)prs(.)savestate$") ~= nil) then
+            if ignored_files[file] == nil and (file:match("(.)sws$") ~= nil or file:match("(.)sws(.)savestate$") ~= nil) then
                 assert(os.remove(project_folder .. file))
                 print("removed " .. file)
             end
@@ -151,7 +151,7 @@ function __impl.render(draw)
         persistence.store(SemanticWorkflowProject.project_location, SemanticWorkflowProject.meta)
         local project_folder = SemanticWorkflowProject:project_folder()
         for _, sheet_meta in ipairs(SemanticWorkflowProject.meta.sheets) do
-            SemanticWorkflowProject.all[sheet_meta.name]:save(project_folder .. sheet_meta.name .. ".prs")
+            SemanticWorkflowProject.all[sheet_meta.name]:save(project_folder .. sheet_meta.name .. ".sws")
         end
     end
     ::skipSave::
@@ -238,8 +238,8 @@ function __impl.render(draw)
             SemanticWorkflowProject:rebase(i)
         end
 
-        if (draw_utility_button(".prs", Locales.str("SEMANTIC_WORKFLOW_PROJECT_REPLACE_INPUTS_TOOL_TIP"), true, 0.75)) then
-            local path = iohelper.filediag("*.prs", 0)
+        if (draw_utility_button(".sws", Locales.str("SEMANTIC_WORKFLOW_PROJECT_REPLACE_INPUTS_TOOL_TIP"), true, 0.75)) then
+            local path = iohelper.filediag("*.sws", 0)
             if string.len(path) > 0 then
                 SemanticWorkflowProject.all[SemanticWorkflowProject.meta.sheets[i].name]:load(path, false)
             end

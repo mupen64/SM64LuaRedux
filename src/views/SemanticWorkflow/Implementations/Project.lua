@@ -104,7 +104,7 @@ function __impl:load(meta)
     local project_folder = self:project_folder()
     for _, sheet_meta in ipairs(meta.sheets) do
         local new_sheet = Sheet.new(sheet_meta.name, false)
-        new_sheet:load(project_folder .. sheet_meta.name .. ".prs")
+        new_sheet:load(project_folder .. sheet_meta.name .. ".sws")
         self.all[sheet_meta.name] = new_sheet
     end
 end

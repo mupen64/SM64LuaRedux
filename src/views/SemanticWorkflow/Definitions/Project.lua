@@ -2,7 +2,7 @@
 
 ---@class Project
 ---@field public meta table Metadata about the project that is stored into the semantic workflow project file (*.swp).
----@field public all table All semantic workflow sheets as loaded from their respective *.prs files in order.
+---@field public all table All semantic workflow sheets as loaded from their respective *.sws files in order.
 ---@field public project_location string The location of the semantic workflow project file (*.swp).
 ---@field public copy_entire_state boolean If true, the entire TASState of the active edited frame is copied to all selected. If false, only the changes made will be copied instead.
 local __clsProject = {}
