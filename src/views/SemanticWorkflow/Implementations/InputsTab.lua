@@ -83,6 +83,7 @@ local function controls_for_insert_and_remove()
         tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_INSERT_INPUT_TOOL_TIP"),
     }) then
         table.insert(edited_section.inputs, sheet.active_frame.frame_index, ugui.internal.deep_clone(edited_input))
+        edited_section.collapsed = false
         any_changes = true
     end
 
