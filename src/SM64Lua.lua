@@ -100,6 +100,7 @@ dofile(core_path .. "Settings.lua")
 dofile(core_path .. "Formatter.lua")
 dofile(core_path .. "Drawing.lua")
 dofile(core_path .. "Memory.lua")
+dofile(core_path .. "RNG.lua")
 dofile(core_path .. "Joypad.lua")
 dofile(core_path .. "Angles.lua")
 dofile(core_path .. "Engine.lua")
@@ -108,8 +109,6 @@ dofile(core_path .. "WorldVisualizer.lua")
 dofile(core_path .. "MiniVisualizer.lua")
 dofile(core_path .. "Lookahead.lua")
 dofile(core_path .. "Timer.lua")
-dofile(core_path .. "RNGToIndex.lua")
-dofile(core_path .. "IndexToRNG.lua")
 dofile(core_path .. "Ghost.lua")
 dofile(core_path .. "VarWatch.lua")
 dofile(core_path .. "Styles.lua")
@@ -127,7 +126,7 @@ Presets.apply(Presets.persistent.current_index)
 
 local views = {
     dofile(views_path .. "TAS.lua"),
-    dofile(views_path .. "PianoRoll/Main.lua"),
+    dofile(views_path .. "SemanticWorkflow/Main.lua"),
     dofile(views_path .. "Settings.lua"),
     dofile(views_path .. "Tools.lua"),
     dofile(views_path .. "Timer.lua"),
@@ -135,7 +134,7 @@ local views = {
 }
 
 local processors = {
-    dofile(processors_path .. "PianoRoll.lua"),
+    dofile(processors_path .. "SemanticWorkflow.lua"),
     dofile(processors_path .. "Walk.lua"),
     dofile(processors_path .. "Swimming.lua"),
     dofile(processors_path .. "Wallkicker.lua"),
@@ -171,17 +170,18 @@ function at_input()
         first_input = false
     end
 
-    Memory.update_previous()
-
-    Joypad.update()
-
     if Settings.override_rng then
+        local address_source = Addresses[Settings.address_source_index]
+
         if Settings.override_rng_use_index then
-            memory.writeword(0x80B8EEE0, get_value(Settings.override_rng_value))
+            memory.writeword(address_source.rng_value, get_value(Settings.override_rng_value))
         else
-            memory.writeword(0x80B8EEE0, Settings.override_rng_value)
+            memory.writeword(address_source.rng_value, Settings.override_rng_value)
         end
     end
+
+    Memory.update_previous()
+    Joypad.update()
 
     -- frame stage 2: let domain code loose on everything, then perform transformations or inspections (e.g.: swimming, rng override, ghost)
     -- TODO: make this into a priority callback system?

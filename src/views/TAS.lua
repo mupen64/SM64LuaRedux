@@ -139,7 +139,9 @@ return {
                 height = joystick_rect[4]
             },
             position = displayPosition,
-            mag = TASState.goal_mag >= 127 and 0 or TASState.goal_mag
+            mag = TASState.goal_mag >= 127 and 0 or TASState.goal_mag,
+            x_snap = 8,
+            y_snap = 8,
         })
         if (newPosition.x ~= displayPosition.x or newPosition.y ~= displayPosition.y) then
             TASState.movement_mode = MovementModes.manual

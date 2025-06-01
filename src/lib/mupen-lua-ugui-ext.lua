@@ -114,11 +114,12 @@ ugui_ext.apply_nineslice = function(style)
     local function draw_icon_placeholder(rectangle)
         BreitbandGraphics.fill_rectangle(rectangle, BreitbandGraphics.colors.red)
     end
+    local original_draw_icon = ugui.standard_styler.draw_icon
     ugui.standard_styler.draw_icon = function(rectangle, color, visual_state, key)
         local rectangles = style.icons[key]
 
         if not rectangles then
-            draw_icon_placeholder(rectangle)
+            original_draw_icon(rectangle, color, visual_state, key)
             return
         end
 

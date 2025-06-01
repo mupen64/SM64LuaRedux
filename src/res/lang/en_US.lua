@@ -9,7 +9,7 @@ return {
     GENERIC_NIL = "nil",
     -- Tab names
     TAS_TAB_NAME = "TAS",
-    PIANO_ROLL_TAB_NAME = "Piano Roll",
+    SEMANTIC_WORKFLOW_TAB_NAME = "Semantic Workflow",
     SETTINGS_TAB_NAME = "Settings",
     TOOLS_TAB_NAME = "Tools",
     TIMER_TAB_NAME = "Timer",
@@ -32,52 +32,66 @@ return {
     SPDKICK = "Spdkick",
     FRAMEWALK = "Framewalk",
     SWIM = "Swim",
-    -- Piano Roll Tab
-    PIANO_ROLL_HELP_HEADER_TITLE = "Piano Roll Help",
-    PIANO_ROLL_HELP_SHOW = "Show Help",
-    PIANO_ROLL_HELP_EXIT = "Exit",
-    PIANO_ROLL_HELP_PREV_PAGE = "back",
-    PIANO_ROLL_HELP_NEXT_PAGE = "next",
-    PIANO_ROLL_SHEET_NO_SHEET = "No piano roll sheets available.\nCreate one to proceed.",
-    PIANO_ROLL_SHEET_NO_SELECTED = "No piano roll sheet selected.\nSelect one to proceed.",
-    PIANO_ROLL_SHEET_DELETE_CONFIRMATION = "[Confirm deletion]\n\nAre you sure you want to delete \"%s\"?\nThis action cannot be undone.",
-    PIANO_ROLL_SHEET_DELETE_YES = "Yes",
-    PIANO_ROLL_SHEET_DELETE_NO = "No",
-    PIANO_ROLL_FRAMELIST_START = "Start: ",
-    PIANO_ROLL_FRAMELIST_NAME = "Name",
-    PIANO_ROLL_FRAMELIST_SECTION = "#Section",
-    PIANO_ROLL_FRAMELIST_STICK = "Joystick",
-    PIANO_ROLL_TOOL_COPY_ENTIRE_STATE = "Copy entire state",
-    PIANO_ROLL_NO_SELECTION = "No selection was made.\nClick on the joystick in an input row to start editing.",
-    PIANO_ROLL_CONTROL_MANUAL = "Manual",
-    PIANO_ROLL_CONTROL_MATCH_YAW = "Yaw",
-    PIANO_ROLL_CONTROL_MATCH_ANGLE = "Angle",
-    PIANO_ROLL_CONTROL_REVERSE_ANGLE = "Reverse",
-    PIANO_ROLL_CONTROL_DYAW = "DYaw",
-    PIANO_ROLL_CONTROL_MAG = "Magnitude:",
-    PIANO_ROLL_CONTROL_SPDKICK = "Spdk",
-    PIANO_ROLL_CONTROL_ATAN = "Atan",
-    PIANO_ROLL_PROJECT_NO_SHEETS_AVAILABLE = "No piano roll sheets available.\nCreate one to proceed.",
-    PIANO_ROLL_PROJECT_NEW = "New",
-    PIANO_ROLL_PROJECT_OPEN = "Open",
-    PIANO_ROLL_PROJECT_SAVE = "Save",
-    PIANO_ROLL_PROJECT_PURGE = "Purge",
-    PIANO_ROLL_PROJECT_DISABLE = "Disable",
-    PIANO_ROLL_PROJECT_ADD_SHEET = "Add Sheet...",
-    PIANO_ROLL_PROJECT_TOOLTIP_REBASE_SHEET = "Set start to now",
-    PIANO_ROLL_PROJECT_TOOLTIP_REPLACE_INPUTS = "Replace inputs",
-    PIANO_ROLL_PROJECT_TOOLTIP_PLAY_WITHOUT_ST = "Play without loading .st",
-    PIANO_ROLL_PROJECT_TOOLTIP_DELETE_SHEET = "Delete",
-    PIANO_ROLL_PROJECT_TOOLTIP_ADD_SHEET = "Add",
-    PIANO_ROLL_PROJECT_TOOLTIP_MOVE_SHEET_UP = "Move up",
-    PIANO_ROLL_PROJECT_TOOLTIP_MOVE_SHEET_DOWN = "Move down",
-    PIANO_ROLL_TIMELINE_INSERT = "Insert",
-    PIANO_ROLL_TIMELINE_DELETE = "Delete",
-    PIANO_ROLL_TIMELINE_KIND = "Kind:",
-    PIANO_ROLL_TIMELINE_TIMEOUT = "Timeout:",
-    PIANO_ROLL_TIMELINE_END_ACTION = "End action:",
-    PIANO_ROLL_JOYSTICK_INSERT_INPUT = "+Input",
-    PIANO_ROLL_JOYSTICK_REMOVE_INPUT = "-Input",
+    -- Semantic Workflow Tab
+    YES = "Yes",
+    NO = "No",
+    SEMANTIC_WORKFLOW_HELP_HEADER_TITLE = "Semantic Workflow Help",
+    SEMANTIC_WORKFLOW_HELP_SHOW_TOOL_TIP = "Show Help",
+    SEMANTIC_WORKFLOW_HELP_EXIT_TOOL_TIP = "Exit",
+    SEMANTIC_WORKFLOW_HELP_PREV_PAGE = "back",
+    SEMANTIC_WORKFLOW_HELP_NEXT_PAGE = "next",
+    SEMANTIC_WORKFLOW_SHEET_NO_SHEET = "No semantic workflow sheets available.\nCreate one to proceed.",
+    SEMANTIC_WORKFLOW_SHEET_NO_SELECTED = "No semantic workflow sheet selected.\nSelect one to proceed.",
+    SEMANTIC_WORKFLOW_SHEET_DELETE_CONFIRMATION = "[Confirm deletion]\n\nAre you sure you want to delete \"%s\"?\nThis action cannot be undone.",
+    SEMANTIC_WORKFLOW_FRAMELIST_START = "Start: ",
+    SEMANTIC_WORKFLOW_FRAMELIST_NAME = "Name",
+    SEMANTIC_WORKFLOW_FRAMELIST_SECTION = "#Section",
+    SEMANTIC_WORKFLOW_FRAMELIST_STICK = "Joystick",
+    SEMANTIC_WORKFLOW_FRAMELIST_UNTIL = "Until",
+    SEMANTIC_WORKFLOW_TOOL_COPY_ENTIRE_STATE = "Copy entire state",
+    SEMANTIC_WORKFLOW_NO_SELECTION = "No selection was made.\nClick on the joystick in an input row to start editing.",
+    SEMANTIC_WORKFLOW_CONTROL_MANUAL = "Manual",
+    SEMANTIC_WORKFLOW_CONTROL_MATCH_YAW = "Yaw",
+    SEMANTIC_WORKFLOW_CONTROL_MATCH_ANGLE = "Angle",
+    SEMANTIC_WORKFLOW_CONTROL_REVERSE_ANGLE = "Reverse",
+    SEMANTIC_WORKFLOW_CONTROL_DYAW = "DYaw",
+    SEMANTIC_WORKFLOW_CONTROL_ATAN = "Atan",
+    SEMANTIC_WORKFLOW_CONTROL_MAG = "Magnitude:",
+    SEMANTIC_WORKFLOW_CONTROL_SPDKICK = "Spdk",
+    SEMANTIC_WORKFLOW_PROJECT_NO_SHEETS_AVAILABLE = "No semantic workflow sheets available.\nCreate one to proceed.",
+    SEMANTIC_WORKFLOW_PROJECT_NEW = "New",
+    SEMANTIC_WORKFLOW_PROJECT_NEW_TOOL_TIP = "Create a new project in a new location",
+    SEMANTIC_WORKFLOW_PROJECT_OPEN = "Open",
+    SEMANTIC_WORKFLOW_PROJECT_OPEN_TOOL_TIP = "Open an existing project",
+    SEMANTIC_WORKFLOW_PROJECT_SAVE = "Save",
+    SEMANTIC_WORKFLOW_PROJECT_SAVE_TOOL_TIP = "Save the current project (no confirmation!)",
+    SEMANTIC_WORKFLOW_PROJECT_PURGE = "Purge",
+    SEMANTIC_WORKFLOW_PROJECT_PURGE_TOOL_TIP = "Remove files that do not belong to this project",
+    SEMANTIC_WORKFLOW_PROJECT_DISABLE = "Disable",
+    SEMANTIC_WORKFLOW_PROJECT_DISABLE_TOOL_TIP = "Do not override inputs with any sheet",
+    SEMANTIC_WORKFLOW_PROJECT_ADD_SHEET = "Add Sheet...",
+    SEMANTIC_WORKFLOW_PROJECT_REBASE_SHEET_TOOL_TIP = "Set start to now",
+    SEMANTIC_WORKFLOW_PROJECT_REPLACE_INPUTS_TOOL_TIP = "Replace inputs",
+    SEMANTIC_WORKFLOW_PROJECT_PLAY_WITHOUT_ST_TOOL_TIP = "Play without loading .st",
+    SEMANTIC_WORKFLOW_PROJECT_DELETE_SHEET_TOOL_TIP = "Delete",
+    SEMANTIC_WORKFLOW_PROJECT_ADD_SHEET_TOOL_TIP = "Add",
+    SEMANTIC_WORKFLOW_PROJECT_MOVE_SHEET_UP_TOOL_TIP = "Move up",
+    SEMANTIC_WORKFLOW_PROJECT_MOVE_SHEET_DOWN_TOOL_TIP = "Move down",
+    SEMANTIC_WORKFLOW_INPUTS_EXPAND_SECTION = "Expand",
+    SEMANTIC_WORKFLOW_INPUTS_COLLAPSE_SECTION = "Collapse",
+    SEMANTIC_WORKFLOW_INPUTS_INSERT_SECTION = "+Section",
+    SEMANTIC_WORKFLOW_INPUTS_INSERT_SECTION_TOOL_TIP = "Insert section after selected",
+    SEMANTIC_WORKFLOW_INPUTS_DELETE_SECTION = "-Section",
+    SEMANTIC_WORKFLOW_INPUTS_DELETE_SECTION_TOOL_TIP = "Delete selected section",
+    SEMANTIC_WORKFLOW_INPUTS_TIMEOUT = "Timeout:",
+    SEMANTIC_WORKFLOW_INPUTS_TIMEOUT_TOOL_TIP = "End section after at most N frames",
+    SEMANTIC_WORKFLOW_INPUTS_END_ACTION = "End action:",
+    SEMANTIC_WORKFLOW_INPUTS_END_ACTION_TOOL_TIP = "End section when Mario enters this action",
+    SEMANTIC_WORKFLOW_INPUTS_END_ACTION_TYPE_TO_SEARCH_TOOL_TIP = "Type to filter actions",
+    SEMANTIC_WORKFLOW_INPUTS_INSERT_INPUT = "+Input",
+    SEMANTIC_WORKFLOW_INPUTS_INSERT_INPUT_TOOL_TIP = "Insert frame after selected",
+    SEMANTIC_WORKFLOW_INPUTS_DELETE_INPUT = "-Input",
+    SEMANTIC_WORKFLOW_INPUTS_DELETE_INPUT_TOOL_TIP = "Delete selected frame",
     -- Settings Tab
     SETTINGS_VISUALS_TAB_NAME = "Visuals",
     SETTINGS_VARWATCH_TAB_NAME = "Varwatch",
@@ -163,9 +177,9 @@ return {
     ADDRESS_SHINDOU = "Shindou",
     ADDRESS_PAL = "Europe",
     -- putting this at the bottom as to not clutter
-    PIANO_ROLL_HELP_EXPLANATIONS = {
-        PROJECT_GUI = {
-            HEADING = "Piano Roll Projects",
+    SEMANTIC_WORKFLOW_HELP_EXPLANATIONS = {
+        PROJECT_TAB = {
+            HEADING = "Semantic Workflow Projects",
             PAGES = {
                 {
                     HEADING = "About",
@@ -175,9 +189,9 @@ This page lets you play back a sequence of TAS inputs starting from a specific s
 
 The purpose of this is to quickly iterate over the effects of small changes "in the past" in order to more efficiently iterate over different implementations of the same strategy.
 
-By managing so-called "Piano Roll Projects", it is possible to author entire runs in terms of semantics consisting of just a few sections.
+By managing so-called "Semantic Workflow Projects", it is possible to author entire runs in terms of semantics consisting of just a few sections.
 
-This tool is separated into several pages that you can cycle through at the top. Once you have started work on a Piano Roll Project, a dedicated help page will be available for each page just like for this one.
+This tool is separated into several pages that you can cycle through at the top. Once you have started work on a Semantic Workflow Project, a dedicated help page will be available for each page just like for this one.
 
 Click "next" to learn more about how to get started.
 ]],
@@ -190,8 +204,8 @@ The main entity you will be working with is the "Sheet".
 A Sheet describes a sequence of inputs, that, starting from a specific point, will (attempt to) perform a certain sequence of actions that make up a segment of a complete run.
 Sheets are divided further into sections, with each section ending when either a certain number of frames have passed, or a certain other condition is met.
 
-This page allows you to manage several related Sheets in a so called "Piano Roll Project".
-Piano Roll Projects are really just a collection of Sheets that are saved in a directory next to the piano roll project file (*.prp).
+This page allows you to manage several related Sheets in a so called "Semantic Workflow Project".
+Semantic Workflow Projects are really just a collection of Sheets that are saved in a directory next to the semantic workflow project file (*.swp).
 You can create, save and load projects using the respective buttons at the top.
 
 The "New" button will ask for a location for the new project. It is recommended that you create a new empty directory for the new project, as having multiple projects in the same directory could have them unintendedly interfere with each other.
@@ -218,20 +232,20 @@ When playing back a .m64 file, make sure that the "Disable" option is selected i
                     HEADING = "Using git",
                     TEXT =
 [[
-The Piano Roll Project file and its associated Sheet files follow a human readable file format.
-In order to keep track of the work done on a TAS, I recommend initializing a local git repository in the the directory where the .prp file is located.
+The Semantic Workflow Project file and its associated Sheet files follow a human readable file format.
+In order to keep track of the work done on a TAS, I recommend initializing a local git repository in the the directory where the .swp file is located.
 This way, you can save your project and make a commit whenever you have made significant progress, and manage different branches to compare strategies.
 This helps with keeping track of progress, preventing loss of work, and keeping things organized.
 
 To make a commit, simply hit "Save" and commit all changes.
-After checking out a commit or branch, you will need to "Open" the .prp file again to load everything from your drive into memory.
+After checking out a commit or branch, you will need to "Open" the .swp file again to load everything from your drive into memory.
 
 You may even find it beneficial to manage other files with git, too, such as ghosts, recorded .m64 files, STROOP tracker configurations or Strat write-ups!
 ]],
                 },
             },
         },
-        JOYSTICK_GUI = {
+        INPUTS_TAB = {
             HEADING = "Input editor",
             PAGES = {
                 {
@@ -265,35 +279,27 @@ To edit button inputs, simply click and drag over the small circles on the right
 This is not affected by and does not affect your selection or active frame.
 ]],
                 },
-            },
-        },
-        TIMELINE_GUI = {
-            HEADING = "Timeline editor",
-            PAGES = {
                 {
-                    HEADING = "Overview",
+                    HEADING = "Arctan straining",
                     TEXT =
 [[
-This page handles the sequence of sections and their semantics.
-You can add and remove sections and define when and why they end and move on to the next section.
+Arctan straining works similarly to how it does in the TAS tab.
+Note, however, that when you TURN ON Arctan straining, the starting frame will be set to whatever global timer value the game is currently in, namely most likely the preview frame's global timer.
+Thus, make sure to set your preview frame to the START of the Arctan strain when you need to turn Arctan straining off and on again to affect more frames.
 
-A section will end either when Mario enters the "End action", or when the number of "Timeout" frames have passed without entering the End action.
-
-Like on the "Inputs" page, any change will cause the current Sheet to be replayed to the selected preview frame.
-
-Note that the exact details of this page are currently very much "Work In Progress", and will likely change in the future.
-]],
-                },
+This is subject to change in favor of a more comfortable and intuitive way to control the arctan parameters in the future.
+]]
+                }
             },
         },
-        SETTINGS_GUI = {
+        PREFERENCES_TAB = {
             HEADING = "Preferences",
             PAGES = {
                 {
                     HEADING = "Overview",
                     TEXT =
 [[
-This page displays and edits settings that are not stored in a Piano Roll Project, and instead persist in your local settings instead.
+This page displays and edits settings that are not stored in a Semantic Workflow Project, and instead persist in your local settings instead.
 Each setting may get an individual help page here in the future. For now, here is a brief list of what each setting does:
 
 - Edit entire state: Copy the entire joystick state of the active frame to the selected range in the "Inputs" page. When turned off, only the actual changes made will be copied to the selected range.

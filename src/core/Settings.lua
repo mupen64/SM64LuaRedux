@@ -54,7 +54,8 @@ Settings = {
     hotkeys_allow_with_active_control = true,
     spd_efficiency_fraction = false,
     persist_tas_state = true,
-    piano_roll = {
+    timer_auto = true,
+    semantic_workflow = {
         edit_entire_state = true,
         fast_foward = true,
     },

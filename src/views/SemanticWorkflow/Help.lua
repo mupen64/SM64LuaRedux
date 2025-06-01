@@ -1,37 +1,36 @@
-local UID = dofile(views_path .. "PianoRoll/UID.lua")
+local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")
 
 return {
-    Render = function(key)
+    GetDialog = function(key)
         local page = 1
-        local help = Locales.raw()["PIANO_ROLL_HELP_EXPLANATIONS"][key];
+        local help = Locales.raw()["SEMANTIC_WORKFLOW_HELP_EXPLANATIONS"][key];
         local pages = help.PAGES
         local title = help.HEADING
         return function()
             local theme = Styles.theme()
-            local foregroundColor = theme.listbox_item.text[1]
+            local foreground_color = theme.listbox_item.text[1]
 
-            local controlHeight = 0.75
-            local top = 16 - controlHeight
-            local buttonPosition = grid_rect(7, 0, 1, 1)
+            local control_height = 0.75
+            local top = 16 - control_height
+            local button_position = grid_rect(7, 0, 1, 1)
             if ugui.button(
                 {
                     uid = UID.ToggleHelp,
-
-                    rectangle = buttonPosition,
+                    rectangle = button_position,
                     text = "[icon:door_opening]",
-                    tooltip = Locales.str("PIANO_ROLL_HELP_EXIT")
+                    tooltip = Locales.str("SEMANTIC_WORKFLOW_HELP_EXIT_TOOL_TIP")
                 }
             ) then
-                PianoRollDialog = nil
+                SemanticWorkflowDialog = nil
             end
 
-            BreitbandGraphics.draw_text(grid_rect(0, 0.1, 8, 1), "start", "start", {}, foregroundColor, theme.font_size * 1.2 * Drawing.scale, theme.font_name, title)
+            BreitbandGraphics.draw_text(grid_rect(0, 0.1, 8, 1), "start", "start", {}, foreground_color, theme.font_size * 1.2 * Drawing.scale, theme.font_name, title)
             BreitbandGraphics.draw_text(
                 grid_rect(0, 0.666, 8, 1), #
                 "start",
                 "start",
                 {},
-                foregroundColor,
+                foreground_color,
                 theme.font_size * 2 * Drawing.scale,
                 theme.font_name,
                 pages[page]["HEADING"]
@@ -41,7 +40,7 @@ return {
                 "start",
                 "start",
                 {},
-                foregroundColor,
+                foreground_color,
                 theme.font_size * Drawing.scale,
                 theme.font_name,
                 pages[page]["TEXT"]
@@ -49,10 +48,9 @@ return {
 
             if ugui.button(
                 {
-                    uid = UID.Project.HelpBack,
-
-                    rectangle = grid_rect(5, top, 1.5, controlHeight),
-                    text = Locales.str("PIANO_ROLL_HELP_PREV_PAGE"),
+                    uid = UID.HelpBack,
+                    rectangle = grid_rect(5, top, 1.5, control_height),
+                    text = Locales.str("SEMANTIC_WORKFLOW_HELP_PREV_PAGE"),
                     is_enabled = page > 1
                 }
             ) then
@@ -61,10 +59,9 @@ return {
 
             if ugui.button(
                 {
-                    uid = UID.Project.HelpNext,
-
-                    rectangle = grid_rect(6.5, top, 1.5, controlHeight),
-                    text = Locales.str("PIANO_ROLL_HELP_NEXT_PAGE"),
+                    uid = UID.HelpNext,
+                    rectangle = grid_rect(6.5, top, 1.5, control_height),
+                    text = Locales.str("SEMANTIC_WORKFLOW_HELP_NEXT_PAGE"),
                     is_enabled = page < #pages
                 }
             ) then
