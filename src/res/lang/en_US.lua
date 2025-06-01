@@ -191,7 +191,7 @@ The purpose of this is to quickly iterate over the effects of small changes "in 
 
 By managing so-called "Semantic Workflow Projects", it is possible to author entire runs in terms of semantics consisting of just a few sections.
 
-This tool is separated into several pages that you can cycle through at the top. Once you have started work on a Semantic Workflow Project, a dedicated help page will be available for each page just like for this one.
+This tool is separated into several tab pages that you can select at the top. Once you have started work on a Semantic Workflow Project, a dedicated help page will be available for each page just like for this one.
 
 Click "next" to learn more about how to get started.
 ]],

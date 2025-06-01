@@ -75,12 +75,20 @@ return {
 
         local draw = draw_factory(Styles.theme())
 
-        selected_tab_index = ugui.carrousel_button({
+        -- TODO: redesign which tabs to show when and how
+        --       (particularly, 'Preferences' has no reason to be hidden when no project is loaded)
+        local project_loaded = SemanticWorkflowProject:current() ~= nil
+        if not project_loaded then
+            -- show only the project page if no project was loaded
+            selected_tab_index = 1
+        end
+        -- TODO: consider respecting valid bounding 'rectangle' result from this control
+        selected_tab_index = ugui.tabcontrol({
             uid = UID.SelectTab,
             rectangle = grid_rect(0, 0, 7, 1),
-            items = lualinq.select(Tabs, function(e) return e.name end),
-            selected_index = selected_tab_index
-        })
+            items = project_loaded and lualinq.select(Tabs, function(e) return e.name end) or { Tabs[1].name },
+            selected_index = selected_tab_index,
+        }).selected_index
 
         if ugui.button(
             {
@@ -94,8 +102,6 @@ return {
             SemanticWorkflowDialog = Help.GetDialog(Tabs[selected_tab_index].help_key)
         end
 
-        -- show only the project page if no semantic workflows exist
-        if SemanticWorkflowProject:current() == nil then selected_tab_index = 1 end
         Tabs[selected_tab_index].render(draw)
 
         -- hack to make the listbox transparent

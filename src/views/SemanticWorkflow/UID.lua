@@ -22,7 +22,7 @@ end
 __SemanticWorkflowUids = {}
 __SemanticWorkflowUids = {
     VarWatch = enum_next(),
-    SelectTab = enum_next(),
+    SelectTab = enum_next(3 + 1), -- TODO: consider the number of required tabs... carefully!
     ToggleHelp = enum_next(),
     HelpNext = enum_next(),
     HelpBack = enum_next(),
