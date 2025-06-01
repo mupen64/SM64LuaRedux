@@ -51,14 +51,6 @@ local function draw_factory(theme)
     }
 end
 
-emu.atupdatescreen(function()
-    -- prevent reentrant calls caused by GUI actions while the game is running
-    local current_sheet = SemanticWorkflowProject:current()
-    if current_sheet ~= nil and not current_sheet._busy then
-        current_sheet:update()
-    end
-end)
-
 ---public API---
 
 ---Retrieves a TASState as determined by the currently active semantic workflow for the current frame identified by the current global timer value.

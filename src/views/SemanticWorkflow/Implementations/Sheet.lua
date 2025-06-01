@@ -31,8 +31,6 @@ function __impl.new(name, create_savestate)
         sections = { Section.new("idle", 150) },
         name = name,
         _savestate = nil,
-        _old_tas_state = {},
-        _old_clock = 0,
         _busy = false,
         _update_pending = false,
         _rebasing = false,
@@ -40,7 +38,6 @@ function __impl.new(name, create_savestate)
         _frame_counter = 1,
         num_sections = __impl.num_sections,
         evaluate_frame = __impl.evaluate_frame,
-        update = __impl.update,
         run_to_preview = __impl.run_to_preview,
         rebase = __impl.rebase,
         save = __impl.save,
@@ -122,18 +119,6 @@ function __impl:load(file)
     if contents ~= nil then
         self._savestate = read_all(file .. ".savestate")
         CloneInto(self, contents)
-    end
-end
-
-function __impl:update()
-    local any_change = CloneInto(self._old_tas_state, TASState)
-    local now = os.clock()
-    if any_change then
-        self._old_clock = now
-        self._update_pending = true
-    elseif self._update_pending then
-        self._old_clock = now
-        self:run_to_preview()
     end
 end
 

@@ -42,9 +42,6 @@ function __clsSheet:save(file) end
 ---@param file string The file path to load from (absolute or relative).
 function __clsSheet:load(file) end
 
--- TODO: figure out if this even needs to exist anymore
-function __clsSheet:update() end
-
 ---Replaces the savestate this sheet runs from with the game's current state.
 function __clsSheet:rebase() end
 
