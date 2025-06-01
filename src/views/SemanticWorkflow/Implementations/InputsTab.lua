@@ -7,6 +7,7 @@ __impl.help_key = "INPUTS_TAB"
 
 ---@type FrameListGui
 local FrameListGui = dofile(views_path .. "SemanticWorkflow/Definitions/FrameListGui.lua")
+local Section = dofile(views_path .. "SemanticWorkflow/Definitions/Section.lua")
 
 ---constants---
 
