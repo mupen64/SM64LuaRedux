@@ -30,6 +30,8 @@ function __impl.allocate_uids(enum_next)
         ViewCarrousel = enum_next(),
         InsertInput = enum_next(),
         DeleteInput = enum_next(),
+        InsertSection = enum_next(),
+        DeleteSection = enum_next(),
 
         -- Joystick Controls
         Joypad = enum_next(),
@@ -55,8 +57,6 @@ function __impl.allocate_uids(enum_next)
         ResetMag = enum_next(),
 
         -- Section Controls
-        InsertSection = enum_next(),
-        DeleteSection = enum_next(),
         Kind = enum_next(),
         Timeout = enum_next(),
         EndAction = enum_next(),
@@ -66,6 +66,62 @@ function __impl.allocate_uids(enum_next)
 end
 
 local function any_entries(table) for _ in pairs(table) do return true end return false end
+
+--- ### Insert and remove ### ---
+
+local function controls_for_insert_and_remove()
+    local sheet = SemanticWorkflowProject:asserted_current()
+    local edited_section = sheet.sections[sheet.active_frame.section_index]
+    local edited_input = edited_section and edited_section.inputs[sheet.active_frame.frame_index] or nil
+    local any_changes = false
+
+    local top = TOP
+    if ugui.button({
+        uid = UID.InsertInput,
+        rectangle = grid_rect(0, top, 1.5, MEDIUM_CONTROL_HEIGHT),
+        text = Locales.str("SEMANTIC_WORKFLOW_INPUTS_INSERT_INPUT"),
+        tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_INSERT_INPUT_TOOL_TIP"),
+    }) then
+        table.insert(edited_section.inputs, sheet.active_frame.frame_index, ugui.internal.deep_clone(edited_input))
+        any_changes = true
+    end
+
+    if ugui.button({
+        uid = UID.DeleteInput,
+        rectangle = grid_rect(1.5, top, 1.5, MEDIUM_CONTROL_HEIGHT),
+        text = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_INPUT"),
+        tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_INPUT_TOOL_TIP"),
+        is_enabled = #edited_section.inputs > 1
+    }) then
+        table.remove(edited_section.inputs, sheet.active_frame.frame_index)
+        any_changes = true
+    end
+
+    if ugui.button({
+        uid = UID.InsertSection,
+        rectangle = grid_rect(3, top, 1.5, LARGE_CONTROL_HEIGHT),
+        text = Locales.str("SEMANTIC_WORKFLOW_INPUTS_INSERT_SECTION"),
+        tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_INSERT_SECTION_TOOL_TIP"),
+    }) then
+        local new_section = Section.new("idle", 150)
+        table.insert(sheet.sections, sheet.active_frame.section_index + 1, new_section)
+        any_changes = true
+    end
+
+    if ugui.button({
+        uid = UID.DeleteSection,
+        rectangle = grid_rect(4.5, top, 1.5, LARGE_CONTROL_HEIGHT),
+        text = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_SECTION"),
+        tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_SECTION_TOOL_TIP"),
+    }) then
+        table.remove(sheet.sections, sheet.active_frame.section_index)
+        any_changes = true
+    end
+
+    if any_changes then
+        sheet:run_to_preview()
+    end
+end
 
 --- ### Section controls ### ---
 
@@ -127,27 +183,6 @@ local function section_controls_for_selected(draw)
     if not has_valid_selection then
         draw:text(grid_rect(0, top, 8, 1), "center", Locales.str("SEMANTIC_WORKFLOW_NO_SELECTION"))
         return
-    end
-
-    if ugui.button({
-        uid = UID.InsertSection,
-        rectangle = grid_rect(0, top, 1.5, LARGE_CONTROL_HEIGHT),
-        text = Locales.str("SEMANTIC_WORKFLOW_INPUTS_INSERT_SECTION"),
-        tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_INSERT_SECTION_TOOL_TIP"),
-    }) then
-        local new_section = Section.new("idle", 150)
-        table.insert(sheet.sections, sheet.active_frame.section_index + 1, new_section)
-        any_changes = true
-    end
-
-    if ugui.button({
-        uid = UID.DeleteSection,
-        rectangle = grid_rect(1.5, top, 1.5, LARGE_CONTROL_HEIGHT),
-        text = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_SECTION"),
-        tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_SECTION_TOOL_TIP"),
-    }) then
-        table.remove(sheet.sections, sheet.active_frame.section_index)
-        any_changes = true
     end
 
     local section = sheet.sections[sheet.active_frame.section_index]
@@ -267,7 +302,7 @@ local function atan_controls(draw, sheet, new_values, top)
     })
 end
 
-local function controls_for_selected(draw)
+local function joystick_controls_for_selected(draw)
     local small_control_height = 0.5
     local large_control_height = 1.0
     local top = TOP
@@ -426,35 +461,13 @@ local function controls_for_selected(draw)
         end
     end
 
-    top = TOP
-    if ugui.button({
-        uid = UID.InsertInput,
-        rectangle = grid_rect(0, top, 1.5, MEDIUM_CONTROL_HEIGHT),
-        text = Locales.str("SEMANTIC_WORKFLOW_INPUTS_INSERT_INPUT"),
-        tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_INSERT_INPUT_TOOL_TIP"),
-    }) then
-        table.insert(edited_section.inputs, current_sheet.active_frame.frame_index, ugui.internal.deep_clone(edited_input))
-        any_changes = true
-    end
-
-    if ugui.button({
-        uid = UID.DeleteInput,
-        rectangle = grid_rect(1.5, top, 1.5, MEDIUM_CONTROL_HEIGHT),
-        text = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_INPUT"),
-        tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_INPUT_TOOL_TIP"),
-        is_enabled = #edited_section.inputs > 1
-    }) then
-        table.remove(edited_section.inputs, current_sheet.active_frame.frame_index)
-        any_changes = true
-    end
-
     if any_changes then
         current_sheet:run_to_preview()
     end
 end
 
 function __impl.render(draw)
-    local draw_funcs = { controls_for_selected, section_controls_for_selected }
+    local draw_funcs = { joystick_controls_for_selected, section_controls_for_selected }
     selected_view_index = ugui.carrousel_button({
          uid = UID.ViewCarrousel,
          rectangle = grid_rect(6, TOP, 2, MEDIUM_CONTROL_HEIGHT),
@@ -463,6 +476,7 @@ function __impl.render(draw)
          selected_index = selected_view_index,
         })
     draw_funcs[selected_view_index](draw)
+    controls_for_insert_and_remove()
     FrameListGui.view_index = selected_view_index
     FrameListGui.render(draw)
 end
