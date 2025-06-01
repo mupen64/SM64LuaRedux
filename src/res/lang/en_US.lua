@@ -9,7 +9,7 @@ return {
     GENERIC_NIL = "nil",
     -- Tab names
     TAS_TAB_NAME = "TAS",
-    SEMANTIC_WORKFLOW_TAB_NAME = "Piano Roll",
+    SEMANTIC_WORKFLOW_TAB_NAME = "Semantic Workflow",
     SETTINGS_TAB_NAME = "Settings",
     TOOLS_TAB_NAME = "Tools",
     TIMER_TAB_NAME = "Timer",
@@ -32,16 +32,16 @@ return {
     SPDKICK = "Spdkick",
     FRAMEWALK = "Framewalk",
     SWIM = "Swim",
-    -- Piano Roll Tab
+    -- Semantic Workflow Tab
     YES = "Yes",
     NO = "No",
-    SEMANTIC_WORKFLOW_HELP_HEADER_TITLE = "Piano Roll Help",
+    SEMANTIC_WORKFLOW_HELP_HEADER_TITLE = "Semantic Workflow Help",
     SEMANTIC_WORKFLOW_HELP_SHOW_TOOL_TIP = "Show Help",
     SEMANTIC_WORKFLOW_HELP_EXIT_TOOL_TIP = "Exit",
     SEMANTIC_WORKFLOW_HELP_PREV_PAGE = "back",
     SEMANTIC_WORKFLOW_HELP_NEXT_PAGE = "next",
-    SEMANTIC_WORKFLOW_SHEET_NO_SHEET = "No piano roll sheets available.\nCreate one to proceed.",
-    SEMANTIC_WORKFLOW_SHEET_NO_SELECTED = "No piano roll sheet selected.\nSelect one to proceed.",
+    SEMANTIC_WORKFLOW_SHEET_NO_SHEET = "No semantic workflow sheets available.\nCreate one to proceed.",
+    SEMANTIC_WORKFLOW_SHEET_NO_SELECTED = "No semantic workflow sheet selected.\nSelect one to proceed.",
     SEMANTIC_WORKFLOW_SHEET_DELETE_CONFIRMATION = "[Confirm deletion]\n\nAre you sure you want to delete \"%s\"?\nThis action cannot be undone.",
     SEMANTIC_WORKFLOW_FRAMELIST_START = "Start: ",
     SEMANTIC_WORKFLOW_FRAMELIST_NAME = "Name",
@@ -58,7 +58,7 @@ return {
     SEMANTIC_WORKFLOW_CONTROL_ATAN = "Atan",
     SEMANTIC_WORKFLOW_CONTROL_MAG = "Magnitude:",
     SEMANTIC_WORKFLOW_CONTROL_SPDKICK = "Spdk",
-    SEMANTIC_WORKFLOW_PROJECT_NO_SHEETS_AVAILABLE = "No piano roll sheets available.\nCreate one to proceed.",
+    SEMANTIC_WORKFLOW_PROJECT_NO_SHEETS_AVAILABLE = "No semantic workflow sheets available.\nCreate one to proceed.",
     SEMANTIC_WORKFLOW_PROJECT_NEW = "New",
     SEMANTIC_WORKFLOW_PROJECT_NEW_TOOL_TIP = "Create a new project in a new location",
     SEMANTIC_WORKFLOW_PROJECT_OPEN = "Open",
@@ -179,7 +179,7 @@ return {
     -- putting this at the bottom as to not clutter
     SEMANTIC_WORKFLOW_HELP_EXPLANATIONS = {
         PROJECT_TAB = {
-            HEADING = "Piano Roll Projects",
+            HEADING = "Semantic Workflow Projects",
             PAGES = {
                 {
                     HEADING = "About",
@@ -189,9 +189,9 @@ This page lets you play back a sequence of TAS inputs starting from a specific s
 
 The purpose of this is to quickly iterate over the effects of small changes "in the past" in order to more efficiently iterate over different implementations of the same strategy.
 
-By managing so-called "Piano Roll Projects", it is possible to author entire runs in terms of semantics consisting of just a few sections.
+By managing so-called "Semantic Workflow Projects", it is possible to author entire runs in terms of semantics consisting of just a few sections.
 
-This tool is separated into several pages that you can cycle through at the top. Once you have started work on a Piano Roll Project, a dedicated help page will be available for each page just like for this one.
+This tool is separated into several pages that you can cycle through at the top. Once you have started work on a Semantic Workflow Project, a dedicated help page will be available for each page just like for this one.
 
 Click "next" to learn more about how to get started.
 ]],
@@ -204,8 +204,8 @@ The main entity you will be working with is the "Sheet".
 A Sheet describes a sequence of inputs, that, starting from a specific point, will (attempt to) perform a certain sequence of actions that make up a segment of a complete run.
 Sheets are divided further into sections, with each section ending when either a certain number of frames have passed, or a certain other condition is met.
 
-This page allows you to manage several related Sheets in a so called "Piano Roll Project".
-Piano Roll Projects are really just a collection of Sheets that are saved in a directory next to the piano roll project file (*.prp).
+This page allows you to manage several related Sheets in a so called "Semantic Workflow Project".
+Semantic Workflow Projects are really just a collection of Sheets that are saved in a directory next to the semantic workflow project file (*.prp).
 You can create, save and load projects using the respective buttons at the top.
 
 The "New" button will ask for a location for the new project. It is recommended that you create a new empty directory for the new project, as having multiple projects in the same directory could have them unintendedly interfere with each other.
@@ -232,7 +232,7 @@ When playing back a .m64 file, make sure that the "Disable" option is selected i
                     HEADING = "Using git",
                     TEXT =
 [[
-The Piano Roll Project file and its associated Sheet files follow a human readable file format.
+The Semantic Workflow Project file and its associated Sheet files follow a human readable file format.
 In order to keep track of the work done on a TAS, I recommend initializing a local git repository in the the directory where the .prp file is located.
 This way, you can save your project and make a commit whenever you have made significant progress, and manage different branches to compare strategies.
 This helps with keeping track of progress, preventing loss of work, and keeping things organized.
@@ -299,7 +299,7 @@ This is subject to change in favor of a more comfortable and intuitive way to co
                     HEADING = "Overview",
                     TEXT =
 [[
-This page displays and edits settings that are not stored in a Piano Roll Project, and instead persist in your local settings instead.
+This page displays and edits settings that are not stored in a Semantic Workflow Project, and instead persist in your local settings instead.
 Each setting may get an individual help page here in the future. For now, here is a brief list of what each setting does:
 
 - Edit entire state: Copy the entire joystick state of the active frame to the selected range in the "Inputs" page. When turned off, only the actual changes made will be copied to the selected range.

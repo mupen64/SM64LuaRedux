@@ -61,9 +61,9 @@ end)
 
 ---public API---
 
----Retrieves a TASState as determined by the currently active piano roll for the current frame identified by the current global timer value.
+---Retrieves a TASState as determined by the currently active semantic workflow for the current frame identified by the current global timer value.
 ---
----If the current piano roll does not define what to do for this frame, or there is no current piano roll, nil is returned instead.
+---If the current semantic workflow does not define what to do for this frame, or there is no current semantic workflow, nil is returned instead.
 ---
 ---@return SectionInputs|nil override The inputs to apply for the current frame.
 function CurrentSemanticWorkflowOverride()
@@ -102,7 +102,7 @@ return {
             SemanticWorkflowDialog = Help.GetDialog(Tabs[SelectedTabIndex].help_key)
         end
 
-        -- show only the project page if no piano rolls exist
+        -- show only the project page if no semantic workflows exist
         if SemanticWorkflowProject:current() == nil then SelectedTabIndex = 1 end
         Tabs[SelectedTabIndex].render(draw)
 

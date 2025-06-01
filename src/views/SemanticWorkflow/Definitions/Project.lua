@@ -1,9 +1,9 @@
 ---@diagnostic disable:missing-return
 
 ---@class Project
----@field public meta table Metadata about the project that is stored into the piano roll project file (*.prp).
----@field public all table All piano roll sheets as loaded from their respective *.prs files in order.
----@field public project_location string The location of the piano roll project file (*.prp).
+---@field public meta table Metadata about the project that is stored into the semantic workflow project file (*.prp).
+---@field public all table All semantic workflow sheets as loaded from their respective *.prs files in order.
+---@field public project_location string The location of the semantic workflow project file (*.prp).
 ---@field public copy_entire_state boolean If true, the entire TASState of the active edited frame is copied to all selected. If false, only the changes made will be copied instead.
 local __clsProject = {}
 
@@ -34,11 +34,11 @@ function __clsProject:move_sheet(index, sign) end
 ---@param name string The new name of the sheet.
 function __clsProject:set_current_name(name) end
 
----Selects the piano roll sheet at the provided index and runs it from its savestate to its current preview.
+---Selects the semantic workflow sheet at the provided index and runs it from its savestate to its current preview.
 ---@param index number The 1-based index of the sheet to select.
 function __clsProject:select(index, load_state) end
 
----Selects and rebases the piano roll sheet at the provided index onto the current state of the game.
+---Selects and rebases the semantic workflow sheet at the provided index onto the current state of the game.
 ---@param index number The 1-based index of the sheet to select.
 function __clsProject:rebase(index) end
 
@@ -46,8 +46,8 @@ function __clsProject:rebase(index) end
 ---@return string | nil directory The directory in which the project file resides, or nil if the project has never been saved or loaded.
 function __clsProject:project_folder() end
 
----Loads the piano roll sheets from the given meta data.
----@param meta table The Project.meta field as stored in a piano roll project (*.prp) file.
+---Loads the semantic workflow sheets from the given meta data.
+---@param meta table The Project.meta field as stored in a semantic workflow project (*.prp) file.
 function __clsProject:load(meta) end
 
 __impl = __clsProject
