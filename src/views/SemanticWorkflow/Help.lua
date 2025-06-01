@@ -1,9 +1,9 @@
-local UID <const> = dofile(views_path .. "PianoRoll/UID.lua")
+local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")
 
 return {
     GetDialog = function(key)
         local page = 1
-        local help = Locales.raw()["PIANO_ROLL_HELP_EXPLANATIONS"][key];
+        local help = Locales.raw()["SEMANTIC_WORKFLOW_HELP_EXPLANATIONS"][key];
         local pages = help.PAGES
         local title = help.HEADING
         return function()
@@ -18,10 +18,10 @@ return {
                     uid = UID.ToggleHelp,
                     rectangle = button_position,
                     text = "[icon:door_opening]",
-                    tooltip = Locales.str("PIANO_ROLL_HELP_EXIT_TOOL_TIP")
+                    tooltip = Locales.str("SEMANTIC_WORKFLOW_HELP_EXIT_TOOL_TIP")
                 }
             ) then
-                PianoRollDialog = nil
+                SemanticWorkflowDialog = nil
             end
 
             BreitbandGraphics.draw_text(grid_rect(0, 0.1, 8, 1), "start", "start", {}, foreground_color, theme.font_size * 1.2 * Drawing.scale, theme.font_name, title)
@@ -50,7 +50,7 @@ return {
                 {
                     uid = UID.HelpBack,
                     rectangle = grid_rect(5, top, 1.5, control_height),
-                    text = Locales.str("PIANO_ROLL_HELP_PREV_PAGE"),
+                    text = Locales.str("SEMANTIC_WORKFLOW_HELP_PREV_PAGE"),
                     is_enabled = page > 1
                 }
             ) then
@@ -61,7 +61,7 @@ return {
                 {
                     uid = UID.HelpNext,
                     rectangle = grid_rect(6.5, top, 1.5, control_height),
-                    text = Locales.str("PIANO_ROLL_HELP_NEXT_PAGE"),
+                    text = Locales.str("SEMANTIC_WORKFLOW_HELP_NEXT_PAGE"),
                     is_enabled = page < #pages
                 }
             ) then

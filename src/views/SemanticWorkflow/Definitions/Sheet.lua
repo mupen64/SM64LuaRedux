@@ -49,7 +49,7 @@ function __clsSheet:update() end
 function __clsSheet:rebase() end
 
 __impl = __clsSheet
-dofile(views_path .. "PianoRoll/Implementations/Sheet.lua")
+dofile(views_path .. "SemanticWorkflow/Implementations/Sheet.lua")
 __impl = nil
 
 return __clsSheet

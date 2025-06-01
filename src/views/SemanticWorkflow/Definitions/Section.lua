@@ -11,7 +11,7 @@ local __clsSection = {}
 function __clsSection.new(end_action, timeout) end
 
 __impl = __clsSection
-dofile(views_path .. "PianoRoll/Implementations/Section.lua")
+dofile(views_path .. "SemanticWorkflow/Implementations/Section.lua")
 __impl = nil
 
 return __clsSection

@@ -6,11 +6,11 @@ __impl.name = "Inputs"
 __impl.help_key = "INPUTS_TAB"
 
 ---@type FrameListGui
-local FrameListGui = dofile(views_path .. "PianoRoll/Definitions/FrameListGui.lua")
+local FrameListGui = dofile(views_path .. "SemanticWorkflow/Definitions/FrameListGui.lua")
 
 ---constants---
 
-local UID <const> = dofile(views_path .. "PianoRoll/UID.lua")[__impl.name]
+local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")[__impl.name]
 
 local MEDIUM_CONTROL_HEIGHT <const> = 0.75
 local SMALL_CONTROL_HEIGHT <const> = 0.50
@@ -71,14 +71,14 @@ local function any_entries(table) for _ in pairs(table) do return true end retur
 local end_action_search_text = nil
 
 local function controls_for_end_action(section, draw, column, top)
-    draw:text(grid_rect(column, top, 4, LABEL_HEIGHT), "start", Locales.str("PIANO_ROLL_INPUTS_END_ACTION"))
+    draw:text(grid_rect(column, top, 4, LABEL_HEIGHT), "start", Locales.str("SEMANTIC_WORKFLOW_INPUTS_END_ACTION"))
     if end_action_search_text == nil then
         -- end action "dropdown" is not visible
         if ugui.button({
             uid = UID.EndAction,
             rectangle = grid_rect(column, top + LABEL_HEIGHT, 4, LARGE_CONTROL_HEIGHT),
             text = section.end_action,
-            tooltip = Locales.str("PIANO_ROLL_INPUTS_END_ACTION_TOOL_TIP"),
+            tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_END_ACTION_TOOL_TIP"),
         }) then
             end_action_search_text = ""
             ugui.internal.active_control = UID.EndActionTextbox
@@ -91,7 +91,7 @@ local function controls_for_end_action(section, draw, column, top)
             uid = UID.EndActionTextbox,
             rectangle = grid_rect(column, top + LABEL_HEIGHT, 4, LARGE_CONTROL_HEIGHT),
             text = end_action_search_text,
-            tooltip = Locales.str("PIANO_ROLL_INPUTS_END_ACTION_TYPE_TO_SEARCH_TOOL_TIP"),
+            tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_END_ACTION_TYPE_TO_SEARCH_TOOL_TIP"),
         }):lower()
         local i = 0
         local match_pattern = "^" .. end_action_search_text
@@ -115,7 +115,7 @@ local function controls_for_end_action(section, draw, column, top)
 end
 
 local function section_controls_for_selected(draw)
-    local sheet = PianoRollProject:asserted_current()
+    local sheet = SemanticWorkflowProject:asserted_current()
 
     local top = TOP
     local col_timeout = 4
@@ -124,15 +124,15 @@ local function section_controls_for_selected(draw)
     local has_valid_selection = sheet.sections[sheet.active_frame.section_index]
 
     if not has_valid_selection then
-        draw:text(grid_rect(0, top, 8, 1), "center", Locales.str("PIANO_ROLL_NO_SELECTION"))
+        draw:text(grid_rect(0, top, 8, 1), "center", Locales.str("SEMANTIC_WORKFLOW_NO_SELECTION"))
         return
     end
 
     if ugui.button({
         uid = UID.InsertSection,
         rectangle = grid_rect(0, top, 1.5, LARGE_CONTROL_HEIGHT),
-        text = Locales.str("PIANO_ROLL_INPUTS_INSERT_SECTION"),
-        tooltip = Locales.str("PIANO_ROLL_INPUTS_INSERT_SECTION_TOOL_TIP"),
+        text = Locales.str("SEMANTIC_WORKFLOW_INPUTS_INSERT_SECTION"),
+        tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_INSERT_SECTION_TOOL_TIP"),
     }) then
         local new_section = Section.new("idle", 150)
         table.insert(sheet.sections, sheet.active_frame.section_index + 1, new_section)
@@ -142,8 +142,8 @@ local function section_controls_for_selected(draw)
     if ugui.button({
         uid = UID.DeleteSection,
         rectangle = grid_rect(1.5, top, 1.5, LARGE_CONTROL_HEIGHT),
-        text = Locales.str("PIANO_ROLL_INPUTS_DELETE_SECTION"),
-        tooltip = Locales.str("PIANO_ROLL_INPUTS_DELETE_SECTION_TOOL_TIP"),
+        text = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_SECTION"),
+        tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_SECTION_TOOL_TIP"),
     }) then
         table.remove(sheet.sections, sheet.active_frame.section_index)
         any_changes = true
@@ -154,14 +154,14 @@ local function section_controls_for_selected(draw)
 
     top = top + 1
 
-    draw:text(grid_rect(col_timeout, top, 2, LABEL_HEIGHT), "start", Locales.str("PIANO_ROLL_INPUTS_TIMEOUT"))
+    draw:text(grid_rect(col_timeout, top, 2, LABEL_HEIGHT), "start", Locales.str("SEMANTIC_WORKFLOW_INPUTS_TIMEOUT"))
     local old_timeout = section.timeout
     section.timeout = ugui.numberbox({
         uid = UID.Timeout,
         rectangle = grid_rect(col_timeout, top + LABEL_HEIGHT, 2, LARGE_CONTROL_HEIGHT),
         value = section.timeout,
         places = 4,
-        tooltip = Locales.str("PIANO_ROLL_INPUTS_TIMEOUT_TOOL_TIP"),
+        tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_TIMEOUT_TOOL_TIP"),
     })
     any_changes = any_changes or old_timeout ~= section.timeout
 
@@ -175,7 +175,7 @@ end
 -- ### Joystick Controls ### ---
 
 local function magnitude_controls(draw, sheet, new_values, top)
-    draw:text(grid_rect(2, top, 2, MEDIUM_CONTROL_HEIGHT), "end", Locales.str("PIANO_ROLL_CONTROL_MAG"))
+    draw:text(grid_rect(2, top, 2, MEDIUM_CONTROL_HEIGHT), "end", Locales.str("SEMANTIC_WORKFLOW_CONTROL_MAG"))
     new_values.goal_mag = ugui.numberbox({
         uid = UID.GoalMag,
         rectangle = grid_rect(4, top, 1.5, MEDIUM_CONTROL_HEIGHT),
@@ -191,7 +191,7 @@ local function magnitude_controls(draw, sheet, new_values, top)
     if ugui.button({
         uid = UID.SpeedKick,
         rectangle = grid_rect(5.5, top, 1.5, MEDIUM_CONTROL_HEIGHT),
-        text = Locales.str("PIANO_ROLL_CONTROL_SPDKICK"),
+        text = Locales.str("SEMANTIC_WORKFLOW_CONTROL_SPDKICK"),
     }) then
         if new_values.goal_mag ~= 48 then
             new_values.goal_mag = 48
@@ -214,7 +214,7 @@ local function atan_controls(draw, sheet, new_values, top)
     local new_atan = ugui.toggle_button({
         uid = UID.Atan,
         rectangle = grid_rect(0, top, 1.5, MEDIUM_CONTROL_HEIGHT),
-        text=Locales.str("PIANO_ROLL_CONTROL_ATAN"),
+        text=Locales.str("SEMANTIC_WORKFLOW_CONTROL_ATAN"),
         is_checked = new_values.atan_strain
     })
     if new_atan and not new_values.atan_strain then
@@ -271,14 +271,14 @@ local function controls_for_selected(draw)
     local large_control_height = 1.0
     local top = TOP
 
-    local sheet = PianoRollProject:asserted_current()
+    local sheet = SemanticWorkflowProject:asserted_current()
 
     local new_values = {}
     local edited_section = sheet.sections[sheet.active_frame.section_index]
     local edited_input = edited_section and edited_section.inputs[sheet.active_frame.frame_index] or nil
 
     if edited_input == nil then
-        draw:text(grid_rect(0, top, 8, 1), "center", Locales.str("PIANO_ROLL_NO_SELECTION"))
+        draw:text(grid_rect(0, top, 8, 1), "center", Locales.str("SEMANTIC_WORKFLOW_NO_SELECTION"))
         return
     end
 
@@ -367,7 +367,7 @@ local function controls_for_selected(draw)
     if ugui.toggle_button({
         uid = UID.MovementModeManual,
         rectangle = grid_rect(5, top + 1, 1.5, large_control_height),
-        text = Locales.str("PIANO_ROLL_CONTROL_MANUAL"),
+        text = Locales.str("SEMANTIC_WORKFLOW_CONTROL_MANUAL"),
         is_checked = new_values.movement_mode == MovementModes.manual
     }) then
         new_values.movement_mode = MovementModes.manual
@@ -376,7 +376,7 @@ local function controls_for_selected(draw)
     if ugui.toggle_button({
         uid = UID.MovementModeMatchYaw,
         rectangle = grid_rect(6.5, top + 1, 1.5, large_control_height),
-        text = Locales.str("PIANO_ROLL_CONTROL_MATCH_YAW"),
+        text = Locales.str("SEMANTIC_WORKFLOW_CONTROL_MATCH_YAW"),
         is_checked = new_values.movement_mode == MovementModes.match_yaw
     }) then
         new_values.movement_mode = MovementModes.match_yaw
@@ -385,7 +385,7 @@ local function controls_for_selected(draw)
     if ugui.toggle_button({
         uid = UID.MovementModeMatchAngle,
         rectangle = grid_rect(5, top + 2, 1.5, large_control_height),
-        text = Locales.str("PIANO_ROLL_CONTROL_MATCH_ANGLE"),
+        text = Locales.str("SEMANTIC_WORKFLOW_CONTROL_MATCH_ANGLE"),
         is_checked = new_values.movement_mode == MovementModes.match_angle
     }) then
         new_values.movement_mode = MovementModes.match_angle
@@ -394,7 +394,7 @@ local function controls_for_selected(draw)
     if ugui.toggle_button({
         uid = UID.MovementModeReverseAngle,
         rectangle = grid_rect(6.5, top + 2, 1.5, large_control_height),
-        text = Locales.str("PIANO_ROLL_CONTROL_REVERSE_ANGLE"),
+        text = Locales.str("SEMANTIC_WORKFLOW_CONTROL_REVERSE_ANGLE"),
         is_checked = new_values.movement_mode == MovementModes.reverse_angle
     }) then
         new_values.movement_mode = MovementModes.reverse_angle
@@ -403,7 +403,7 @@ local function controls_for_selected(draw)
     new_values.dyaw = ugui.toggle_button({
         uid = UID.DYaw,
         rectangle = grid_rect(2, top + 2, 1, large_control_height),
-        text = Locales.str("PIANO_ROLL_CONTROL_DYAW"),
+        text = Locales.str("SEMANTIC_WORKFLOW_CONTROL_DYAW"),
         is_checked = new_values.dyaw
     })
 
@@ -414,12 +414,12 @@ local function controls_for_selected(draw)
 
     local changes = CloneInto(old_values, new_values)
     local any_changes = any_entries(changes)
-    local current_sheet = PianoRollProject:asserted_current()
+    local current_sheet = SemanticWorkflowProject:asserted_current()
     if any_changes and edited_input then
         for _, section in pairs(sheet.sections) do
             for _, input in pairs(section.inputs) do
                 if input.editing then
-                    CloneInto(input.tas_state, Settings.piano_roll.edit_entire_state and old_values or changes)
+                    CloneInto(input.tas_state, Settings.semantic_workflow.edit_entire_state and old_values or changes)
                 end
             end
         end
@@ -429,8 +429,8 @@ local function controls_for_selected(draw)
     if ugui.button({
         uid = UID.InsertInput,
         rectangle = grid_rect(0, top, 1.5, MEDIUM_CONTROL_HEIGHT),
-        text = Locales.str("PIANO_ROLL_INPUTS_INSERT_INPUT"),
-        tooltip = Locales.str("PIANO_ROLL_INPUTS_INSERT_INPUT_TOOL_TIP"),
+        text = Locales.str("SEMANTIC_WORKFLOW_INPUTS_INSERT_INPUT"),
+        tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_INSERT_INPUT_TOOL_TIP"),
     }) then
         table.insert(edited_section.inputs, current_sheet.active_frame.frame_index, ugui.internal.deep_clone(edited_input))
         any_changes = true
@@ -439,8 +439,8 @@ local function controls_for_selected(draw)
     if ugui.button({
         uid = UID.DeleteInput,
         rectangle = grid_rect(1.5, top, 1.5, MEDIUM_CONTROL_HEIGHT),
-        text = Locales.str("PIANO_ROLL_INPUTS_DELETE_INPUT"),
-        tooltip = Locales.str("PIANO_ROLL_INPUTS_DELETE_INPUT_TOOL_TIP"),
+        text = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_INPUT"),
+        tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_INPUT_TOOL_TIP"),
         is_enabled = #edited_section.inputs > 1
     }) then
         table.remove(edited_section.inputs, current_sheet.active_frame.frame_index)

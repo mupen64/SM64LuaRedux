@@ -5,7 +5,7 @@
 local __impl = __impl
 
 ---@type Section
-local Section = dofile(views_path .. "PianoRoll/Definitions/Section.lua")
+local Section = dofile(views_path .. "SemanticWorkflow/Definitions/Section.lua")
 
 local function read_all(file)
     local f = assert(io.open(file, "rb"))
@@ -93,11 +93,11 @@ function __impl:run_to_preview(load_state)
     if load_state == nil and true or load_state then
         savestate.do_memory(self._savestate, "load", function()
             emu.pause(true)
-            emu.set_ff(Settings.piano_roll.fast_foward)
+            emu.set_ff(Settings.semantic_workflow.fast_foward)
         end)
     else
         emu.pause(true)
-        emu.set_ff(Settings.piano_roll.fast_foward)
+        emu.set_ff(Settings.semantic_workflow.fast_foward)
     end
 
     self._section_index = 1

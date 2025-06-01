@@ -126,7 +126,7 @@ Presets.apply(Presets.persistent.current_index)
 
 local views = {
     dofile(views_path .. "TAS.lua"),
-    dofile(views_path .. "PianoRoll/Main.lua"),
+    dofile(views_path .. "SemanticWorkflow/Main.lua"),
     dofile(views_path .. "Settings.lua"),
     dofile(views_path .. "Tools.lua"),
     dofile(views_path .. "Timer.lua"),
@@ -134,7 +134,7 @@ local views = {
 }
 
 local processors = {
-    dofile(processors_path .. "PianoRoll.lua"),
+    dofile(processors_path .. "SemanticWorkflow.lua"),
     dofile(processors_path .. "Walk.lua"),
     dofile(processors_path .. "Swimming.lua"),
     dofile(processors_path .. "Wallkicker.lua"),

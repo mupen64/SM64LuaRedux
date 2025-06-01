@@ -4,7 +4,7 @@ local __impl = __impl
 
 ---constants---
 
-local UID <const> = dofile(views_path .. "PianoRoll/UID.lua")["FrameList"]
+local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")["FrameList"]
 
 local MODE_TEXTS <const> = { "-", "D", "M", "Y", "R", "A" }
 local BUTTONS <const> = {
@@ -55,7 +55,7 @@ local BUTTON_COLORS <const> = {
     {background={r=055, g=055, b=055, a=100}, button={r=035, g=035, b=035, a=255}}, -- 4 DPad Buttons
 }
 
-local VIEW_MODE_HEADERS <const> = { "PIANO_ROLL_FRAMELIST_STICK", "PIANO_ROLL_FRAMELIST_UNTIL" }
+local VIEW_MODE_HEADERS <const> = { "SEMANTIC_WORKFLOW_FRAMELIST_STICK", "SEMANTIC_WORKFLOW_FRAMELIST_UNTIL" }
 
 ---logic---
 
@@ -108,9 +108,9 @@ local function draw_headers(sheet, draw, view_index, button_draw_data)
     local background_color = interpolate_vectors_to_int(draw.background_color, {r = 127, g = 127, b = 127}, 0.25)
     BreitbandGraphics.fill_rectangle(grid_rect(0, ROW0, COL_1, ROW2 - ROW0, 0), background_color)
 
-    draw:text(grid_rect(0, ROW0, 2, 1), "start", Locales.str("PIANO_ROLL_FRAMELIST_START") .. sheet.start_g_t)
+    draw:text(grid_rect(0, ROW0, 2, 1), "start", Locales.str("SEMANTIC_WORKFLOW_FRAMELIST_START") .. sheet.start_g_t)
 
-    draw:text(grid_rect(3, ROW0, 1, 0.5), "start", Locales.str("PIANO_ROLL_FRAMELIST_NAME"))
+    draw:text(grid_rect(3, ROW0, 1, 0.5), "start", Locales.str("SEMANTIC_WORKFLOW_FRAMELIST_NAME"))
     local prev_font_size = ugui.standard_styler.params.font_size
     ugui.standard_styler.params.font_size = ugui.standard_styler.params.font_size * 0.75
     sheet.name = ugui.textbox({
@@ -119,11 +119,11 @@ local function draw_headers(sheet, draw, view_index, button_draw_data)
         rectangle = grid_rect(4, ROW0, 4, 0.5),
         text = sheet.name
     })
-    PianoRollProject:set_current_name(sheet.name)
+    SemanticWorkflowProject:set_current_name(sheet.name)
     ugui.standard_styler.params.font_size = prev_font_size
     ugui.standard_styler.font_size = prev_font_size
 
-    draw:text(grid_rect(COL0, ROW1, COL1 - COL0, 1), "start", Locales.str("PIANO_ROLL_FRAMELIST_SECTION"))
+    draw:text(grid_rect(COL0, ROW1, COL1 - COL0, 1), "start", Locales.str("SEMANTIC_WORKFLOW_FRAMELIST_SECTION"))
     draw:text(grid_rect(COL1, ROW1, COL6 - COL1, 1), "start", Locales.str(VIEW_MODE_HEADERS[view_index]))
 
     if not button_draw_data then return end
@@ -215,7 +215,7 @@ local function handle_scroll_and_buttons(section_rect, button_draw_data, num_row
 
     if not button_draw_data then return end
 
-    iterate_input_rows(PianoRollProject:asserted_current(), function(section, input, section_index, input_index)
+    iterate_input_rows(SemanticWorkflowProject:asserted_current(), function(section, input, section_index, input_index)
         if input_index == hovering_index and in_range and section ~= nil then
             for button_index, v in ipairs(BUTTONS) do
                 local in_range_x = mouse_x >= button_draw_data[button_index].x and mouse_x < button_draw_data[button_index + 1].x
@@ -274,7 +274,7 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
                 uid = next_uid(),
                 rectangle = span(COL0, COL0 + 0.3),
                 text = section.collapsed and "[icon:arrow_right]" or "[icon:arrow_down]",
-                tooltip = Locales.str(section.collapsed and "PIANO_ROLL_INPUTS_EXPAND_SECTION" or "PIANO_ROLL_INPUTS_COLLAPSE_SECTION"),
+                tooltip = Locales.str(section.collapsed and "SEMANTIC_WORKFLOW_INPUTS_EXPAND_SECTION" or "SEMANTIC_WORKFLOW_INPUTS_COLLAPSE_SECTION"),
                 is_checked = not section.collapsed,
                 is_enabled = #section.inputs > 1
             }) or #section.inputs == 1;
@@ -356,9 +356,9 @@ end
 
 --- Renders the sheets, indicating whether an update by the user has been made that should cause a rerun
 function __impl.render(draw)
-    local current_sheet = PianoRollProject:asserted_current()
+    local current_sheet = SemanticWorkflowProject:asserted_current()
 
-    local num_rows = iterate_input_rows(PianoRollProject:asserted_current(), nil)
+    local num_rows = iterate_input_rows(SemanticWorkflowProject:asserted_current(), nil)
     local baseline, scrollbar_rect = draw_scrollbar(num_rows)
     local button_draw_data = draw_color_codes(baseline, scrollbar_rect, math.min(num_rows, MAX_DISPLAYED_SECTIONS)) or nil
     draw_headers(current_sheet, draw, __impl.view_index, button_draw_data)

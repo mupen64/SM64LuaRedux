@@ -1,5 +1,5 @@
-__PianoRollUids = nil or __PianoRollUids
-if __PianoRollUids then return __PianoRollUids end
+__SemanticWorkflowUids = nil or __SemanticWorkflowUids
+if __SemanticWorkflowUids then return __SemanticWorkflowUids end
 
 local enumerator = 1000
 local function enum_next(count)
@@ -19,18 +19,18 @@ local function from_gui(gui)
     return table
 end
 
-__PianoRollUids = {}
-__PianoRollUids = {
+__SemanticWorkflowUids = {}
+__SemanticWorkflowUids = {
     VarWatch = enum_next(),
     SelectTab = enum_next(),
     ToggleHelp = enum_next(),
     HelpNext = enum_next(),
     HelpBack = enum_next(),
-    FrameList = from_gui(dofile(views_path .. "PianoRoll/Definitions/FrameListGui.lua")),
+    FrameList = from_gui(dofile(views_path .. "SemanticWorkflow/Definitions/FrameListGui.lua")),
 }
 
-for _, tab in pairs(dofile(views_path .. "PianoRoll/Tabs.lua")) do
-    __PianoRollUids[tab.name] = from_gui(tab)
+for _, tab in pairs(dofile(views_path .. "SemanticWorkflow/Tabs.lua")) do
+    __SemanticWorkflowUids[tab.name] = from_gui(tab)
 end
 
-return __PianoRollUids
+return __SemanticWorkflowUids
