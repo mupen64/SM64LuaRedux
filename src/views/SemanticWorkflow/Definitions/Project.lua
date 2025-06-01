@@ -5,6 +5,7 @@
 ---@field public all table All semantic workflow sheets as loaded from their respective *.sws files in order.
 ---@field public project_location string The location of the semantic workflow project file (*.swp).
 ---@field public copy_entire_state boolean If true, the entire TASState of the active edited frame is copied to all selected. If false, only the changes made will be copied instead.
+---@field public disabled boolean If true, no inputs will be sent to mupen by this project.
 local __clsProject = {}
 
 ---Constructs a new Project with no sheets.
