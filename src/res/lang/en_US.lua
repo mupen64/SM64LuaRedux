@@ -205,7 +205,7 @@ A Sheet describes a sequence of inputs, that, starting from a specific point, wi
 Sheets are divided further into sections, with each section ending when either a certain number of frames have passed, or a certain other condition is met.
 
 This page allows you to manage several related Sheets in a so called "Semantic Workflow Project".
-Semantic Workflow Projects are really just a collection of Sheets that are saved in a directory next to the semantic workflow project file (*.prp).
+Semantic Workflow Projects are really just a collection of Sheets that are saved in a directory next to the semantic workflow project file (*.swp).
 You can create, save and load projects using the respective buttons at the top.
 
 The "New" button will ask for a location for the new project. It is recommended that you create a new empty directory for the new project, as having multiple projects in the same directory could have them unintendedly interfere with each other.
@@ -233,12 +233,12 @@ When playing back a .m64 file, make sure that the "Disable" option is selected i
                     TEXT =
 [[
 The Semantic Workflow Project file and its associated Sheet files follow a human readable file format.
-In order to keep track of the work done on a TAS, I recommend initializing a local git repository in the the directory where the .prp file is located.
+In order to keep track of the work done on a TAS, I recommend initializing a local git repository in the the directory where the .swp file is located.
 This way, you can save your project and make a commit whenever you have made significant progress, and manage different branches to compare strategies.
 This helps with keeping track of progress, preventing loss of work, and keeping things organized.
 
 To make a commit, simply hit "Save" and commit all changes.
-After checking out a commit or branch, you will need to "Open" the .prp file again to load everything from your drive into memory.
+After checking out a commit or branch, you will need to "Open" the .swp file again to load everything from your drive into memory.
 
 You may even find it beneficial to manage other files with git, too, such as ghosts, recorded .m64 files, STROOP tracker configurations or Strat write-ups!
 ]],

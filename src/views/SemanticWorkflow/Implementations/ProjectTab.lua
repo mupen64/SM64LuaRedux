@@ -113,7 +113,7 @@ function __impl.render(draw)
         text = Locales.str("SEMANTIC_WORKFLOW_PROJECT_NEW"),
         tooltip = Locales.str("SEMANTIC_WORKFLOW_PROJECT_NEW_TOOL_TIP"),
     }) then
-        local path = iohelper.filediag("*.prp", 1)
+        local path = iohelper.filediag("*.swp", 1)
         if string.len(path) > 0 then
             SemanticWorkflowProject = Project.new()
             SemanticWorkflowProject.project_location = path
@@ -127,7 +127,7 @@ function __impl.render(draw)
         text = Locales.str("SEMANTIC_WORKFLOW_PROJECT_OPEN"),
         tooltip = Locales.str("SEMANTIC_WORKFLOW_PROJECT_OPEN_TOOL_TIP"),
     }) then
-        local path = iohelper.filediag("*.prp", 0)
+        local path = iohelper.filediag("*.swp", 0)
         if string.len(path) > 0 then
             SemanticWorkflowProject = Project.new()
             SemanticWorkflowProject.project_location = path
@@ -141,7 +141,7 @@ function __impl.render(draw)
         tooltip = Locales.str("SEMANTIC_WORKFLOW_PROJECT_SAVE_TOOL_TIP"),
     }) then
         if SemanticWorkflowProject.project_location == nil then
-            local path = iohelper.filediag("*.prp", 0)
+            local path = iohelper.filediag("*.swp", 0)
             if string.len(path) == 0 then
                 goto skipSave
             end

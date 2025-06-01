@@ -1,9 +1,9 @@
 ---@diagnostic disable:missing-return
 
 ---@class Project
----@field public meta table Metadata about the project that is stored into the semantic workflow project file (*.prp).
+---@field public meta table Metadata about the project that is stored into the semantic workflow project file (*.swp).
 ---@field public all table All semantic workflow sheets as loaded from their respective *.prs files in order.
----@field public project_location string The location of the semantic workflow project file (*.prp).
+---@field public project_location string The location of the semantic workflow project file (*.swp).
 ---@field public copy_entire_state boolean If true, the entire TASState of the active edited frame is copied to all selected. If false, only the changes made will be copied instead.
 local __clsProject = {}
 
@@ -47,7 +47,7 @@ function __clsProject:rebase(index) end
 function __clsProject:project_folder() end
 
 ---Loads the semantic workflow sheets from the given meta data.
----@param meta table The Project.meta field as stored in a semantic workflow project (*.prp) file.
+---@param meta table The Project.meta field as stored in a semantic workflow project (*.swp) file.
 function __clsProject:load(meta) end
 
 __impl = __clsProject
