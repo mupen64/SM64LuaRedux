@@ -31,7 +31,7 @@ function __impl.new(name, create_savestate)
         sections = { Section.new("idle", 150) },
         name = name,
         _savestate = nil,
-        _busy = false,
+        busy = false,
         _update_pending = false,
         _rebasing = false,
         _section_index = 1,
@@ -70,7 +70,7 @@ function __impl:evaluate_frame()
             ) then
         emu.pause(false)
         emu.set_ff(false)
-        self._busy = false
+        self.busy = false
     end
 
     self._frame_counter = self._frame_counter + 1
@@ -79,12 +79,12 @@ function __impl:evaluate_frame()
 end
 
 function __impl:run_to_preview(load_state)
-    if self._busy then
+    if self.busy then
         self._update_pending = true
         return
     end
     if self:num_sections() == 0 then return end
-    self._busy = true
+    self.busy = true
     self._update_pending = false
 
     if load_state == nil and true or load_state then

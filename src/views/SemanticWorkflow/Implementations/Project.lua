@@ -81,7 +81,7 @@ end
 function __impl:select(index, load_state)
     self.disabled = false
     local previous = self:current()
-    if previous ~= nil then previous._busy = false end
+    if previous ~= nil then previous.busy = false end
     self.meta.selection_index = index
     local current = self:current()
     if current ~= nil then
