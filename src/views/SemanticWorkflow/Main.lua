@@ -32,7 +32,7 @@ ugui.standard_styler.draw_icon = function(rectangle, color, visual_state, key)
 end
 
 local Tabs = dofile(views_path .. "SemanticWorkflow/Tabs.lua")
-local SelectedTabIndex = 1
+local selected_tab_index = 1
 
 local function draw_factory(theme)
     return {
@@ -75,11 +75,11 @@ return {
 
         local draw = draw_factory(Styles.theme())
 
-        SelectedTabIndex = ugui.carrousel_button({
+        selected_tab_index = ugui.carrousel_button({
             uid = UID.SelectTab,
             rectangle = grid_rect(0, 0, 7, 1),
             items = lualinq.select(Tabs, function(e) return e.name end),
-            selected_index = SelectedTabIndex
+            selected_index = selected_tab_index
         })
 
         if ugui.button(
@@ -88,15 +88,15 @@ return {
                 rectangle = grid_rect(7, 0, 1, 1),
                 text = "?",
                 tooltip = Locales.str("SEMANTIC_WORKFLOW_HELP_SHOW_TOOL_TIP"),
-                is_enabled = Tabs[SelectedTabIndex].help_key ~= nil,
+                is_enabled = Tabs[selected_tab_index].help_key ~= nil,
             }
         ) then
-            SemanticWorkflowDialog = Help.GetDialog(Tabs[SelectedTabIndex].help_key)
+            SemanticWorkflowDialog = Help.GetDialog(Tabs[selected_tab_index].help_key)
         end
 
         -- show only the project page if no semantic workflows exist
-        if SemanticWorkflowProject:current() == nil then SelectedTabIndex = 1 end
-        Tabs[SelectedTabIndex].render(draw)
+        if SemanticWorkflowProject:current() == nil then selected_tab_index = 1 end
+        Tabs[selected_tab_index].render(draw)
 
         -- hack to make the listbox transparent
         Memory.update()
