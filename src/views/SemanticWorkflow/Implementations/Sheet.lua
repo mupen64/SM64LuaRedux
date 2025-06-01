@@ -36,7 +36,6 @@ function __impl.new(name, create_savestate)
         _rebasing = false,
         _section_index = 1,
         _frame_counter = 1,
-        num_sections = __impl.num_sections,
         evaluate_frame = __impl.evaluate_frame,
         run_to_preview = __impl.run_to_preview,
         rebase = __impl.rebase,
@@ -49,8 +48,6 @@ function __impl.new(name, create_savestate)
 
     return new_instance
 end
-
-function __impl:num_sections() return #self.sections end
 
 function __impl:evaluate_frame()
     local section = self.sections[self._section_index]
@@ -83,7 +80,7 @@ function __impl:run_to_preview(load_state)
         self._update_pending = true
         return
     end
-    if self:num_sections() == 0 then return end
+    if #self.sections == 0 then return end
     self.busy = true
     self._update_pending = false
 

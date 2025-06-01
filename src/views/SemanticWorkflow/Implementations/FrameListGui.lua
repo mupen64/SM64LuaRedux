@@ -77,7 +77,7 @@ end
 local function iterate_input_rows(sheet, callback)
     local total_inputs_counted = 1
     local total_sections_counted = 1
-    for section_index = 1, sheet:num_sections(), 1 do
+    for section_index = 1, #sheet.sections, 1 do
         local section = sheet.sections[section_index]
         for input_index = 1, #section.inputs, 1 do
             if callback and callback(section, section.inputs[input_index], total_sections_counted, total_inputs_counted, input_index) then
@@ -254,7 +254,7 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
         local blue_multiplier = section_index % 2 == 1 and 2 or 1
 
         if total_inputs > MAX_DISPLAYED_SECTIONS + scroll_offset then
-            local extra_sections = sheet:num_sections() - section_index
+            local extra_sections = #sheet.sections - section_index
             BreitbandGraphics.fill_rectangle(span(0, COL_1), {r=138, g=148, b=138, a=66})
             draw:text(span(COL1, COL_1), "start", "+ " .. extra_sections .. " sections")
             return true

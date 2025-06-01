@@ -23,9 +23,6 @@ local __clsSheet = {}
 ---@return Sheet sheet The new sheet.
 function __clsSheet.new(name, create_savestate) end
 
--- TODO: remove this in favor of using #sections directly
-function __clsSheet:num_sections() end
-
 ---Retrieves the inputs for the next frame and advances this sheet's internal counters
 ---such that the sequential invocations will yield the appropriate frames to advance the game with.
 ---@return SectionInputs inputs The inputs to advance the game's next frame with.
