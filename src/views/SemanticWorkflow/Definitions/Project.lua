@@ -4,6 +4,7 @@
 ---@field public meta table Metadata about the project that is stored into the semantic workflow project file (*.swp).
 ---@field public all table All semantic workflow sheets as loaded from their respective *.sws files in order.
 ---@field public project_location string The location of the semantic workflow project file (*.swp).
+-- TODO: This should be a global setting, probably...
 ---@field public copy_entire_state boolean If true, the entire TASState of the active edited frame is copied to all selected. If false, only the changes made will be copied instead.
 ---@field public disabled boolean If true, no inputs will be sent to mupen by this project.
 local __clsProject = {}
@@ -28,6 +29,7 @@ function __clsProject:add_sheet() end
 function __clsProject:remove_sheet(index) end
 
 ---Moves the sheet at the provided index up or down in the list of sheets
+---@param index number The 1-based index of the sheet to move, such that moving it by "sign" will keep it in the range of [1; #meta.sheets].
 ---@param sign number +1 to move the sheet down, or -1 to move the sheet up
 function __clsProject:move_sheet(index, sign) end
 
@@ -35,7 +37,7 @@ function __clsProject:move_sheet(index, sign) end
 ---@param name string The new name of the sheet.
 function __clsProject:set_current_name(name) end
 
----Selects the semantic workflow sheet at the provided index and runs it from its savestate to its current preview.
+---Selects the semantic workflow sheet at the provided index and runs it from its savestate to its current preview frame.
 ---@param index number The 1-based index of the sheet to select.
 function __clsProject:select(index, load_state) end
 

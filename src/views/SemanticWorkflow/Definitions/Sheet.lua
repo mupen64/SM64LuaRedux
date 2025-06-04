@@ -1,9 +1,9 @@
 ---@diagnostic disable:missing-return
 
 ---@class Sheet
----@field public preview_frame SelectionFrame The frame top which to proceed when re-running the game after a change.
+---@field public preview_frame SelectionFrame The frame to which to proceed when re-running the game after a change.
 ---@field public active_frame SelectionFrame The frame whose controls to display in the "Inputs" page.
----@field public sections Section[] An array of TASStates with their associated section definition to execute in order.
+---@field public sections Section[] The sections to execute in order.
 ---@field public name string A name for the sheet for convenience.
 ---@field public busy boolean Whether the sheet is waiting for the game to run until its preview frame.
 ---@field private _section_index integer The nth section that is currently being played.
@@ -24,7 +24,7 @@ local __clsSheet = {}
 function __clsSheet.new(name, create_savestate) end
 
 ---Retrieves the inputs for the next frame and advances this sheet's internal counters
----such that the sequential invocations will yield the appropriate frames to advance the game with.
+---such that sequential invocations will yield the appropriate frames to advance the game with.
 ---@return SectionInputs inputs The inputs to advance the game's next frame with.
 function __clsSheet:evaluate_frame() end
 

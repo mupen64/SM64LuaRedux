@@ -72,8 +72,10 @@ function __impl.allocate_uids(enum_next)
     }
 end
 
+---@alias IterateInputsCallback fun(section: Section, input: SectionInputs, section_index: integer, total_inputs_counted: integer, input_index: integer): boolean?
 ---@function Iterates all sections as an input row, including their follow-up frames for non-collapsed sections
 ---@param sheet Sheet The sheet over whose sections to iterate
+---@param callback IterateInputsCallback? an optional function that, when it returns true, terminates the enumeration
 local function iterate_input_rows(sheet, callback)
     local total_inputs_counted = 1
     local total_sections_counted = 1
@@ -245,7 +247,6 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
         return {x = r.x, y = section_rect.y, width = r.width, height = height and r.height or section_rect.height}
     end
 
-    ---@param section Section
     iterate_input_rows(sheet, function(section, input, section_index, total_inputs, input_sub_index)
         if total_inputs <= scroll_offset then return false end
 
@@ -354,7 +355,6 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
     end)
 end
 
---- Renders the sheets, indicating whether an update by the user has been made that should cause a rerun
 function __impl.render(draw)
     local current_sheet = SemanticWorkflowProject:asserted_current()
 

@@ -3,7 +3,7 @@
 ---@class Gui
 local __clsGui = {}
 
----Allocates UIDs for specific subtype
+---Allocates UIDs for specific Gui subtype
 ---@param enum_next fun(count?: integer): integer A function that will generate a new UID whenever called
 ---@return table lookup A table from names to UIDs
 function __clsGui.allocate_uids(enum_next) end

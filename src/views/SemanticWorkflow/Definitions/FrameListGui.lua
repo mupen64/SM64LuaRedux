@@ -1,4 +1,4 @@
----@alias FrameListViewIndex integer
+---@alias FrameListViewIndex integer Determines which kind of detail to show in the FrameListGui
 ---Angle and control sticks; 1: Section end action
 
 ---@class FrameListGui : Gui
