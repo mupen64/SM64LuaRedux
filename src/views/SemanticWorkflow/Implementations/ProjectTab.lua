@@ -173,27 +173,23 @@ function __impl.render(draw)
     available_sheets[#available_sheets + 1] = Locales.str("SEMANTIC_WORKFLOW_PROJECT_ADD_SHEET")
 
     top = 3
-    if #available_sheets > 1 then
-        if (ugui.toggle_button({
-            uid = UID.DisableProjectSheets,
-            rectangle = grid_rect(0, top, 3, control_height),
-            text = Locales.str("SEMANTIC_WORKFLOW_PROJECT_DISABLE"),
-            tooltip = Locales.str("SEMANTIC_WORKFLOW_PROJECT_DISABLE_TOOL_TIP"),
-            is_checked = SemanticWorkflowProject.disabled
-        })) then
-            SemanticWorkflowProject.disabled = true
-        end
-        top = top + control_height
-    end
 
     local uid = UID.ProjectSheetBase
     for i = 1, #available_sheets, 1 do
         local y = top + (i - 1) * control_height
+        local is_checked = not SemanticWorkflowProject.disabled and i == SemanticWorkflowProject.meta.selection_index
+        local tooltip = Locales.str(
+            is_checked
+            and "SEMANTIC_WORKFLOW_PROJECT_DISABLE_TOOL_TIP"
+            or "SEMANTIC_WORKFLOW_PROJECT_SELECT_TOOL_TIP"
+        )
+
         if ugui.toggle_button({
             uid = uid,
             rectangle = grid_rect(0, y, 3, control_height),
             text = available_sheets[i],
-            is_checked = not SemanticWorkflowProject.disabled and i == SemanticWorkflowProject.meta.selection_index,
+            tooltip = i <= #SemanticWorkflowProject.meta.sheets and tooltip or nil,
+            is_checked = is_checked,
         }) then
             if i == #SemanticWorkflowProject.meta.sheets + 1 then -- add new sheet
                 SemanticWorkflowProject:add_sheet()
@@ -201,6 +197,8 @@ function __impl.render(draw)
             elseif SemanticWorkflowProject.disabled or i ~= SemanticWorkflowProject.meta.selection_index then -- select sheet
                 SemanticWorkflowProject:select(i)
             end
+        elseif is_checked then
+            SemanticWorkflowProject.disabled = true
         end
         uid = uid + 1
 
