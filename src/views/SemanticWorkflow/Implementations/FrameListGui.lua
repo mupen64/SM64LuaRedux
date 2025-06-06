@@ -170,6 +170,12 @@ local function draw_color_codes(baseline, scrollbar_rect, num_display_sections)
         height = baseline.height * num_display_sections,
     }
 
+    local f = Settings.grid_size * Drawing.scale
+    BreitbandGraphics.fill_rectangle(
+        {x = COL0 * f + Drawing.initial_size.width, y = rect.y, width = (COL1 - COL0) * f, height = rect.height},
+        {r = 255, g = 0, b = 0, a = 40}
+    )
+
     local i = 1
     local color_index = 1
     local button_draw_data = {}
