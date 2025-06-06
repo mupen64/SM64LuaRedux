@@ -294,7 +294,9 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
             sheet:run_to_preview()
         end
 
+        local active_frame_box = span(COL1, COL6)
         if view_index == 1 then
+            -- mini joysticks and yaw numbers
             local joystick_box = span(COL1, COL2)
             ugui.joystick({
                 uid = next_uid(),
@@ -311,7 +313,6 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
                     end
                     input.editing = true
                 elseif ugui.internal.environment.is_primary_down then
-                    sheet.active_frame = { section_index = section_index, frame_index = input_sub_index }
                     input.editing = true
                 end
             end
@@ -327,13 +328,13 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
                 draw:text(span(COL5, COL6), "end", tas_state.strain_left and '<' or (tas_state.strain_right and '>' or '-'))
             end
         elseif view_index == 2 then
-            local end_action_box = span(COL1, COL6)
-            draw:text(end_action_box, "start", section.end_action)
+            -- end action
+            draw:text(active_frame_box, "start", section.end_action)
+        end
 
-            if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, end_action_box) then
-                if ugui.internal.is_mouse_just_down() then
-                    sheet.active_frame = { section_index = section_index, frame_index = 1 }
-                end
+        if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, active_frame_box) then
+            if ugui.internal.is_mouse_just_down() then
+                sheet.active_frame = { section_index = section_index, frame_index = input_sub_index }
             end
         end
 
