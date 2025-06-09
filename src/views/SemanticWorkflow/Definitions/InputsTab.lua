@@ -1,8 +1,8 @@
 ---@class InputsTab : Tab
-local __clsInputsTab = {}
+local cls_inputs_tab = {}
 
-__impl = __clsInputsTab
+__impl = cls_inputs_tab
 dofile(views_path .. "SemanticWorkflow/Implementations/InputsTab.lua")
 __impl = nil
 
-return __clsInputsTab
+return cls_inputs_tab

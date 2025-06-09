@@ -1,8 +1,8 @@
 ---@class PreferencesTab : Tab
-local __clsPreferencesTab = {}
+local cls_preferences_tab = {}
 
-__impl = __clsPreferencesTab
+__impl = cls_preferences_tab
 dofile(views_path .. "SemanticWorkflow/Implementations/PreferencesTab.lua")
 __impl = nil
 
-return __clsPreferencesTab
+return cls_preferences_tab

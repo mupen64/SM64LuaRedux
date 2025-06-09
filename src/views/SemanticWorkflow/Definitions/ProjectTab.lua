@@ -1,8 +1,8 @@
 ---@class ProjectTab : Tab
-local __clsProjectTab = {}
+local cls_project_tab = {}
 
-__impl = __clsProjectTab
+__impl = cls_project_tab
 dofile(views_path .. "SemanticWorkflow/Implementations/ProjectTab.lua")
 __impl = nil
 
-return __clsProjectTab
+return cls_project_tab
