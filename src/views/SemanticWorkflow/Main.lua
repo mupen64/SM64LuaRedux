@@ -39,14 +39,31 @@ local function draw_factory(theme)
         foreground_color = BreitbandGraphics.invert_color(theme.background_color),
         background_color = theme.background_color,
         font_size = theme.font_size * Drawing.scale * 0.75,
-        style = { aliased = theme.pixelated_text },
 
         text = function(self, rect, horizontal_alignment, text)
-            BreitbandGraphics.draw_text(rect, horizontal_alignment, "center", self.style, self.foreground_color, self.font_size, "Consolas", text)
+            BreitbandGraphics.draw_text2({
+                rectangle = rect,
+                text = text,
+                align_x = horizontal_alignment,
+                align_y = BreitbandGraphics.alignment.center,
+                aliased = theme.pixelated_text,
+                color = self.foreground_color,
+                font_size = self.font_size,
+                font_name = "Consolas",
+            })
         end,
 
         small_text = function(self, rect, horizontal_alignment, text)
-            BreitbandGraphics.draw_text(rect, horizontal_alignment, "center", self.style, self.foreground_color, self.font_size * 0.75, "Consolas", text)
+            BreitbandGraphics.draw_text2({
+                rectangle = rect,
+                text = text,
+                align_x = horizontal_alignment,
+                align_y = BreitbandGraphics.alignment.center,
+                aliased = theme.pixelated_text,
+                color = self.foreground_color,
+                font_size = self.font_size * 0.75,
+                font_name = "Consolas",
+            })
         end
     }
 end

@@ -33,15 +33,15 @@ local function create_confirm_dialog(prompt, on_confirmed)
         local theme = Styles.theme()
         local foreground_color = theme.listbox.text[1]
 
-        BreitbandGraphics.draw_text(
-            grid_rect(0, top - 8, 8, 8),
-            "center",
-            "end",
-            {},
-            foreground_color,
-            theme.font_size * 1.2 * Drawing.scale,
-            theme.font_name,
-            prompt)
+        BreitbandGraphics.draw_text2({
+            rectangle = grid_rect(0, top - 8, 8, 8),
+            text = prompt,
+            align_x = BreitbandGraphics.alignment.center,
+            align_y = BreitbandGraphics.alignment['end'],
+            color = foreground_color,
+            font_size = theme.font_size * 1.2 * Drawing.scale,
+            font_name = theme.font_name,
+        })
 
         if ugui.button({
             uid = UID.ConfirmationYes,
@@ -93,16 +93,15 @@ function __impl.render(draw)
     local theme = Styles.theme()
     local foreground_color = theme.listbox.text[1]
     if #SemanticWorkflowProject.meta.sheets == 0 then
-        BreitbandGraphics.draw_text(
-            grid_rect(0, 0, 8, 16),
-            "center",
-            "center",
-            {},
-            foreground_color,
-            theme.font_size * 1.2 * Drawing.scale,
-            theme.font_name,
-            Locales.str("SEMANTIC_WORKFLOW_PROJECT_NO_SHEETS_AVAILABLE")
-        )
+        BreitbandGraphics.draw_text2({
+            rectangle = grid_rect(0, 0, 8, 16),
+            text = Locales.str("SEMANTIC_WORKFLOW_PROJECT_NO_SHEETS_AVAILABLE"),
+            align_x = BreitbandGraphics.alignment.center,
+            align_y = BreitbandGraphics.alignment.center,
+            color = foreground_color,
+            font_size = theme.font_size * 1.2 * Drawing.scale,
+            font_name = theme.font_name,
+        })
     end
 
     local top = 1

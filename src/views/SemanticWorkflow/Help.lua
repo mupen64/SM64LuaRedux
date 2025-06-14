@@ -24,27 +24,33 @@ return {
                 SemanticWorkflowDialog = nil
             end
 
-            BreitbandGraphics.draw_text(grid_rect(0, 0.1, 8, 1), "start", "start", {}, foreground_color, theme.font_size * 1.2 * Drawing.scale, theme.font_name, title)
-            BreitbandGraphics.draw_text(
-                grid_rect(0, 0.666, 8, 1), #
-                "start",
-                "start",
-                {},
-                foreground_color,
-                theme.font_size * 2 * Drawing.scale,
-                theme.font_name,
-                pages[page]["HEADING"]
-            )
-            BreitbandGraphics.draw_text(
-                grid_rect(0, 1.8, 8, 1),
-                "start",
-                "start",
-                {},
-                foreground_color,
-                theme.font_size * Drawing.scale,
-                theme.font_name,
-                pages[page]["TEXT"]
-            )
+            BreitbandGraphics.draw_text2({
+                rectangle = grid_rect(0, 0.1, 8, 1),
+                text = title,
+                align_x = BreitbandGraphics.alignment.start,
+                align_y = BreitbandGraphics.alignment.start,
+                color = foreground_color,
+                font_size = theme.font_size * 1.2 * Drawing.scale,
+                font_name = theme.font_name,
+            })
+            BreitbandGraphics.draw_text2({
+                rectangle = grid_rect(0, 0.666, 8, 1),
+                text = pages[page]["HEADING"],
+                align_x = BreitbandGraphics.alignment.start,
+                align_y = BreitbandGraphics.alignment.start,
+                color = foreground_color,
+                font_size = theme.font_size * 2 * Drawing.scale,
+                font_name = theme.font_name,
+            })
+            BreitbandGraphics.draw_text2({
+                rectangle = grid_rect(0, 1.8, 8, 1),
+                text = pages[page]["TEXT"],
+                align_x = BreitbandGraphics.alignment.start,
+                align_y = BreitbandGraphics.alignment.start,
+                color = foreground_color,
+                font_size = theme.font_size * Drawing.scale,
+                font_name = theme.font_name,
+            })
 
             if ugui.button(
                 {
