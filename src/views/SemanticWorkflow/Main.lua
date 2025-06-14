@@ -122,7 +122,6 @@ return {
         Tabs[selected_tab_index].render(draw)
 
         -- hack to make the listbox transparent
-        Memory.update()
         local previous_alpha = BreitbandGraphics.colors.white.a
         BreitbandGraphics.colors.white.a = 110
         ugui.listbox({
