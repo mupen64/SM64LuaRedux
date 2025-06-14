@@ -43,7 +43,7 @@ function __impl.new(name, create_savestate)
         load = __impl.load,
     }
     if create_savestate then
-        savestate.do_memory({}, "save", function(result, data) new_instance._savestate = data end)
+        savestate.do_memory("", "save", function(result, data) new_instance._savestate = data end)
     end
 
     return new_instance
@@ -120,7 +120,7 @@ function __impl:load(file)
 end
 
 function __impl:rebase()
-    savestate.do_memory({}, "save", function(result, data)
+    savestate.do_memory("", "save", function(result, data)
         self._savestate = data
         self:run_to_preview()
     end)

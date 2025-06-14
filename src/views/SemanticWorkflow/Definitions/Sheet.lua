@@ -9,7 +9,7 @@
 ---@field private _section_index integer The nth section that is currently being played.
 ---@field private _frame_counter integer The nth frame of the current section that is currently being played.
 ---@field private _update_pending boolean Whether a change has been made that demands rerunning the sheet until its preview frame.
----@field private _savestate unknown The savestate this sheet runs from.
+---@field private _savestate ByteBuffer The savestate this sheet runs from.
 local cls_sheet = {}
 
 ---Constructs a new sheet with the given name and a single section.
