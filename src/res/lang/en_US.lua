@@ -55,7 +55,11 @@ return {
     SEMANTIC_WORKFLOW_CONTROL_MATCH_ANGLE = "Angle",
     SEMANTIC_WORKFLOW_CONTROL_REVERSE_ANGLE = "Reverse",
     SEMANTIC_WORKFLOW_CONTROL_DYAW = "DYaw",
-    SEMANTIC_WORKFLOW_CONTROL_ATAN = "Atan",
+    SEMANTIC_WORKFLOW_CONTROL_ATAN_RETIME = "Retime...",
+    SEMANTIC_WORKFLOW_CONTROL_ATAN_SELECT_START = "Select start...",
+    SEMANTIC_WORKFLOW_CONTROL_ATAN_SELECT_END = "Select end...",
+    SEMANTIC_WORKFLOW_CONTROL_ATAN = "Enable",
+    SEMANTIC_WORKFLOW_CONTROL_ATAN_REVERSE = "Invert",
     SEMANTIC_WORKFLOW_CONTROL_MAG = "Magnitude:",
     SEMANTIC_WORKFLOW_CONTROL_SPDKICK = "Spdk",
     SEMANTIC_WORKFLOW_PROJECT_NO_SHEETS_AVAILABLE = "No semantic workflow sheets available.\nCreate one to proceed.",
@@ -284,10 +288,9 @@ This is not affected by and does not affect your selection or active frame.
                     TEXT =
 [[
 Arctan straining works similarly to how it does in the TAS tab.
-Note, however, that when you TURN ON Arctan straining, the starting frame will be set to whatever global timer value the game is currently in, namely most likely the preview frame's global timer.
-Thus, make sure to set your preview frame to the START of the Arctan strain when you need to turn Arctan straining off and on again to affect more frames.
-
-This is subject to change in favor of a more comfortable and intuitive way to control the arctan parameters in the future.
+Clicking the 'Enable' button will enable arctan straining for the selected input frames, but will not set the 'start' and 'N' variables.
+To do so, click the 'Retime...' button, then select the desired start frame, followed by the desired end frame.
+You can still manually adjust the parameters as needed afterwards.
 ]]
                 }
             },

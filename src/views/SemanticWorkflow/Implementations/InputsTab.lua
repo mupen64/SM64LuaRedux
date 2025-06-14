@@ -25,6 +25,9 @@ local MAX_ACTION_GUESSES <const> = 5
 
 local selected_view_index = 1
 
+local previous_preview_frame
+local atan_start = 0
+
 function __impl.allocate_uids(enum_next)
     return {
         ViewCarrousel = enum_next(),
@@ -49,6 +52,8 @@ function __impl.allocate_uids(enum_next)
         MovementModeReverseAngle = enum_next(),
         DYaw = enum_next(),
         Atan = enum_next(),
+        AtanReverse = enum_next(),
+        AtanRetime = enum_next(),
         AtanN = enum_next(3),
         AtanD = enum_next(3),
         AtanS = enum_next(3),
@@ -246,60 +251,112 @@ local function magnitude_controls(draw, sheet, new_values, top)
     end
 end
 
+local function noop() end
+
+local function select_atan_end(selection_frame)
+    local sheet = SemanticWorkflowProject:asserted_current()
+    sheet.preview_frame = selection_frame
+    sheet:run_to_preview()
+    FrameListGui.special_select_handler = noop
+end
+
+local function select_atan_start(selection_frame)
+    print(selection_frame)
+    local sheet = SemanticWorkflowProject:asserted_current()
+    previous_preview_frame = sheet.preview_frame
+    sheet.preview_frame = selection_frame
+    sheet:run_to_preview()
+    FrameListGui.special_select_handler = select_atan_end
+end
+
 local function atan_controls(draw, sheet, new_values, top)
-    local label_offset = -0.5
+    draw:text(grid_rect(0, top, 1, MEDIUM_CONTROL_HEIGHT), "start", "Atan:")
+
+    if not sheet.busy then
+        if FrameListGui.special_select_handler == select_atan_end then
+            atan_start = Memory.current.mario_global_timer - 1
+        elseif FrameListGui.special_select_handler == noop then
+            local atan_end = Memory.current.mario_global_timer
+            new_values.atan_start = atan_start
+            new_values.atan_n = atan_end - atan_start
+            sheet.preview_frame = previous_preview_frame
+            FrameListGui.special_select_handler = nil
+            any_changes = true
+        end
+    end
+
     local new_atan = ugui.toggle_button({
         uid = UID.Atan,
-        rectangle = grid_rect(0, top, 1.5, MEDIUM_CONTROL_HEIGHT),
-        text=Locales.str("SEMANTIC_WORKFLOW_CONTROL_ATAN"),
+        rectangle = grid_rect(1, top, 1.5, MEDIUM_CONTROL_HEIGHT),
+        text = Locales.str("SEMANTIC_WORKFLOW_CONTROL_ATAN"),
         is_checked = new_values.atan_strain
     })
     if new_atan and not new_values.atan_strain then
-        new_values.atan_start = Memory.current.mario_global_timer
+        new_values.movement_mode = MovementModes.match_angle
     end
     new_values.atan_strain = new_atan
-    if new_values.movement_mode ~= MovementModes.match_angle then
-        new_values.atan_strain = false
+
+    local atan_retime_state =
+                    FrameListGui.special_select_handler == select_atan_start and "SEMANTIC_WORKFLOW_CONTROL_ATAN_SELECT_START"
+                    or FrameListGui.special_select_handler == select_atan_end and "SEMANTIC_WORKFLOW_CONTROL_ATAN_SELECT_END"
+                    or "SEMANTIC_WORKFLOW_CONTROL_ATAN_RETIME"
+    if ugui.button({
+        uid = UID.AtanRetime,
+        rectangle = grid_rect(2.5, top, 2.5, MEDIUM_CONTROL_HEIGHT),
+        text = Locales.str(atan_retime_state),
+        is_enabled = FrameListGui.special_select_handler == nil,
+    }) then
+        FrameListGui.special_select_handler = select_atan_start
     end
 
-    draw:text(grid_rect(1.5, top + label_offset, 0.75, MEDIUM_CONTROL_HEIGHT), "start", "N:")
+    local label_offset = -0.5
+    top = top + LARGE_CONTROL_HEIGHT + 0.25
+
+    draw:text(grid_rect(0, top + label_offset, 0.75, MEDIUM_CONTROL_HEIGHT), "start", "N:")
     new_values.atan_n = ugui.spinner({
         uid = UID.AtanN,
-        rectangle = grid_rect(1.5, top, 1.25, MEDIUM_CONTROL_HEIGHT),
+        rectangle = grid_rect(0, top, 1.25, MEDIUM_CONTROL_HEIGHT),
         value = new_values.atan_n,
         minimum_value = 1,
         maximum_value = 4000,
         increment = math.max(0.25, math.pow(10, Settings.atan_exp)),
     })
 
-    draw:text(grid_rect(2.75, top + label_offset, 0.75, MEDIUM_CONTROL_HEIGHT), "start", "D:")
+    draw:text(grid_rect(1.25, top + label_offset, 0.75, MEDIUM_CONTROL_HEIGHT), "start", "D:")
     new_values.atan_d = ugui.spinner({
         uid = UID.AtanD,
-        rectangle = grid_rect(2.75, top, 1.75, MEDIUM_CONTROL_HEIGHT),
+        rectangle = grid_rect(1.25, top, 1.75, MEDIUM_CONTROL_HEIGHT),
         value = new_values.atan_d,
         minimum_value = -1000000,
         maximum_value = 1000000,
         increment = math.pow(10, Settings.atan_exp),
     })
 
-    draw:text(grid_rect(4.5, top + label_offset, 2.35, MEDIUM_CONTROL_HEIGHT), "start", "Start:")
+    draw:text(grid_rect(3, top + label_offset, 2.35, MEDIUM_CONTROL_HEIGHT), "start", "Start:")
     new_values.atan_start = ugui.spinner({
         uid = UID.AtanS,
-        rectangle = grid_rect(4.5, top, 2.35, MEDIUM_CONTROL_HEIGHT),
+        rectangle = grid_rect(3, top, 2.35, MEDIUM_CONTROL_HEIGHT),
         value = new_values.atan_start,
         minimum_value = 0,
         maximum_value = 0xFFFFFFFF,
         increment = math.pow(10, Settings.atan_exp),
     })
 
-    draw:text(grid_rect(7, top + label_offset, 0.5, MEDIUM_CONTROL_HEIGHT), "start", "E:")
+    draw:text(grid_rect(5.5, top + label_offset, 0.5, MEDIUM_CONTROL_HEIGHT), "start", "E:")
     Settings.atan_exp = ugui.spinner({
         uid = UID.AtanE,
-        rectangle = grid_rect(7, top, 1, MEDIUM_CONTROL_HEIGHT),
+        rectangle = grid_rect(5.5, top, 1, MEDIUM_CONTROL_HEIGHT),
         value = Settings.atan_exp,
         minimum_value = -9,
         maximum_value = 5,
         increment = 1,
+    })
+
+    new_values.reverse_arc = ugui.toggle_button({
+        uid = UID.AtanReverse,
+        rectangle = grid_rect(6.5, top, 1.5, MEDIUM_CONTROL_HEIGHT),
+        text = Locales.str("SEMANTIC_WORKFLOW_CONTROL_ATAN_REVERSE"),
+        is_checked = new_values.reverse_arc
     })
 end
 

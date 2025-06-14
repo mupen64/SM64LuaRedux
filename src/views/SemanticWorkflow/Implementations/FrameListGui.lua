@@ -290,7 +290,7 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
         draw:text(frame_box, "end", section_index .. ":")
 
         if ugui.internal.is_mouse_just_down() and BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, frame_box) then
-            sheet.preview_frame = { section_index = section_index, frame_index =  input_sub_index }
+            sheet.preview_frame = { section_index = section_index, frame_index = input_sub_index }
             sheet:run_to_preview()
         end
 
@@ -334,7 +334,11 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
 
         if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, active_frame_box) then
             if ugui.internal.is_mouse_just_down() then
-                sheet.active_frame = { section_index = section_index, frame_index = input_sub_index }
+                if __impl.special_select_handler then
+                    __impl.special_select_handler({ section_index = section_index, frame_index = input_sub_index })
+                else
+                    sheet.active_frame = { section_index = section_index, frame_index = input_sub_index }
+                end
             end
         end
 
