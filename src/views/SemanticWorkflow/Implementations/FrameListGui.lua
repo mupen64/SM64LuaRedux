@@ -46,13 +46,13 @@ local MAX_DISPLAYED_SECTIONS <const> = 15
 
 local NUM_UIDS_PER_ROW <const> = 2
 local BUTTON_COLORS <const> = {
-    {background={r=000, g=000, b=255, a=100}, button={r=000, g=000, b=190, a=255}}, -- A
-    {background={r=000, g=177, b=022, a=100}, button={r=000, g=230, b=044, a=255}}, -- B
-    {background={r=111, g=111, b=111, a=100}, button={r=200, g=200, b=200, a=255}}, -- Z
-    {background={r=200, g=000, b=000, a=100}, button={r=255, g=000, b=000, a=255}}, -- Start
-    {background={r=200, g=200, b=000, a=100}, button={r=255, g=255, b=000, a=255}}, -- 4 C Buttons
-    {background={r=111, g=111, b=111, a=100}, button={r=200, g=200, b=200, a=255}}, -- L + R Buttons
-    {background={r=055, g=055, b=055, a=100}, button={r=035, g=035, b=035, a=255}}, -- 4 DPad Buttons
+    { background = "#0000FF64", button = "#0000BEFF" }, -- A
+    { background = "#00B11664", button = "#00E62CFF" }, -- B
+    { background = "#6F6F6F64", button = "#C8C8C8FF" }, -- Z
+    { background = "#C8000064", button = "#FF0000FF" }, -- Start
+    { background = "#C8C80064", button = "#FFFF00FF" }, -- 4 C Buttons
+    { background = "#6F6F6F64", button = "#C8C8C8FF" }, -- L + R Buttons
+    { background = "#37373764", button = "#323232FF" }, -- 4 DPad Buttons
 }
 
 local VIEW_MODE_HEADERS <const> = { "SEMANTIC_WORKFLOW_FRAMELIST_STICK", "SEMANTIC_WORKFLOW_FRAMELIST_UNTIL" }
@@ -173,7 +173,7 @@ local function draw_color_codes(baseline, scrollbar_rect, num_display_sections)
     local f = Settings.grid_size * Drawing.scale
     BreitbandGraphics.fill_rectangle(
         {x = COL0 * f + Drawing.initial_size.width, y = rect.y, width = (COL1 - COL0) * f, height = rect.height},
-        {r = 255, g = 0, b = 0, a = 40}
+        "#FF000028"
     )
 
     local i = 1
@@ -262,7 +262,7 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
 
         if total_inputs > MAX_DISPLAYED_SECTIONS + scroll_offset then
             local extra_sections = #sheet.sections - section_index
-            BreitbandGraphics.fill_rectangle(span(0, COL_1), {r=138, g=148, b=138, a=66})
+            BreitbandGraphics.fill_rectangle(span(0, COL_1), "#8A948A42")
             draw:text(span(COL1, COL_1), "start", "+ " .. extra_sections .. " sections")
             return true
         end
@@ -274,7 +274,7 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
         local uid_offset = -1
         local function next_uid() uid_offset = uid_offset + 1 return uid_offset + uid_base end
 
-        BreitbandGraphics.fill_rectangle(section_rect, {r=shade, g=shade, b=shade * blue_multiplier, a=66})
+        BreitbandGraphics.fill_rectangle(section_rect, { r = shade, g = shade, b = shade * blue_multiplier, a = 66 })
 
         if input_sub_index == 1 then
             section.collapsed = not ugui.toggle_button({
@@ -318,7 +318,7 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
             end
 
             if input.editing then
-                BreitbandGraphics.fill_rectangle(joystick_box, {r = 0, g = 200, b = 0, a = 100})
+                BreitbandGraphics.fill_rectangle(joystick_box, "#00C80064")
             end
 
             draw:text(span(COL2, COL3), "center", MODE_TEXTS[tas_state.movement_mode + 1])
@@ -351,15 +351,15 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
             if input.joy[v.input] then
                 BreitbandGraphics.fill_ellipse(rect, BUTTON_COLORS[button_draw_data[button_index].color_index].button)
             end
-            BreitbandGraphics.draw_ellipse(rect, {r=0, g=0, b=0, a=input.joy[v.input] and 255 or 80}, 1)
+            BreitbandGraphics.draw_ellipse(rect, input.joy[v.input] and "#000000FF" or "#00000050", 1)
         end
 
         if section_index == sheet.preview_frame.section_index and sheet.preview_frame.frame_index == input_sub_index then
-            BreitbandGraphics.draw_rectangle(section_rect, {r=255, g=0, b=0}, 1)
+            BreitbandGraphics.draw_rectangle(section_rect, "#FF0000FF", 1)
         end
 
         if section_index == sheet.active_frame.section_index and sheet.active_frame.frame_index == input_sub_index then
-            BreitbandGraphics.draw_rectangle(section_rect, {r=100, g=255, b=100}, 1)
+            BreitbandGraphics.draw_rectangle(section_rect, "#64FF64FF", 1)
         end
 
         section_rect.y = section_rect.y + section_rect.height
