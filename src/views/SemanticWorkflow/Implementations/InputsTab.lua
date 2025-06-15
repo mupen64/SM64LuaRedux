@@ -9,7 +9,7 @@ __impl.help_key = "INPUTS_TAB"
 local FrameListGui = dofile(views_path .. "SemanticWorkflow/Definitions/FrameListGui.lua")
 local Section = dofile(views_path .. "SemanticWorkflow/Definitions/Section.lua")
 
----constants---
+--#region Constants
 
 local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")[__impl.name]
 
@@ -21,7 +21,9 @@ local LABEL_HEIGHT <const> = 0.25
 local TOP <const> = 10.25
 local MAX_ACTION_GUESSES <const> = 5
 
----logic---
+--#endregion
+
+--#region Logic
 
 local selected_view_index = 1
 
@@ -72,7 +74,9 @@ end
 
 local function any_entries(table) for _ in pairs(table) do return true end return false end
 
---- ### Insert and remove ### ---
+--#endregion
+
+--#region Insert and remove
 
 local function controls_for_insert_and_remove()
     local sheet = SemanticWorkflowProject:asserted_current()
@@ -129,7 +133,9 @@ local function controls_for_insert_and_remove()
     end
 end
 
---- ### Section controls ### ---
+--#endregion
+
+--#region Section controls
 
 local end_action_search_text = nil
 
@@ -214,7 +220,9 @@ local function section_controls_for_selected(draw)
     end
 end
 
--- ### Joystick Controls ### ---
+--#endregion
+
+--#region Joystick Controls
 
 local function magnitude_controls(draw, sheet, new_values, top)
     draw:text(grid_rect(2, top, 2, MEDIUM_CONTROL_HEIGHT), "end", Locales.str("SEMANTIC_WORKFLOW_CONTROL_MAG"))
@@ -523,6 +531,8 @@ local function joystick_controls_for_selected(draw)
         current_sheet:run_to_preview()
     end
 end
+
+--#endregion
 
 function __impl.render(draw)
     local draw_funcs = { joystick_controls_for_selected, section_controls_for_selected }

@@ -2,7 +2,7 @@
 ---@diagnostic disable-next-line: assign-type-mismatch
 local __impl = __impl
 
----constants---
+--#region Constants
 
 local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")["FrameList"]
 
@@ -57,7 +57,9 @@ local BUTTON_COLORS <const> = {
 
 local VIEW_MODE_HEADERS <const> = { "SEMANTIC_WORKFLOW_FRAMELIST_STICK", "SEMANTIC_WORKFLOW_FRAMELIST_UNTIL" }
 
----logic---
+--#endregion
+
+--#region logic
 
 local scroll_offset = 0
 
@@ -365,6 +367,8 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
         section_rect.y = section_rect.y + section_rect.height
     end)
 end
+
+--#endregion
 
 function __impl.render(draw)
     local current_sheet = SemanticWorkflowProject:asserted_current()

@@ -1,4 +1,3 @@
----utility functions---
 
 function CloneInto(destination, source)
     local changes = {}
@@ -9,8 +8,6 @@ function CloneInto(destination, source)
     end
     return changes
 end
-
----implementation details---
 
 local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")
 local Project = dofile(views_path .. "SemanticWorkflow/Definitions/Project.lua")
@@ -67,8 +64,6 @@ local function draw_factory(theme)
         end
     }
 end
-
----public API---
 
 ---Retrieves a TASState as determined by the currently active semantic workflow for the current frame identified by the current global timer value.
 ---
