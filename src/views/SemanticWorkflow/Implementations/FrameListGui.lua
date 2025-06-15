@@ -332,7 +332,7 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
             end
         elseif view_index == 2 then
             -- end action
-            draw:text(active_frame_box, "start", section.end_action)
+            draw:text(active_frame_box, "start", Locales.action(section.end_action))
         end
 
         if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, active_frame_box) then

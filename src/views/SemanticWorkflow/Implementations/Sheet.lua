@@ -28,7 +28,7 @@ function __impl.new(name, create_savestate)
         start_g_t = global_timer,
         preview_frame = { section_index = 1, frame_index = 1 },
         active_frame = { section_index = 1, frame_index = 1 },
-        sections = { Section.new("idle", 150) },
+        sections = { Section.new(0x0C400201, 150) }, -- end action is "idle"
         name = name,
         _savestate = nil,
         busy = false,
@@ -53,7 +53,7 @@ function __impl:evaluate_frame()
     local section = self.sections[self._section_index]
     if section == nil then return nil end
 
-    local current_action = Locales.raw().ACTIONS[Memory.previous.mario_action]
+    local current_action = Memory.previous.mario_action
     if self._frame_counter >= section.timeout or current_action == section.end_action then
         self._section_index = self._section_index + 1
         self._frame_counter = 0

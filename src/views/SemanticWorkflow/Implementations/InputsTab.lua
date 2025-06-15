@@ -113,7 +113,7 @@ local function controls_for_insert_and_remove()
         text = Locales.str("SEMANTIC_WORKFLOW_INPUTS_INSERT_SECTION"),
         tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_INSERT_SECTION_TOOL_TIP"),
     }) then
-        local new_section = Section.new("idle", 150)
+        local new_section = Section.new(0x0C400201, 150) -- end action is "idle"
         table.insert(sheet.sections, sheet.active_frame.section_index + 1, new_section)
         any_changes = true
     end
@@ -146,7 +146,7 @@ local function controls_for_end_action(section, draw, column, top)
         if ugui.button({
             uid = UID.EndAction,
             rectangle = grid_rect(column, top + LABEL_HEIGHT, 4, LARGE_CONTROL_HEIGHT),
-            text = section.end_action,
+            text = Locales.action(section.end_action),
             tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_END_ACTION_TOOL_TIP"),
         }) then
             end_action_search_text = ""
@@ -164,7 +164,7 @@ local function controls_for_end_action(section, draw, column, top)
         }):lower()
         local i = 0
         local match_pattern = "^" .. end_action_search_text
-        for _, action_name in pairs(Locales.raw().ACTIONS) do
+        for action, action_name in pairs(Locales.raw().ACTIONS) do
             if action_name:find(match_pattern) ~= nil then
                 if ugui.button({
                     uid = UID.AvailableActions + i,
@@ -172,7 +172,7 @@ local function controls_for_end_action(section, draw, column, top)
                     text = action_name,
                 }) then
                     end_action_search_text = nil
-                    section.end_action = action_name
+                    section.end_action = action
                     any_changes = true
                 end
 
