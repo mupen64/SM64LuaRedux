@@ -75,6 +75,7 @@ function __impl.allocate_uids(enum_next)
 end
 
 ---@alias IterateInputsCallback fun(section: Section, input: SectionInputs, section_index: integer, total_inputs_counted: integer, input_index: integer): boolean?
+
 ---@function Iterates all sections as an input row, including their follow-up frames for non-collapsed sections
 ---@param sheet Sheet The sheet over whose sections to iterate
 ---@param callback IterateInputsCallback? an optional function that, when it returns true, terminates the enumeration
