@@ -48,7 +48,7 @@ return {
     SEMANTIC_WORKFLOW_FRAMELIST_STICK = "Joystick",
     SEMANTIC_WORKFLOW_FRAMELIST_UNTIL = "Until",
     SEMANTIC_WORKFLOW_TOOL_COPY_ENTIRE_STATE = "Copy entire state",
-    SEMANTIC_WORKFLOW_NO_SELECTION = "No selection was made.\nClick on the joystick in an input row to start editing.",
+    SEMANTIC_WORKFLOW_NO_SELECTION = "No valid selection.\nSelect an active frame to start editing.",
     SEMANTIC_WORKFLOW_CONTROL_MANUAL = "Manual",
     SEMANTIC_WORKFLOW_CONTROL_MATCH_YAW = "Yaw",
     SEMANTIC_WORKFLOW_CONTROL_MATCH_ANGLE = "Angle",

@@ -183,37 +183,30 @@ local function controls_for_end_action(section, draw, column, top)
     end
 end
 
-local function section_controls_for_selected(draw)
+local function section_controls_for_selected(draw, edited_section, edited_input)
     local sheet = SemanticWorkflowProject:asserted_current()
 
     local top = TOP
     local col_timeout = 4
 
     local any_changes = false
-    local has_valid_selection = sheet.sections[sheet.active_frame.section_index]
 
-    if not has_valid_selection then
-        draw:text(grid_rect(0, top, 8, 1), "center", Locales.str("SEMANTIC_WORKFLOW_NO_SELECTION"))
-        return
-    end
-
-    local section = sheet.sections[sheet.active_frame.section_index]
-    if section == nil then return end
+    if edited_section == nil then return end
 
     top = top + 1
 
     draw:text(grid_rect(col_timeout, top, 2, LABEL_HEIGHT), "start", Locales.str("SEMANTIC_WORKFLOW_INPUTS_TIMEOUT"))
-    local old_timeout = section.timeout
-    section.timeout = ugui.numberbox({
+    local old_timeout = edited_section.timeout
+    edited_section.timeout = ugui.numberbox({
         uid = UID.Timeout,
         rectangle = grid_rect(col_timeout, top + LABEL_HEIGHT, 2, LARGE_CONTROL_HEIGHT),
-        value = section.timeout,
+        value = edited_section.timeout,
         places = 4,
         tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_TIMEOUT_TOOL_TIP"),
     })
-    any_changes = any_changes or old_timeout ~= section.timeout
+    any_changes = any_changes or old_timeout ~= edited_section.timeout
 
-    controls_for_end_action(section, draw, 0, top)
+    controls_for_end_action(edited_section, draw, 0, top)
 
     if any_changes then
         sheet:run_to_preview()
@@ -368,7 +361,7 @@ local function atan_controls(draw, sheet, new_values, top)
     })
 end
 
-local function joystick_controls_for_selected(draw)
+local function joystick_controls_for_selected(draw, edited_section, edited_input)
     local small_control_height = 0.5
     local large_control_height = 1.0
     local top = TOP
@@ -376,13 +369,6 @@ local function joystick_controls_for_selected(draw)
     local sheet = SemanticWorkflowProject:asserted_current()
 
     local new_values = {}
-    local edited_section = sheet.sections[sheet.active_frame.section_index]
-    local edited_input = edited_section and edited_section.inputs[sheet.active_frame.frame_index] or nil
-
-    if edited_input == nil then
-        draw:text(grid_rect(0, top, 8, 1), "center", Locales.str("SEMANTIC_WORKFLOW_NO_SELECTION"))
-        return
-    end
 
     local old_values = edited_input.tas_state
     CloneInto(new_values, old_values)
@@ -535,6 +521,18 @@ end
 --#endregion
 
 function __impl.render(draw)
+    local sheet = SemanticWorkflowProject:asserted_current()
+    local edited_section = sheet.sections[sheet.active_frame.section_index]
+    local edited_input = edited_section and edited_section.inputs[sheet.active_frame.frame_index] or nil
+
+    FrameListGui.view_index = selected_view_index
+    FrameListGui.render(draw)
+
+    if edited_input == nil then
+        draw:text(grid_rect(0, TOP, 8, 1), "center", Locales.str("SEMANTIC_WORKFLOW_NO_SELECTION"))
+        return
+    end
+
     local draw_funcs = { joystick_controls_for_selected, section_controls_for_selected }
     selected_view_index = ugui.carrousel_button({
          uid = UID.ViewCarrousel,
@@ -543,8 +541,7 @@ function __impl.render(draw)
          items = { "Joystick", "Section" },
          selected_index = selected_view_index,
         })
-    draw_funcs[selected_view_index](draw)
+
+    draw_funcs[selected_view_index](draw, edited_section, edited_input)
     controls_for_insert_and_remove()
-    FrameListGui.view_index = selected_view_index
-    FrameListGui.render(draw)
 end
