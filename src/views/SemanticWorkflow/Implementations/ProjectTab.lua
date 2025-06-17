@@ -31,14 +31,13 @@ local function create_confirm_dialog(prompt, on_confirmed)
         local top = 15 - control_height
 
         local theme = Styles.theme()
-        local foreground_color = theme.listbox.text[1]
 
         BreitbandGraphics.draw_text2({
             rectangle = grid_rect(0, top - 8, 8, 8),
             text = prompt,
             align_x = BreitbandGraphics.alignment.center,
             align_y = BreitbandGraphics.alignment['end'],
-            color = foreground_color,
+            color = theme.button.text[1],
             font_size = theme.font_size * 1.2 * Drawing.scale,
             font_name = theme.font_name,
         })
@@ -91,14 +90,13 @@ local RenderConfirmPurgeDialog = create_confirm_dialog(
 
 function __impl.render(draw)
     local theme = Styles.theme()
-    local foreground_color = theme.listbox.text[1]
     if #SemanticWorkflowProject.meta.sheets == 0 then
         BreitbandGraphics.draw_text2({
             rectangle = grid_rect(0, 0, 8, 16),
             text = Locales.str("SEMANTIC_WORKFLOW_PROJECT_NO_SHEETS_AVAILABLE"),
             align_x = BreitbandGraphics.alignment.center,
             align_y = BreitbandGraphics.alignment.center,
-            color = foreground_color,
+            color = theme.button.text[1],
             font_size = theme.font_size * 1.2 * Drawing.scale,
             font_name = theme.font_name,
         })
