@@ -40,7 +40,6 @@ return {
     SEMANTIC_WORKFLOW_HELP_EXIT_TOOL_TIP = "Exit",
     SEMANTIC_WORKFLOW_HELP_PREV_PAGE = "back",
     SEMANTIC_WORKFLOW_HELP_NEXT_PAGE = "next",
-    SEMANTIC_WORKFLOW_SHEET_NO_SHEET = "No semantic workflow sheets available.\nCreate one to proceed.",
     SEMANTIC_WORKFLOW_SHEET_NO_SELECTED = "No semantic workflow sheet selected.\nSelect one to proceed.",
     SEMANTIC_WORKFLOW_SHEET_DELETE_CONFIRMATION = "[Confirm deletion]\n\nAre you sure you want to delete \"%s\"?\nThis action cannot be undone.",
     SEMANTIC_WORKFLOW_FRAMELIST_START = "Start: ",
