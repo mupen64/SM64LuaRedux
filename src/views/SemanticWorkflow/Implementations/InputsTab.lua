@@ -123,10 +123,21 @@ local function controls_for_insert_and_remove()
         rectangle = grid_rect(4.5, top, 1.5, LARGE_CONTROL_HEIGHT),
         text = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_SECTION"),
         tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_SECTION_TOOL_TIP"),
+        is_enabled = #sheet.sections > 1
     }) then
         table.remove(sheet.sections, sheet.active_frame.section_index)
         any_changes = true
     end
+
+    -- ensure a valid selection in all cases
+    sheet.active_frame.section_index = math.min(
+        sheet.active_frame.section_index,
+        #sheet.sections
+    )
+    sheet.active_frame.frame_index = math.min(
+        sheet.active_frame.frame_index,
+        #sheet.sections[sheet.active_frame.section_index].inputs
+    )
 
     if any_changes then
         sheet:run_to_preview()
@@ -527,11 +538,6 @@ function __impl.render(draw)
 
     FrameListGui.view_index = selected_view_index
     FrameListGui.render(draw)
-
-    if edited_input == nil then
-        draw:text(grid_rect(0, TOP, 8, 1), "center", Locales.str("SEMANTIC_WORKFLOW_NO_SELECTION"))
-        return
-    end
 
     local draw_funcs = { joystick_controls_for_selected, section_controls_for_selected }
     selected_view_index = ugui.carrousel_button({
