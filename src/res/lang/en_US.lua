@@ -194,7 +194,7 @@ The purpose of this is to quickly iterate over the effects of small changes "in 
 
 By managing so-called "Semantic Workflow Projects", it is possible to author entire runs in terms of semantics consisting of just a few sections.
 
-This tool is separated into several tab pages that you can select at the top. Once you have started work on a Semantic Workflow Project, a dedicated help page will be available for each page just like for this one.
+This tool is separated into several tab pages that you can select at the top. Once you have started work on a Semantic Workflow Project, a dedicated help page will be available for each tab just like for this one.
 
 Click the "next" arrow at the top to learn more about how to get started.
 ]],
@@ -205,7 +205,7 @@ Click the "next" arrow at the top to learn more about how to get started.
 [[
 The main entity you will be working with is the "Sheet".
 A Sheet describes a sequence of inputs, that, starting from a specific point, will (attempt to) perform a certain sequence of actions that make up a segment of a complete run.
-Sheets are divided further into sections, with each section ending when either a certain number of frames have passed, or a certain other condition is met.
+Sheets are divided further into sections, with each section ending when either a certain number of frames has passed, or a certain other condition is met.
 
 This page allows you to manage several related Sheets in a so called "Semantic Workflow Project".
 Semantic Workflow Projects are really just a collection of Sheets that are saved in a directory next to the semantic workflow project file (*.swp).
@@ -257,6 +257,7 @@ You may even find it beneficial to manage other files with git, too, such as gho
 [[
 Click the "#Section" column in the Section List to select a frame to preview.
 You can expand and collapse sections that have more than one initial input frame.
+Click the middle column in the Section List to select the "active" frame, which is used for editing (more on that on the next help page).
 
 Whenever you make changes to any inputs (e.g. change any button inputs), the game is going to be replayed to the preview frame (highlighted in red) from the start of the Sheet with the new inputs.
 
@@ -274,7 +275,7 @@ You can select a range of joystick inputs to edit by left clicking and dragging 
 The selected range will follow the "active" frame highlighted by a green border.
 Its values will be displayed in the joystick controls at the bottom, and when you make any changes, those values will copied to the selected range.
 
-If the 'Edit entire state' toggle in the settings page is off, only the changes made to the active frame (rather than all its values) will be copied to the selected range.
+If the 'Edit entire state' toggle in the preferences page is off, only the changes made to the active frame (rather than all its values) will be copied to the selected range.
 
 When the active frame and the preview frame are the same, the highlight will become a yellow-ish green.
 
@@ -304,9 +305,9 @@ You can still manually adjust the parameters as needed afterwards.
 This page displays and edits settings that are not stored in a Semantic Workflow Project, and instead persist in your local settings instead.
 Each setting may get an individual help page here in the future. For now, here is a brief list of what each setting does:
 
-- Edit entire state: Copy the entire joystick state of the active frame to the selected range in the "Inputs" page. When turned off, only the actual changes made will be copied to the selected range.
+- Edit entire state: Copy the entire joystick state of the active frame to the selected range in the "Inputs" page. When turned off, only the changed values will be copied to the selected range.
 
-- Fast Forward: Play the game back and maximum speed when making changes. When turned off, the game will play back in real time instead.
+- Fast Forward: Play the game back at maximum speed when re-running a sheet (e.g. when making changes). When turned off, the game will play back in real time instead.
 ]],
                 },
             },
