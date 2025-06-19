@@ -53,7 +53,7 @@ function __impl:evaluate_frame()
     local section = self.sections[self._section_index]
     if section == nil then return nil end
 
-    local current_action = Memory.previous.mario_action
+    local current_action = Memory.current.mario_action
     if self._frame_counter >= section.timeout or current_action == section.end_action then
         self._section_index = self._section_index + 1
         self._frame_counter = 0
