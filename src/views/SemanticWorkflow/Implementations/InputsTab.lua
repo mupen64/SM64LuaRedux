@@ -113,7 +113,7 @@ local function controls_for_insert_and_remove()
         text = Locales.str("SEMANTIC_WORKFLOW_INPUTS_INSERT_SECTION"),
         tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_INSERT_SECTION_TOOL_TIP"),
     }) then
-        local new_section = Section.new(0x0C400201, 150) -- end action is "idle"
+        local new_section = Section.new(0x0C400201, Settings.semantic_workflow.default_section_timeout) -- end action is "idle"
         table.insert(sheet.sections, sheet.active_frame.section_index + 1, new_section)
         any_changes = true
     end

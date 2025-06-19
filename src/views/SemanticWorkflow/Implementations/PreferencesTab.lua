@@ -11,6 +11,7 @@ function __impl.allocate_uids(enum_next)
     return {
         ToggleEditEntireState = enum_next(),
         ToggleFastForward = enum_next(),
+        DefaultSectionTimeout = enum_next(),
     }
 end
 
@@ -33,5 +34,18 @@ function __impl.render(draw)
             text = "Fast Forward",
             is_checked = Settings.semantic_workflow.fast_foward,
         }
+    )
+
+    draw:text(grid_rect(2, top + control_height * 2, 4, control_height), "end", "Default section timeout:")
+    Settings.semantic_workflow.default_section_timeout = math.max(
+        ugui.numberbox(
+            {
+                uid = UID.DefaultSectionTimeout,
+                rectangle = grid_rect(6, top + control_height * 2, 2, control_height),
+                places = 3,
+                value = Settings.semantic_workflow.default_section_timeout,
+            }
+        ),
+        1
     )
 end

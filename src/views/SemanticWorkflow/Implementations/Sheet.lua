@@ -28,7 +28,7 @@ function __impl.new(name, create_savestate)
         start_g_t = global_timer,
         preview_frame = { section_index = 1, frame_index = 1 },
         active_frame = { section_index = 1, frame_index = 1 },
-        sections = { Section.new(0x0C400201, 150) }, -- end action is "idle"
+        sections = { Section.new(0x0C400201, Settings.semantic_workflow.default_section_timeout) }, -- end action is "idle"
         name = name,
         _savestate = nil,
         busy = false,

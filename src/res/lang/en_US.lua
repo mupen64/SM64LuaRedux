@@ -307,6 +307,8 @@ Each setting may get an individual help page here in the future. For now, here i
 - Edit entire state: Copy the entire joystick state of the active frame to the selected range in the "Inputs" page. When turned off, only the changed values will be copied to the selected range.
 
 - Fast Forward: Play the game back at maximum speed when re-running a sheet (e.g. when making changes). When turned off, the game will play back in real time instead.
+
+- Default section timeout: The number of frames after which a newly created section will time out by default.
 ]],
                 },
             },

@@ -58,6 +58,7 @@ Settings = {
     semantic_workflow = {
         edit_entire_state = true,
         fast_foward = true,
+        default_section_timeout = 60,
     },
     variables = {
         {
