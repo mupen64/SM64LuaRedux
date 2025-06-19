@@ -11,7 +11,7 @@ return {
             local foreground_color = theme.listbox_item.text[1]
 
             local control_height = 0.75
-            local top = 16 - control_height
+            local top = 0
             local button_position = grid_rect(7, 0, 1, 1)
             if ugui.button(
                 {
@@ -55,9 +55,10 @@ return {
             if ugui.button(
                 {
                     uid = UID.HelpBack,
-                    rectangle = grid_rect(5, top, 1.5, control_height),
-                    text = Locales.str("SEMANTIC_WORKFLOW_HELP_PREV_PAGE"),
-                    is_enabled = page > 1
+                    rectangle = grid_rect(6, top, 0.5, 1),
+                    text = "<",
+                    is_enabled = page > 1,
+                    tooltip = Locales.str("SEMANTIC_WORKFLOW_HELP_PREV_PAGE"),
                 }
             ) then
                 page = page - 1
@@ -66,9 +67,10 @@ return {
             if ugui.button(
                 {
                     uid = UID.HelpNext,
-                    rectangle = grid_rect(6.5, top, 1.5, control_height),
-                    text = Locales.str("SEMANTIC_WORKFLOW_HELP_NEXT_PAGE"),
-                    is_enabled = page < #pages
+                    rectangle = grid_rect(6.5, top, 0.5, 1),
+                    text = ">",
+                    is_enabled = page < #pages,
+                    tooltip = Locales.str("SEMANTIC_WORKFLOW_HELP_NEXT_PAGE"),
                 }
             ) then
                 page = page + 1

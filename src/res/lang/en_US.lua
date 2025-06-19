@@ -196,7 +196,7 @@ By managing so-called "Semantic Workflow Projects", it is possible to author ent
 
 This tool is separated into several tab pages that you can select at the top. Once you have started work on a Semantic Workflow Project, a dedicated help page will be available for each page just like for this one.
 
-Click "next" to learn more about how to get started.
+Click the "next" arrow at the top to learn more about how to get started.
 ]],
                 },
                 {
