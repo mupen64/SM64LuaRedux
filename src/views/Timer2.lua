@@ -65,7 +65,7 @@ return {
         draw_square_button(40, "L", "L", grid_rect(1 + x_offset, 4, 3, 1), BreitbandGraphics.hex_to_color("#DDDDDD"))
         draw_square_button(45, "R", "R", grid_rect(4 + x_offset, 4, 3, 1), BreitbandGraphics.hex_to_color("#DDDDDD"))
         draw_square_button(50, "Z", "Z", grid_rect(0 + x_offset, 5, 1, 3), BreitbandGraphics.hex_to_color("#DDDDDD"))
-        draw_square_button(55, "S", "S", grid_rect(1 + x_offset, 6 + 0.5, 1, 1),
+        draw_square_button(55, "start", "S", grid_rect(1 + x_offset, 6 + 0.5, 1, 1),
             BreitbandGraphics.hex_to_color("#EE1C24"))
         draw_square_button(60, "B", "B", grid_rect(2 + x_offset, 5 + 0.5, 1, 1),
             BreitbandGraphics.hex_to_color("#009245"))
