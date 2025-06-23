@@ -108,7 +108,7 @@ return {
     end,
 
     update = function()
-        if not last_pressed_hotkey then
+        if not emu.ismainwindowinforeground() or not last_pressed_hotkey then
             return
         end
 
