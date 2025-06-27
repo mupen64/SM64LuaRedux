@@ -9,6 +9,20 @@ function CloneInto(destination, source)
     return changes
 end
 
+function ReadAll(file)
+    local f = assert(io.open(file, "rb"))
+    local content = f:read("*all")
+    f:close()
+    return content
+end
+
+function WriteAll(file, content)
+    local f = assert(io.open(file, "wb"))
+    f:write(content)
+    f:close()
+    return content
+end
+
 local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")
 local Project = dofile(views_path .. "SemanticWorkflow/Definitions/Project.lua")
 local Help = dofile(views_path .. "SemanticWorkflow/Help.lua")

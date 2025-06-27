@@ -7,20 +7,6 @@ local __impl = __impl
 ---@type Section
 local Section = dofile(views_path .. "SemanticWorkflow/Definitions/Section.lua")
 
-local function read_all(file)
-    local f = assert(io.open(file, "rb"))
-    local content = f:read("*all")
-    f:close()
-    return content
-end
-
-local function write_all(file, content)
-    local f = assert(io.open(file, "wb"))
-    f:write(content)
-    f:close()
-    return content
-end
-
 function __impl.new(name, create_savestate)
     local global_timer = Memory.current.mario_global_timer
 
@@ -97,22 +83,22 @@ function __impl:run_to_preview(load_state)
 end
 
 function __impl:save(file)
-    write_all(file .. ".savestate", self._savestate)
-    persistence.store(
+    WriteAll(file .. ".savestate", self._savestate)
+    WriteAll(
         file,
-        {
+        json.encode({
             sections     = self.sections,
             name         = self.name,
             active_frame  = self.active_frame,
             preview_frame = self.preview_frame,
-        }
+        })
     )
 end
 
 function __impl:load(file)
     local contents = persistence.load(file);
     if contents ~= nil then
-        self._savestate = read_all(file .. ".savestate")
+        self._savestate = ReadAll(file .. ".savestate")
         CloneInto(self, contents)
     end
 end

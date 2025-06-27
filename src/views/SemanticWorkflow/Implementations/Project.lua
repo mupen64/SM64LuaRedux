@@ -28,6 +28,7 @@ function __impl.new()
         set_current_name = __impl.set_current_name,
         project_folder = __impl.project_folder,
         load = __impl.load,
+        save = __impl.save,
         add_sheet = __impl.add_sheet,
         remove_sheet = __impl.remove_sheet,
         select = __impl.select,
@@ -106,5 +107,15 @@ function __impl:load(meta)
         local new_sheet = Sheet.new(sheet_meta.name, false)
         new_sheet:load(project_folder .. sheet_meta.name .. ".sws")
         self.all[sheet_meta.name] = new_sheet
+    end
+end
+
+function __impl:save()
+    local json = json.encode(self.meta)
+    WriteAll(SemanticWorkflowProject.project_location, json)
+
+    local project_folder = SemanticWorkflowProject:project_folder()
+    for _, sheet_meta in ipairs(SemanticWorkflowProject.meta.sheets) do
+        SemanticWorkflowProject.all[sheet_meta.name]:save(project_folder .. sheet_meta.name .. ".sws")
     end
 end

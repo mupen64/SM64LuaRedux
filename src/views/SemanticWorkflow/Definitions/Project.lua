@@ -53,6 +53,8 @@ function cls_project:project_folder() end
 ---@param meta table The Project.meta field as stored in a semantic workflow project (*.swp) file.
 function cls_project:load(meta) end
 
+function cls_project:save() end
+
 __impl = cls_project
 dofile(views_path .. "SemanticWorkflow/Implementations/Project.lua")
 __impl = nil

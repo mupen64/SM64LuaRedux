@@ -143,13 +143,8 @@ function __impl.render(draw)
                 goto skipSave
             end
             SemanticWorkflowProject.project_location = path
-            persistence.store(path, SemanticWorkflowProject.meta)
         end
-        persistence.store(SemanticWorkflowProject.project_location, SemanticWorkflowProject.meta)
-        local project_folder = SemanticWorkflowProject:project_folder()
-        for _, sheet_meta in ipairs(SemanticWorkflowProject.meta.sheets) do
-            SemanticWorkflowProject.all[sheet_meta.name]:save(project_folder .. sheet_meta.name .. ".sws")
-        end
+        SemanticWorkflowProject:save()
     end
     ::skipSave::
 
