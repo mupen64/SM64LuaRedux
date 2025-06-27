@@ -246,6 +246,23 @@ After checking out a commit or branch, you will need to "Open" the .swp file aga
 You may even find it beneficial to manage other files with git, too, such as ghosts, recorded .m64 files, STROOP tracker configurations or Strat write-ups!
 ]],
                 },
+                {
+                    HEADING = "File versions",
+                    TEXT =
+[[
+The .sws and .swp files follow semantic versioning; that is, a <MAJOR>.<MINOR>.<PATCH> format.
+Compare the running script version (top right next to the help button) with the file version as seen in the Project tab to understand what's happening:
+
+MAJOR versions may be both upwards and downwards incompatible with each other.
+Upgrade or downgrade the script accordingly.
+
+MINOR versions may be upwards incompatible,
+for example when the higher MINOR file version introduces a new feature not yet supported by the lower script version.
+
+PATCH versions should be both upwards and downwards compatible within the same MINOR version, as they are meant for bugfixes only.
+However, as is the nature of bugs, this may sometimes not be done quite right ¯\_(ツ)_/¯
+]],
+                },
             },
         },
         INPUTS_TAB = {
