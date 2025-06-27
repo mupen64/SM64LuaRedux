@@ -56,7 +56,7 @@ local function draw_factory(theme)
             BreitbandGraphics.draw_text2({
                 rectangle = rect,
                 text = text,
-                align_x = horizontal_alignment,
+                align_x = BreitbandGraphics.alignment[horizontal_alignment],
                 align_y = BreitbandGraphics.alignment.center,
                 aliased = theme.pixelated_text,
                 color = self.foreground_color,
@@ -69,7 +69,7 @@ local function draw_factory(theme)
             BreitbandGraphics.draw_text2({
                 rectangle = rect,
                 text = text,
-                align_x = horizontal_alignment,
+                align_x = BreitbandGraphics.alignment[horizontal_alignment],
                 align_y = BreitbandGraphics.alignment.center,
                 aliased = theme.pixelated_text,
                 color = self.foreground_color,
