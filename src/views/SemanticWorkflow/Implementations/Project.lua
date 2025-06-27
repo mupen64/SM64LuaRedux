@@ -14,6 +14,7 @@ end
 function __impl.new()
     return {
         meta = {
+            version = SEMANTIC_WORKFLOW_FILE_VERSION,
             created_sheet_count = 0,
             selection_index = 0,
             sheets = {}
@@ -112,6 +113,7 @@ function __impl:load(file)
 end
 
 function __impl:save()
+    self.meta.version = SEMANTIC_WORKFLOW_FILE_VERSION
     local json = json.encode(self.meta)
     WriteAll(SemanticWorkflowProject.project_location, json)
 

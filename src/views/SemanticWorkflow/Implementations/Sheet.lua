@@ -11,6 +11,7 @@ function __impl.new(name, create_savestate)
     local global_timer = Memory.current.mario_global_timer
 
     local new_instance = {
+        version = SEMANTIC_WORKFLOW_FILE_VERSION,
         start_g_t = global_timer,
         preview_frame = { section_index = 1, frame_index = 1 },
         active_frame = { section_index = 1, frame_index = 1 },
@@ -83,12 +84,14 @@ function __impl:run_to_preview(load_state)
 end
 
 function __impl:save(file)
+    self.version = SEMANTIC_WORKFLOW_FILE_VERSION
     WriteAll(file .. ".savestate", self._savestate)
     WriteAll(
         file,
         json.encode({
-            sections     = self.sections,
-            name         = self.name,
+            version       = self.version,
+            sections      = self.sections,
+            name          = self.name,
             active_frame  = self.active_frame,
             preview_frame = self.preview_frame,
         })

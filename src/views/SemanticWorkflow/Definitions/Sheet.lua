@@ -1,6 +1,7 @@
 ---@diagnostic disable:missing-return
 
 ---@class Sheet
+---@field public version string The file version of this sheet.
 ---@field public preview_frame SelectionFrame The frame to which to proceed when re-running the game after a change.
 ---@field public active_frame SelectionFrame The frame whose controls to display in the "Inputs" page.
 ---@field public sections Section[] The sections to execute in order.

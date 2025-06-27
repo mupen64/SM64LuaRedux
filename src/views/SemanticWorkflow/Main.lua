@@ -1,3 +1,4 @@
+dofile(views_path .. "SemanticWorkflow/Version.lua")
 
 function CloneInto(destination, source)
     local changes = {}
