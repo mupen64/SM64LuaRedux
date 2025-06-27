@@ -96,7 +96,7 @@ function __impl:save(file)
 end
 
 function __impl:load(file)
-    local contents = persistence.load(file);
+    local contents = json.decode(ReadAll(file));
     if contents ~= nil then
         self._savestate = ReadAll(file .. ".savestate")
         CloneInto(self, contents)

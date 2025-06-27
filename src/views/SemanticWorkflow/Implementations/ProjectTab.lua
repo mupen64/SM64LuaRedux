@@ -6,7 +6,6 @@ __impl.name = "Project"
 __impl.help_key = "PROJECT_TAB"
 
 local Project = dofile(views_path .. "SemanticWorkflow/Definitions/Project.lua")
-local persistence = dofile(lib_path .. "persistence.lua")
 
 local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")[__impl.name]
 
@@ -115,7 +114,7 @@ function __impl.render(draw)
             SemanticWorkflowProject = Project.new()
             SemanticWorkflowProject.project_location = path
             SemanticWorkflowProject:add_sheet()
-            persistence.store(path, SemanticWorkflowProject.meta)
+            SemanticWorkflowProject:save()
         end
     end
     if ugui.button({
@@ -127,8 +126,7 @@ function __impl.render(draw)
         local path = iohelper.filediag("*.swp", 0)
         if string.len(path) > 0 then
             SemanticWorkflowProject = Project.new()
-            SemanticWorkflowProject.project_location = path
-            SemanticWorkflowProject:load(persistence.load(path))
+            SemanticWorkflowProject:load(path)
         end
     end
     if ugui.button({

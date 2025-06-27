@@ -49,9 +49,9 @@ function cls_project:rebase(index) end
 ---@return string | nil directory The directory in which the project file resides, or nil if the project has never been saved or loaded.
 function cls_project:project_folder() end
 
----Loads the semantic workflow sheets from the given meta data.
----@param meta table The Project.meta field as stored in a semantic workflow project (*.swp) file.
-function cls_project:load(meta) end
+---Loads the semantic workflow sheets from the given file.
+---@param file string The path to the semantic workflow project file (*.swp).
+function cls_project:load(file) end
 
 function cls_project:save() end
 

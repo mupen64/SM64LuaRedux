@@ -99,11 +99,12 @@ function __impl:project_folder()
     return self.project_location:match("(.*[/\\])")
 end
 
-function __impl:load(meta)
-    self.meta = meta
+function __impl:load(file)
+    self.project_location = file
+    CloneInto(self.meta, json.decode(ReadAll(file)))
     self.all = {}
     local project_folder = self:project_folder()
-    for _, sheet_meta in ipairs(meta.sheets) do
+    for _, sheet_meta in ipairs(self.meta.sheets) do
         local new_sheet = Sheet.new(sheet_meta.name, false)
         new_sheet:load(project_folder .. sheet_meta.name .. ".sws")
         self.all[sheet_meta.name] = new_sheet
