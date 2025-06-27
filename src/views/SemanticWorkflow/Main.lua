@@ -112,10 +112,12 @@ return {
         -- TODO: consider respecting valid bounding 'rectangle' result from this control
         selected_tab_index = ugui.tabcontrol({
             uid = UID.SelectTab,
-            rectangle = grid_rect(0, 0, 7, 1),
+            rectangle = grid_rect(0, 0, 6, 1),
             items = project_loaded and lualinq.select(Tabs, function(e) return e.name end) or { Tabs[1].name },
             selected_index = selected_tab_index,
         }).selected_index
+
+        draw:small_text(grid_rect(6, 0, 1, 1), "end", "v" .. SEMANTIC_WORKFLOW_FILE_VERSION)
 
         if ugui.button(
             {

@@ -60,6 +60,7 @@ return {
     SEMANTIC_WORKFLOW_CONTROL_ATAN_REVERSE = "Invert",
     SEMANTIC_WORKFLOW_CONTROL_MAG = "Magnitude:",
     SEMANTIC_WORKFLOW_CONTROL_SPDKICK = "Spdk",
+    SEMANTIC_WORKFLOW_PROJECT_FILE_VERSION = "File version: ",
     SEMANTIC_WORKFLOW_PROJECT_NO_SHEETS_AVAILABLE = "No semantic workflow sheets available.\nCreate one to proceed.",
     SEMANTIC_WORKFLOW_PROJECT_NEW = "New",
     SEMANTIC_WORKFLOW_PROJECT_NEW_TOOL_TIP = "Create a new project in a new location",

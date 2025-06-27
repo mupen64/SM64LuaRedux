@@ -102,7 +102,14 @@ function __impl.render(draw)
     end
 
     local top = 1
-    draw:small_text(grid_rect(0, top, 8, control_height), "left", SemanticWorkflowProject.project_location)
+    if SemanticWorkflowProject.project_location ~= nil then
+        draw:small_text(
+            grid_rect(0, top, 8, control_height),
+            "start",
+            SemanticWorkflowProject.project_location
+                .. "\n" .. Locales.str("SEMANTIC_WORKFLOW_PROJECT_FILE_VERSION") .. SemanticWorkflowProject.meta.version
+        )
+    end
     if ugui.button({
         uid = UID.NewProject,
         rectangle = grid_rect(0, top + 1, 1.5, control_height),
