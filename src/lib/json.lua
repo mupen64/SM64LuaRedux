@@ -24,6 +24,52 @@
 
 local json = { _version = "0.1.2" }
 
+-- orderedPairs implementation, as seen in http://lua-users.org/wiki/SortedIteration
+
+local function __genOrderedIndex( t )
+  local orderedIndex = {}
+  for key in pairs(t) do
+      table.insert( orderedIndex, key )
+  end
+  table.sort( orderedIndex )
+  return orderedIndex
+end
+
+local function orderedNext(t, state)
+  -- Equivalent of the next function, but returns the keys in the alphabetic
+  -- order. We use a temporary ordered key table that is stored in the
+  -- table being iterated.
+
+  local key = nil
+  -- print("orderedNext: state = "..tostring(state) )
+  if state == nil then
+      -- the first time, generate the index
+      t.__orderedIndex = __genOrderedIndex( t )
+      key = t.__orderedIndex[1]
+  else
+      -- fetch the next value
+      for i = 1,table.getn(t.__orderedIndex) do
+          if t.__orderedIndex[i] == state then
+              key = t.__orderedIndex[i+1]
+          end
+      end
+  end
+
+  if key then
+      return key, t[key]
+  end
+
+  -- no more value to return, cleanup
+  t.__orderedIndex = nil
+  return
+end
+
+orderedPairs = function(t)
+  -- Equivalent of the pairs() function on tables. Allows to iterate
+  -- in order
+  return orderedNext, t, nil
+end
+
 -------------------------------------------------------------------------------
 -- Encode
 -------------------------------------------------------------------------------
@@ -56,7 +102,10 @@ local function encode_nil(val)
 end
 
 
-local function encode_table(val, stack)
+local function encode_table(val, stack, depth)
+  local new_line = "\r\n" .. string.rep(" ", depth * 4)
+  local closing_new_line = "\r\n" .. string.rep(" ", (depth - 1) * 4)
+
   local res = {}
   stack = stack or {}
 
@@ -79,21 +128,21 @@ local function encode_table(val, stack)
     end
     -- Encode
     for i, v in ipairs(val) do
-      table.insert(res, encode(v, stack))
+      table.insert(res, encode(v, stack, depth + 1))
     end
     stack[val] = nil
-    return "[" .. table.concat(res, ",") .. "]"
+    return "[" .. new_line .. table.concat(res, "," .. new_line) .. closing_new_line .. "]"
 
   else
     -- Treat as an object
-    for k, v in pairs(val) do
+    for k, v in orderedPairs(val) do
       if type(k) ~= "string" then
         error("invalid table: mixed or invalid key types")
       end
-      table.insert(res, encode(k, stack) .. ":" .. encode(v, stack))
+      table.insert(res, encode(k, stack, depth + 1) .. ": " .. encode(v, stack, depth + 1))
     end
     stack[val] = nil
-    return "{" .. table.concat(res, ",") .. "}"
+    return "{" .. new_line .. table.concat(res, "," .. new_line) .. closing_new_line .."}"
   end
 end
 
@@ -121,18 +170,18 @@ local type_func_map = {
 }
 
 
-encode = function(val, stack)
+encode = function(val, stack, depth)
   local t = type(val)
   local f = type_func_map[t]
   if f then
-    return f(val, stack)
+    return f(val, stack, depth)
   end
   error("unexpected type '" .. t .. "'")
 end
 
 
 function json.encode(val)
-  return ( encode(val) )
+  return ( encode(val, nil, 1) )
 end
 
 

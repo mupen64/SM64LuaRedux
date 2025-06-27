@@ -23,3 +23,7 @@ end
 Locales.raw = function ()
     return locales[Settings.locale_index]
 end
+
+Locales.action = function (raw)
+    return Locales.raw().ACTIONS[raw] or string.format("%x", raw)
+end
