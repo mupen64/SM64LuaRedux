@@ -81,7 +81,7 @@ core_path = folder .. "core\\"
 lib_path = folder .. "lib\\"
 processors_path = folder .. "processors\\"
 
----@module 'breitbandgraphics'
+---@module 'BreitbandGraphics'
 BreitbandGraphics = dofile(lib_path .. "breitbandgraphics.lua")
 
 ---@module 'mupen-lua-ugui'
