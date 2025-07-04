@@ -12,7 +12,6 @@ function __impl.new(name, create_savestate)
 
     local new_instance = {
         version = SEMANTIC_WORKFLOW_FILE_VERSION,
-        start_g_t = global_timer,
         preview_frame = { section_index = 1, frame_index = 1 },
         active_frame = { section_index = 1, frame_index = 1 },
         sections = { Section.new(0x0C400201, Settings.semantic_workflow.default_section_timeout) }, -- end action is "idle"

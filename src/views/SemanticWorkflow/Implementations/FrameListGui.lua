@@ -113,8 +113,6 @@ local function draw_headers(sheet, draw, view_index, button_draw_data)
     local background_color = interpolate_vectors_to_int(draw.background_color, {r = 127, g = 127, b = 127}, 0.25)
     BreitbandGraphics.fill_rectangle(grid_rect(0, ROW0, COL_1, ROW2 - ROW0, 0), background_color)
 
-    draw:text(grid_rect(0, ROW0, 2, 1), "start", Locales.str("SEMANTIC_WORKFLOW_FRAMELIST_START") .. sheet.start_g_t)
-
     draw:text(grid_rect(3, ROW0, 1, 0.5), "start", Locales.str("SEMANTIC_WORKFLOW_FRAMELIST_NAME"))
     local prev_font_size = ugui.standard_styler.params.font_size
     ugui.standard_styler.params.font_size = ugui.standard_styler.params.font_size * 0.75
