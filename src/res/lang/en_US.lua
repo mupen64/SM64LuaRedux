@@ -233,7 +233,7 @@ The "Save" button will always save over the currently loaded project file withou
                     TEXT =
 [[
 Once you are satisfied with your work, you will probably want to record it into a .m64 file.
-To do this, open a .m64 file in mupen as normal and let it play until a state that matches the savestate of the first sheet you want to play back.
+To do this, open a .m64 file in mupen as normal and let it play until a state that matches the savestate of the first sheet you want to play back semantically.
 Then enter read/write mode so that frames can be recorded.
 You may also achieve this by simply starting a new recording from the savestate of the first sheet.
 
@@ -241,7 +241,7 @@ Then, hit the right pointing arrows ("Play without loading .st") for each sheet 
 This, of course, assumes that the Sheets are "stitched together" correctly, i.e. that each Sheet you click starts where the previous Sheet ends (i.e. where its preview frame ends up being).
 
 Do not play back .m64 movies while authoring Sheets, as this will produce unpredictable inputs.
-When playing back a .m64 file, make sure that the "Disable" option is selected in the Project's Sheet list.
+When playing back a .m64 file, make sure that no sheet is selected in the Project's Sheet list.
 ]],
                 },
                 {
@@ -285,24 +285,27 @@ However, as is the nature of bugs, this may sometimes not be done quite right ¯
                     HEADING = "Overview",
                     TEXT =
 [[
-Click the "#Section" column in the Section List to select a frame to preview.
+Click the "#Section" column in the Section List to select the "preview frame" (highlighted in red).
 You can expand and collapse sections that have more than one initial input frame.
-Click the middle column in the Section List to select the "active" frame, which is used for editing (more on that on the next help page).
+Click the middle column in the Section List to select the "active frame" (highlighted in green), which is used for editing (more on that on the next help page).
 
-Whenever you make changes to any inputs (e.g. change any button inputs), the game is going to be replayed to the preview frame (highlighted in red) from the start of the Sheet with the new inputs.
+Whenever you make changes to any inputs (e.g. change any button inputs), the game is going to be replayed to the preview frame from the start of the Sheet with the new inputs.
+
+The "+Section" and "-Section" buttons add and remove a section at the currently selected section respectively.
+A sheet must always have at least one section.
 
 The "+Input" and "-Input" buttons add and remove a frame at the selected frame in the selected section respectively.
 This is useful to initiate a new action such as a long jump, for example after landing from a previous rollout.
 
-The controls at the bottom behave similarly to the standard "TAS" view you might be familiar with, just in a more condensed layout.
+The controls at the bottom behave similarly to the standard "TAS" view you may be familiar with, just in a more condensed layout.
 ]],
                 },
                 {
                     HEADING = "Editing",
                     TEXT =
 [[
-You can select a range of joystick inputs to edit by left clicking and dragging over the mini-joysticks in the desired range.
-The selected range will follow the "active" frame highlighted by a green border.
+You can select a range of joystick inputs to edit by left clicking and dragging over the mini-joysticks in the desired range. Hold the CTRL key to not reset the selection when left clicking.
+The selected range will follow the active frame highlighted by a green border.
 Its values will be displayed in the joystick controls at the bottom, and when you make any changes, those values will copied to the selected range.
 
 If the 'Edit entire state' toggle in the preferences page is off, only the changes made to the active frame (rather than all its values) will be copied to the selected range.
@@ -319,7 +322,7 @@ This is not affected by and does not affect your selection or active frame.
 [[
 Arctan straining works similarly to how it does in the TAS tab.
 Clicking the 'Enable' button will enable arctan straining for the selected input frames, but will not set the 'start' and 'N' variables.
-To do so, click the 'Retime...' button, then select the desired start frame, followed by the desired end frame.
+To do so, click the 'Retime...' button, then select the desired start frame (inclusive), followed by the desired end frame (exclusive).
 You can still manually adjust the parameters as needed afterwards.
 ]]
                 }
