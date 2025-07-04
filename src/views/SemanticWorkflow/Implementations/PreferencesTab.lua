@@ -22,7 +22,7 @@ function __impl.render(draw)
         {
             uid = UID.ToggleEditEntireState,
             rectangle = grid_rect(0, top, 8, Gui.MEDIUM_CONTROL_HEIGHT),
-            text = "Edit entire state",
+            text = Locales.str("SEMANTIC_WORKFLOW_PREFERENCES_EDIT_ENTIRE_STATE"),
             is_checked = Settings.semantic_workflow.edit_entire_state,
         }
     )
@@ -30,12 +30,16 @@ function __impl.render(draw)
         {
             uid = UID.ToggleFastForward,
             rectangle = grid_rect(0, top + Gui.MEDIUM_CONTROL_HEIGHT, 8, Gui.MEDIUM_CONTROL_HEIGHT),
-            text = "Fast Forward",
+            text = Locales.str("SEMANTIC_WORKFLOW_PREFERENCES_FAST_FORWARD"),
             is_checked = Settings.semantic_workflow.fast_foward,
         }
     )
 
-    draw:text(grid_rect(2, top + Gui.MEDIUM_CONTROL_HEIGHT * 2, 4, Gui.MEDIUM_CONTROL_HEIGHT), "end", "Default section timeout:")
+    draw:text(
+        grid_rect(2, top + Gui.MEDIUM_CONTROL_HEIGHT * 2, 4, Gui.MEDIUM_CONTROL_HEIGHT),
+        "end",
+        Locales.str("SEMANTIC_WORKFLOW_PREFERENCES_DEFAULT_SECTION_TIMEOUT")
+    )
     Settings.semantic_workflow.default_section_timeout = math.max(
         ugui.numberbox(
             {

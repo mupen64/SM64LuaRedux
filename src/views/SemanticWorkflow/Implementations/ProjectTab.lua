@@ -60,16 +60,15 @@ end
 
 local function render_confirm_deletion_prompt(sheet_index)
     return create_confirm_dialog(
-        "[Confirm deletion]\n\nAre you sure you want to delete \"" .. SemanticWorkflowProject.meta.sheets[sheet_index].name .. "\"?\nThis action cannot be undone.",
+        Locales.str("SEMANTIC_WORKFLOW_PROJECT_CONFIRM_SHEET_DELETION_1")
+        .. SemanticWorkflowProject.meta.sheets[sheet_index].name
+        .. Locales.str("SEMANTIC_WORKFLOW_PROJECT_CONFIRM_SHEET_DELETION_2"),
         function() SemanticWorkflowProject:remove_sheet(sheet_index) end
     )
 end
 
 local RenderConfirmPurgeDialog = create_confirm_dialog(
-    "[Confirm project purge]\n\n"
-    .."Are you sure you want to purge unused sheets from the project directory?\n"
-    .."Unrelated files (not ending with .sws or .sws.savestate) will not be touched.\n"
-    .."This action cannot be undone.",
+    Locales.str("SEMANTIC_WORKFLOW_PROJECT_CONFIRM_PURGE"),
     function()
         local ignored_files = {}
         local project_folder = SemanticWorkflowProject:project_folder()

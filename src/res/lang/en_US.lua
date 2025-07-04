@@ -70,6 +70,16 @@ return {
     SEMANTIC_WORKFLOW_PROJECT_SAVE_TOOL_TIP = "Save the current project (no confirmation!)",
     SEMANTIC_WORKFLOW_PROJECT_PURGE = "Purge",
     SEMANTIC_WORKFLOW_PROJECT_PURGE_TOOL_TIP = "Remove files that do not belong to this project",
+    SEMANTIC_WORKFLOW_PROJECT_CONFIRM_PURGE =
+[[
+[Confirm project purge]
+
+Are you sure you want to purge unused sheets from the project directory?
+Unrelated files (not ending with .sws or .sws.savestate) will not be touched.
+This action cannot be undone.
+]],
+    SEMANTIC_WORKFLOW_PROJECT_CONFIRM_SHEET_DELETION_1 = "[Confirm deletion]\n\nAre you sure you want to delete \"",
+    SEMANTIC_WORKFLOW_PROJECT_CONFIRM_SHEET_DELETION_2 = "\"?\nThis action cannot be undone.",
     SEMANTIC_WORKFLOW_PROJECT_DISABLE_TOOL_TIP = "Unselect sheet",
     SEMANTIC_WORKFLOW_PROJECT_SELECT_TOOL_TIP = "Select and run sheet",
     SEMANTIC_WORKFLOW_PROJECT_ADD_SHEET = "Add Sheet...",
@@ -95,6 +105,9 @@ return {
     SEMANTIC_WORKFLOW_INPUTS_INSERT_INPUT_TOOL_TIP = "Insert frame after selected",
     SEMANTIC_WORKFLOW_INPUTS_DELETE_INPUT = "-Input",
     SEMANTIC_WORKFLOW_INPUTS_DELETE_INPUT_TOOL_TIP = "Delete selected frame",
+    SEMANTIC_WORKFLOW_PREFERENCES_EDIT_ENTIRE_STATE = "Edit entire state",
+    SEMANTIC_WORKFLOW_PREFERENCES_FAST_FORWARD = "Fast Forward",
+    SEMANTIC_WORKFLOW_PREFERENCES_DEFAULT_SECTION_TIMEOUT = "Default section timeout:",
     -- Settings Tab
     SETTINGS_VISUALS_TAB_NAME = "Visuals",
     SETTINGS_VARWATCH_TAB_NAME = "Varwatch",
