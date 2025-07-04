@@ -1,6 +1,6 @@
 ---@diagnostic disable:missing-return
 
----@class Project
+---@class Project Describes the data required to work with and store multiple sheets.
 ---@field public meta table Metadata about the project that is stored into the semantic workflow project file (*.swp).
 ---@field public all table All semantic workflow sheets as loaded from their respective *.sws files in order.
 ---@field public project_location string The location of the semantic workflow project file (*.swp).
@@ -11,7 +11,7 @@ local cls_project = {}
 ---@return Project project The new project.
 function cls_project.new() end
 
----Retrieves the current sheet, raising error when it is nil.
+---Retrieves the current sheet, raising an error when it is nil.
 ---@return Sheet current The current Sheet, never nil.
 function cls_project:asserted_current() end
 

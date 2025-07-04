@@ -1,7 +1,7 @@
 ---@diagnostic disable:missing-return
 
----@class Sheet
----@field public version string The file version of this sheet.
+---@class Sheet Describes the data required to manage, store and edit the ordered sections of a sheet.
+---@field public version string The file version of this sheet. See Version.lua for more information.
 ---@field public preview_frame SelectionFrame The frame to which to proceed when re-running the game after a change.
 ---@field public active_frame SelectionFrame The frame whose controls to display in the "Inputs" page.
 ---@field public sections Section[] The sections to execute in order.
@@ -9,7 +9,7 @@
 ---@field public busy boolean Whether the sheet is waiting for the game to run until its preview frame.
 ---@field private _section_index integer The nth section that is currently being played.
 ---@field private _frame_counter integer The nth frame of the current section that is currently being played.
----@field private _update_pending boolean Whether a change has been made that demands rerunning the sheet until its preview frame.
+---@field private _update_pending boolean Whether a change has been made that demands re-running the sheet until its preview frame.
 ---@field private _savestate ByteBuffer The savestate this sheet runs from.
 local cls_sheet = {}
 
@@ -24,7 +24,7 @@ local cls_sheet = {}
 ---@return Sheet sheet The new sheet.
 function cls_sheet.new(name, create_savestate) end
 
----Retrieves the inputs for the next frame and advances this sheet's internal counters
+---Retrieves the inputs for the next frame and advances this sheet's internal counters.
 ---such that sequential invocations will yield the appropriate frames to advance the game with.
 ---@return SectionInputs inputs The inputs to advance the game's next frame with.
 function cls_sheet:evaluate_frame() end

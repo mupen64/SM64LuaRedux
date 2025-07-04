@@ -1,4 +1,4 @@
----@class InputsTab : Tab
+---@class InputsTab : Tab The inputs tab.
 local cls_inputs_tab = {}
 
 __impl = cls_inputs_tab

@@ -80,7 +80,7 @@ local function draw_factory(theme)
     }
 end
 
----Retrieves a TASState as determined by the currently active semantic workflow for the current frame identified by the current global timer value.
+---Retrieves a TASState as determined by the currently active semantic workflow for the current frame.
 ---
 ---If the current semantic workflow does not define what to do for this frame, or there is no current semantic workflow, nil is returned instead.
 ---

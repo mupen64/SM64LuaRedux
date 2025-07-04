@@ -1,4 +1,4 @@
----@class PreferencesTab : Tab
+---@class PreferencesTab : Tab The preferences tab. May be removed in the future.
 local cls_preferences_tab = {}
 
 __impl = cls_preferences_tab
