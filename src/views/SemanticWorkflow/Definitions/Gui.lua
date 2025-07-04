@@ -1,7 +1,11 @@
 ---@diagnostic disable:missing-return
 
 ---@class Gui Encapsulates common functionality that complex user interfaces share.
-local cls_gui = {}
+local cls_gui <const> = {
+    LARGE_CONTROL_HEIGHT = 1.0,
+    MEDIUM_CONTROL_HEIGHT = 0.75,
+    SMALL_CONTROL_HEIGHT = 0.50,
+}
 
 ---Allocates UIDs for specific Gui subtype
 ---@param enum_next fun(count?: integer): integer A function that will generate a new UID whenever called.
@@ -16,3 +20,5 @@ function cls_gui.render(draw) end
 ---@field name string The name to display for this tab and the key in the UID table for this tab.
 ---@field help_key string The key by which to look up the help page text as well as the tab title for this tab.
 local cls_tab = {}
+
+return cls_gui

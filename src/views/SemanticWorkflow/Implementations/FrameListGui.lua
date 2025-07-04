@@ -76,9 +76,9 @@ end
 
 ---@alias IterateInputsCallback fun(section: Section, input: SectionInputs, section_index: integer, total_inputs_counted: integer, input_index: integer): boolean?
 
----@function Iterates all sections as an input row, including their follow-up frames for non-collapsed sections
----@param sheet Sheet The sheet over whose sections to iterate
----@param callback IterateInputsCallback? an optional function that, when it returns true, terminates the enumeration
+---@function Iterates all sections as an input row, including their follow-up frames for non-collapsed sections.
+---@param sheet Sheet The sheet over whose sections to iterate.
+---@param callback IterateInputsCallback? an optional function that, when it returns true, terminates the enumeration.
 local function iterate_input_rows(sheet, callback)
     local total_inputs_counted = 1
     local total_sections_counted = 1

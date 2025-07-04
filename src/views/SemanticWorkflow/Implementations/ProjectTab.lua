@@ -6,6 +6,7 @@ __impl.name = "Project"
 __impl.help_key = "PROJECT_TAB"
 
 local Project = dofile(views_path .. "SemanticWorkflow/Definitions/Project.lua")
+local Gui = dofile(views_path .. "SemanticWorkflow/Definitions/Gui.lua")
 
 local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")[__impl.name]
 
@@ -23,11 +24,9 @@ function __impl.allocate_uids(enum_next)
     }
 end
 
-local control_height = 0.75
-
 local function create_confirm_dialog(prompt, on_confirmed)
     return function()
-        local top = 15 - control_height
+        local top = 15 - Gui.MEDIUM_CONTROL_HEIGHT
 
         local theme = Styles.theme()
 
@@ -43,7 +42,7 @@ local function create_confirm_dialog(prompt, on_confirmed)
 
         if ugui.button({
             uid = UID.ConfirmationYes,
-            rectangle = grid_rect(4, top, 2, control_height),
+            rectangle = grid_rect(4, top, 2, Gui.MEDIUM_CONTROL_HEIGHT),
             text = Locales.str("YES"),
         }) then
             on_confirmed()
@@ -51,7 +50,7 @@ local function create_confirm_dialog(prompt, on_confirmed)
         end
         if ugui.button({
             uid = UID.ConfirmationNo,
-            rectangle = grid_rect(2, top, 2, control_height),
+            rectangle = grid_rect(2, top, 2, Gui.MEDIUM_CONTROL_HEIGHT),
             text = Locales.str("NO"),
         }) then
             SemanticWorkflowDialog = nil
@@ -104,7 +103,7 @@ function __impl.render(draw)
     local top = 1
     if SemanticWorkflowProject.project_location ~= nil then
         draw:small_text(
-            grid_rect(0, top, 8, control_height),
+            grid_rect(0, top, 8, Gui.MEDIUM_CONTROL_HEIGHT),
             "start",
             SemanticWorkflowProject.project_location
                 .. "\n" .. Locales.str("SEMANTIC_WORKFLOW_PROJECT_FILE_VERSION") .. SemanticWorkflowProject.meta.version
@@ -112,7 +111,7 @@ function __impl.render(draw)
     end
     if ugui.button({
         uid = UID.NewProject,
-        rectangle = grid_rect(0, top + 1, 1.5, control_height),
+        rectangle = grid_rect(0, top + 1, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
         text = Locales.str("SEMANTIC_WORKFLOW_PROJECT_NEW"),
         tooltip = Locales.str("SEMANTIC_WORKFLOW_PROJECT_NEW_TOOL_TIP"),
     }) then
@@ -126,7 +125,7 @@ function __impl.render(draw)
     end
     if ugui.button({
         uid = UID.OpenProject,
-        rectangle = grid_rect(1.5, top + 1, 1.5, control_height),
+        rectangle = grid_rect(1.5, top + 1, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
         text = Locales.str("SEMANTIC_WORKFLOW_PROJECT_OPEN"),
         tooltip = Locales.str("SEMANTIC_WORKFLOW_PROJECT_OPEN_TOOL_TIP"),
     }) then
@@ -138,7 +137,7 @@ function __impl.render(draw)
     end
     if ugui.button({
         uid = UID.SaveProject,
-        rectangle = grid_rect(3, top + 1, 1.5, control_height),
+        rectangle = grid_rect(3, top + 1, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
         text = Locales.str("SEMANTIC_WORKFLOW_PROJECT_SAVE"),
         tooltip = Locales.str("SEMANTIC_WORKFLOW_PROJECT_SAVE_TOOL_TIP"),
     }) then
@@ -155,7 +154,7 @@ function __impl.render(draw)
 
     if ugui.button({
         uid = UID.PurgeProject,
-        rectangle = grid_rect(4.5, top + 1, 1.5, control_height),
+        rectangle = grid_rect(4.5, top + 1, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
         text = Locales.str("SEMANTIC_WORKFLOW_PROJECT_PURGE"),
         tooltip = Locales.str("SEMANTIC_WORKFLOW_PROJECT_PURGE_TOOL_TIP"),
         is_enabled = SemanticWorkflowProject.project_location ~= nil,
@@ -173,7 +172,7 @@ function __impl.render(draw)
 
     local uid = UID.ProjectSheetBase
     for i = 1, #available_sheets, 1 do
-        local y = top + (i - 1) * control_height
+        local y = top + (i - 1) * Gui.MEDIUM_CONTROL_HEIGHT
         local is_checked = not SemanticWorkflowProject.disabled and i == SemanticWorkflowProject.meta.selection_index
         local tooltip = Locales.str(
             is_checked
@@ -183,7 +182,7 @@ function __impl.render(draw)
 
         if ugui.toggle_button({
             uid = uid,
-            rectangle = grid_rect(0, y, 3, control_height),
+            rectangle = grid_rect(0, y, 3, Gui.MEDIUM_CONTROL_HEIGHT),
             text = available_sheets[i],
             tooltip = i <= #SemanticWorkflowProject.meta.sheets and tooltip or nil,
             is_checked = is_checked,
@@ -207,7 +206,7 @@ function __impl.render(draw)
             width = width or 0.5
             local result = ugui.button({
                 uid = uid,
-                rectangle = grid_rect(x, y, width, control_height),
+                rectangle = grid_rect(x, y, width, Gui.MEDIUM_CONTROL_HEIGHT),
                 text = text,
                 tooltip = tooltip,
                 is_enabled = enabled,

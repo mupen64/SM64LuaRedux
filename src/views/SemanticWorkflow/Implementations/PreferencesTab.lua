@@ -6,6 +6,7 @@ __impl.name = "Preferences"
 __impl.help_key = "PREFERENCES_TAB"
 
 local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")[__impl.name]
+local Gui = dofile(views_path .. "SemanticWorkflow/Definitions/Gui.lua")
 
 function __impl.allocate_uids(enum_next)
     return {
@@ -15,14 +16,12 @@ function __impl.allocate_uids(enum_next)
     }
 end
 
-local control_height = 0.75
-
 function __impl.render(draw)
     local top = 1
     Settings.semantic_workflow.edit_entire_state = ugui.toggle_button(
         {
             uid = UID.ToggleEditEntireState,
-            rectangle = grid_rect(0, top, 8, control_height),
+            rectangle = grid_rect(0, top, 8, Gui.MEDIUM_CONTROL_HEIGHT),
             text = "Edit entire state",
             is_checked = Settings.semantic_workflow.edit_entire_state,
         }
@@ -30,18 +29,18 @@ function __impl.render(draw)
     Settings.semantic_workflow.fast_foward = ugui.toggle_button(
         {
             uid = UID.ToggleFastForward,
-            rectangle = grid_rect(0, top + control_height, 8, control_height),
+            rectangle = grid_rect(0, top + Gui.MEDIUM_CONTROL_HEIGHT, 8, Gui.MEDIUM_CONTROL_HEIGHT),
             text = "Fast Forward",
             is_checked = Settings.semantic_workflow.fast_foward,
         }
     )
 
-    draw:text(grid_rect(2, top + control_height * 2, 4, control_height), "end", "Default section timeout:")
+    draw:text(grid_rect(2, top + Gui.MEDIUM_CONTROL_HEIGHT * 2, 4, Gui.MEDIUM_CONTROL_HEIGHT), "end", "Default section timeout:")
     Settings.semantic_workflow.default_section_timeout = math.max(
         ugui.numberbox(
             {
                 uid = UID.DefaultSectionTimeout,
-                rectangle = grid_rect(6, top + control_height * 2, 2, control_height),
+                rectangle = grid_rect(6, top + Gui.MEDIUM_CONTROL_HEIGHT * 2, 2, Gui.MEDIUM_CONTROL_HEIGHT),
                 places = 3,
                 value = Settings.semantic_workflow.default_section_timeout,
             }

@@ -10,7 +10,6 @@ return {
             local theme = Styles.theme()
             local foreground_color = theme.listbox_item.text[1]
 
-            local control_height = 0.75
             local top = 0
             local button_position = grid_rect(7, 0, 1, 1)
             if ugui.button(
