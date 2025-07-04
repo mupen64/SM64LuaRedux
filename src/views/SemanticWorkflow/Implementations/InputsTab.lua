@@ -76,8 +76,6 @@ end
 
 local function any_entries(table) for _ in pairs(table) do return true end return false end
 
---#endregion
-
 --#region Insert and remove
 
 local function controls_for_insert_and_remove()
@@ -528,6 +526,8 @@ local function joystick_controls_for_selected(draw, edited_section, edited_input
         current_sheet:run_to_preview()
     end
 end
+
+--#endregion
 
 --#endregion
 
