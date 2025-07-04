@@ -6,6 +6,8 @@ __impl.name = "Preferences"
 __impl.help_key = "PREFERENCES_TAB"
 
 local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")[__impl.name]
+
+---@type Gui
 local Gui = dofile(views_path .. "SemanticWorkflow/Definitions/Gui.lua")
 
 function __impl.allocate_uids(enum_next)

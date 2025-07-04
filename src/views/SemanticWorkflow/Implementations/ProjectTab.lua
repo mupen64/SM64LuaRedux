@@ -5,7 +5,10 @@ local __impl = __impl
 __impl.name = "Project"
 __impl.help_key = "PROJECT_TAB"
 
+---@type Project
 local Project = dofile(views_path .. "SemanticWorkflow/Definitions/Project.lua")
+
+---@type Gui
 local Gui = dofile(views_path .. "SemanticWorkflow/Definitions/Gui.lua")
 
 local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")[__impl.name]

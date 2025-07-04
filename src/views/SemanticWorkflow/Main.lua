@@ -25,7 +25,10 @@ function WriteAll(file, content)
 end
 
 local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")
+
+---@type Project
 local Project = dofile(views_path .. "SemanticWorkflow/Definitions/Project.lua")
+
 local Help = dofile(views_path .. "SemanticWorkflow/Help.lua")
 
 ---@type Project
