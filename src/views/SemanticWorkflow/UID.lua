@@ -8,9 +8,9 @@ local function enum_next(count)
     return current
 end
 
----Allocates uids for a Gui type
----@param gui Gui The concrete subtype of Gui to allocate uids for
----@return table lookup The lookup table for that specific Gui's allocated uids
+---Allocates uids for a Gui type.
+---@param gui Gui The concrete subtype of Gui to allocate uids for.
+---@return table lookup The lookup table for that specific Gui's allocated uids.
 local function from_gui(gui)
     local table = {}
     for k, v in pairs(gui.allocate_uids(enum_next)) do
