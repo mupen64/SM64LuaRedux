@@ -20,7 +20,6 @@ function __impl.new()
             sheets = {}
         },
         all = {},
-        copy_entire_state = true,
         project_location = nil,
         disabled = false,
 
