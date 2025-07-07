@@ -46,6 +46,7 @@ function __impl.allocate_uids(enum_next)
         JoypadSpinnerY = enum_next(3),
         GoalAngle = enum_next(),
         GoalMag = enum_next(),
+        HighMag = enum_next(),
         StrainLeft = enum_next(),
         StrainRight = enum_next(),
         StrainAlways = enum_next(),
@@ -229,7 +230,12 @@ end
 --#region Joystick Controls
 
 local function magnitude_controls(draw, sheet, new_values, top)
-    draw:text(grid_rect(2, top, 2, Gui.MEDIUM_CONTROL_HEIGHT), "end", Locales.str("SEMANTIC_WORKFLOW_CONTROL_MAG"))
+    new_values.high_magnitude = ugui.toggle_button({
+        uid = UID.HighMag,
+        rectangle = grid_rect(2, top, 2, Gui.MEDIUM_CONTROL_HEIGHT),
+        text = Locales.str("SEMANTIC_WORKFLOW_CONTROL_HIGH_MAG"),
+        is_checked = new_values.high_magnitude,
+    })
     new_values.goal_mag = ugui.numberbox({
         uid = UID.GoalMag,
         rectangle = grid_rect(4, top, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
