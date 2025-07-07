@@ -121,7 +121,6 @@ function __impl.render(draw)
         if string.len(path) > 0 then
             SemanticWorkflowProject = Project.new()
             SemanticWorkflowProject.project_location = path
-            SemanticWorkflowProject:add_sheet()
             SemanticWorkflowProject:save()
         end
     end
