@@ -1,12 +1,24 @@
+local override
 return {
-    process = function(input)
-        local override = CurrentSemanticWorkflowOverride()
-        if override then
-            TASState = override.tas_state
-            return override.joy
-        else
-            TASState = DefaultTASState
+    transform = {
+        process = function(input)
+            override = CurrentSemanticWorkflowOverride()
+            if override then
+                TASState = ugui.internal.deep_clone(override.tas_state)
+                return ugui.internal.deep_clone(override.joy)
+            else
+                TASState = DefaultTASState
+                return input
+            end
+        end
+    },
+    readback = {
+        process = function(input)
+            if override then
+                override.joy.X = input.X
+                override.joy.Y = input.Y
+            end
             return input
         end
-    end
+    }
 }

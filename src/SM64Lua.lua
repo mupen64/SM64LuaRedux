@@ -133,13 +133,15 @@ local views = {
     dofile(views_path .. "Timer2.lua"),
 }
 
+local semantic_workflow = dofile(processors_path .. "SemanticWorkflow.lua")
 local processors = {
-    dofile(processors_path .. "SemanticWorkflow.lua"),
+    semantic_workflow.transform,
     dofile(processors_path .. "Walk.lua"),
     dofile(processors_path .. "Swimming.lua"),
     dofile(processors_path .. "Wallkicker.lua"),
     dofile(processors_path .. "Grind.lua"),
     dofile(processors_path .. "Framewalk.lua"),
+    semantic_workflow.readback,
 }
 
 Notifications = dofile(views_path .. "Notifications.lua")
