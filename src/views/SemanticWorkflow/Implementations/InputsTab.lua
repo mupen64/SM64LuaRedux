@@ -65,6 +65,7 @@ function __impl.allocate_uids(enum_next)
         AtanE = enum_next(3),
         SpeedKick = enum_next(),
         ResetMag = enum_next(),
+        Swim = enum_next(),
 
         -- Section Controls
         Kind = enum_next(),
@@ -507,7 +508,14 @@ local function joystick_controls_for_selected(draw, edited_section, edited_input
         uid = UID.DYaw,
         rectangle = grid_rect(2, top + 2, 1, Gui.LARGE_CONTROL_HEIGHT),
         text = Locales.str("SEMANTIC_WORKFLOW_CONTROL_DYAW"),
-        is_checked = new_values.dyaw
+        is_checked = new_values.dyaw,
+    })
+
+    new_values.swim = ugui.toggle_button({
+        uid = UID.Swim,
+        rectangle = grid_rect(6.5, top + 4, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
+        text = "Swim",
+        is_checked = new_values.swim,
     })
 
     magnitude_controls(draw, sheet, new_values, top + 3)
