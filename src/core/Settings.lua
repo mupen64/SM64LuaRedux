@@ -55,6 +55,11 @@ Settings = {
     spd_efficiency_fraction = false,
     persist_tas_state = true,
     timer_auto = true,
+    semantic_workflow = {
+        edit_entire_state = true,
+        fast_foward = true,
+        default_section_timeout = 60,
+    },
     variables = {
         {
             identifier = "yaw_facing",

@@ -81,7 +81,7 @@ core_path = folder .. "core\\"
 lib_path = folder .. "lib\\"
 processors_path = folder .. "processors\\"
 
----@module 'breitbandgraphics'
+---@module 'BreitbandGraphics'
 BreitbandGraphics = dofile(lib_path .. "breitbandgraphics.lua")
 
 ---@module 'mupen-lua-ugui'
@@ -126,20 +126,22 @@ Presets.apply(Presets.persistent.current_index)
 
 local views = {
     dofile(views_path .. "TAS.lua"),
-    dofile(views_path .. "PianoRoll/Main.lua"),
+    dofile(views_path .. "SemanticWorkflow/Main.lua"),
     dofile(views_path .. "Settings.lua"),
     dofile(views_path .. "Tools.lua"),
     dofile(views_path .. "Timer.lua"),
     dofile(views_path .. "Timer2.lua"),
 }
 
+local semantic_workflow = dofile(processors_path .. "SemanticWorkflow.lua")
 local processors = {
-    dofile(processors_path .. "PianoRoll.lua"),
+    semantic_workflow.transform,
     dofile(processors_path .. "Walk.lua"),
     dofile(processors_path .. "Swimming.lua"),
     dofile(processors_path .. "Wallkicker.lua"),
     dofile(processors_path .. "Grind.lua"),
     dofile(processors_path .. "Framewalk.lua"),
+    semantic_workflow.readback,
 }
 
 Notifications = dofile(views_path .. "Notifications.lua")
