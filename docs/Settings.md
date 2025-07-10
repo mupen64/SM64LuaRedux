@@ -1,1 +1,1 @@
-*All options are documented inside the script GUI*
+*Per-option documentation is available in the Settings tab via tooltips.*
