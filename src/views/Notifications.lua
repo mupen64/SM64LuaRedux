@@ -1,3 +1,9 @@
+--
+-- Copyright (c) 2025, Mupen64 maintainers.
+--
+-- SPDX-License-Identifier: GPL-2.0-or-later
+--
+
 local notifications = {}
 
 -- For now, we only show one notification at a time, as opacity and slide animations are pretty distracting.

@@ -1,3 +1,9 @@
+--
+-- Copyright (c) 2025, Mupen64 maintainers.
+--
+-- SPDX-License-Identifier: GPL-2.0-or-later
+--
+
 __SemanticWorkflowUids = nil or __SemanticWorkflowUids
 if __SemanticWorkflowUids then return __SemanticWorkflowUids end
 

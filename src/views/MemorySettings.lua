@@ -1,3 +1,9 @@
+--
+-- Copyright (c) 2025, Mupen64 maintainers.
+--
+-- SPDX-License-Identifier: GPL-2.0-or-later
+--
+
 return {
     name = Locales.str("SETTINGS_MEMORY_TAB_NAME"),
     draw = function()

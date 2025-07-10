@@ -1,3 +1,9 @@
+--
+-- Copyright (c) 2025, Mupen64 maintainers.
+--
+-- SPDX-License-Identifier: GPL-2.0-or-later
+--
+
 local views = {
     dofile(views_path .. "VisualSettings.lua"),
     dofile(views_path .. "VarWatchSettings.lua"),

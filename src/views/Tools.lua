@@ -1,3 +1,9 @@
+--
+-- Copyright (c) 2025, Mupen64 maintainers.
+--
+-- SPDX-License-Identifier: GPL-2.0-or-later
+--
+
 local RNG_ROW = 1
 local AUTO_GRIND_ROW = 3
 local LOOKAHEAD_ROW = 5

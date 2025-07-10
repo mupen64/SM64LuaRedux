@@ -1,12 +1,8 @@
--- SM64 Lua Redux, Powerful SM64 TASing utility
-
--- Core is heavily modified InputDirection lua by:
--- Author: MKDasher
--- Hacker: Eddio0141
--- Special thanks to Pannenkoek2012 and Peter Fedak for angle calculation support.
--- Also thanks to MKDasher to making the code very clean
--- Other contributors:
---	Madghostek, Xander, galoomba, ShadoXFM, Lemon, Manama, tjk
+--
+-- Copyright (c) 2025, Mupen64 maintainers.
+--
+-- SPDX-License-Identifier: GPL-2.0-or-later
+--
 
 assert(emu.atloadstate, "emu.atloadstate missing")
 

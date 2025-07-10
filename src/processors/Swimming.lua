@@ -1,3 +1,9 @@
+--
+-- Copyright (c) 2025, Mupen64 maintainers.
+--
+-- SPDX-License-Identifier: GPL-2.0-or-later
+--
+
 -- This code has been adapted from an old script
 -- Original Author unknown
 local SWIMMING_ANIMATION_2 = 0x300024D1

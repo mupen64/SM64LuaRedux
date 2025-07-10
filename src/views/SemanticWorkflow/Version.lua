@@ -1,3 +1,9 @@
+--
+-- Copyright (c) 2025, Mupen64 maintainers.
+--
+-- SPDX-License-Identifier: GPL-2.0-or-later
+--
+
 -- This semantic version (see https://semver.org/)
 -- will be stored in .sws and .swp files saved with the current version of this script.
 

@@ -1,3 +1,9 @@
+--
+-- Copyright (c) 2025, Mupen64 maintainers.
+--
+-- SPDX-License-Identifier: GPL-2.0-or-later
+--
+
 local hotkey_funcs = {
     movement_mode_disabled = function()
         TASState.movement_mode = MovementModes.disabled

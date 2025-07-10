@@ -1,3 +1,9 @@
+--
+-- Copyright (c) 2025, Mupen64 maintainers.
+--
+-- SPDX-License-Identifier: GPL-2.0-or-later
+--
+
 ---@class Section Describes a single section of a sheet.
 ---@field end_action integer The 32-bit representation of Mario's action that, when reached in playback, ends this section.
 ---@field timeout integer The maximum number of frames this section goes on for.

@@ -1,3 +1,9 @@
+--
+-- Copyright (c) 2025, Mupen64 maintainers.
+--
+-- SPDX-License-Identifier: GPL-2.0-or-later
+--
+
  -- Returns the index of a given RNG value
 function get_index(rng_val)
 	return RNGToIndex[rng_val + 1]

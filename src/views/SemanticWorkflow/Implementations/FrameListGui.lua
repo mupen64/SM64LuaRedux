@@ -1,3 +1,9 @@
+--
+-- Copyright (c) 2025, Mupen64 maintainers.
+--
+-- SPDX-License-Identifier: GPL-2.0-or-later
+--
+
 ---@type FrameListGui
 ---@diagnostic disable-next-line: assign-type-mismatch
 local __impl = __impl
