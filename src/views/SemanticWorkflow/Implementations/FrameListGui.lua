@@ -361,8 +361,7 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
             x = 0,
             y = section_rect.y + (FRAME_COLUMN_HEIGHT - BUTTON_SIZE) * 0.5 * unit,
             width = sz,
-            height =
-                sz
+            height = sz,
         }
         for button_index, v in ipairs(BUTTONS) do
             rect.x = button_draw_data[button_index].x + unit * (BUTTON_COLUMN_WIDTH - BUTTON_SIZE) * 0.5
