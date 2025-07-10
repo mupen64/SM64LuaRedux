@@ -14,6 +14,14 @@ Every non-library file must contain the following header:
 
 This project is part of the Mupen64 project family and inherits rules from the [Mupen64 contribution guidelines](https://github.com/mkdasher/mupen64-rr-lua-/wiki/Contributing).
 
+Any group of rules with an identical heading specified within this document is to be treated with higher priority than the upstream rules.
+
+# Code Style
+
+Code formatting must abide by the `.vscode/settings.json` file.
+
+It's recommended to use the [sumneko Lua VSCode extension](https://marketplace.visualstudio.com/items?itemName=sumneko.lua) for development, as it understands and applies the formatting config.
+
 # Project Scope
 
 SM64 Lua Redux is an SM64 utility Lua script built for the Mupen64 emulator.
