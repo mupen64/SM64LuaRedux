@@ -46,7 +46,7 @@ return {
             minimum_value = math.mininteger,
             maximum_value = math.maxinteger,
         }))
-        
+
         BreitbandGraphics.draw_text(
             grid_rect(0, DUMPING_ROW - 1, 8, 1),
             'start',

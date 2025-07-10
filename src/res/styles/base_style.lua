@@ -136,37 +136,37 @@ function get_base_style()
             },
         },
         joystick = {
-            back            = {
+            back = {
                 [1] = BreitbandGraphics.hex_to_color('#FFFFFF'),
                 [2] = BreitbandGraphics.hex_to_color('#FFFFFF'),
                 [3] = BreitbandGraphics.hex_to_color('#FFFFFF'),
                 [0] = BreitbandGraphics.hex_to_color('#FFFFFF'),
             },
-            outline         = {
+            outline = {
                 [1] = BreitbandGraphics.hex_to_color('#000000'),
                 [2] = BreitbandGraphics.hex_to_color('#000000'),
                 [3] = BreitbandGraphics.hex_to_color('#000000'),
                 [0] = BreitbandGraphics.hex_to_color('#000000'),
             },
-            tip             = {
+            tip = {
                 [1] = BreitbandGraphics.hex_to_color('#FF0000'),
                 [2] = BreitbandGraphics.hex_to_color('#FF0000'),
                 [3] = BreitbandGraphics.hex_to_color('#FF0000'),
                 [0] = BreitbandGraphics.hex_to_color('#FF8080'),
             },
-            line            = {
+            line = {
                 [1] = BreitbandGraphics.hex_to_color('#0000FF'),
                 [2] = BreitbandGraphics.hex_to_color('#0000FF'),
                 [3] = BreitbandGraphics.hex_to_color('#0000FF'),
                 [0] = BreitbandGraphics.hex_to_color('#8080FF'),
             },
-            inner_mag       = {
+            inner_mag = {
                 [1] = BreitbandGraphics.hex_to_color('#FF000022'),
                 [2] = BreitbandGraphics.hex_to_color('#FF000022'),
                 [3] = BreitbandGraphics.hex_to_color('#FF000022'),
                 [0] = BreitbandGraphics.hex_to_color('#00000000'),
             },
-            outer_mag       = {
+            outer_mag = {
                 [1] = BreitbandGraphics.hex_to_color('#FF0000'),
                 [2] = BreitbandGraphics.hex_to_color('#FF0000'),
                 [3] = BreitbandGraphics.hex_to_color('#FF0000'),

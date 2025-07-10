@@ -20,5 +20,7 @@
     "insert_final_newline": "true",
     "space_around_table_field_list": "true",
     "space_before_attribute": "true",
+    "max_line_length": "1000",
+    "align_continuous_rect_table_field": "false"
   }
 }

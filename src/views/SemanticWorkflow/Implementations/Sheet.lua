@@ -94,10 +94,10 @@ function __impl:save(file)
     WriteAll(
         file,
         json.encode({
-            version       = self.version,
-            sections      = self.sections,
-            name          = self.name,
-            active_frame  = self.active_frame,
+            version = self.version,
+            sections = self.sections,
+            name = self.name,
+            active_frame = self.active_frame,
             preview_frame = self.preview_frame,
         })
     )

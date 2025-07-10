@@ -234,7 +234,7 @@ local function handle_scroll_and_buttons(section_rect, button_draw_data, num_row
         if input_index == hovering_index and in_range and section ~= nil then
             for button_index, v in ipairs(BUTTONS) do
                 local in_range_x = mouse_x >= button_draw_data[button_index].x and
-                mouse_x < button_draw_data[button_index + 1].x
+                    mouse_x < button_draw_data[button_index + 1].x
                 if ugui.internal.is_mouse_just_down() and in_range_x then
                     placing = input.joy[v.input] and -1 or 1
                     input.joy[v.input] = placing
@@ -292,7 +292,7 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
                 rectangle = span(COL0, COL0 + 0.3),
                 text = section.collapsed and '[icon:arrow_right]' or '[icon:arrow_down]',
                 tooltip = Locales.str(section.collapsed and 'SEMANTIC_WORKFLOW_INPUTS_EXPAND_SECTION' or
-                'SEMANTIC_WORKFLOW_INPUTS_COLLAPSE_SECTION'),
+                    'SEMANTIC_WORKFLOW_INPUTS_COLLAPSE_SECTION'),
                 is_checked = not section.collapsed,
                 is_enabled = #section.inputs > 1,
             }) or #section.inputs == 1;
@@ -357,8 +357,13 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
         -- draw buttons
         local unit = Settings.grid_size * Drawing.scale
         local sz = BUTTON_SIZE * unit
-        local rect = { x = 0, y = section_rect.y + (FRAME_COLUMN_HEIGHT - BUTTON_SIZE) * 0.5 * unit, width = sz, height =
-        sz }
+        local rect = {
+            x = 0,
+            y = section_rect.y + (FRAME_COLUMN_HEIGHT - BUTTON_SIZE) * 0.5 * unit,
+            width = sz,
+            height =
+                sz
+        }
         for button_index, v in ipairs(BUTTONS) do
             rect.x = button_draw_data[button_index].x + unit * (BUTTON_COLUMN_WIDTH - BUTTON_SIZE) * 0.5
             if input.joy[v.input] then
@@ -387,7 +392,7 @@ function __impl.render(draw)
     local num_rows = iterate_input_rows(SemanticWorkflowProject:asserted_current(), nil)
     local baseline, scrollbar_rect = draw_scrollbar(num_rows)
     local button_draw_data = draw_color_codes(baseline, scrollbar_rect, math.min(num_rows, MAX_DISPLAYED_SECTIONS)) or
-    nil
+        nil
     draw_headers(current_sheet, draw, __impl.view_index, button_draw_data)
 
     local section_rect = grid_rect(COL0, ROW2, COL_1 - COL0 - SCROLLBAR_WIDTH, FRAME_COLUMN_HEIGHT, 0)
