@@ -4,6 +4,8 @@
 -- SPDX-License-Identifier: GPL-2.0-or-later
 --
 
+local PRESETS_PATH <const> = 'presets.json'
+
 local function create_default_preset()
     return ugui.internal.deep_clone(Settings)
 end
@@ -53,13 +55,29 @@ end
 function Presets.save()
     print('Saving preset...')
     Presets.apply(Presets.persistent.current_index)
-    persistence.store('presets.lua', Presets.persistent)
+
+    local encoded = json.encode(Presets.persistent)
+
+    local file = io.open(PRESETS_PATH, 'w')
+    if not file then
+        print('Failed to save preset.')
+        return
+    end
+    file:write(encoded)
+    io.close(file)
 end
 
 function Presets.restore()
     print('Restoring presets...')
-    local deserialized = persistence.load('presets.lua')
-    if (deserialized == nil) then return end
+
+    local file = io.open(PRESETS_PATH, 'r')
+    if not file then
+        return
+    end
+    local encoded = file:read('a')
+    io.close(file)
+
+    local deserialized = json.decode(encoded)
 
     deserialized = deep_merge(Presets.persistent, deserialized)
 

@@ -89,7 +89,6 @@ ugui_ext = dofile(lib_path .. 'mupen-lua-ugui-ext.lua')
 ---@module 'linq'
 lualinq = dofile(lib_path .. 'linq.lua')
 
-persistence = dofile(lib_path .. 'persistence.lua')
 json = dofile(lib_path .. 'json.lua')
 dofile(styles_path .. 'base_style.lua')
 dofile(core_path .. 'Settings.lua')
