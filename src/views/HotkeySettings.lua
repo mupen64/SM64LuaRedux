@@ -12,6 +12,7 @@ local items = {
                     uid = 10,
                     rectangle = rect,
                     text = Settings.hotkeys_allow_with_active_control and Locales.str('SETTINGS_HOTKEYS_ACTIVATION_ALWAYS') or Locales.str('SETTINGS_HOTKEYS_ACTIVATION_WHEN_NO_FOCUS'),
+                    tooltip = 'The behaviour of hotkeys when they are pressed.\n    Always - Hotkeys activate when pressed\n    When no control in focus - Hotkeys only activate when no control is in focus',
                 }) then
                 Settings.hotkeys_allow_with_active_control = not Settings.hotkeys_allow_with_active_control
             end

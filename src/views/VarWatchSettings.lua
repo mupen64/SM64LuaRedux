@@ -12,6 +12,7 @@ local items = {
                     uid = 10,
                     rectangle = rect,
                     text = Settings.format_angles_degrees and Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT_DEGREE') or Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT_SHORT'),
+                    tooltip = 'The formatting style for angle variables.\n    Short: Formats angles like signed shorts (0-65535)\n    Degree: Formats angles in degrees (0-360)',
                 }) then
                 Settings.format_angles_degrees = not Settings.format_angles_degrees
             end
@@ -25,6 +26,7 @@ local items = {
                 rectangle = rect,
                 value = Settings.format_decimal_points,
                 places = 1,
+                tooltip = 'The maximum number of decimal places displayed in numbers.',
             }))
         end,
     },
@@ -35,6 +37,7 @@ local items = {
                     uid = 30,
                     rectangle = rect,
                     text = Settings.spd_efficiency_fraction and Locales.str('SETTINGS_VARWATCH_SPD_EFFICIENCY_FRACTION') or Locales.str('SETTINGS_VARWATCH_SPD_EFFICIENCY_PERCENTAGE'),
+                    tooltip = 'The formatting style for the speed efficiency variable.\n    Percentage: Shows the speed efficiency as a percentage (0-100%)\n    Fraction: Shows the speed efficiency as a mathematical fraction (e.g. 1/4)',
                 }) then
                 Settings.spd_efficiency_fraction = not Settings.spd_efficiency_fraction
             end
