@@ -31,9 +31,6 @@ Settings = {
         z = 0
     },
     atan_exp = 0,
-    grind = false,
-    grind_divisor = 8,
-    grind_left = true,
     lookahead = false,
     lookahead_length = 1,
     format_decimal_points = 4,

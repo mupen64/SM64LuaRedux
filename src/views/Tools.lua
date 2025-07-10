@@ -5,11 +5,10 @@
 --
 
 local RNG_ROW = 1
-local AUTO_GRIND_ROW = 3
-local LOOKAHEAD_ROW = 5
-local DUMPING_ROW = 7
-local GHOST_ROW = 9
-local EXPERIMENTS_ROW = 11
+local LOOKAHEAD_ROW = 3
+local DUMPING_ROW = 5
+local GHOST_ROW = 7
+local EXPERIMENTS_ROW = 9
 
 return {
     name = Locales.str("TOOLS_TAB_NAME"),
@@ -47,45 +46,6 @@ return {
             value = Settings.override_rng_value,
             minimum_value = math.mininteger,
             maximum_value = math.maxinteger
-        }))
-
-        BreitbandGraphics.draw_text(
-            grid_rect(0, AUTO_GRIND_ROW - 1, 8, 1),
-            "start",
-            "center",
-            { aliased = not theme.cleartype },
-            foreground_color,
-            theme.font_size * Drawing.scale * 1.25,
-            theme.font_name,
-            Locales.str("TOOLS_AUTO_GRIND"))
-        if ugui.button({
-                uid = 0,
-                rectangle = grid_rect(0, AUTO_GRIND_ROW, 3, 1),
-                text = Settings.grind and Locales.str("GENERIC_STOP") or Locales.str("GENERIC_START"),
-            }) then
-            Settings.grind = not Settings.grind
-            if Settings.grind then
-                Grind.start()
-            end
-        end
-
-        Settings.grind_left = ugui.toggle_button({
-            uid = 5,
-            rectangle = grid_rect(6, AUTO_GRIND_ROW, 1, 1),
-            text = "[icon:arrow_left]",
-            is_checked = Settings.grind_left
-        })
-        Settings.grind_left = not ugui.toggle_button({
-            uid = 10,
-            rectangle = grid_rect(7, AUTO_GRIND_ROW, 1, 1),
-            text = "[icon:arrow_right]",
-            is_checked = not Settings.grind_left
-        })
-        Settings.grind_divisor = math.abs(ugui.numberbox({
-            uid = 15,
-            rectangle = grid_rect(3, AUTO_GRIND_ROW, 3, 1),
-            value = Settings.grind_divisor,
-            places = 2,
         }))
 
         BreitbandGraphics.draw_text(
