@@ -2,11 +2,11 @@
 
 For light themes:
 
-1. Create a copy of the `windows-11` folder under `res/`
+1. Create a copy of the `windows-11` folder under `src/res/styles`
 
 For dark themes:
 
-1. Create a copy of the `windows-10-dark` folder under `res/`
+1. Create a copy of the `windows-10-dark` folder under `src/res/styles`
 
 ***
 
