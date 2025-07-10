@@ -8,16 +8,16 @@
 ---@diagnostic disable-next-line: assign-type-mismatch
 local __impl = __impl
 
-__impl.name = "Project"
-__impl.help_key = "PROJECT_TAB"
+__impl.name = 'Project'
+__impl.help_key = 'PROJECT_TAB'
 
 ---@type Project
-local Project = dofile(views_path .. "SemanticWorkflow/Definitions/Project.lua")
+local Project = dofile(views_path .. 'SemanticWorkflow/Definitions/Project.lua')
 
 ---@type Gui
-local Gui = dofile(views_path .. "SemanticWorkflow/Definitions/Gui.lua")
+local Gui = dofile(views_path .. 'SemanticWorkflow/Definitions/Gui.lua')
 
-local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")[__impl.name]
+local UID <const> = dofile(views_path .. 'SemanticWorkflow/UID.lua')[__impl.name]
 
 function __impl.allocate_uids(enum_next)
     return {
@@ -50,18 +50,18 @@ local function create_confirm_dialog(prompt, on_confirmed)
         })
 
         if ugui.button({
-            uid = UID.ConfirmationYes,
-            rectangle = grid_rect(4, top, 2, Gui.MEDIUM_CONTROL_HEIGHT),
-            text = Locales.str("YES"),
-        }) then
+                uid = UID.ConfirmationYes,
+                rectangle = grid_rect(4, top, 2, Gui.MEDIUM_CONTROL_HEIGHT),
+                text = Locales.str('YES'),
+            }) then
             on_confirmed()
             SemanticWorkflowDialog = nil
         end
         if ugui.button({
-            uid = UID.ConfirmationNo,
-            rectangle = grid_rect(2, top, 2, Gui.MEDIUM_CONTROL_HEIGHT),
-            text = Locales.str("NO"),
-        }) then
+                uid = UID.ConfirmationNo,
+                rectangle = grid_rect(2, top, 2, Gui.MEDIUM_CONTROL_HEIGHT),
+                text = Locales.str('NO'),
+            }) then
             SemanticWorkflowDialog = nil
         end
     end
@@ -69,26 +69,26 @@ end
 
 local function render_confirm_deletion_prompt(sheet_index)
     return create_confirm_dialog(
-        Locales.str("SEMANTIC_WORKFLOW_PROJECT_CONFIRM_SHEET_DELETION_1")
+        Locales.str('SEMANTIC_WORKFLOW_PROJECT_CONFIRM_SHEET_DELETION_1')
         .. SemanticWorkflowProject.meta.sheets[sheet_index].name
-        .. Locales.str("SEMANTIC_WORKFLOW_PROJECT_CONFIRM_SHEET_DELETION_2"),
+        .. Locales.str('SEMANTIC_WORKFLOW_PROJECT_CONFIRM_SHEET_DELETION_2'),
         function() SemanticWorkflowProject:remove_sheet(sheet_index) end
     )
 end
 
 local RenderConfirmPurgeDialog = create_confirm_dialog(
-    Locales.str("SEMANTIC_WORKFLOW_PROJECT_CONFIRM_PURGE"),
+    Locales.str('SEMANTIC_WORKFLOW_PROJECT_CONFIRM_PURGE'),
     function()
         local ignored_files = {}
         local project_folder = SemanticWorkflowProject:project_folder()
         for _, sheet_meta in ipairs(SemanticWorkflowProject.meta.sheets) do
-            ignored_files[sheet_meta.name .. ".sws"] = true
-            ignored_files[sheet_meta.name .. ".sws.savestate"] = true
+            ignored_files[sheet_meta.name .. '.sws'] = true
+            ignored_files[sheet_meta.name .. '.sws.savestate'] = true
         end
-        for file in io.popen("dir \"" .. project_folder .. "\" /b"):lines() do
-            if ignored_files[file] == nil and (file:match("(.)sws$") ~= nil or file:match("(.)sws(.)savestate$") ~= nil) then
+        for file in io.popen('dir \"' .. project_folder .. '\" /b'):lines() do
+            if ignored_files[file] == nil and (file:match('(.)sws$') ~= nil or file:match('(.)sws(.)savestate$') ~= nil) then
                 assert(os.remove(project_folder .. file))
-                print("removed " .. file)
+                print('removed ' .. file)
             end
         end
     end
@@ -99,7 +99,7 @@ function __impl.render(draw)
     if #SemanticWorkflowProject.meta.sheets == 0 then
         BreitbandGraphics.draw_text2({
             rectangle = grid_rect(0, 0, 8, 16),
-            text = Locales.str("SEMANTIC_WORKFLOW_PROJECT_NO_SHEETS_AVAILABLE"),
+            text = Locales.str('SEMANTIC_WORKFLOW_PROJECT_NO_SHEETS_AVAILABLE'),
             align_x = BreitbandGraphics.alignment.center,
             align_y = BreitbandGraphics.alignment.center,
             color = theme.button.text[1],
@@ -112,18 +112,18 @@ function __impl.render(draw)
     if SemanticWorkflowProject.project_location ~= nil then
         draw:small_text(
             grid_rect(0, top, 8, Gui.MEDIUM_CONTROL_HEIGHT),
-            "start",
+            'start',
             SemanticWorkflowProject.project_location
-                .. "\n" .. Locales.str("SEMANTIC_WORKFLOW_PROJECT_FILE_VERSION") .. SemanticWorkflowProject.meta.version
+            .. '\n' .. Locales.str('SEMANTIC_WORKFLOW_PROJECT_FILE_VERSION') .. SemanticWorkflowProject.meta.version
         )
     end
     if ugui.button({
-        uid = UID.NewProject,
-        rectangle = grid_rect(0, top + 1, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
-        text = Locales.str("SEMANTIC_WORKFLOW_PROJECT_NEW"),
-        tooltip = Locales.str("SEMANTIC_WORKFLOW_PROJECT_NEW_TOOL_TIP"),
-    }) then
-        local path = iohelper.filediag("*.swp", 1)
+            uid = UID.NewProject,
+            rectangle = grid_rect(0, top + 1, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
+            text = Locales.str('SEMANTIC_WORKFLOW_PROJECT_NEW'),
+            tooltip = Locales.str('SEMANTIC_WORKFLOW_PROJECT_NEW_TOOL_TIP'),
+        }) then
+        local path = iohelper.filediag('*.swp', 1)
         if string.len(path) > 0 then
             SemanticWorkflowProject = Project.new()
             SemanticWorkflowProject.project_location = path
@@ -131,25 +131,25 @@ function __impl.render(draw)
         end
     end
     if ugui.button({
-        uid = UID.OpenProject,
-        rectangle = grid_rect(1.5, top + 1, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
-        text = Locales.str("SEMANTIC_WORKFLOW_PROJECT_OPEN"),
-        tooltip = Locales.str("SEMANTIC_WORKFLOW_PROJECT_OPEN_TOOL_TIP"),
-    }) then
-        local path = iohelper.filediag("*.swp", 0)
+            uid = UID.OpenProject,
+            rectangle = grid_rect(1.5, top + 1, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
+            text = Locales.str('SEMANTIC_WORKFLOW_PROJECT_OPEN'),
+            tooltip = Locales.str('SEMANTIC_WORKFLOW_PROJECT_OPEN_TOOL_TIP'),
+        }) then
+        local path = iohelper.filediag('*.swp', 0)
         if string.len(path) > 0 then
             SemanticWorkflowProject = Project.new()
             SemanticWorkflowProject:load(path)
         end
     end
     if ugui.button({
-        uid = UID.SaveProject,
-        rectangle = grid_rect(3, top + 1, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
-        text = Locales.str("SEMANTIC_WORKFLOW_PROJECT_SAVE"),
-        tooltip = Locales.str("SEMANTIC_WORKFLOW_PROJECT_SAVE_TOOL_TIP"),
-    }) then
+            uid = UID.SaveProject,
+            rectangle = grid_rect(3, top + 1, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
+            text = Locales.str('SEMANTIC_WORKFLOW_PROJECT_SAVE'),
+            tooltip = Locales.str('SEMANTIC_WORKFLOW_PROJECT_SAVE_TOOL_TIP'),
+        }) then
         if SemanticWorkflowProject.project_location == nil then
-            local path = iohelper.filediag("*.swp", 0)
+            local path = iohelper.filediag('*.swp', 0)
             if string.len(path) == 0 then
                 goto skipSave
             end
@@ -160,12 +160,12 @@ function __impl.render(draw)
     ::skipSave::
 
     if ugui.button({
-        uid = UID.PurgeProject,
-        rectangle = grid_rect(4.5, top + 1, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
-        text = Locales.str("SEMANTIC_WORKFLOW_PROJECT_PURGE"),
-        tooltip = Locales.str("SEMANTIC_WORKFLOW_PROJECT_PURGE_TOOL_TIP"),
-        is_enabled = SemanticWorkflowProject.project_location ~= nil,
-    }) then
+            uid = UID.PurgeProject,
+            rectangle = grid_rect(4.5, top + 1, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
+            text = Locales.str('SEMANTIC_WORKFLOW_PROJECT_PURGE'),
+            tooltip = Locales.str('SEMANTIC_WORKFLOW_PROJECT_PURGE_TOOL_TIP'),
+            is_enabled = SemanticWorkflowProject.project_location ~= nil,
+        }) then
         SemanticWorkflowDialog = RenderConfirmPurgeDialog
     end
 
@@ -173,7 +173,7 @@ function __impl.render(draw)
     for i = 1, #SemanticWorkflowProject.meta.sheets, 1 do
         available_sheets[i] = SemanticWorkflowProject.meta.sheets[i].name
     end
-    available_sheets[#available_sheets + 1] = Locales.str("SEMANTIC_WORKFLOW_PROJECT_ADD_SHEET")
+    available_sheets[#available_sheets + 1] = Locales.str('SEMANTIC_WORKFLOW_PROJECT_ADD_SHEET')
 
     top = 3
 
@@ -183,17 +183,17 @@ function __impl.render(draw)
         local is_checked = not SemanticWorkflowProject.disabled and i == SemanticWorkflowProject.meta.selection_index
         local tooltip = Locales.str(
             is_checked
-            and "SEMANTIC_WORKFLOW_PROJECT_DISABLE_TOOL_TIP"
-            or "SEMANTIC_WORKFLOW_PROJECT_SELECT_TOOL_TIP"
+            and 'SEMANTIC_WORKFLOW_PROJECT_DISABLE_TOOL_TIP'
+            or 'SEMANTIC_WORKFLOW_PROJECT_SELECT_TOOL_TIP'
         )
 
         if ugui.toggle_button({
-            uid = uid,
-            rectangle = grid_rect(0, y, 3, Gui.MEDIUM_CONTROL_HEIGHT),
-            text = available_sheets[i],
-            tooltip = i <= #SemanticWorkflowProject.meta.sheets and tooltip or nil,
-            is_checked = is_checked,
-        }) then
+                uid = uid,
+                rectangle = grid_rect(0, y, 3, Gui.MEDIUM_CONTROL_HEIGHT),
+                text = available_sheets[i],
+                tooltip = i <= #SemanticWorkflowProject.meta.sheets and tooltip or nil,
+                is_checked = is_checked,
+            }) then
             if i == #SemanticWorkflowProject.meta.sheets + 1 then -- add new sheet
                 SemanticWorkflowProject:add_sheet()
                 SemanticWorkflowProject:select(#SemanticWorkflowProject.meta.sheets)
@@ -223,30 +223,30 @@ function __impl.render(draw)
             return result
         end
 
-        if (draw_utility_button("^", Locales.str("SEMANTIC_WORKFLOW_PROJECT_MOVE_SHEET_UP_TOOL_TIP"), i > 1)) then
+        if (draw_utility_button('^', Locales.str('SEMANTIC_WORKFLOW_PROJECT_MOVE_SHEET_UP_TOOL_TIP'), i > 1)) then
             SemanticWorkflowProject:move_sheet(i, -1)
         end
 
-        if (draw_utility_button("v", Locales.str("SEMANTIC_WORKFLOW_PROJECT_MOVE_SHEET_DOWN_TOOL_TIP"), i < #SemanticWorkflowProject.meta.sheets)) then
+        if (draw_utility_button('v', Locales.str('SEMANTIC_WORKFLOW_PROJECT_MOVE_SHEET_DOWN_TOOL_TIP'), i < #SemanticWorkflowProject.meta.sheets)) then
             SemanticWorkflowProject:move_sheet(i, 1)
         end
 
-        if (draw_utility_button("-", Locales.str("SEMANTIC_WORKFLOW_PROJECT_DELETE_SHEET_TOOL_TIP"))) then
+        if (draw_utility_button('-', Locales.str('SEMANTIC_WORKFLOW_PROJECT_DELETE_SHEET_TOOL_TIP'))) then
             SemanticWorkflowDialog = render_confirm_deletion_prompt(i)
         end
 
-        if (draw_utility_button(".st", Locales.str("SEMANTIC_WORKFLOW_PROJECT_REBASE_SHEET_TOOL_TIP"), true, 0.75)) then
+        if (draw_utility_button('.st', Locales.str('SEMANTIC_WORKFLOW_PROJECT_REBASE_SHEET_TOOL_TIP'), true, 0.75)) then
             SemanticWorkflowProject:rebase(i)
         end
 
-        if (draw_utility_button(".sws", Locales.str("SEMANTIC_WORKFLOW_PROJECT_REPLACE_INPUTS_TOOL_TIP"), true, 0.75)) then
-            local path = iohelper.filediag("*.sws", 0)
+        if (draw_utility_button('.sws', Locales.str('SEMANTIC_WORKFLOW_PROJECT_REPLACE_INPUTS_TOOL_TIP'), true, 0.75)) then
+            local path = iohelper.filediag('*.sws', 0)
             if string.len(path) > 0 then
                 SemanticWorkflowProject.all[SemanticWorkflowProject.meta.sheets[i].name]:load(path, false)
             end
         end
 
-        if (draw_utility_button(">", Locales.str("SEMANTIC_WORKFLOW_PROJECT_PLAY_WITHOUT_ST_TOOL_TIP"))) then
+        if (draw_utility_button('>', Locales.str('SEMANTIC_WORKFLOW_PROJECT_PLAY_WITHOUT_ST_TOOL_TIP'))) then
             SemanticWorkflowProject:select(i, false)
         end
         ::continue::

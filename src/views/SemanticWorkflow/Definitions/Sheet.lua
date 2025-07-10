@@ -50,7 +50,7 @@ function cls_sheet:load(file) end
 function cls_sheet:rebase() end
 
 __impl = cls_sheet
-dofile(views_path .. "SemanticWorkflow/Implementations/Sheet.lua")
+dofile(views_path .. 'SemanticWorkflow/Implementations/Sheet.lua')
 __impl = nil
 
 return cls_sheet

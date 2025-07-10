@@ -22,5 +22,5 @@ emu.atstop(function()
         sum = sum + values[i]
     end
 
-    print("Average time across " .. #values .. " runs: " .. sum / #values .. "ms")
+    print('Average time across ' .. #values .. ' runs: ' .. sum / #values .. 'ms')
 end)

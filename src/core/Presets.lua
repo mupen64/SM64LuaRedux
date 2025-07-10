@@ -17,7 +17,7 @@ Presets = {
     },
 }
 
-print("Creating default presets...")
+print('Creating default presets...')
 
 for i = 1, 6, 1 do
     Presets.persistent.presets[i] = create_default_preset()
@@ -31,7 +31,7 @@ function Presets.apply(i)
     -- HACK: The TASState isn't currently serialized properly.
     -- Here, the TASState contents are injected into the presets and are also restored when loading.
     for key, value in pairs(TASState) do
-        Settings["tasstate_" .. key] = value
+        Settings['tasstate_' .. key] = value
     end
 
     Presets.persistent.current_index = ugui.internal.clamp(i, 1, #Presets.persistent.presets)
@@ -41,7 +41,7 @@ function Presets.apply(i)
     -- HACK: See above
     if Settings.persist_tas_state then
         for key, value in pairs(TASState) do
-            TASState[key] = Settings["tasstate_" .. key] == nil and NewTASState()[key] or Settings["tasstate_" .. key]
+            TASState[key] = Settings['tasstate_' .. key] == nil and NewTASState()[key] or Settings['tasstate_' .. key]
         end
     end
 end
@@ -51,14 +51,14 @@ function Presets.reset(i)
 end
 
 function Presets.save()
-    print("Saving preset...")
+    print('Saving preset...')
     Presets.apply(Presets.persistent.current_index)
-    persistence.store("presets.lua", Presets.persistent)
+    persistence.store('presets.lua', Presets.persistent)
 end
 
 function Presets.restore()
-    print("Restoring presets...")
-    local deserialized = persistence.load("presets.lua")
+    print('Restoring presets...')
+    local deserialized = persistence.load('presets.lua')
     if (deserialized == nil) then return end
 
     deserialized = deep_merge(Presets.persistent, deserialized)

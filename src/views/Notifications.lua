@@ -21,7 +21,7 @@ return {
 
         notifications[#notifications + 1] = {
             text = text,
-            time = os.clock()
+            time = os.clock(),
         }
     end,
     draw = function()
@@ -57,10 +57,10 @@ return {
                     x = x,
                     y = y,
                     width = size.width + 1,
-                    height = size.height + 1
+                    height = size.height + 1,
                 },
-                "start",
-                "start",
+                'start',
+                'start',
                 { aliased = not theme.cleartype },
                 foreground_color,
                 theme.font_size * Drawing.scale * text_scale,
@@ -76,5 +76,5 @@ return {
                 table.remove(notifications, i)
             end
         end
-    end
+    end,
 }

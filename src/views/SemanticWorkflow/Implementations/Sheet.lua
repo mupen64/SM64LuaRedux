@@ -11,7 +11,7 @@
 local __impl = __impl
 
 ---@type Section
-local Section = dofile(views_path .. "SemanticWorkflow/Definitions/Section.lua")
+local Section = dofile(views_path .. 'SemanticWorkflow/Definitions/Section.lua')
 
 function __impl.new(name, create_savestate)
     local global_timer = Memory.current.mario_global_timer
@@ -35,7 +35,7 @@ function __impl.new(name, create_savestate)
         load = __impl.load,
     }
     if create_savestate then
-        savestate.do_memory("", "save", function(result, data) new_instance._savestate = data end)
+        savestate.do_memory('', 'save', function(result, data) new_instance._savestate = data end)
     end
 
     return new_instance
@@ -54,7 +54,7 @@ function __impl:evaluate_frame()
         or (self._section_index == self.preview_frame.section_index
             and self.preview_frame.frame_index
             and self._frame_counter >= self.preview_frame.frame_index - 1
-            ) then
+        ) then
         emu.pause(false)
         emu.set_ff(false)
         self.busy = false
@@ -75,7 +75,7 @@ function __impl:run_to_preview(load_state)
     self._update_pending = false
 
     if load_state == nil and true or load_state then
-        savestate.do_memory(self._savestate, "load", function()
+        savestate.do_memory(self._savestate, 'load', function()
             emu.pause(true)
             emu.set_ff(Settings.semantic_workflow.fast_foward)
         end)
@@ -90,7 +90,7 @@ end
 
 function __impl:save(file)
     self.version = SEMANTIC_WORKFLOW_FILE_VERSION
-    WriteAll(file .. ".savestate", self._savestate)
+    WriteAll(file .. '.savestate', self._savestate)
     WriteAll(
         file,
         json.encode({
@@ -106,13 +106,13 @@ end
 function __impl:load(file)
     local contents = json.decode(ReadAll(file));
     if contents ~= nil then
-        self._savestate = ReadAll(file .. ".savestate")
+        self._savestate = ReadAll(file .. '.savestate')
         CloneInto(self, contents)
     end
 end
 
 function __impl:rebase()
-    savestate.do_memory("", "save", function(result, data)
+    savestate.do_memory('', 'save', function(result, data)
         self._savestate = data
         self:run_to_preview()
     end)

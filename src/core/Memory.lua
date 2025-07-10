@@ -44,12 +44,14 @@ function Memory.update()
 	Memory.current.mario_action_arg = memory.readdword(address_source.mario_action_arg)
 	Memory.current.mario_f_speed = memory.readfloat(address_source.mario_f_speed)
 	Memory.current.mario_buffered = memory.readbyte(address_source.mario_buffered)
-	Memory.current.mario_held_buttons = memory.readbyte(address_source.mario_held_buttons) -- A | B | Z | START | DUP | DDOWN | DLEFT | DRIGHT
+	Memory.current.mario_held_buttons = memory.readbyte(address_source.mario_held_buttons)    -- A | B | Z | START | DUP | DDOWN | DLEFT | DRIGHT
 	Memory.current.mario_pressed_buttons = memory.readbyte(address_source.mario_pressed_buttons) -- U1 | U2 | L | R | CUP | CDOWN | CLEFT | CRIGHT
 	Memory.current.mario_global_timer = memory.readdword(address_source.global_timer)
 	Memory.current.rng_value = memory.readword(address_source.rng_value)
-	Memory.current.mario_animation = memory.readword(memory.readdword(address_source.mario_object_effective)+address_source.mario_animation)
-	Memory.current.mario_gfx_angle = memory.readword(memory.readdword(address_source.mario_object_effective)+address_source.mario_gfx_angle)
+	Memory.current.mario_animation = memory.readword(memory.readdword(address_source.mario_object_effective) +
+	address_source.mario_animation)
+	Memory.current.mario_gfx_angle = memory.readword(memory.readdword(address_source.mario_object_effective) +
+	address_source.mario_gfx_angle)
 	Memory.current.mario_hat_state = memory.readbyte(address_source.mario_hat_state)
 end
 

@@ -12,7 +12,7 @@ local function save()
     if savestate.saveslot then
         savestate.saveslot(9)
     else
-        savestate.savefile("lookahead.st")
+        savestate.savefile('lookahead.st')
     end
 end
 
@@ -20,7 +20,7 @@ local function load()
     if savestate.loadslot then
         savestate.loadslot(9)
     else
-        savestate.loadfile("lookahead.st")
+        savestate.loadfile('lookahead.st')
     end
 end
 

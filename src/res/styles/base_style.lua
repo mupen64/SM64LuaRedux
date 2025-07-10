@@ -37,8 +37,8 @@ function get_base_style()
                 [0] = {
                     source = expand_rect({ 1, 34, 11, 9 }),
                     center = expand_rect({ 6, 38, 1, 1 }),
-                }
-            }
+                },
+            },
         },
         textbox = {
             item_height = 15,
@@ -66,8 +66,8 @@ function get_base_style()
                 [0] = {
                     source = expand_rect({ 74, 16, 5, 5 }),
                     center = expand_rect({ 76, 18, 1, 1 }),
-                }
-            }
+                },
+            },
         },
         listbox = {
             text = {
@@ -92,8 +92,8 @@ function get_base_style()
                 [0] = {
                     source = expand_rect({ 80, 10, 3, 3 }),
                     center = expand_rect({ 81, 11, 1, 1 }),
-                }
-            }
+                },
+            },
         },
         listbox_item = {
             states = {
@@ -112,8 +112,8 @@ function get_base_style()
                 [0] = {
                     source = expand_rect({ 83, 5, 3, 4 }),
                     center = expand_rect({ 84, 6, 1, 2 }),
-                }
-            }
+                },
+            },
         },
         scrollbar_thumb = {
             states = {
@@ -132,41 +132,41 @@ function get_base_style()
                 [0] = {
                     source = expand_rect({ 30, 110, 17, 11 }),
                     center = expand_rect({ 38, 114, 2, 3 }),
-                }
-            }
+                },
+            },
         },
         joystick = {
-            back = {
+            back            = {
                 [1] = BreitbandGraphics.hex_to_color('#FFFFFF'),
                 [2] = BreitbandGraphics.hex_to_color('#FFFFFF'),
                 [3] = BreitbandGraphics.hex_to_color('#FFFFFF'),
                 [0] = BreitbandGraphics.hex_to_color('#FFFFFF'),
             },
-            outline  = {
+            outline         = {
                 [1] = BreitbandGraphics.hex_to_color('#000000'),
                 [2] = BreitbandGraphics.hex_to_color('#000000'),
                 [3] = BreitbandGraphics.hex_to_color('#000000'),
                 [0] = BreitbandGraphics.hex_to_color('#000000'),
             },
-            tip = {
+            tip             = {
                 [1] = BreitbandGraphics.hex_to_color('#FF0000'),
                 [2] = BreitbandGraphics.hex_to_color('#FF0000'),
                 [3] = BreitbandGraphics.hex_to_color('#FF0000'),
                 [0] = BreitbandGraphics.hex_to_color('#FF8080'),
             },
-            line = {
+            line            = {
                 [1] = BreitbandGraphics.hex_to_color('#0000FF'),
                 [2] = BreitbandGraphics.hex_to_color('#0000FF'),
                 [3] = BreitbandGraphics.hex_to_color('#0000FF'),
                 [0] = BreitbandGraphics.hex_to_color('#8080FF'),
             },
-            inner_mag = {
+            inner_mag       = {
                 [1] = BreitbandGraphics.hex_to_color('#FF000022'),
                 [2] = BreitbandGraphics.hex_to_color('#FF000022'),
                 [3] = BreitbandGraphics.hex_to_color('#FF000022'),
                 [0] = BreitbandGraphics.hex_to_color('#00000000'),
             },
-            outer_mag = {
+            outer_mag       = {
                 [1] = BreitbandGraphics.hex_to_color('#FF0000'),
                 [2] = BreitbandGraphics.hex_to_color('#FF0000'),
                 [3] = BreitbandGraphics.hex_to_color('#FF0000'),

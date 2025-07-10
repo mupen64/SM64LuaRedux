@@ -24,5 +24,5 @@ return {
 			input[Settings.swimming_button] = 1
 		end
 		return input
-	end
+	end,
 }

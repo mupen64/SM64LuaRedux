@@ -7,19 +7,19 @@
 Styles = {}
 
 local style_dir_names = {
-    "windows-11",
-    "windows-11-v2",
-    "windows-11-dark",
-    "windows-10",
-    "windows-10-dark",
-    "windows-3-pink",
-    "windows-7",
-    "windows-xp",
-    "input-direction",
-    "crackhex",
-    "neptune",
-    "fl-studio",
-    "steam",
+    'windows-11',
+    'windows-11-v2',
+    'windows-11-dark',
+    'windows-10',
+    'windows-10-dark',
+    'windows-3-pink',
+    'windows-7',
+    'windows-xp',
+    'input-direction',
+    'crackhex',
+    'neptune',
+    'fl-studio',
+    'steam',
 }
 
 ---@type string[]
@@ -35,8 +35,8 @@ local standard_styler_params_clone = ugui.internal.deep_clone(ugui.standard_styl
 ---@return { def_path: string, img_path: string }
 local function get_style_paths(name)
     return {
-        def_path = styles_path .. name .. "\\" .. "style.lua",
-        img_path = styles_path .. name .. "\\" .. "style.png",
+        def_path = styles_path .. name .. '\\' .. 'style.lua',
+        img_path = styles_path .. name .. '\\' .. 'style.png',
     }
 end
 

@@ -9,11 +9,11 @@
 local __impl = __impl
 
 ---@type Sheet
-local Sheet = dofile(views_path .. "SemanticWorkflow/Definitions/Sheet.lua")
+local Sheet = dofile(views_path .. 'SemanticWorkflow/Definitions/Sheet.lua')
 
 local function new_sheet_meta(name)
     return {
-        name = name
+        name = name,
     }
 end
 
@@ -23,7 +23,7 @@ function __impl.new()
             version = SEMANTIC_WORKFLOW_FILE_VERSION,
             created_sheet_count = 0,
             selection_index = 0,
-            sheets = {}
+            sheets = {},
         },
         all = {},
         project_location = nil,
@@ -45,7 +45,7 @@ end
 function __impl:asserted_current()
     local result = self:current()
     if result == nil then
-        error("Expected the current sheet to not be nil.", 2)
+        error('Expected the current sheet to not be nil.', 2)
     end
     return result
 end
@@ -57,9 +57,9 @@ end
 
 function __impl:add_sheet()
     self.meta.created_sheet_count = self.meta.created_sheet_count + 1
-    local new_sheet = Sheet.new("Sheet " .. self.meta.created_sheet_count, true)
+    local new_sheet = Sheet.new('Sheet ' .. self.meta.created_sheet_count, true)
     self.all[new_sheet.name] = new_sheet
-    self.meta.sheets[#self.meta.sheets+1] = new_sheet_meta(new_sheet.name)
+    self.meta.sheets[#self.meta.sheets + 1] = new_sheet_meta(new_sheet.name)
 end
 
 function __impl:remove_sheet(index)
@@ -102,7 +102,7 @@ function __impl:rebase(index)
 end
 
 function __impl:project_folder()
-    return self.project_location:match("(.*[/\\])")
+    return self.project_location:match('(.*[/\\])')
 end
 
 function __impl:load(file)
@@ -112,7 +112,7 @@ function __impl:load(file)
     local project_folder = self:project_folder()
     for _, sheet_meta in ipairs(self.meta.sheets) do
         local new_sheet = Sheet.new(sheet_meta.name, false)
-        new_sheet:load(project_folder .. sheet_meta.name .. ".sws")
+        new_sheet:load(project_folder .. sheet_meta.name .. '.sws')
         self.all[sheet_meta.name] = new_sheet
     end
 end
@@ -124,6 +124,6 @@ function __impl:save()
 
     local project_folder = SemanticWorkflowProject:project_folder()
     for _, sheet_meta in ipairs(SemanticWorkflowProject.meta.sheets) do
-        SemanticWorkflowProject.all[sheet_meta.name]:save(project_folder .. sheet_meta.name .. ".sws")
+        SemanticWorkflowProject.all[sheet_meta.name]:save(project_folder .. sheet_meta.name .. '.sws')
     end
 end

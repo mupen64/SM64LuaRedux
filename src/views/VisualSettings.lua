@@ -6,7 +6,7 @@
 
 local items = {
     {
-        text = Locales.str("SETTINGS_VISUALS_STYLE"),
+        text = Locales.str('SETTINGS_VISUALS_STYLE'),
         func = function(rect)
             local new_active_style_index = ugui.combobox({
                 uid = 1,
@@ -19,10 +19,10 @@ local items = {
                 Settings.active_style_index = new_active_style_index
                 Styles.update_style()
             end
-        end
+        end,
     },
     {
-        text = Locales.str("SETTINGS_VISUALS_LOCALE"),
+        text = Locales.str('SETTINGS_VISUALS_LOCALE'),
         func = function(rect)
             local new_locale_index = ugui.combobox({
                 uid = 3,
@@ -31,14 +31,14 @@ local items = {
                 selected_index = Settings.locale_index,
             })
             Settings.locale_index = new_locale_index
-        end
+        end,
     },
     {
-        text = Locales.str("SETTINGS_VISUALS_NOTIFICATIONS"),
+        text = Locales.str('SETTINGS_VISUALS_NOTIFICATIONS'),
         func = function(rect)
             local notification_styles = {
-                Locales.str("SETTINGS_VISUALS_NOTIFICATIONS_BUBBLE"),
-                Locales.str("SETTINGS_VISUALS_NOTIFICATIONS_CONSOLE"),
+                Locales.str('SETTINGS_VISUALS_NOTIFICATIONS_BUBBLE'),
+                Locales.str('SETTINGS_VISUALS_NOTIFICATIONS_CONSOLE'),
             }
 
             local index = ugui.carrousel_button({
@@ -49,25 +49,25 @@ local items = {
             })
 
             Settings.notification_style = index
-        end
+        end,
     },
     {
-        text = Locales.str("SETTINGS_VISUALS_FRAMESKIP"),
+        text = Locales.str('SETTINGS_VISUALS_FRAMESKIP'),
         func = function(rect)
             Settings.repaint_throttle = math.max(1, math.abs(ugui.numberbox({
                 uid = 20,
                 rectangle = rect,
-                tooltip = Locales.str("SETTINGS_VISUALS_FRAMESKIP_TOOLTIP"),
+                tooltip = Locales.str('SETTINGS_VISUALS_FRAMESKIP_TOOLTIP'),
                 value = Settings.repaint_throttle,
                 places = 1,
             })))
-        end
+        end,
     },
 }
 
 return {
-    name = Locales.str("SETTINGS_VISUALS_TAB_NAME"),
+    name = Locales.str('SETTINGS_VISUALS_TAB_NAME'),
     draw = function()
         Drawing.setting_list(items, { x = 0, y = 0.1 })
-    end
+    end,
 }

@@ -5,9 +5,7 @@
 --
 
 Joypad = {
-	input = {
-		
-	}
+	input = {},
 }
 
 function Joypad.update()

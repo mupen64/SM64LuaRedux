@@ -11,13 +11,13 @@ NOTIFICATION_STYLE_BUBBLE = 1
 NOTIFICATION_STYLE_CONSOLE = 2
 
 Settings = {
-    swimming_button = "A",
+    swimming_button = 'A',
     controller_index = 1,
     override_rng = false,
     override_rng_use_index = false,
     override_rng_value = 0,
     show_effective_angles = true,
-    ghost_path = folder .. "recording.ghost",
+    ghost_path = folder .. 'recording.ghost',
     grid_size = 35,
     grid_gap = 2,
     track_moved_distance = false,
@@ -28,7 +28,7 @@ Settings = {
     moved_distance_axis = {
         x = 0,
         y = 0,
-        z = 0
+        z = 0,
     },
     atan_exp = 0,
     lookahead = false,
@@ -65,173 +65,173 @@ Settings = {
     },
     variables = {
         {
-            identifier = "yaw_facing",
-            visible = true
-        },
-        {
-            identifier = "yaw_intended",
+            identifier = 'yaw_facing',
             visible = true,
         },
         {
-            identifier = "h_spd",
+            identifier = 'yaw_intended',
             visible = true,
         },
         {
-            identifier = "v_spd",
+            identifier = 'h_spd',
             visible = true,
         },
         {
-            identifier = "spd_efficiency",
+            identifier = 'v_spd',
             visible = true,
         },
         {
-            identifier = "position_x",
+            identifier = 'spd_efficiency',
             visible = true,
         },
         {
-            identifier = "position_y",
+            identifier = 'position_x',
             visible = true,
         },
         {
-            identifier = "position_z",
+            identifier = 'position_y',
             visible = true,
         },
         {
-            identifier = "pitch",
+            identifier = 'position_z',
             visible = true,
         },
         {
-            identifier = "yaw_vel",
+            identifier = 'pitch',
+            visible = true,
+        },
+        {
+            identifier = 'yaw_vel',
             visible = false,
         },
         {
-            identifier = "pitch_vel",
+            identifier = 'pitch_vel',
             visible = false,
         },
         {
-            identifier = "xz_movement",
+            identifier = 'xz_movement',
             visible = true,
         },
         {
-            identifier = "action",
+            identifier = 'action',
             visible = true,
         },
         {
-            identifier = "rng",
+            identifier = 'rng',
             visible = true,
         },
         {
-            identifier = "global_timer",
+            identifier = 'global_timer',
             visible = false,
         },
         {
-            identifier = "moved_dist",
-            visible = true
-        },
-        {
-            identifier = "atan_basic",
+            identifier = 'moved_dist',
             visible = true,
         },
         {
-            identifier = "atan_start_frame",
-            visible = true
+            identifier = 'atan_basic',
+            visible = true,
+        },
+        {
+            identifier = 'atan_start_frame',
+            visible = true,
         },
     },
     hotkeys = {
         {
-            identifier = "movement_mode_disabled",
+            identifier = 'movement_mode_disabled',
             mode = HOTKEY_MODE_ONESHOT,
             keys = {
-                "control",
-                "1",
+                'control',
+                '1',
             },
         },
         {
-            identifier = "movement_mode_match_yaw",
+            identifier = 'movement_mode_match_yaw',
             mode = HOTKEY_MODE_ONESHOT,
             keys = {
-                "control",
-                "2",
+                'control',
+                '2',
             },
         },
         {
-            identifier = "movement_mode_reverse_angle",
+            identifier = 'movement_mode_reverse_angle',
             mode = HOTKEY_MODE_ONESHOT,
             keys = {
-                "control",
-                "3",
+                'control',
+                '3',
             },
         },
         {
-            identifier = "movement_mode_match_angle",
+            identifier = 'movement_mode_match_angle',
             mode = HOTKEY_MODE_ONESHOT,
             keys = {
-                "control",
-                "4",
+                'control',
+                '4',
             },
         },
         {
-            identifier = "preset_down",
+            identifier = 'preset_down',
             mode = HOTKEY_MODE_ONESHOT,
             keys = {
-                "leftbracket",
+                'leftbracket',
             },
         },
         {
-            identifier = "preset_up",
+            identifier = 'preset_up',
             mode = HOTKEY_MODE_ONESHOT,
             keys = {
-                "rightbracket",
+                'rightbracket',
             },
         },
         {
-            identifier = "copy_yaw_facing_to_match_angle",
+            identifier = 'copy_yaw_facing_to_match_angle',
             mode = HOTKEY_MODE_ONESHOT,
             keys = {
-                "control",
-                "comma",
+                'control',
+                'comma',
             },
         },
         {
-            identifier = "copy_yaw_intended_to_match_angle",
+            identifier = 'copy_yaw_intended_to_match_angle',
             mode = HOTKEY_MODE_ONESHOT,
             keys = {
-                "control",
-                "period",
+                'control',
+                'period',
             },
         },
         {
-            identifier = "toggle_auto_firsties",
+            identifier = 'toggle_auto_firsties',
             mode = HOTKEY_MODE_ONESHOT,
             keys = {
-                "control",
-                "I",
+                'control',
+                'I',
             },
         },
         {
-            identifier = "angle_down",
+            identifier = 'angle_down',
             mode = HOTKEY_MODE_REPEAT,
             keys = {
             },
         },
         {
-            identifier = "angle_up",
+            identifier = 'angle_up',
             mode = HOTKEY_MODE_REPEAT,
             keys = {
             },
         },
         {
-            identifier = "toggle_spdkick",
+            identifier = 'toggle_spdkick',
             keys = {
-                "control",
-                "K",
+                'control',
+                'K',
             },
         },
         {
-            identifier = "toggle_navbar",
+            identifier = 'toggle_navbar',
             keys = {
-                "shift",
-                "T",
+                'shift',
+                'T',
             },
         },
     },

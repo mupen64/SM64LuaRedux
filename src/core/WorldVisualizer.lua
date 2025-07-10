@@ -72,7 +72,7 @@ local function draw_moved_dist()
     if not Settings.track_moved_distance then
         return
     end
-    
+
     local start_x = Settings.moved_distance_axis.x
     local start_y = Settings.moved_distance_axis.y
     local start_z = Settings.moved_distance_axis.z

@@ -38,5 +38,5 @@ theme.menu_item = {
 
 return {
     name = 'Windows 11',
-    theme = theme
+    theme = theme,
 }

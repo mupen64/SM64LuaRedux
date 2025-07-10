@@ -12,8 +12,8 @@ return {
         end
 
         if Memory.current.mario_action == AIR_HIT_WALL then
-            input["A"] = 1
+            input['A'] = 1
         end
         return input
-    end
+    end,
 }

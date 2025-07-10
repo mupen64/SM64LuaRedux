@@ -5,7 +5,7 @@
 --
 
 Dumping = {
-    data = {}
+    data = {},
 }
 
 Dumping.start = function()
@@ -13,19 +13,19 @@ Dumping.start = function()
     Settings.dump_start_frame = emu.inputcount()
     Settings.dump_movie_start_frame = movie.get_seek_completion()[1]
     Dumping.data = {}
-    print("Dumping started")
+    print('Dumping started')
 end
 
 Dumping.stop = function()
     Settings.dump_enabled = false
 
-    local path = "dump.json"
+    local path = 'dump.json'
     local serialized = json.encode(Dumping.data)
-    local file = io.open(path, "w")
+    local file = io.open(path, 'w')
     file:write(serialized)
     io.close(file)
 
-    print(string.format("Dumped %d frames to %s", #Dumping.data, path))
+    print(string.format('Dumped %d frames to %s', #Dumping.data, path))
 end
 
 Dumping.update = function()
@@ -34,13 +34,13 @@ Dumping.update = function()
     end
 
     if ((Memory.current.timestop_enabled ~= 0) or (Memory.current.play_mode ~= 0)) then
-        print("Skipping non-input frame while dumping")
+        print('Skipping non-input frame while dumping')
         return
     end
 
     local movie_path = nil
 
-    pcall(function ()
+    pcall(function()
         movie_path = movie.get_filename()
     end)
 

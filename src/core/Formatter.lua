@@ -11,7 +11,7 @@ Formatter = {}
 ---@return string The value's string representation
 Formatter.angle = function(value)
     if Settings.format_angles_degrees then
-        return string.format("%sdeg",
+        return string.format('%sdeg',
             MoreMaths.round(ugui.internal.remap(value, 0, 65536, 0, 360), Settings.format_decimal_points))
     else
         return tostring(MoreMaths.round(value, Settings.format_decimal_points))
@@ -39,7 +39,7 @@ end
 Formatter.percent = function(value, inf_threshold)
     inf_threshold = inf_threshold or 1000000
     if value > inf_threshold then
-        return "∞%"
+        return '∞%'
     end
-    return MoreMaths.round(value * 100, Settings.format_decimal_points) .. "%"
+    return MoreMaths.round(value * 100, Settings.format_decimal_points) .. '%'
 end

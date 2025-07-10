@@ -16,7 +16,7 @@ local cls_frame_list_gui = {
 }
 
 __impl = cls_frame_list_gui
-dofile(views_path .. "SemanticWorkflow/Implementations/FrameListGui.lua")
+dofile(views_path .. 'SemanticWorkflow/Implementations/FrameListGui.lua')
 __impl = nil
 
 return cls_frame_list_gui

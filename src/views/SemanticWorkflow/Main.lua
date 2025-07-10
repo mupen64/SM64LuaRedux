@@ -4,7 +4,7 @@
 -- SPDX-License-Identifier: GPL-2.0-or-later
 --
 
-dofile(views_path .. "SemanticWorkflow/Version.lua")
+dofile(views_path .. 'SemanticWorkflow/Version.lua')
 
 function CloneInto(destination, source)
     local changes = {}
@@ -17,25 +17,25 @@ function CloneInto(destination, source)
 end
 
 function ReadAll(file)
-    local f = assert(io.open(file, "rb"))
-    local content = f:read("*all")
+    local f = assert(io.open(file, 'rb'))
+    local content = f:read('*all')
     f:close()
     return content
 end
 
 function WriteAll(file, content)
-    local f = assert(io.open(file, "wb"))
+    local f = assert(io.open(file, 'wb'))
     f:write(content)
     f:close()
     return content
 end
 
-local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")
+local UID <const> = dofile(views_path .. 'SemanticWorkflow/UID.lua')
 
 ---@type Project
-local Project = dofile(views_path .. "SemanticWorkflow/Definitions/Project.lua")
+local Project = dofile(views_path .. 'SemanticWorkflow/Definitions/Project.lua')
 
-local Help = dofile(views_path .. "SemanticWorkflow/Help.lua")
+local Help = dofile(views_path .. 'SemanticWorkflow/Help.lua')
 
 ---@type Project
 SemanticWorkflowProject = Project.new()
@@ -44,15 +44,17 @@ SemanticWorkflowDialog = nil
 local ugui_icon_draw = ugui.standard_styler.draw_icon
 
 ugui.standard_styler.draw_icon = function(rectangle, color, visual_state, key)
-    if key == "door_opening" then
-        rectangle = {x = rectangle.x - rectangle.width * 0.5, y = rectangle.y - rectangle.height * 0.5, width = rectangle.width * 2, height = rectangle.height * 2}
-        BreitbandGraphics.draw_image(rectangle, nil, views_path .. "SemanticWorkflow/Resources/door_opening.png", color, "linear")
+    if key == 'door_opening' then
+        rectangle = { x = rectangle.x - rectangle.width * 0.5, y = rectangle.y - rectangle.height * 0.5, width =
+        rectangle.width * 2, height = rectangle.height * 2 }
+        BreitbandGraphics.draw_image(rectangle, nil, views_path .. 'SemanticWorkflow/Resources/door_opening.png', color,
+            'linear')
     else
         ugui_icon_draw(rectangle, color, visual_state, key)
     end
 end
 
-local Tabs = dofile(views_path .. "SemanticWorkflow/Tabs.lua")
+local Tabs = dofile(views_path .. 'SemanticWorkflow/Tabs.lua')
 local selected_tab_index = 1
 
 local function draw_factory(theme)
@@ -70,7 +72,7 @@ local function draw_factory(theme)
                 aliased = theme.pixelated_text,
                 color = self.foreground_color,
                 font_size = self.font_size,
-                font_name = "Consolas",
+                font_name = 'Consolas',
             })
         end,
 
@@ -83,9 +85,9 @@ local function draw_factory(theme)
                 aliased = theme.pixelated_text,
                 color = self.foreground_color,
                 font_size = self.font_size * 0.75,
-                font_name = "Consolas",
+                font_name = 'Consolas',
             })
-        end
+        end,
     }
 end
 
@@ -100,9 +102,8 @@ function CurrentSemanticWorkflowOverride()
 end
 
 return {
-    name = Locales.str("SEMANTIC_WORKFLOW_TAB_NAME"),
+    name = Locales.str('SEMANTIC_WORKFLOW_TAB_NAME'),
     draw = function()
-
         -- if we're showing any dialog, stop rendering anything else
         if SemanticWorkflowDialog ~= nil then
             SemanticWorkflowDialog()
@@ -126,17 +127,17 @@ return {
             selected_index = selected_tab_index,
         }).selected_index
 
-        draw:small_text(grid_rect(6, 0, 1, 1), "end", "v" .. SEMANTIC_WORKFLOW_FILE_VERSION)
+        draw:small_text(grid_rect(6, 0, 1, 1), 'end', 'v' .. SEMANTIC_WORKFLOW_FILE_VERSION)
 
         if ugui.button(
-            {
-                uid = UID.ToggleHelp,
-                rectangle = grid_rect(7, 0, 1, 1),
-                text = "?",
-                tooltip = Locales.str("SEMANTIC_WORKFLOW_HELP_SHOW_TOOL_TIP"),
-                is_enabled = Tabs[selected_tab_index].help_key ~= nil,
-            }
-        ) then
+                {
+                    uid = UID.ToggleHelp,
+                    rectangle = grid_rect(7, 0, 1, 1),
+                    text = '?',
+                    tooltip = Locales.str('SEMANTIC_WORKFLOW_HELP_SHOW_TOOL_TIP'),
+                    is_enabled = Tabs[selected_tab_index].help_key ~= nil,
+                }
+            ) then
             SemanticWorkflowDialog = Help.GetDialog(Tabs[selected_tab_index].help_key)
         end
 

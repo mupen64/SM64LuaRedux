@@ -16,7 +16,7 @@ return {
                 TASState = DefaultTASState
                 return input
             end
-        end
+        end,
     },
     readback = {
         process = function(input)
@@ -25,6 +25,6 @@ return {
                 override.joy.Y = input.Y
             end
             return input
-        end
-    }
+        end,
+    },
 }

@@ -10,24 +10,24 @@ local __impl = __impl
 
 --#region Constants
 
-local UID <const> = dofile(views_path .. "SemanticWorkflow/UID.lua")["FrameList"]
+local UID <const> = dofile(views_path .. 'SemanticWorkflow/UID.lua')['FrameList']
 
-local MODE_TEXTS <const> = { "-", "D", "M", "Y", "R", "A" }
+local MODE_TEXTS <const> = { '-', 'D', 'M', 'Y', 'R', 'A' }
 local BUTTONS <const> = {
-    {input = 'A', text = 'A'},
-    {input = 'B', text = 'B'},
-    {input = 'Z', text = 'Z'},
-    {input = 'start', text = 'S'},
-    {input = 'Cup', text = '^'},
-    {input = 'Cleft', text = '<'},
-    {input = 'Cright', text = '>'},
-    {input = 'Cdown', text = 'v'},
-    {input = 'L', text = 'L'},
-    {input = 'R', text = 'R'},
-    {input = 'up', text = '^'},
-    {input = 'left', text = '<'},
-    {input = 'right', text = '>'},
-    {input = 'v', text = 'v'},
+    { input = 'A',      text = 'A' },
+    { input = 'B',      text = 'B' },
+    { input = 'Z',      text = 'Z' },
+    { input = 'start',  text = 'S' },
+    { input = 'Cup',    text = '^' },
+    { input = 'Cleft',  text = '<' },
+    { input = 'Cright', text = '>' },
+    { input = 'Cdown',  text = 'v' },
+    { input = 'L',      text = 'L' },
+    { input = 'R',      text = 'R' },
+    { input = 'up',     text = '^' },
+    { input = 'left',   text = '<' },
+    { input = 'right',  text = '>' },
+    { input = 'v',      text = 'v' },
 }
 
 local COL0 <const> = 0.0
@@ -52,16 +52,16 @@ local MAX_DISPLAYED_SECTIONS <const> = 15
 
 local NUM_UIDS_PER_ROW <const> = 2
 local BUTTON_COLORS <const> = {
-    { background = "#0000FF64", button = "#0000BEFF" }, -- A
-    { background = "#00B11664", button = "#00E62CFF" }, -- B
-    { background = "#6F6F6F64", button = "#C8C8C8FF" }, -- Z
-    { background = "#C8000064", button = "#FF0000FF" }, -- Start
-    { background = "#C8C80064", button = "#FFFF00FF" }, -- 4 C Buttons
-    { background = "#6F6F6F64", button = "#C8C8C8FF" }, -- L + R Buttons
-    { background = "#37373764", button = "#323232FF" }, -- 4 DPad Buttons
+    { background = '#0000FF64', button = '#0000BEFF' }, -- A
+    { background = '#00B11664', button = '#00E62CFF' }, -- B
+    { background = '#6F6F6F64', button = '#C8C8C8FF' }, -- Z
+    { background = '#C8000064', button = '#FF0000FF' }, -- Start
+    { background = '#C8C80064', button = '#FFFF00FF' }, -- 4 C Buttons
+    { background = '#6F6F6F64', button = '#C8C8C8FF' }, -- L + R Buttons
+    { background = '#37373764', button = '#323232FF' }, -- 4 DPad Buttons
 }
 
-local VIEW_MODE_HEADERS <const> = { "SEMANTIC_WORKFLOW_FRAMELIST_STICK", "SEMANTIC_WORKFLOW_FRAMELIST_UNTIL" }
+local VIEW_MODE_HEADERS <const> = { 'SEMANTIC_WORKFLOW_FRAMELIST_STICK', 'SEMANTIC_WORKFLOW_FRAMELIST_UNTIL' }
 
 --#endregion
 
@@ -116,31 +116,31 @@ local function interpolate_vectors_to_int(a, b, f)
 end
 
 local function draw_headers(sheet, draw, view_index, button_draw_data)
-    local background_color = interpolate_vectors_to_int(draw.background_color, {r = 127, g = 127, b = 127}, 0.25)
+    local background_color = interpolate_vectors_to_int(draw.background_color, { r = 127, g = 127, b = 127 }, 0.25)
     BreitbandGraphics.fill_rectangle(grid_rect(0, ROW0, COL_1, ROW2 - ROW0, 0), background_color)
 
-    draw:text(grid_rect(3, ROW0, 1, 0.5), "start", Locales.str("SEMANTIC_WORKFLOW_FRAMELIST_NAME"))
+    draw:text(grid_rect(3, ROW0, 1, 0.5), 'start', Locales.str('SEMANTIC_WORKFLOW_FRAMELIST_NAME'))
     local prev_font_size = ugui.standard_styler.params.font_size
     ugui.standard_styler.params.font_size = ugui.standard_styler.params.font_size * 0.75
     sheet.name = ugui.textbox({
         uid = UID.SheetName,
         is_enabled = true,
         rectangle = grid_rect(4, ROW0, 4, 0.5),
-        text = sheet.name
+        text = sheet.name,
     })
     SemanticWorkflowProject:set_current_name(sheet.name)
     ugui.standard_styler.params.font_size = prev_font_size
     ugui.standard_styler.font_size = prev_font_size
 
-    draw:text(grid_rect(COL0, ROW1, COL1 - COL0, 1), "start", Locales.str("SEMANTIC_WORKFLOW_FRAMELIST_SECTION"))
-    draw:text(grid_rect(COL1, ROW1, COL6 - COL1, 1), "start", Locales.str(VIEW_MODE_HEADERS[view_index]))
+    draw:text(grid_rect(COL0, ROW1, COL1 - COL0, 1), 'start', Locales.str('SEMANTIC_WORKFLOW_FRAMELIST_SECTION'))
+    draw:text(grid_rect(COL1, ROW1, COL6 - COL1, 1), 'start', Locales.str(VIEW_MODE_HEADERS[view_index]))
 
     if not button_draw_data then return end
 
     local rect = grid_rect(0, ROW1, 0.333, 1)
     for i, v in ipairs(BUTTONS) do
         rect.x = button_draw_data[i].x
-        draw:text(rect, "center", v.text)
+        draw:text(rect, 'center', v.text)
     end
 end
 
@@ -179,8 +179,8 @@ local function draw_color_codes(baseline, scrollbar_rect, num_display_sections)
 
     local f = Settings.grid_size * Drawing.scale
     BreitbandGraphics.fill_rectangle(
-        {x = COL0 * f + Drawing.initial_size.width, y = rect.y, width = (COL1 - COL0) * f, height = rect.height},
-        "#FF000028"
+        { x = COL0 * f + Drawing.initial_size.width, y = rect.y, width = (COL1 - COL0) * f, height = rect.height },
+        '#FF000028'
     )
 
     local i = 1
@@ -189,11 +189,11 @@ local function draw_color_codes(baseline, scrollbar_rect, num_display_sections)
 
     local function draw_next(amount)
         for k = 0, amount - 1, 1 do
-            button_draw_data[i] = {x = rect.x + k * rect.width, color_index = color_index}
+            button_draw_data[i] = { x = rect.x + k * rect.width, color_index = color_index }
             i = i + 1
         end
         BreitbandGraphics.fill_rectangle(
-            {x = rect.x, y = rect.y, width = rect.width * amount, height = rect.height},
+            { x = rect.x, y = rect.y, width = rect.width * amount, height = rect.height },
             BUTTON_COLORS[color_index].background
         )
         color_index = color_index + 1
@@ -233,7 +233,8 @@ local function handle_scroll_and_buttons(section_rect, button_draw_data, num_row
     iterate_input_rows(SemanticWorkflowProject:asserted_current(), function(section, input, section_index, input_index)
         if input_index == hovering_index and in_range and section ~= nil then
             for button_index, v in ipairs(BUTTONS) do
-                local in_range_x = mouse_x >= button_draw_data[button_index].x and mouse_x < button_draw_data[button_index + 1].x
+                local in_range_x = mouse_x >= button_draw_data[button_index].x and
+                mouse_x < button_draw_data[button_index + 1].x
                 if ugui.internal.is_mouse_just_down() and in_range_x then
                     placing = input.joy[v.input] and -1 or 1
                     input.joy[v.input] = placing
@@ -254,10 +255,9 @@ end
 
 ---@param sheet Sheet
 local function draw_sections_gui(sheet, draw, view_index, section_rect, button_draw_data)
-
     local function span(x1, x2, height)
         local r = grid_rect(x1, 0, x2 - x1, height, 0)
-        return {x = r.x, y = section_rect.y, width = r.width, height = height and r.height or section_rect.height}
+        return { x = r.x, y = section_rect.y, width = r.width, height = height and r.height or section_rect.height }
     end
 
     iterate_input_rows(sheet, function(section, input, section_index, total_inputs, input_sub_index)
@@ -269,8 +269,8 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
 
         if total_inputs > MAX_DISPLAYED_SECTIONS + scroll_offset then
             local extra_sections = #sheet.sections - section_index
-            BreitbandGraphics.fill_rectangle(span(0, COL_1), "#8A948A42")
-            draw:text(span(COL1, COL_1), "start", "+ " .. extra_sections .. " sections")
+            BreitbandGraphics.fill_rectangle(span(0, COL_1), '#8A948A42')
+            draw:text(span(COL1, COL_1), 'start', '+ ' .. extra_sections .. ' sections')
             return true
         end
 
@@ -279,7 +279,10 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
 
         local uid_base = UID.Row(total_inputs - scroll_offset)
         local uid_offset = -1
-        local function next_uid() uid_offset = uid_offset + 1 return uid_offset + uid_base end
+        local function next_uid()
+            uid_offset = uid_offset + 1
+            return uid_offset + uid_base
+        end
 
         BreitbandGraphics.fill_rectangle(section_rect, { r = shade, g = shade, b = shade * blue_multiplier, a = 66 })
 
@@ -287,14 +290,15 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
             section.collapsed = not ugui.toggle_button({
                 uid = next_uid(),
                 rectangle = span(COL0, COL0 + 0.3),
-                text = section.collapsed and "[icon:arrow_right]" or "[icon:arrow_down]",
-                tooltip = Locales.str(section.collapsed and "SEMANTIC_WORKFLOW_INPUTS_EXPAND_SECTION" or "SEMANTIC_WORKFLOW_INPUTS_COLLAPSE_SECTION"),
+                text = section.collapsed and '[icon:arrow_right]' or '[icon:arrow_down]',
+                tooltip = Locales.str(section.collapsed and 'SEMANTIC_WORKFLOW_INPUTS_EXPAND_SECTION' or
+                'SEMANTIC_WORKFLOW_INPUTS_COLLAPSE_SECTION'),
                 is_checked = not section.collapsed,
-                is_enabled = #section.inputs > 1
+                is_enabled = #section.inputs > 1,
             }) or #section.inputs == 1;
         end
 
-        draw:text(frame_box, "end", section_index .. ":")
+        draw:text(frame_box, 'end', section_index .. ':')
 
         if ugui.internal.is_mouse_just_down() and BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, frame_box) then
             sheet.preview_frame = { section_index = section_index, frame_index = input_sub_index }
@@ -308,11 +312,11 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
             ugui.joystick({
                 uid = next_uid(),
                 rectangle = span(COL1, COL2, FRAME_COLUMN_HEIGHT),
-                position = {x = input.joy.X, y = -input.joy.Y},
+                position = { x = input.joy.X, y = -input.joy.Y },
             })
 
             if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, joystick_box) then
-                if ugui.internal.is_mouse_just_down() and not ugui_environment.held_keys["control"] then
+                if ugui.internal.is_mouse_just_down() and not ugui_environment.held_keys['control'] then
                     for _, section in pairs(sheet.sections) do
                         for _, input in pairs(section.inputs) do
                             input.editing = false
@@ -325,18 +329,19 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
             end
 
             if input.editing then
-                BreitbandGraphics.fill_rectangle(joystick_box, "#00C80064")
+                BreitbandGraphics.fill_rectangle(joystick_box, '#00C80064')
             end
 
-            draw:text(span(COL2, COL3), "center", MODE_TEXTS[tas_state.movement_mode + 1])
+            draw:text(span(COL2, COL3), 'center', MODE_TEXTS[tas_state.movement_mode + 1])
 
             if tas_state.movement_mode == MovementModes.match_angle then
-                draw:text(span(COL4, COL5), "end", tostring(tas_state.goal_angle))
-                draw:text(span(COL5, COL6), "end", tas_state.strain_left and '<' or (tas_state.strain_right and '>' or '-'))
+                draw:text(span(COL4, COL5), 'end', tostring(tas_state.goal_angle))
+                draw:text(span(COL5, COL6), 'end',
+                    tas_state.strain_left and '<' or (tas_state.strain_right and '>' or '-'))
             end
         elseif view_index == 2 then
             -- end action
-            draw:text(active_frame_box, "start", Locales.action(section.end_action))
+            draw:text(active_frame_box, 'start', Locales.action(section.end_action))
         end
 
         if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, active_frame_box) then
@@ -352,21 +357,22 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
         -- draw buttons
         local unit = Settings.grid_size * Drawing.scale
         local sz = BUTTON_SIZE * unit
-        local rect = {x = 0, y = section_rect.y + (FRAME_COLUMN_HEIGHT - BUTTON_SIZE) * 0.5 * unit, width = sz, height = sz}
+        local rect = { x = 0, y = section_rect.y + (FRAME_COLUMN_HEIGHT - BUTTON_SIZE) * 0.5 * unit, width = sz, height =
+        sz }
         for button_index, v in ipairs(BUTTONS) do
             rect.x = button_draw_data[button_index].x + unit * (BUTTON_COLUMN_WIDTH - BUTTON_SIZE) * 0.5
             if input.joy[v.input] then
                 BreitbandGraphics.fill_ellipse(rect, BUTTON_COLORS[button_draw_data[button_index].color_index].button)
             end
-            BreitbandGraphics.draw_ellipse(rect, input.joy[v.input] and "#000000FF" or "#00000050", 1)
+            BreitbandGraphics.draw_ellipse(rect, input.joy[v.input] and '#000000FF' or '#00000050', 1)
         end
 
         if section_index == sheet.preview_frame.section_index and sheet.preview_frame.frame_index == input_sub_index then
-            BreitbandGraphics.draw_rectangle(section_rect, "#FF0000FF", 1)
+            BreitbandGraphics.draw_rectangle(section_rect, '#FF0000FF', 1)
         end
 
         if section_index == sheet.active_frame.section_index and sheet.active_frame.frame_index == input_sub_index then
-            BreitbandGraphics.draw_rectangle(section_rect, "#64FF64FF", 1)
+            BreitbandGraphics.draw_rectangle(section_rect, '#64FF64FF', 1)
         end
 
         section_rect.y = section_rect.y + section_rect.height
@@ -380,7 +386,8 @@ function __impl.render(draw)
 
     local num_rows = iterate_input_rows(SemanticWorkflowProject:asserted_current(), nil)
     local baseline, scrollbar_rect = draw_scrollbar(num_rows)
-    local button_draw_data = draw_color_codes(baseline, scrollbar_rect, math.min(num_rows, MAX_DISPLAYED_SECTIONS)) or nil
+    local button_draw_data = draw_color_codes(baseline, scrollbar_rect, math.min(num_rows, MAX_DISPLAYED_SECTIONS)) or
+    nil
     draw_headers(current_sheet, draw, __impl.view_index, button_draw_data)
 
     local section_rect = grid_rect(COL0, ROW2, COL_1 - COL0 - SCROLLBAR_WIDTH, FRAME_COLUMN_HEIGHT, 0)

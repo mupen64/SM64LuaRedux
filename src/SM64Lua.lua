@@ -4,7 +4,7 @@
 -- SPDX-License-Identifier: GPL-2.0-or-later
 --
 
-assert(emu.atloadstate, "emu.atloadstate missing")
+assert(emu.atloadstate, 'emu.atloadstate missing')
 
 function deep_merge(a, b)
     local result = {}
@@ -12,7 +12,7 @@ function deep_merge(a, b)
     local function merge(t1, t2)
         local merged = {}
         for key, value in pairs(t1) do
-            if type(value) == "table" and type(t2[key]) == "table" then
+            if type(value) == 'table' and type(t2[key]) == 'table' then
                 merged[key] = merge(value, t2[key])
             else
                 merged[key] = value
@@ -20,7 +20,7 @@ function deep_merge(a, b)
         end
 
         for key, value in pairs(t2) do
-            if type(value) == "table" and type(t1[key]) == "table" then
+            if type(value) == 'table' and type(t1[key]) == 'table' then
             else
                 merged[key] = value
             end
@@ -44,7 +44,7 @@ end
 
 --1.1.7+ shim: atupdatescreen no longer allows you to use d2d
 if emu.atdrawd2d then
-    print("Applied atdrawd2d shim")
+    print('Applied atdrawd2d shim')
     emu.atupdatescreen = emu.atdrawd2d
 end
 
@@ -69,50 +69,50 @@ function dictlen(t)
     return count
 end
 
-folder = debug.getinfo(1).source:sub(2):match("(.*\\)")
-styles_path = folder .. "res\\styles\\"
-locales_path = folder .. "res\\lang\\"
-views_path = folder .. "views\\"
-core_path = folder .. "core\\"
-lib_path = folder .. "lib\\"
-processors_path = folder .. "processors\\"
+folder = debug.getinfo(1).source:sub(2):match('(.*\\)')
+styles_path = folder .. 'res\\styles\\'
+locales_path = folder .. 'res\\lang\\'
+views_path = folder .. 'views\\'
+core_path = folder .. 'core\\'
+lib_path = folder .. 'lib\\'
+processors_path = folder .. 'processors\\'
 
 ---@module 'BreitbandGraphics'
-BreitbandGraphics = dofile(lib_path .. "breitbandgraphics.lua")
+BreitbandGraphics = dofile(lib_path .. 'breitbandgraphics.lua')
 
 ---@module 'mupen-lua-ugui'
-ugui = dofile(lib_path .. "mupen-lua-ugui.lua")
+ugui = dofile(lib_path .. 'mupen-lua-ugui.lua')
 
 ---@module 'mupen-lua-ugui-ext'
-ugui_ext = dofile(lib_path .. "mupen-lua-ugui-ext.lua")
+ugui_ext = dofile(lib_path .. 'mupen-lua-ugui-ext.lua')
 
 ---@module 'linq'
-lualinq = dofile(lib_path .. "linq.lua")
+lualinq = dofile(lib_path .. 'linq.lua')
 
-persistence = dofile(lib_path .. "persistence.lua")
-json = dofile(lib_path .. "json.lua")
-dofile(styles_path .. "base_style.lua")
-dofile(core_path .. "Settings.lua")
-dofile(core_path .. "Formatter.lua")
-dofile(core_path .. "Drawing.lua")
-dofile(core_path .. "Memory.lua")
-dofile(core_path .. "RNG.lua")
-dofile(core_path .. "Joypad.lua")
-dofile(core_path .. "Angles.lua")
-dofile(core_path .. "Engine.lua")
-dofile(core_path .. "MoreMaths.lua")
-dofile(core_path .. "WorldVisualizer.lua")
-dofile(core_path .. "MiniVisualizer.lua")
-dofile(core_path .. "Lookahead.lua")
-dofile(core_path .. "Timer.lua")
-dofile(core_path .. "Ghost.lua")
-dofile(core_path .. "VarWatch.lua")
-dofile(core_path .. "Styles.lua")
-dofile(core_path .. "Locales.lua")
-dofile(core_path .. "Presets.lua")
-dofile(core_path .. "Dumping.lua")
-Hotkeys = dofile(core_path .. "Hotkeys.lua")
-Addresses = dofile(core_path .. "Addresses.lua")
+persistence = dofile(lib_path .. 'persistence.lua')
+json = dofile(lib_path .. 'json.lua')
+dofile(styles_path .. 'base_style.lua')
+dofile(core_path .. 'Settings.lua')
+dofile(core_path .. 'Formatter.lua')
+dofile(core_path .. 'Drawing.lua')
+dofile(core_path .. 'Memory.lua')
+dofile(core_path .. 'RNG.lua')
+dofile(core_path .. 'Joypad.lua')
+dofile(core_path .. 'Angles.lua')
+dofile(core_path .. 'Engine.lua')
+dofile(core_path .. 'MoreMaths.lua')
+dofile(core_path .. 'WorldVisualizer.lua')
+dofile(core_path .. 'MiniVisualizer.lua')
+dofile(core_path .. 'Lookahead.lua')
+dofile(core_path .. 'Timer.lua')
+dofile(core_path .. 'Ghost.lua')
+dofile(core_path .. 'VarWatch.lua')
+dofile(core_path .. 'Styles.lua')
+dofile(core_path .. 'Locales.lua')
+dofile(core_path .. 'Presets.lua')
+dofile(core_path .. 'Dumping.lua')
+Hotkeys = dofile(core_path .. 'Hotkeys.lua')
+Addresses = dofile(core_path .. 'Addresses.lua')
 
 Memory.initialize()
 Joypad.update()
@@ -121,24 +121,24 @@ Presets.restore()
 Presets.apply(Presets.persistent.current_index)
 
 local views = {
-    dofile(views_path .. "TAS.lua"),
-    dofile(views_path .. "SemanticWorkflow/Main.lua"),
-    dofile(views_path .. "Settings.lua"),
-    dofile(views_path .. "Tools.lua"),
-    dofile(views_path .. "Timer.lua"),
+    dofile(views_path .. 'TAS.lua'),
+    dofile(views_path .. 'SemanticWorkflow/Main.lua'),
+    dofile(views_path .. 'Settings.lua'),
+    dofile(views_path .. 'Tools.lua'),
+    dofile(views_path .. 'Timer.lua'),
 }
 
-local semantic_workflow = dofile(processors_path .. "SemanticWorkflow.lua")
+local semantic_workflow = dofile(processors_path .. 'SemanticWorkflow.lua')
 local processors = {
     semantic_workflow.transform,
-    dofile(processors_path .. "Walk.lua"),
-    dofile(processors_path .. "Swimming.lua"),
-    dofile(processors_path .. "Wallkicker.lua"),
-    dofile(processors_path .. "Framewalk.lua"),
+    dofile(processors_path .. 'Walk.lua'),
+    dofile(processors_path .. 'Swimming.lua'),
+    dofile(processors_path .. 'Wallkicker.lua'),
+    dofile(processors_path .. 'Framewalk.lua'),
     semantic_workflow.readback,
 }
 
-Notifications = dofile(views_path .. "Notifications.lua")
+Notifications = dofile(views_path .. 'Notifications.lua')
 
 ugui_environment = {}
 local mouse_wheel = 0
@@ -205,7 +205,7 @@ local function draw_navbar()
         uid = -5000,
         rectangle = grid_rect(0, 16, 5.5, 1),
         is_enabled = not Settings.hotkeys_assigning,
-        items = lualinq.select_key(views, "name"),
+        items = lualinq.select_key(views, 'name'),
         selected_index = Settings.tab_index,
     })
 
@@ -219,19 +219,19 @@ local function draw_navbar()
             rectangle = ugui.internal.deep_clone(last_rmb_down_position),
             items = {
                 {
-                    text = Locales.str("GENERIC_RESET"),
+                    text = Locales.str('GENERIC_RESET'),
                     callback = function()
                         Presets.reset(Presets.persistent.current_index)
                         Presets.apply(Presets.persistent.current_index)
-                    end
+                    end,
                 },
                 {
-                    text = Locales.str("PRESET_CONTEXT_MENU_PERSIST_TAS_STATE"),
+                    text = Locales.str('PRESET_CONTEXT_MENU_PERSIST_TAS_STATE'),
                     checked = Settings.persist_tas_state,
                     callback = function()
                         Settings.persist_tas_state = not Settings.persist_tas_state
-                    end
-                }
+                    end,
+                },
             },
         })
 
@@ -256,7 +256,7 @@ local function draw_navbar()
         rectangle = preset_picker_rect,
         is_enabled = not Settings.hotkeys_assigning,
         items = lualinq.select(Presets.persistent.presets, function(_, i)
-            return Locales.str("PRESET") .. i
+            return Locales.str('PRESET') .. i
         end),
         selected_index = preset_index,
     })
@@ -310,7 +310,7 @@ function at_update_screen()
         window_size = {
             x = Drawing.size.width,
             y = Drawing.size.height - 23,
-        }
+        },
     }
     ugui.begin_frame(ugui_environment)
 
@@ -324,7 +324,7 @@ function at_update_screen()
         x = Drawing.initial_size.width,
         y = 0,
         width = Drawing.size.width - Drawing.initial_size.width,
-        height = Drawing.size.height
+        height = Drawing.size.height,
     }, Styles.theme().background_color)
 
     if not Settings.navbar_visible then

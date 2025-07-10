@@ -17,5 +17,5 @@ return {
         end
 
         return input
-    end
+    end,
 }

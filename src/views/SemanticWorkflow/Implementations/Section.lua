@@ -14,7 +14,7 @@ function __impl.new(end_action, timeout)
     return {
         end_action = end_action,
         timeout = timeout,
-        inputs = { { tas_state = NewTASState(), joy = tmp, } },
+        inputs = { { tas_state = NewTASState(), joy = tmp } },
         collapsed = false,
     }
 end

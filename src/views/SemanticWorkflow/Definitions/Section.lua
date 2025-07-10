@@ -17,7 +17,7 @@ local cls_section = {}
 function cls_section.new(end_action, timeout) end
 
 __impl = cls_section
-dofile(views_path .. "SemanticWorkflow/Implementations/Section.lua")
+dofile(views_path .. 'SemanticWorkflow/Implementations/Section.lua')
 __impl = nil
 
 return cls_section

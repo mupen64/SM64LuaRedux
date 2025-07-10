@@ -6,16 +6,16 @@
 
 local items = {
     {
-        text = Locales.str("SETTINGS_HOTKEYS_ACTIVATION"),
+        text = Locales.str('SETTINGS_HOTKEYS_ACTIVATION'),
         func = function(rect)
             if ugui.button({
                     uid = 10,
                     rectangle = rect,
-                    text = Settings.hotkeys_allow_with_active_control and Locales.str("SETTINGS_HOTKEYS_ACTIVATION_ALWAYS") or Locales.str("SETTINGS_HOTKEYS_ACTIVATION_WHEN_NO_FOCUS"),
+                    text = Settings.hotkeys_allow_with_active_control and Locales.str('SETTINGS_HOTKEYS_ACTIVATION_ALWAYS') or Locales.str('SETTINGS_HOTKEYS_ACTIVATION_WHEN_NO_FOCUS'),
                 }) then
                 Settings.hotkeys_allow_with_active_control = not Settings.hotkeys_allow_with_active_control
             end
-        end
+        end,
     },
 }
 
@@ -26,37 +26,37 @@ local key = nil
 
 local function hotkey_to_string(hotkey)
     if not hotkey.keys or #hotkey.keys == 0 then
-        return Locales.str("SETTINGS_HOTKEYS_NOTHING")
+        return Locales.str('SETTINGS_HOTKEYS_NOTHING')
     end
 
-    local str = ""
+    local str = ''
 
     for i = 1, #hotkey.keys, 1 do
         local key = ugui.internal.deep_clone(hotkey.keys[i])
 
-        if key == "control" then
-            key = "Ctrl"
-        elseif key == "shift" then
-            key = "Shift"
-        elseif key == "alt" then
-            key = "Alt"
-        elseif key == "space" then
-            key = "Space"
-        elseif key == "comma" then
-            key = ","
-        elseif key == "period" then
-            key = "."
-        elseif key == "leftbracket" then
-            key = "["
-        elseif key == "rightbracket" then
-            key = "]"
-        elseif key == "enter" then
-            key = "Enter"
+        if key == 'control' then
+            key = 'Ctrl'
+        elseif key == 'shift' then
+            key = 'Shift'
+        elseif key == 'alt' then
+            key = 'Alt'
+        elseif key == 'space' then
+            key = 'Space'
+        elseif key == 'comma' then
+            key = ','
+        elseif key == 'period' then
+            key = '.'
+        elseif key == 'leftbracket' then
+            key = '['
+        elseif key == 'rightbracket' then
+            key = ']'
+        elseif key == 'enter' then
+            key = 'Enter'
         else
             key = string.upper(key)
         end
 
-        str = str .. key .. " "
+        str = str .. key .. ' '
     end
     for key, value in pairs(hotkey.keys) do
     end
@@ -68,15 +68,15 @@ local function get_current_keys()
     local keys = {}
 
     if ctrl then
-        keys[#keys + 1] = "control"
+        keys[#keys + 1] = 'control'
     end
 
     if shift then
-        keys[#keys + 1] = "shift"
+        keys[#keys + 1] = 'shift'
     end
 
     if alt then
-        keys[#keys + 1] = "alt"
+        keys[#keys + 1] = 'alt'
     end
 
     if key then
@@ -87,7 +87,7 @@ local function get_current_keys()
 end
 
 return {
-    name = Locales.str("SETTINGS_HOTKEYS_TAB_NAME"),
+    name = Locales.str('SETTINGS_HOTKEYS_TAB_NAME'),
     draw = function()
         local prev_draw_text = BreitbandGraphics.draw_text
 
@@ -102,7 +102,7 @@ return {
             rectangle = grid_rect(0, 0, 8, 8),
             selected_index = Settings.hotkeys_selected_index,
             items = lualinq.select(Settings.hotkeys, function(x)
-                return x.identifier .. " - " .. hotkey_to_string(x)
+                return x.identifier .. ' - ' .. hotkey_to_string(x)
             end),
         })
 
@@ -112,7 +112,7 @@ return {
                 uid = 405,
                 rectangle = grid_rect(0, 8, 2, 1),
                 is_enabled = not Settings.hotkeys_assigning,
-                text = Locales.str("SETTINGS_HOTKEYS_CLEAR"),
+                text = Locales.str('SETTINGS_HOTKEYS_CLEAR'),
             }) then
             Settings.hotkeys[Settings.hotkeys_selected_index].keys = {}
         end
@@ -121,7 +121,7 @@ return {
                 uid = 410,
                 rectangle = grid_rect(2, 8, 2, 1),
                 is_enabled = not Settings.hotkeys_assigning,
-                text = Locales.str("SETTINGS_HOTKEYS_RESET"),
+                text = Locales.str('SETTINGS_HOTKEYS_RESET'),
             }) then
             Settings.hotkeys[Settings.hotkeys_selected_index].keys = Presets.get_default_preset().hotkeys
                 [Settings.hotkeys_selected_index].keys
@@ -130,7 +130,7 @@ return {
         if ugui.button({
                 uid = 415,
                 rectangle = grid_rect(4, 8, 4, 1),
-                text = Settings.hotkeys_assigning and hotkey_to_string({ keys = get_current_keys() }) or Locales.str("SETTINGS_HOTKEYS_ASSIGN"),
+                text = Settings.hotkeys_assigning and hotkey_to_string({ keys = get_current_keys() }) or Locales.str('SETTINGS_HOTKEYS_ASSIGN'),
             }) then
             ctrl = false
             shift = false
@@ -143,19 +143,19 @@ return {
 
         -- FIXME: Early return
         if Settings.hotkeys_assigning then
-            if ugui.internal.environment.held_keys["control"] then
+            if ugui.internal.environment.held_keys['control'] then
                 ctrl = true
             end
-            if ugui.internal.environment.held_keys["shift"] then
+            if ugui.internal.environment.held_keys['shift'] then
                 shift = true
             end
-            if ugui.internal.environment.held_keys["alt"] then
+            if ugui.internal.environment.held_keys['alt'] then
                 alt = true
             end
 
-            local CONFIRM_KEY = "enter"
+            local CONFIRM_KEY = 'enter'
             for vkey, _ in pairs(ugui.internal.environment.held_keys) do
-                if vkey ~= "control" and vkey ~= "shift" and vkey ~= "alt" and vkey ~= "xmouse" and vkey ~= "ymouse" and vkey ~= "ywmouse" and vkey ~= "leftclick" and vkey ~= "rightclick" and vkey ~= CONFIRM_KEY then
+                if vkey ~= 'control' and vkey ~= 'shift' and vkey ~= 'alt' and vkey ~= 'xmouse' and vkey ~= 'ymouse' and vkey ~= 'ywmouse' and vkey ~= 'leftclick' and vkey ~= 'rightclick' and vkey ~= CONFIRM_KEY then
                     key = vkey
                 end
 
@@ -171,15 +171,15 @@ return {
 
             BreitbandGraphics.draw_text(
                 grid_rect(0, 7, 8, 0.5),
-                "center",
-                "center",
+                'center',
+                'center',
                 { aliased = not theme.cleartype },
                 foreground_color,
                 theme.font_size * Drawing.scale,
                 theme.font_name,
-                Locales.str("SETTINGS_HOTKEYS_CONFIRMATION"))
+                Locales.str('SETTINGS_HOTKEYS_CONFIRMATION'))
         end
 
         Drawing.setting_list(items, { x = 0, y = 9 })
-    end
+    end,
 }

@@ -22,5 +22,5 @@ return {
         input.X = result.X
         input.Y = result.Y
         return input
-    end
+    end,
 }

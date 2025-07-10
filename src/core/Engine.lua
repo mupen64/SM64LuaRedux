@@ -4,9 +4,7 @@
 -- SPDX-License-Identifier: GPL-2.0-or-later
 --
 
-Engine = {
-
-}
+Engine = {}
 
 MovementModes = {
 	disabled = 1,
@@ -286,7 +284,7 @@ Engine.inputsForAngle = function(goal, curr_input)
 	return {
 		angle = (Angles.ANGLE[minang].angle + Memory.current.camera_angle) % 65536,
 		X = Angles.ANGLE[minang].X,
-		Y = Angles.ANGLE[minang].Y
+		Y = Angles.ANGLE[minang].Y,
 	}
 end
 

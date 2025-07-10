@@ -20,7 +20,7 @@ function Drawing.size_up()
     wgui.resize(math.floor(Drawing.initial_size.width + extra_space),
         Drawing.initial_size.height)
     Drawing.size = wgui.info()
-    print("Scale factor " .. Drawing.scale)
+    print('Scale factor ' .. Drawing.scale)
 end
 
 function Drawing.size_down()
@@ -96,8 +96,8 @@ function Drawing.setting_list(items, pos)
 
         BreitbandGraphics.draw_text(
             grid_rect(pos.x, y, 8, 0.5),
-            "start",
-            "center",
+            'start',
+            'center',
             { aliased = not theme.cleartype },
             foreground_color,
             theme.font_size * Drawing.scale * 1.25,

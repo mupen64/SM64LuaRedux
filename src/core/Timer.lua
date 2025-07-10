@@ -21,7 +21,7 @@ local frames = 0
 
 local function timerAutoDetect()
     if ((State == 1) and ((Memory.current.mario_object_effective == 0) or (curVI < StartVI))) then -- Reset timer on star select, or if state before start time is loaded
-    Timer.reset()
+        Timer.reset()
     end
     if ((State ~= 1) and (Memory.current.camera_transition_progress ~= nil) and (Memory.current.mario_object_effective ~= 0) and (transitionTimes[Memory.current.camera_transition_type] == Memory.current.camera_transition_progress) and (Memory.current.mario_action ~= 0x1300)) then -- Start timer on fade in
         Timer.start()
@@ -45,11 +45,11 @@ end
 Timer.get_frame_text = function()
     local decimals = ((VIs % 60) * 1000 // 60 + 5) // 10 % 100
     if (VIs < 3600) then
-        return string.format("%02d.%02d", VIs // 60, decimals)
+        return string.format('%02d.%02d', VIs // 60, decimals)
     elseif (VIs < 216000) then
-        return string.format("%02d:%02d.%02d", VIs // 3600, (VIs % 3600) // 60, decimals)
+        return string.format('%02d:%02d.%02d', VIs // 3600, (VIs % 3600) // 60, decimals)
     else
-        return string.format("%d:%02d:%02d.%02d", VIs // 216000, (VIs % 216000) // 3600, (VIs % 3600) // 60, decimals)
+        return string.format('%d:%02d:%02d.%02d', VIs // 216000, (VIs % 216000) // 3600, (VIs % 3600) // 60, decimals)
     end
 end
 
@@ -59,7 +59,7 @@ end
 
 Timer.update = function()
     curVI = emu.framecount()
-    if (State == 1) then 
+    if (State == 1) then
         if (curVI <= StartVI) then
             VIs = 0
             frames = 0

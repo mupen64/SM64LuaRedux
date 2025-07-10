@@ -32,10 +32,10 @@ __SemanticWorkflowUids = {
     ToggleHelp = enum_next(),
     HelpNext = enum_next(),
     HelpBack = enum_next(),
-    FrameList = from_gui(dofile(views_path .. "SemanticWorkflow/Definitions/FrameListGui.lua")),
+    FrameList = from_gui(dofile(views_path .. 'SemanticWorkflow/Definitions/FrameListGui.lua')),
 }
 
-for _, tab in pairs(dofile(views_path .. "SemanticWorkflow/Tabs.lua")) do
+for _, tab in pairs(dofile(views_path .. 'SemanticWorkflow/Tabs.lua')) do
     __SemanticWorkflowUids[tab.name] = from_gui(tab)
 end
 
