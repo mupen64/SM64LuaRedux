@@ -10,4 +10,15 @@
     "d2d",
     "wgui"
   ],
+  "Lua.format.enable": true,
+  "Lua.format.defaultConfig": {
+    "indent_style": "space",
+    "indent_size": "4",
+    "quote_style": "single",
+    "call_arg_parentheses": "always",
+    "trailing_table_separator": "smart",
+    "insert_final_newline": "true",
+    "space_around_table_field_list": "true",
+    "space_before_attribute": "true",
+  }
 }
