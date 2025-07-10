@@ -19,7 +19,6 @@ return {
     SETTINGS_TAB_NAME = "Settings",
     TOOLS_TAB_NAME = "Tools",
     TIMER_TAB_NAME = "Timer",
-    TIMER2_TAB_NAME = "Timer 2",
     PRESET = "Preset ",
     -- Preset Context Menu
     PRESET_CONTEXT_MENU_PERSIST_TAS_STATE = "Remember TAS State",
@@ -152,7 +151,6 @@ This action cannot be undone.
     TOOLS_RNG = "RNG",
     TOOLS_RNG_LOCK = "Lock to",
     TOOLS_RNG_USE_INDEX = "Use Index",
-    TOOLS_AUTO_GRIND = "Auto-Grind",
     TOOLS_LOOKAHEAD = "Lookahead",
     TOOLS_LOOKAHEAD_ENABLE = "Enable",
     TOOLS_DUMPING = "Dumping",
@@ -170,8 +168,6 @@ This action cannot be undone.
     TIMER_RESET = "Reset",
     TIMER_MANUAL = "Manual",
     TIMER_AUTO = "Auto",
-    -- Timer 2 Tab
-    TIMER2_FRAME = "Frame: %s",
     -- Varwatch
     VARWATCH_FACING_YAW = "Facing Yaw: %s (O: %s)",
     VARWATCH_INTENDED_YAW = "Intended Yaw: %s (O: %s)",
