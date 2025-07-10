@@ -31,8 +31,6 @@ Settings = {
         z = 0,
     },
     atan_exp = 0,
-    lookahead = false,
-    lookahead_length = 1,
     format_decimal_points = 4,
     format_angles_degrees = false,
     worldviz_enabled = false,

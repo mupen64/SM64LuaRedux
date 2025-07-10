@@ -103,7 +103,6 @@ dofile(core_path .. 'Engine.lua')
 dofile(core_path .. 'MoreMaths.lua')
 dofile(core_path .. 'WorldVisualizer.lua')
 dofile(core_path .. 'MiniVisualizer.lua')
-dofile(core_path .. 'Lookahead.lua')
 dofile(core_path .. 'Timer.lua')
 dofile(core_path .. 'Ghost.lua')
 dofile(core_path .. 'VarWatch.lua')
@@ -182,7 +181,6 @@ function at_input()
     -- frame stage 2: let domain code loose on everything, then perform transformations or inspections (e.g.: swimming, rng override, ghost)
     -- TODO: make this into a priority callback system?
     Timer.update()
-    Lookahead.update()
 
     for i = 1, #processors, 1 do
         Joypad.input = processors[i].process(Joypad.input)

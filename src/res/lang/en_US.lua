@@ -153,8 +153,6 @@ This action cannot be undone.
     TOOLS_RNG = 'RNG',
     TOOLS_RNG_LOCK = 'Lock to',
     TOOLS_RNG_USE_INDEX = 'Use Index',
-    TOOLS_LOOKAHEAD = 'Lookahead',
-    TOOLS_LOOKAHEAD_ENABLE = 'Enable',
     TOOLS_DUMPING = 'Dumping',
     TOOLS_GHOST = 'Ghost',
     TOOLS_GHOST_START = 'Start Recording',

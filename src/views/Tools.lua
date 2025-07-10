@@ -5,10 +5,9 @@
 --
 
 local RNG_ROW = 1
-local LOOKAHEAD_ROW = 3
-local DUMPING_ROW = 5
-local GHOST_ROW = 7
-local EXPERIMENTS_ROW = 9
+local DUMPING_ROW = 3
+local GHOST_ROW = 5
+local EXPERIMENTS_ROW = 7
 
 return {
     name = Locales.str('TOOLS_TAB_NAME'),
@@ -47,34 +46,7 @@ return {
             minimum_value = math.mininteger,
             maximum_value = math.maxinteger,
         }))
-
-        BreitbandGraphics.draw_text(
-            grid_rect(0, LOOKAHEAD_ROW - 1, 8, 1),
-            'start',
-            'center',
-            { aliased = not theme.cleartype },
-            foreground_color,
-            theme.font_size * Drawing.scale * 1.25,
-            theme.font_name,
-            Locales.str('TOOLS_LOOKAHEAD'))
-        local lookahead = ugui.toggle_button({
-            uid = 20,
-            rectangle = grid_rect(0, LOOKAHEAD_ROW, 3, 1),
-            text = Locales.str('TOOLS_LOOKAHEAD_ENABLE'),
-            is_checked = Settings.lookahead,
-        })
-        if not Settings.lookahead and lookahead then
-            Lookahead.start()
-        end
-        Settings.lookahead = lookahead
-
-        Settings.lookahead_length = math.abs(ugui.numberbox({
-            uid = 25,
-            rectangle = grid_rect(3, LOOKAHEAD_ROW, 2, 1),
-            value = Settings.lookahead_length,
-            places = 1,
-        }))
-
+        
         BreitbandGraphics.draw_text(
             grid_rect(0, DUMPING_ROW - 1, 8, 1),
             'start',

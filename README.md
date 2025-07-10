@@ -37,13 +37,11 @@ or...
 - Auto firsties
 - Multicontroller support
 - Presets[^3]
-- n-Frame Lookahead[^5]
 - Customizable formatting[^6]
 - 3D World Visualization[^7]
 
 [^2]: The script will resize its elements intelligently to fit, and will thus work on small and huge resolutions
 [^3]: A preset saves your current choices (e.g.: Match Yaw with DYaw = 11111), and allow you to change between saved presets for spontaneously testing new strats or reusing older known configurations
-[^5]: Preview input changes in real-time, with no need for frame advancing manually. Useful for finding angles, testing BLJs and more. The lookahead timeout is, by default, 0 (1 frame lookahead), but can be increased
 [^6]: The amount of decimal points values are rounded to can be changed, as well as angles being expressed as degrees or game units
 [^7]: Allows you to see object positions as well as other useful information directly in the game world
 
