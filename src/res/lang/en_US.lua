@@ -157,6 +157,8 @@ This action cannot be undone.
     TOOLS_GHOST = 'Ghost',
     TOOLS_GHOST_START = 'Start Recording',
     TOOLS_GHOST_STOP = 'Stop Recording',
+    TOOLS_GHOST_START_RECORDING_FAILED = 'Failed to start ghost recording.',
+    TOOLS_GHOST_STOP_RECORDING_FAILED = 'Failed to stop ghost recording.',
     TOOLS_EXPERIMENTS = 'Experiments',
     TOOLS_MOVED_DIST = 'Moved Dist',
     TOOLS_MINI_OVERLAY = 'Input Overlay',

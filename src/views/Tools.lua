@@ -87,9 +87,21 @@ return {
         if ugui.button({
                 uid = 100,
                 rectangle = grid_rect(0, GHOST_ROW, 4, 1),
-                text = Ghost.is_recording and Locales.str('TOOLS_GHOST_STOP') or Locales.str('TOOLS_GHOST_START'),
+                text = Ghost.recording() and Locales.str('TOOLS_GHOST_STOP') or Locales.str('TOOLS_GHOST_START'),
             }) then
-            Ghost.toggle_recording()
+            if Ghost.recording() then
+                local result = Ghost.stop_recording()
+
+                if not result then
+                    print(Locales.str('TOOLS_GHOST_STOP_RECORDING_FAILED'))
+                end
+            else
+                local result = Ghost.start_recording()
+
+                if not result then
+                    print(Locales.str('TOOLS_GHOST_START_RECORDING_FAILED'))
+                end
+            end
         end
 
         BreitbandGraphics.draw_text(

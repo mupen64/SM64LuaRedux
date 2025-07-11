@@ -4,61 +4,34 @@
 -- SPDX-License-Identifier: GPL-2.0-or-later
 --
 
-Ghost = {
-	frames = {},
-	is_recording = false
-}
+Ghost = {}
 
+---@class GhostFrame
+---@field global_timer integer
+---@field x integer
+---@field y integer
+---@field z integer
+---@field animation_index integer
+---@field animation_timer integer
+---@field pitch integer
+---@field yaw integer
+---@field roll integer
+
+---@type GhostFrame[]
+local frames = {}
+local is_recording = false
 local frame = 0
+local recording_base_frame = nil
+local last_global_timer = nil
 
-GLOBAL_TIMER_ADDRESS = 0x8032D5D4
-MARIO_OBJ_ADDRESS = 0x80361158
-
-OBJ_POSITION_OFFSET = 0x20
-OBJ_ANIMATION_OFFSET = 0x38
-OBJ_ANIMATION_TIMER_OFFSET = 0x40
-
-OBJ_PITCH_OFFSET = 0x1A
-OBJ_YAW_OFFSET = 0x1C
-OBJ_ROLL_OFFSET = 0x1E
-
-recordingBaseFrame = nil
-lastGlobalTimer = nil
-
-function Ghost.update()
-	if not Ghost.is_recording then
-		return
-	end
-
-	if frame == 0 then
-		print("Recording ghost...")
-		frame = frame + 1
-	end
-
-	local marioObjRef = memory.readdword(MARIO_OBJ_ADDRESS)
-	local _globalTimer = memory.readdword(GLOBAL_TIMER_ADDRESS)
-	if recordingBaseFrame == nil then
-		recordingBaseFrame = _globalTimer
-	end
-	if lastGlobalTimer == nil or lastGlobalTimer < _globalTimer then
-		lastGlobalTimer = _globalTimer
-		table.insert(Ghost.frames,
-			{
-				globalTimer = (_globalTimer - 1),
-
-				pitch = memory.readword(marioObjRef + OBJ_PITCH_OFFSET),
-				yaw = memory.readword(marioObjRef + OBJ_YAW_OFFSET),
-				roll = memory.readword(marioObjRef + OBJ_ROLL_OFFSET),
-
-				positionX = memory.readdword(marioObjRef + OBJ_POSITION_OFFSET),
-				positionY = memory.readdword(marioObjRef + OBJ_POSITION_OFFSET + 4),
-				positionZ = memory.readdword(marioObjRef + OBJ_POSITION_OFFSET + 8),
-
-				animationIndex = memory.readword(marioObjRef + OBJ_ANIMATION_OFFSET),
-				animationTimer = memory.readword(marioObjRef + OBJ_ANIMATION_TIMER_OFFSET) - 1
-			})
-	end
-end
+local GLOBAL_TIMER_ADDRESS <const> = 0x8032D5D4
+local MARIO_OBJ_ADDRESS <const> = 0x80361158
+local OBJ_POSITION_OFFSET <const> = 0x20
+local OBJ_ANIMATION_OFFSET <const> = 0x38
+local OBJ_ANIMATION_TIMER_OFFSET <const> = 0x40
+local OBJ_PITCH_OFFSET <const> = 0x1A
+local OBJ_YAW_OFFSET <const> = 0x1C
+local OBJ_ROLL_OFFSET <const> = 0x1E
 
 local function writebytes32(f, x)
 	local b4 = string.char(x % 256)
@@ -80,37 +53,112 @@ local function writebytes16(f, x)
 	f:write(b2, b1)
 end
 
-function Ghost.write_file()
-	if recordingBaseFrame == nil then
-		return
+---Writes the current ghost data to the disk.
+---@return boolean # Whether the operation succeeded.
+---@nodiscard
+local function flush()
+	local file = io.open(Settings.ghost_path, 'wb')
+
+	if not file then
+		return false
 	end
-	local file = io.open(Settings.ghost_path, "wb")
-	writebytes32(file, recordingBaseFrame)
-	writebytes32(file, #Ghost.frames)
-	for _, value in pairs(Ghost.frames) do
-		writebytes32(file, (value.globalTimer - recordingBaseFrame))
-		writebytes32(file, value.positionX)
-		writebytes32(file, value.positionY)
-		writebytes32(file, value.positionZ)
-		writebytes16(file, value.animationIndex)
-		writebytes16(file, value.animationTimer)
+
+	-- Recording is less than one frame long, so write nothing.
+	if recording_base_frame == nil then
+		file:close()
+		return true
+	end
+
+	writebytes32(file, recording_base_frame)
+	writebytes32(file, #frames)
+
+	for _, value in pairs(frames) do
+		writebytes32(file, (value.global_timer - recording_base_frame))
+		writebytes32(file, value.x)
+		writebytes32(file, value.y)
+		writebytes32(file, value.z)
+		writebytes16(file, value.animation_index)
+		writebytes16(file, value.animation_timer)
 		writebytes32(file, value.pitch)
 		writebytes32(file, value.yaw)
 		writebytes32(file, value.roll)
 	end
+
 	file:close()
-	print("Ghost written to: " .. Settings.ghost_path)
-	frame = 0
+
+	return true
 end
 
-function Ghost.toggle_recording()
-	Ghost.is_recording = not Ghost.is_recording
-
-	if Ghost.is_recording then
-		frame = 0
-		Ghost.is_recording = true
+function Ghost.update()
+	if not is_recording then
 		return
 	end
 
-	Ghost.write_file()
+	if frame == 0 then
+		print('Recording ghost...')
+		frame = frame + 1
+	end
+
+	local mario_obj = memory.readdword(MARIO_OBJ_ADDRESS)
+	local global_timer = memory.readdword(GLOBAL_TIMER_ADDRESS)
+
+	if recording_base_frame == nil then
+		recording_base_frame = global_timer
+	end
+
+	if last_global_timer == nil or last_global_timer < global_timer then
+		last_global_timer = global_timer
+		frames[#frames + 1] = {
+			global_timer = (global_timer - 1),
+			pitch = memory.readword(mario_obj + OBJ_PITCH_OFFSET),
+			yaw = memory.readword(mario_obj + OBJ_YAW_OFFSET),
+			roll = memory.readword(mario_obj + OBJ_ROLL_OFFSET),
+			x = memory.readdword(mario_obj + OBJ_POSITION_OFFSET),
+			y = memory.readdword(mario_obj + OBJ_POSITION_OFFSET + 4),
+			z = memory.readdword(mario_obj + OBJ_POSITION_OFFSET + 8),
+			animation_index = memory.readword(mario_obj + OBJ_ANIMATION_OFFSET),
+			animation_timer = memory.readword(mario_obj + OBJ_ANIMATION_TIMER_OFFSET) - 1,
+		}
+	end
+end
+
+---Stops the ghost recording.
+---@return boolean # Whether the operation succeeded.
+---@nodiscard
+function Ghost.stop_recording()
+	if not is_recording then
+		return true
+	end
+
+	local result = flush()
+
+	is_recording = false
+	frames = {}
+	frame = 0
+	recording_base_frame = nil
+	last_global_timer = nil
+
+	return result
+end
+
+---Starts a ghost recording.
+---@return boolean # Whether the operation succeeded.
+---@nodiscard
+function Ghost.start_recording()
+	if is_recording then
+		local result = Ghost.stop_recording()
+		if not result then
+			return false
+		end
+	end
+
+	is_recording = true
+
+	return true
+end
+
+---@return boolean # Whether a ghost is being recorded.
+---@nodiscard
+function Ghost.recording()
+	return is_recording
 end
