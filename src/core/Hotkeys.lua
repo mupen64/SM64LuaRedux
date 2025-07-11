@@ -4,6 +4,8 @@
 -- SPDX-License-Identifier: GPL-2.0-or-later
 --
 
+Hotkeys = {}
+
 local hotkey_funcs = {
     movement_mode_disabled = function()
         TASState.movement_mode = MovementModes.disabled
@@ -73,6 +75,8 @@ local hotkey_funcs = {
 local last_pressed_hotkey = nil
 local last_pressed_hotkey_time = 0
 
+---Calls a hotkey's function.
+---@param identifier string The hotkey identifier.
 local function call_hotkey_func(identifier)
     if not Settings.hotkeys_allow_with_active_control
         and ugui.internal.active_control then
@@ -86,74 +90,75 @@ local function call_hotkey_func(identifier)
     end
 end
 
-return {
-    on_key_down = function(keys)
-        if not emu.ismainwindowinforeground() or not Settings.hotkeys_enabled then
-            return
-        end
-        for _, hotkey in pairs(Settings.hotkeys) do
-            local activated = true
-
-            if #hotkey.keys == 0 then
-                activated = false
-            else
-                for _, key in pairs(hotkey.keys) do
-                    if not keys[key] then
-                        activated = false
-                    end
-                end
-            end
-
-            if activated then
-                last_pressed_hotkey_time = os.clock()
-                last_pressed_hotkey = hotkey.identifier
-                call_hotkey_func(hotkey.identifier)
-                return
-            end
-        end
-    end,
-
-    update = function()
-        if not emu.ismainwindowinforeground() or not last_pressed_hotkey then
-            return
-        end
-
-        local hotkey = lualinq.first(Settings.hotkeys, function(x)
-            return x.identifier == last_pressed_hotkey
-        end)
-
-        if not hotkey.mode or hotkey.mode == HOTKEY_MODE_ONESHOT then
-            return
-        end
-
+---Notifies the hotkey system that a key has been pressed.
+---@param keys Keys The keys that are currently pressed.
+function Hotkeys.on_key_down(keys)
+    if not emu.ismainwindowinforeground() or not Settings.hotkeys_enabled then
+        return
+    end
+    for _, hotkey in pairs(Settings.hotkeys) do
         local activated = true
 
-        for _, key in pairs(hotkey.keys) do
-            if not ugui.internal.environment.held_keys[key] then
-                activated = false
+        if #hotkey.keys == 0 then
+            activated = false
+        else
+            for _, key in pairs(hotkey.keys) do
+                if not keys[key] then
+                    activated = false
+                end
             end
         end
 
         if activated then
-            local time_since_press = os.clock() - last_pressed_hotkey_time
+            last_pressed_hotkey_time = os.clock()
+            last_pressed_hotkey = hotkey.identifier
+            call_hotkey_func(hotkey.identifier)
+            return
+        end
+    end
+end
 
-            if time_since_press > 0.75 then
-                local invocation_frequency = math.ceil(math.pow(time_since_press, 2))
+---Updates hotkey states based on the current inputs.
+function Hotkeys.update()
+    if not emu.ismainwindowinforeground() or not last_pressed_hotkey then
+        return
+    end
 
-                for _ = 1, invocation_frequency, 1 do
-                    call_hotkey_func(last_pressed_hotkey)
-                end
-            else
-                if time_since_press > 0.3 then
-                    call_hotkey_func(last_pressed_hotkey)
-                end
+    local hotkey = lualinq.first(Settings.hotkeys, function(x)
+        return x.identifier == last_pressed_hotkey
+    end)
+
+    if not hotkey.mode or hotkey.mode == HOTKEY_MODE_ONESHOT then
+        return
+    end
+
+    local activated = true
+
+    for _, key in pairs(hotkey.keys) do
+        if not ugui.internal.environment.held_keys[key] then
+            activated = false
+        end
+    end
+
+    if activated then
+        local time_since_press = os.clock() - last_pressed_hotkey_time
+
+        if time_since_press > 0.75 then
+            local invocation_frequency = math.ceil(math.pow(time_since_press, 2))
+
+            for _ = 1, invocation_frequency, 1 do
+                call_hotkey_func(last_pressed_hotkey)
+            end
+        else
+            if time_since_press > 0.3 then
+                call_hotkey_func(last_pressed_hotkey)
             end
         end
-    end,
+    end
+end
 
-    ---Gets whether a hotkey with the specified identifier has a callback.
-    ---@param identifier string The hotkey identifier.
-    hotkey_exists = function(identifier)
-        return hotkey_funcs[identifier] ~= nil
-    end,
-}
+---Gets whether a hotkey with the specified identifier has a callback.
+---@param identifier string The hotkey identifier.
+function Hotkeys.exists(identifier)
+    return hotkey_funcs[identifier] ~= nil
+end

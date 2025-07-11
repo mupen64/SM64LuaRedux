@@ -87,7 +87,7 @@ function Presets.restore()
     for _, preset in pairs(Presets.persistent.presets) do
         local hotkeys = ugui.internal.deep_clone(preset.hotkeys)
         for i, hotkey in pairs(hotkeys) do
-            if not Hotkeys.hotkey_exists(hotkey.identifier) then
+            if not Hotkeys.exists(hotkey.identifier) then
                 print(string.format("Hotkey %s doesn't exist anymore, purging it.", hotkey.identifier))
                 table.remove(preset.hotkeys, i)
             end

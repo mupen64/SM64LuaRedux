@@ -45,7 +45,7 @@ dofile(core_path .. 'Styles.lua')
 dofile(core_path .. 'Locales.lua')
 dofile(core_path .. 'Presets.lua')
 dofile(core_path .. 'Dumping.lua')
-Hotkeys = dofile(core_path .. 'Hotkeys.lua')
+dofile(core_path .. 'Hotkeys.lua')
 Addresses = dofile(core_path .. 'Addresses.lua')
 
 apply_math_shim()
