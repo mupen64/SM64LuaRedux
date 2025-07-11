@@ -4,71 +4,6 @@
 -- SPDX-License-Identifier: GPL-2.0-or-later
 --
 
-assert(emu.atloadstate, 'emu.atloadstate missing')
-
-function deep_merge(a, b)
-    local result = {}
-
-    local function merge(t1, t2)
-        local merged = {}
-        for key, value in pairs(t1) do
-            if type(value) == 'table' and type(t2[key]) == 'table' then
-                merged[key] = merge(value, t2[key])
-            else
-                merged[key] = value
-            end
-        end
-
-        for key, value in pairs(t2) do
-            if type(value) == 'table' and type(t1[key]) == 'table' then
-            else
-                merged[key] = value
-            end
-        end
-
-        return merged
-    end
-
-    return merge(a, b)
-end
-
--- forward-compat lua 5.4 shims
-if not math.pow then
-    math.pow = function(x, y)
-        return x ^ y
-    end
-end
-if not math.atan2 then
-    math.atan2 = math.atan
-end
-
---1.1.7+ shim: atupdatescreen no longer allows you to use d2d
-if emu.atdrawd2d then
-    print('Applied atdrawd2d shim')
-    emu.atupdatescreen = emu.atdrawd2d
-end
-
-function swap(arr, index_1, index_2)
-    local tmp = arr[index_2]
-    arr[index_2] = arr[index_1]
-    arr[index_1] = tmp
-end
-
-function expand_rect(t)
-    return {
-        x = t[1],
-        y = t[2],
-        width = t[3],
-        height = t[4],
-    }
-end
-
-function dictlen(t)
-    local count = 0
-    for _ in pairs(t) do count = count + 1 end
-    return count
-end
-
 folder = debug.getinfo(1).source:sub(2):match('(.*\\)')
 styles_path = folder .. 'res\\styles\\'
 locales_path = folder .. 'res\\lang\\'
@@ -91,6 +26,7 @@ lualinq = dofile(lib_path .. 'linq.lua')
 
 json = dofile(lib_path .. 'json.lua')
 dofile(styles_path .. 'base_style.lua')
+dofile(core_path .. 'Helpers.lua')
 dofile(core_path .. 'Settings.lua')
 dofile(core_path .. 'Formatter.lua')
 dofile(core_path .. 'Drawing.lua')
@@ -111,6 +47,8 @@ dofile(core_path .. 'Presets.lua')
 dofile(core_path .. 'Dumping.lua')
 Hotkeys = dofile(core_path .. 'Hotkeys.lua')
 Addresses = dofile(core_path .. 'Addresses.lua')
+
+apply_math_shim()
 
 Memory.initialize()
 Joypad.update()
@@ -155,7 +93,7 @@ local last_rmb_down_position = { x = 0, y = 0 }
 local keys = input.get()
 local last_keys = input.get()
 
-function at_input()
+local function at_input()
     -- TODO: Move this to Memory.lua
     if first_input then
         if Settings.autodetect_address then
@@ -263,7 +201,7 @@ local function draw_navbar()
     end
 end
 
-function at_update_screen()
+local function atdrawd2d()
     paints = paints + 1
     paint_skipped = (paints % Settings.repaint_throttle) ~= 0 and emu.get_ff and emu.get_ff()
 
@@ -336,7 +274,7 @@ function at_update_screen()
     ugui.end_frame()
 end
 
-function at_loadstate()
+local function at_loadstate()
     -- Previous state is now messed up, since it's not the actual previous frame but some other game state
     -- What do we do at this point, leave it like this and let the engine calculate wrong diffs, or copy current state to previous one?
     Memory.update_previous()
@@ -346,7 +284,7 @@ end
 emu.atloadstate(at_loadstate)
 emu.atinput(at_input)
 emu.atvi(at_vi)
-emu.atupdatescreen(at_update_screen)
+emu.atdrawd2d(atdrawd2d)
 emu.atstop(function()
     Presets.save()
     Drawing.size_down()
