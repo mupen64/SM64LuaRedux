@@ -89,6 +89,7 @@ local function flush()
 	return true
 end
 
+---Appends a frame to the ghost recording if active.
 function Ghost.update()
 	if not is_recording then
 		return
