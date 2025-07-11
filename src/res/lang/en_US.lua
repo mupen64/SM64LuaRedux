@@ -4,6 +4,7 @@
 -- SPDX-License-Identifier: GPL-2.0-or-later
 --
 
+---@type Locale
 return {
     name = 'English (US)',
     -- General
