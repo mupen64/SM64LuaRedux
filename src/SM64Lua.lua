@@ -106,7 +106,7 @@ local function at_input()
         local address_source = Addresses[Settings.address_source_index]
 
         if Settings.override_rng_use_index then
-            memory.writeword(address_source.rng_value, get_value(Settings.override_rng_value))
+            memory.writeword(address_source.rng_value, RNG.get_value(Settings.override_rng_value))
         else
             memory.writeword(address_source.rng_value, Settings.override_rng_value)
         end

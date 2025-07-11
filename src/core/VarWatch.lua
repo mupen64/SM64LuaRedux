@@ -75,7 +75,7 @@ local var_funcs = {
     ['rng'] = function()
         return Locales.str('VARWATCH_RNG') ..
             Memory.current.rng_value ..
-            ' (' .. Locales.str('VARWATCH_RNG_INDEX') .. get_index(Memory.current.rng_value) .. ')'
+            ' (' .. Locales.str('VARWATCH_RNG_INDEX') .. RNG.get_index(Memory.current.rng_value) .. ')'
     end,
     ['global_timer'] = function()
         return string.format(Locales.str('VARWATCH_GLOBAL_TIMER'), (Memory.current.mario_global_timer))
