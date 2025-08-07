@@ -15,6 +15,7 @@ return {
             selected_index = nil,
             items = VarWatch.processed_values,
         })
+
         TASState.goal_angle = math.abs(ugui.numberbox({
             uid = 5,
             is_enabled = TASState.movement_mode == MovementModes.match_angle,
@@ -22,9 +23,9 @@ return {
             places = 5,
             value = TASState.goal_angle,
         }))
+
         TASState.goal_mag = math.abs(ugui.numberbox({
             uid = 10,
-
             rectangle = grid_rect(4, 4, 2, 1),
             places = 3,
             value = TASState.goal_mag,
@@ -42,8 +43,7 @@ return {
                 rectangle = grid_rect(6, 4, 1, 1),
                 text = Locales.str('MAG_RESET'),
             }) then
-            TASState.goal_mag = 127
-            TASState.high_magnitude = false
+            action.invoke(ACTION_RESET_MAGNITUDE)
         end
 
         local foreground_color = BreitbandGraphics.invert_color(theme.background_color)
@@ -57,6 +57,7 @@ return {
             theme.font_size * Drawing.scale * 1.25,
             'Consolas',
             'X: ' .. Engine.stick_for_input_x(TASState))
+            
         BreitbandGraphics.draw_text(
             grid_rect(6, 6, 2, 1),
             'center',
@@ -72,7 +73,7 @@ return {
                 rectangle = grid_rect(4, 5, 2, 1),
                 text = Locales.str('SPDKICK'),
             }) then
-            Engine.toggle_speedkick()
+            action.invoke(ACTION_SET_SPDKICK)
         end
 
         TASState.framewalk = ugui.toggle_button({
@@ -259,7 +260,7 @@ return {
                 text = Locales.str('DISABLED'),
                 is_checked = TASState.movement_mode == MovementModes.disabled,
             }) ~= (TASState.movement_mode == MovementModes.disabled) then
-            TASState.movement_mode = MovementModes.disabled
+            action.invoke(ACTION_SET_MOVEMENT_MODE_DISABLED)
         end
         if ugui.toggle_button({
                 uid = 150,
@@ -267,7 +268,7 @@ return {
                 text = Locales.str('MATCH_YAW'),
                 is_checked = TASState.movement_mode == MovementModes.match_yaw,
             }) ~= (TASState.movement_mode == MovementModes.match_yaw) then
-            TASState.movement_mode = MovementModes.match_yaw
+            action.invoke(ACTION_SET_MOVEMENT_MODE_MATCH_YAW)
         end
         if ugui.toggle_button({
                 uid = 155,
@@ -275,7 +276,7 @@ return {
                 text = Locales.str('REVERSE_ANGLE'),
                 is_checked = TASState.movement_mode == MovementModes.reverse_angle,
             }) ~= (TASState.movement_mode == MovementModes.reverse_angle) then
-            TASState.movement_mode = MovementModes.reverse_angle
+            action.invoke(ACTION_SET_MOVEMENT_MODE_REVERSE_ANGLE)
         end
         if ugui.toggle_button({
                 uid = 160,
@@ -283,7 +284,7 @@ return {
                 text = Locales.str('MATCH_ANGLE'),
                 is_checked = TASState.movement_mode == MovementModes.match_angle,
             }) ~= (TASState.movement_mode == MovementModes.match_angle) then
-            TASState.movement_mode = MovementModes.match_angle
+            action.invoke(ACTION_SET_MOVEMENT_MODE_MATCH_ANGLE)
         end
     end,
 }

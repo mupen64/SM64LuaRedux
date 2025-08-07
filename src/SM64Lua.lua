@@ -45,7 +45,7 @@ dofile(core_path .. 'Styles.lua')
 dofile(core_path .. 'Locales.lua')
 dofile(core_path .. 'Presets.lua')
 dofile(core_path .. 'Dumping.lua')
-dofile(core_path .. 'Hotkeys.lua')
+dofile(core_path .. 'Actions.lua')
 Addresses = dofile(core_path .. 'Addresses.lua')
 
 apply_math_shim()
@@ -216,12 +216,6 @@ local function atdrawd2d()
 
     last_keys = ugui.internal.deep_clone(keys)
     keys = input.get()
-
-    if dictlen(input.diff(keys, last_keys)) > 0 then
-        Hotkeys.on_key_down(keys)
-    end
-
-    Hotkeys.update()
 
     if keys.rightclick and not last_keys.rightclick then
         last_rmb_down_position = {

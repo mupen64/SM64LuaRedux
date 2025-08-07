@@ -18,6 +18,8 @@ movie = {}
 savestate = {}
 iohelper = {}
 avi = {}
+hotkey = {}
+action = {}
 
 Mupen = {
     ---@enum Result
@@ -97,6 +99,59 @@ Mupen = {
         -- The plugin doesn't export a GetDllInfo function
         pl_no_get_dll_info = 33,
     },
+
+    ---@enum VKeycodes
+    ---An enum containing virtual keycodes.
+    VKeycodes = {
+        VK_LBUTTON = 0x01, -- Left mouse button
+        VK_RBUTTON = 0x02, -- Right mouse button
+        VK_CANCEL = 0x03, -- Control‑break
+        VK_MBUTTON = 0x04, -- Middle mouse button
+        VK_XBUTTON1 = 0x05, -- X1 mouse button
+        VK_XBUTTON2 = 0x06, -- X2 mouse button
+        -- 0x07 Reserved
+        VK_BACK = 0x08,  -- Backspace
+        VK_TAB = 0x09,   -- Tab
+        -- 0x0A–0B Reserved
+        VK_CLEAR = 0x0C, -- Clear
+        VK_RETURN = 0x0D, -- Enter
+        -- 0x0E–0F Unassigned
+        VK_SHIFT = 0x10, -- Shift
+        VK_CONTROL = 0x11, -- Ctrl
+        VK_MENU = 0x12,  -- Alt (Menu)
+        VK_PAUSE = 0x13, -- Pause
+        VK_CAPITAL = 0x14, -- Caps Lock
+        VK_KANA = 0x15,  -- IME Kana / Hangul
+        VK_IME_ON = 0x16, -- IME On
+        VK_JUNJA = 0x17, -- IME Junja
+        VK_FINAL = 0x18, -- IME Final
+        VK_HANJA = 0x19, -- IME Hanja / Kanji
+        VK_IME_OFF = 0x1A, -- IME Off
+        VK_ESCAPE = 0x1B, -- Escape
+        VK_CONVERT = 0x1C, -- IME Convert
+        VK_NONCONVERT = 0x1D, -- IME Nonconvert
+        VK_ACCEPT = 0x1E, -- IME Accept
+        VK_MODECHANGE = 0x1F, -- IME Mode Change
+        VK_SPACE = 0x20, -- Spacebar
+        VK_PRIOR = 0x21, -- Page Up
+        VK_NEXT = 0x22,  -- Page Down
+        VK_END = 0x23,   -- End
+        VK_HOME = 0x24,  -- Home
+        VK_LEFT = 0x25,  -- Left Arrow
+        VK_UP = 0x26,    -- Up Arrow
+        VK_RIGHT = 0x27, -- Right Arrow
+        VK_DOWN = 0x28,  -- Down Arrow
+        VK_SELECT = 0x29, -- Select
+        VK_PRINT = 0x2A, -- Print
+        VK_EXECUTE = 0x2B, -- Execute
+        VK_SNAPSHOT = 0x2C, -- Print Screen
+        VK_INSERT = 0x2D, -- Insert
+        VK_DELETE = 0x2E, -- Delete
+        VK_HELP = 0x2F,  -- Help
+        VK_LWIN = 0x5B,  -- Left Windows
+        VK_RWIN = 0x5C,  -- Right Windows
+        VK_APPS = 0x5D,  -- Applications (Menu) key
+    }
 }
 
 ---The `lua_tostring` c function converts numbers to strings, so numbers are
@@ -847,7 +902,8 @@ function d2d.draw_line(x1, y1, x2, y2, thickness, brush) end
 ---@param brush brush pass 0 if you don't know what you're doing
 ---@return nil
 function d2d.draw_text(x1, y1, x2, y2, text, fontname, fontsize, fontweight,
-                       fontstyle, horizalign, vertalign, options, brush) end
+                       fontstyle, horizalign, vertalign, options, brush)
+end
 
 ---Returns the width and height of the specified text.
 ---@param text string
@@ -894,7 +950,8 @@ function d2d.fill_rounded_rectangle(x1, y1, x2, y2, radiusX, radiusY, brush) end
 ---@param brush brush
 ---@return nil
 function d2d.draw_rounded_rectangle(x1, y1, x2, y2, radiusX, radiusY, thickness,
-                                    brush) end
+                                    brush)
+end
 
 ---Loads an image file from `path` which you can then access through `identifier`.
 ---@param path string
@@ -920,7 +977,8 @@ function d2d.free_image(identifier) end
 ---@param identifier number
 ---@return nil
 function d2d.draw_image(destx1, desty1, destx2, desty2, srcx1, srcy1, srcx2,
-                        srcy2, opacity, interpolation, identifier) end
+                        srcy2, opacity, interpolation, identifier)
+end
 
 ---Returns the width and height of the image at `identifier`.
 ---@nodiscard
@@ -1277,5 +1335,95 @@ function avi.startcapture(filename) end
 ---Stops avi recording.
 ---@return nil
 function avi.stopcapture() end
+
+--#endregion
+
+
+-- hotkey functions
+--#region
+
+---@class Hotkey Represents a combination of keys.
+---@field key VKeycodes? The key that is pressed to trigger the hotkey. Note that this is a virtual keycode.
+---@field ctrl boolean? Whether the control modifier is pressed.
+---@field shift boolean? Whether the shift modifier is pressed.
+---@field alt boolean? Whether the alt modifier is pressed.
+
+---Shows a dialog prompting the user to enter a hotkey.
+---@param caption string The headline to display in the dialog.
+---@return Hotkey|nil The hotkey that was entered, or `nil` if the user cancelled the dialog.
+function hotkey.prompt(caption) end
+
+--#endregion
+
+
+-- action functions
+--#region
+
+---@alias ActionFilter string
+---An action filter that can be either a fully-qualified or partially-qualified `"Category > Subcategory[] [ > Name ]"`.
+---This is usually used to refer to groups of actions, but can also refer to a single action.
+
+---@alias ActionPath string
+---A fully-qualified action path in the format `"Category > Subcategory[] > Name"`.
+---An action path is a subset of the action filter that is guaranteed to be fully-qualified, meaning it contains all segments of the path.
+
+---@class ActionParams
+---@field path ActionPath The action's path.
+---@field down_callback fun() The callback to be invoked when the action is initially triggered.
+---@field up_callback fun()? The callback to be invoked when the action has been released. Can be null.
+---@field get_enabled (fun(): boolean)? The function used to determine whether the action is enabled. If null, the action will be considered enabled.
+---@field get_active (fun(): boolean)? The function used to determine whether the action is "active". The active state usually means a checked or toggled UI state. If null, the action will be considered inactive.
+---@field get_display_name (fun(): string)? The function used to determine the function's display name. If null, the display name will be derived from the path.
+
+---Adds an action to the action registry. Any action with the same path will be replaced.
+---@param params ActionParams The action parameters.
+---@return boolean # Whether the operation succeeded.
+function action.add(params) end
+
+---Removes actions matching the specified filter.
+---@param filter ActionFilter A filter.
+---@return boolean # Whether the operation succeeded.
+function action.remove(filter) end
+
+---Associates a hotkey with an action by its path, while replacing any existing hotkey association for that action.
+---@param path ActionPath A path.
+---@param hotkey Hotkey The hotkey to associate with the action.
+---@param overwrite_existing boolean? Whether the any existing hotkey association will be overwritten. If false, the hotkey will only be associated if the action has no hotkey associated with it already.
+---@return boolean # Whether the operation succeeded.
+function action.associate_hotkey(path, hotkey, overwrite_existing) end
+
+---Begins a batch operation. Batches all updates caused by [action.add](lua://action.add), [action.remove](lua://action.remove), and [action.associate_hotkey](lua://action.associate_hotkey) into one at the succeeding call to [action.end_batch_work](lua://action.end_batch_work).
+function action.begin_batch_work() end
+
+---Ends a batch operation.
+function action.end_batch_work() end
+
+---Notifies about the enabled state of actions matching a filter changing.
+---@param filter ActionFilter A filter.
+function action.notify_enabled_changed(filter) end
+
+---Notifies about the active state of actions matching a filter changing.
+---@param filter ActionFilter A filter.
+function action.notify_active_changed(filter) end
+
+---Notifies about the display name of actions matching a filter changing.
+---@param filter ActionFilter A filter.
+function action.notify_display_name_changed(filter) end
+
+---Gets the display name for a given filter.
+---@param filter ActionFilter A filter.
+---@param ignore_override boolean? Whether to ignore the display name override.
+---@return string # The action's display name or an empty string if the display name couldn't be resolved.
+function action.get_display_name(filter, ignore_override) end
+
+---Gets all action paths that match the specified filter.
+---@param filter ActionFilter? The action path filter. If the path is unqualified, all actions under the last category or subcategory will be returned. If the path is empty, all actions will be returned.
+---@return ActionPath[] # The list of action paths that match the filter.
+function action.get_actions_matching_filter(filter) end
+
+---Manually invokes an action by its path.
+---@param path ActionPath A path.
+---@param up boolean? Whether the invocation is considered as "releasing" the action.
+function action.invoke(path, up) end
 
 --#endregion

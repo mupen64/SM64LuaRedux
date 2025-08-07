@@ -1,0 +1,1380 @@
+{
+    "current_index": 1,
+    "presets": [
+        {
+            "active_style_index": 2,
+            "address_source_index": 1,
+            "atan_exp": 0,
+            "auto_firsties": false,
+            "autodetect_address": true,
+            "controller_index": 1,
+            "dump_enabled": false,
+            "dump_movie_start_frame": 0,
+            "dump_start_frame": 0,
+            "format_angles_degrees": false,
+            "format_decimal_points": 4,
+            "ghost_path": "E:\\repos\\SM64LuaRedux\\src\\recording.ghost",
+            "grid_gap": 2,
+            "grid_size": 35,
+            "hotkeys": [
+                {
+                    "identifier": "movement_mode_disabled",
+                    "keys": [
+                        "control",
+                        "1"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "movement_mode_match_yaw",
+                    "keys": [
+                        "control",
+                        "2"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "movement_mode_reverse_angle",
+                    "keys": [
+                        "control",
+                        "3"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "movement_mode_match_angle",
+                    "keys": [
+                        "control",
+                        "4"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "preset_down",
+                    "keys": [
+                        "leftbracket"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "preset_up",
+                    "keys": [
+                        "rightbracket"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "copy_yaw_facing_to_match_angle",
+                    "keys": [
+                        "control",
+                        "comma"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "copy_yaw_intended_to_match_angle",
+                    "keys": [
+                        "control",
+                        "period"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "toggle_auto_firsties",
+                    "keys": [
+                        "control",
+                        "I"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "angle_down",
+                    "keys": [
+                        
+                    ],
+                    "mode": 1
+                },
+                {
+                    "identifier": "angle_up",
+                    "keys": [
+                        
+                    ],
+                    "mode": 1
+                },
+                {
+                    "identifier": "toggle_spdkick",
+                    "keys": [
+                        "control",
+                        "K"
+                    ]
+                },
+                {
+                    "identifier": "toggle_navbar",
+                    "keys": [
+                        "shift",
+                        "T"
+                    ]
+                }
+            ],
+            "hotkeys_allow_with_active_control": true,
+            "hotkeys_assigning": false,
+            "hotkeys_enabled": true,
+            "hotkeys_selected_index": 1,
+            "locale_index": 1,
+            "mini_visualizer": false,
+            "moved_distance": 0,
+            "moved_distance_axis": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+            },
+            "moved_distance_x": true,
+            "moved_distance_y": true,
+            "moved_distance_z": true,
+            "navbar_visible": true,
+            "notification_style": 1,
+            "override_rng": false,
+            "override_rng_use_index": false,
+            "override_rng_value": 0,
+            "persist_tas_state": true,
+            "repaint_throttle": 2,
+            "semantic_workflow": {
+                "default_section_timeout": 60,
+                "edit_entire_state": true,
+                "fast_foward": true
+            },
+            "settings_tab_index": 1,
+            "show_effective_angles": true,
+            "spd_efficiency_fraction": false,
+            "swimming_button": "A",
+            "tab_index": 1,
+            "tasstate_atan_d": 0,
+            "tasstate_atan_n": 10,
+            "tasstate_atan_r": 1,
+            "tasstate_atan_start": 0,
+            "tasstate_atan_strain": false,
+            "tasstate_dyaw": false,
+            "tasstate_framewalk": false,
+            "tasstate_goal_angle": 0,
+            "tasstate_goal_mag": 127,
+            "tasstate_high_magnitude": false,
+            "tasstate_manual_joystick_x": 0,
+            "tasstate_manual_joystick_y": 0,
+            "tasstate_movement_mode": 1,
+            "tasstate_reverse_arc": false,
+            "tasstate_strain_always": false,
+            "tasstate_strain_left": true,
+            "tasstate_strain_right": false,
+            "tasstate_strain_speed_target": true,
+            "tasstate_swim": false,
+            "timer_auto": true,
+            "track_moved_distance": false,
+            "truncate_effective_angle": false,
+            "variables": [
+                {
+                    "identifier": "yaw_facing",
+                    "visible": true
+                },
+                {
+                    "identifier": "yaw_intended",
+                    "visible": true
+                },
+                {
+                    "identifier": "h_spd",
+                    "visible": true
+                },
+                {
+                    "identifier": "v_spd",
+                    "visible": true
+                },
+                {
+                    "identifier": "spd_efficiency",
+                    "visible": true
+                },
+                {
+                    "identifier": "position_x",
+                    "visible": true
+                },
+                {
+                    "identifier": "position_y",
+                    "visible": true
+                },
+                {
+                    "identifier": "position_z",
+                    "visible": true
+                },
+                {
+                    "identifier": "pitch",
+                    "visible": true
+                },
+                {
+                    "identifier": "yaw_vel",
+                    "visible": false
+                },
+                {
+                    "identifier": "pitch_vel",
+                    "visible": false
+                },
+                {
+                    "identifier": "xz_movement",
+                    "visible": true
+                },
+                {
+                    "identifier": "action",
+                    "visible": true
+                },
+                {
+                    "identifier": "rng",
+                    "visible": true
+                },
+                {
+                    "identifier": "global_timer",
+                    "visible": false
+                },
+                {
+                    "identifier": "moved_dist",
+                    "visible": true
+                },
+                {
+                    "identifier": "atan_basic",
+                    "visible": true
+                },
+                {
+                    "identifier": "atan_start_frame",
+                    "visible": true
+                }
+            ],
+            "worldviz_enabled": false
+        },
+        {
+            "active_style_index": 2,
+            "address_source_index": 1,
+            "atan_exp": 0,
+            "auto_firsties": false,
+            "autodetect_address": true,
+            "controller_index": 1,
+            "dump_enabled": false,
+            "dump_movie_start_frame": 0,
+            "dump_start_frame": 0,
+            "format_angles_degrees": false,
+            "format_decimal_points": 4,
+            "ghost_path": "E:\\repos\\SM64LuaRedux\\src\\recording.ghost",
+            "grid_gap": 2,
+            "grid_size": 35,
+            "hotkeys": [
+                {
+                    "identifier": "movement_mode_disabled",
+                    "keys": [
+                        "control",
+                        "1"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "movement_mode_match_yaw",
+                    "keys": [
+                        "control",
+                        "2"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "movement_mode_reverse_angle",
+                    "keys": [
+                        "control",
+                        "3"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "movement_mode_match_angle",
+                    "keys": [
+                        "control",
+                        "4"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "preset_down",
+                    "keys": [
+                        "leftbracket"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "preset_up",
+                    "keys": [
+                        "rightbracket"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "copy_yaw_facing_to_match_angle",
+                    "keys": [
+                        "control",
+                        "comma"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "copy_yaw_intended_to_match_angle",
+                    "keys": [
+                        "control",
+                        "period"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "toggle_auto_firsties",
+                    "keys": [
+                        "control",
+                        "I"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "angle_down",
+                    "keys": [
+                        
+                    ],
+                    "mode": 1
+                },
+                {
+                    "identifier": "angle_up",
+                    "keys": [
+                        
+                    ],
+                    "mode": 1
+                },
+                {
+                    "identifier": "toggle_spdkick",
+                    "keys": [
+                        "control",
+                        "K"
+                    ]
+                },
+                {
+                    "identifier": "toggle_navbar",
+                    "keys": [
+                        "shift",
+                        "T"
+                    ]
+                }
+            ],
+            "hotkeys_allow_with_active_control": true,
+            "hotkeys_assigning": false,
+            "hotkeys_enabled": true,
+            "hotkeys_selected_index": 1,
+            "locale_index": 1,
+            "mini_visualizer": false,
+            "moved_distance": 0,
+            "moved_distance_axis": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+            },
+            "moved_distance_x": true,
+            "moved_distance_y": true,
+            "moved_distance_z": true,
+            "navbar_visible": true,
+            "notification_style": 1,
+            "override_rng": false,
+            "override_rng_use_index": false,
+            "override_rng_value": 0,
+            "persist_tas_state": true,
+            "repaint_throttle": 2,
+            "semantic_workflow": {
+                "default_section_timeout": 60,
+                "edit_entire_state": true,
+                "fast_foward": true
+            },
+            "settings_tab_index": 1,
+            "show_effective_angles": true,
+            "spd_efficiency_fraction": false,
+            "swimming_button": "A",
+            "tab_index": 1,
+            "timer_auto": true,
+            "track_moved_distance": false,
+            "truncate_effective_angle": false,
+            "variables": [
+                {
+                    "identifier": "yaw_facing",
+                    "visible": true
+                },
+                {
+                    "identifier": "yaw_intended",
+                    "visible": true
+                },
+                {
+                    "identifier": "h_spd",
+                    "visible": true
+                },
+                {
+                    "identifier": "v_spd",
+                    "visible": true
+                },
+                {
+                    "identifier": "spd_efficiency",
+                    "visible": true
+                },
+                {
+                    "identifier": "position_x",
+                    "visible": true
+                },
+                {
+                    "identifier": "position_y",
+                    "visible": true
+                },
+                {
+                    "identifier": "position_z",
+                    "visible": true
+                },
+                {
+                    "identifier": "pitch",
+                    "visible": true
+                },
+                {
+                    "identifier": "yaw_vel",
+                    "visible": false
+                },
+                {
+                    "identifier": "pitch_vel",
+                    "visible": false
+                },
+                {
+                    "identifier": "xz_movement",
+                    "visible": true
+                },
+                {
+                    "identifier": "action",
+                    "visible": true
+                },
+                {
+                    "identifier": "rng",
+                    "visible": true
+                },
+                {
+                    "identifier": "global_timer",
+                    "visible": false
+                },
+                {
+                    "identifier": "moved_dist",
+                    "visible": true
+                },
+                {
+                    "identifier": "atan_basic",
+                    "visible": true
+                },
+                {
+                    "identifier": "atan_start_frame",
+                    "visible": true
+                }
+            ],
+            "worldviz_enabled": false
+        },
+        {
+            "active_style_index": 2,
+            "address_source_index": 1,
+            "atan_exp": 0,
+            "auto_firsties": false,
+            "autodetect_address": true,
+            "controller_index": 1,
+            "dump_enabled": false,
+            "dump_movie_start_frame": 0,
+            "dump_start_frame": 0,
+            "format_angles_degrees": false,
+            "format_decimal_points": 4,
+            "ghost_path": "E:\\repos\\SM64LuaRedux\\src\\recording.ghost",
+            "grid_gap": 2,
+            "grid_size": 35,
+            "hotkeys": [
+                {
+                    "identifier": "movement_mode_disabled",
+                    "keys": [
+                        "control",
+                        "1"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "movement_mode_match_yaw",
+                    "keys": [
+                        "control",
+                        "2"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "movement_mode_reverse_angle",
+                    "keys": [
+                        "control",
+                        "3"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "movement_mode_match_angle",
+                    "keys": [
+                        "control",
+                        "4"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "preset_down",
+                    "keys": [
+                        "leftbracket"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "preset_up",
+                    "keys": [
+                        "rightbracket"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "copy_yaw_facing_to_match_angle",
+                    "keys": [
+                        "control",
+                        "comma"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "copy_yaw_intended_to_match_angle",
+                    "keys": [
+                        "control",
+                        "period"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "toggle_auto_firsties",
+                    "keys": [
+                        "control",
+                        "I"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "angle_down",
+                    "keys": [
+                        
+                    ],
+                    "mode": 1
+                },
+                {
+                    "identifier": "angle_up",
+                    "keys": [
+                        
+                    ],
+                    "mode": 1
+                },
+                {
+                    "identifier": "toggle_spdkick",
+                    "keys": [
+                        "control",
+                        "K"
+                    ]
+                },
+                {
+                    "identifier": "toggle_navbar",
+                    "keys": [
+                        "shift",
+                        "T"
+                    ]
+                }
+            ],
+            "hotkeys_allow_with_active_control": true,
+            "hotkeys_assigning": false,
+            "hotkeys_enabled": true,
+            "hotkeys_selected_index": 1,
+            "locale_index": 1,
+            "mini_visualizer": false,
+            "moved_distance": 0,
+            "moved_distance_axis": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+            },
+            "moved_distance_x": true,
+            "moved_distance_y": true,
+            "moved_distance_z": true,
+            "navbar_visible": true,
+            "notification_style": 1,
+            "override_rng": false,
+            "override_rng_use_index": false,
+            "override_rng_value": 0,
+            "persist_tas_state": true,
+            "repaint_throttle": 2,
+            "semantic_workflow": {
+                "default_section_timeout": 60,
+                "edit_entire_state": true,
+                "fast_foward": true
+            },
+            "settings_tab_index": 1,
+            "show_effective_angles": true,
+            "spd_efficiency_fraction": false,
+            "swimming_button": "A",
+            "tab_index": 1,
+            "timer_auto": true,
+            "track_moved_distance": false,
+            "truncate_effective_angle": false,
+            "variables": [
+                {
+                    "identifier": "yaw_facing",
+                    "visible": true
+                },
+                {
+                    "identifier": "yaw_intended",
+                    "visible": true
+                },
+                {
+                    "identifier": "h_spd",
+                    "visible": true
+                },
+                {
+                    "identifier": "v_spd",
+                    "visible": true
+                },
+                {
+                    "identifier": "spd_efficiency",
+                    "visible": true
+                },
+                {
+                    "identifier": "position_x",
+                    "visible": true
+                },
+                {
+                    "identifier": "position_y",
+                    "visible": true
+                },
+                {
+                    "identifier": "position_z",
+                    "visible": true
+                },
+                {
+                    "identifier": "pitch",
+                    "visible": true
+                },
+                {
+                    "identifier": "yaw_vel",
+                    "visible": false
+                },
+                {
+                    "identifier": "pitch_vel",
+                    "visible": false
+                },
+                {
+                    "identifier": "xz_movement",
+                    "visible": true
+                },
+                {
+                    "identifier": "action",
+                    "visible": true
+                },
+                {
+                    "identifier": "rng",
+                    "visible": true
+                },
+                {
+                    "identifier": "global_timer",
+                    "visible": false
+                },
+                {
+                    "identifier": "moved_dist",
+                    "visible": true
+                },
+                {
+                    "identifier": "atan_basic",
+                    "visible": true
+                },
+                {
+                    "identifier": "atan_start_frame",
+                    "visible": true
+                }
+            ],
+            "worldviz_enabled": false
+        },
+        {
+            "active_style_index": 2,
+            "address_source_index": 1,
+            "atan_exp": 0,
+            "auto_firsties": false,
+            "autodetect_address": true,
+            "controller_index": 1,
+            "dump_enabled": false,
+            "dump_movie_start_frame": 0,
+            "dump_start_frame": 0,
+            "format_angles_degrees": false,
+            "format_decimal_points": 4,
+            "ghost_path": "E:\\repos\\SM64LuaRedux\\src\\recording.ghost",
+            "grid_gap": 2,
+            "grid_size": 35,
+            "hotkeys": [
+                {
+                    "identifier": "movement_mode_disabled",
+                    "keys": [
+                        "control",
+                        "1"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "movement_mode_match_yaw",
+                    "keys": [
+                        "control",
+                        "2"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "movement_mode_reverse_angle",
+                    "keys": [
+                        "control",
+                        "3"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "movement_mode_match_angle",
+                    "keys": [
+                        "control",
+                        "4"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "preset_down",
+                    "keys": [
+                        "leftbracket"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "preset_up",
+                    "keys": [
+                        "rightbracket"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "copy_yaw_facing_to_match_angle",
+                    "keys": [
+                        "control",
+                        "comma"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "copy_yaw_intended_to_match_angle",
+                    "keys": [
+                        "control",
+                        "period"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "toggle_auto_firsties",
+                    "keys": [
+                        "control",
+                        "I"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "angle_down",
+                    "keys": [
+                        
+                    ],
+                    "mode": 1
+                },
+                {
+                    "identifier": "angle_up",
+                    "keys": [
+                        
+                    ],
+                    "mode": 1
+                },
+                {
+                    "identifier": "toggle_spdkick",
+                    "keys": [
+                        "control",
+                        "K"
+                    ]
+                },
+                {
+                    "identifier": "toggle_navbar",
+                    "keys": [
+                        "shift",
+                        "T"
+                    ]
+                }
+            ],
+            "hotkeys_allow_with_active_control": true,
+            "hotkeys_assigning": false,
+            "hotkeys_enabled": true,
+            "hotkeys_selected_index": 1,
+            "locale_index": 1,
+            "mini_visualizer": false,
+            "moved_distance": 0,
+            "moved_distance_axis": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+            },
+            "moved_distance_x": true,
+            "moved_distance_y": true,
+            "moved_distance_z": true,
+            "navbar_visible": true,
+            "notification_style": 1,
+            "override_rng": false,
+            "override_rng_use_index": false,
+            "override_rng_value": 0,
+            "persist_tas_state": true,
+            "repaint_throttle": 2,
+            "semantic_workflow": {
+                "default_section_timeout": 60,
+                "edit_entire_state": true,
+                "fast_foward": true
+            },
+            "settings_tab_index": 1,
+            "show_effective_angles": true,
+            "spd_efficiency_fraction": false,
+            "swimming_button": "A",
+            "tab_index": 1,
+            "timer_auto": true,
+            "track_moved_distance": false,
+            "truncate_effective_angle": false,
+            "variables": [
+                {
+                    "identifier": "yaw_facing",
+                    "visible": true
+                },
+                {
+                    "identifier": "yaw_intended",
+                    "visible": true
+                },
+                {
+                    "identifier": "h_spd",
+                    "visible": true
+                },
+                {
+                    "identifier": "v_spd",
+                    "visible": true
+                },
+                {
+                    "identifier": "spd_efficiency",
+                    "visible": true
+                },
+                {
+                    "identifier": "position_x",
+                    "visible": true
+                },
+                {
+                    "identifier": "position_y",
+                    "visible": true
+                },
+                {
+                    "identifier": "position_z",
+                    "visible": true
+                },
+                {
+                    "identifier": "pitch",
+                    "visible": true
+                },
+                {
+                    "identifier": "yaw_vel",
+                    "visible": false
+                },
+                {
+                    "identifier": "pitch_vel",
+                    "visible": false
+                },
+                {
+                    "identifier": "xz_movement",
+                    "visible": true
+                },
+                {
+                    "identifier": "action",
+                    "visible": true
+                },
+                {
+                    "identifier": "rng",
+                    "visible": true
+                },
+                {
+                    "identifier": "global_timer",
+                    "visible": false
+                },
+                {
+                    "identifier": "moved_dist",
+                    "visible": true
+                },
+                {
+                    "identifier": "atan_basic",
+                    "visible": true
+                },
+                {
+                    "identifier": "atan_start_frame",
+                    "visible": true
+                }
+            ],
+            "worldviz_enabled": false
+        },
+        {
+            "active_style_index": 2,
+            "address_source_index": 1,
+            "atan_exp": 0,
+            "auto_firsties": false,
+            "autodetect_address": true,
+            "controller_index": 1,
+            "dump_enabled": false,
+            "dump_movie_start_frame": 0,
+            "dump_start_frame": 0,
+            "format_angles_degrees": false,
+            "format_decimal_points": 4,
+            "ghost_path": "E:\\repos\\SM64LuaRedux\\src\\recording.ghost",
+            "grid_gap": 2,
+            "grid_size": 35,
+            "hotkeys": [
+                {
+                    "identifier": "movement_mode_disabled",
+                    "keys": [
+                        "control",
+                        "1"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "movement_mode_match_yaw",
+                    "keys": [
+                        "control",
+                        "2"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "movement_mode_reverse_angle",
+                    "keys": [
+                        "control",
+                        "3"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "movement_mode_match_angle",
+                    "keys": [
+                        "control",
+                        "4"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "preset_down",
+                    "keys": [
+                        "leftbracket"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "preset_up",
+                    "keys": [
+                        "rightbracket"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "copy_yaw_facing_to_match_angle",
+                    "keys": [
+                        "control",
+                        "comma"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "copy_yaw_intended_to_match_angle",
+                    "keys": [
+                        "control",
+                        "period"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "toggle_auto_firsties",
+                    "keys": [
+                        "control",
+                        "I"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "angle_down",
+                    "keys": [
+                        
+                    ],
+                    "mode": 1
+                },
+                {
+                    "identifier": "angle_up",
+                    "keys": [
+                        
+                    ],
+                    "mode": 1
+                },
+                {
+                    "identifier": "toggle_spdkick",
+                    "keys": [
+                        "control",
+                        "K"
+                    ]
+                },
+                {
+                    "identifier": "toggle_navbar",
+                    "keys": [
+                        "shift",
+                        "T"
+                    ]
+                }
+            ],
+            "hotkeys_allow_with_active_control": true,
+            "hotkeys_assigning": false,
+            "hotkeys_enabled": true,
+            "hotkeys_selected_index": 1,
+            "locale_index": 1,
+            "mini_visualizer": false,
+            "moved_distance": 0,
+            "moved_distance_axis": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+            },
+            "moved_distance_x": true,
+            "moved_distance_y": true,
+            "moved_distance_z": true,
+            "navbar_visible": true,
+            "notification_style": 1,
+            "override_rng": false,
+            "override_rng_use_index": false,
+            "override_rng_value": 0,
+            "persist_tas_state": true,
+            "repaint_throttle": 2,
+            "semantic_workflow": {
+                "default_section_timeout": 60,
+                "edit_entire_state": true,
+                "fast_foward": true
+            },
+            "settings_tab_index": 1,
+            "show_effective_angles": true,
+            "spd_efficiency_fraction": false,
+            "swimming_button": "A",
+            "tab_index": 1,
+            "timer_auto": true,
+            "track_moved_distance": false,
+            "truncate_effective_angle": false,
+            "variables": [
+                {
+                    "identifier": "yaw_facing",
+                    "visible": true
+                },
+                {
+                    "identifier": "yaw_intended",
+                    "visible": true
+                },
+                {
+                    "identifier": "h_spd",
+                    "visible": true
+                },
+                {
+                    "identifier": "v_spd",
+                    "visible": true
+                },
+                {
+                    "identifier": "spd_efficiency",
+                    "visible": true
+                },
+                {
+                    "identifier": "position_x",
+                    "visible": true
+                },
+                {
+                    "identifier": "position_y",
+                    "visible": true
+                },
+                {
+                    "identifier": "position_z",
+                    "visible": true
+                },
+                {
+                    "identifier": "pitch",
+                    "visible": true
+                },
+                {
+                    "identifier": "yaw_vel",
+                    "visible": false
+                },
+                {
+                    "identifier": "pitch_vel",
+                    "visible": false
+                },
+                {
+                    "identifier": "xz_movement",
+                    "visible": true
+                },
+                {
+                    "identifier": "action",
+                    "visible": true
+                },
+                {
+                    "identifier": "rng",
+                    "visible": true
+                },
+                {
+                    "identifier": "global_timer",
+                    "visible": false
+                },
+                {
+                    "identifier": "moved_dist",
+                    "visible": true
+                },
+                {
+                    "identifier": "atan_basic",
+                    "visible": true
+                },
+                {
+                    "identifier": "atan_start_frame",
+                    "visible": true
+                }
+            ],
+            "worldviz_enabled": false
+        },
+        {
+            "active_style_index": 2,
+            "address_source_index": 1,
+            "atan_exp": 0,
+            "auto_firsties": false,
+            "autodetect_address": true,
+            "controller_index": 1,
+            "dump_enabled": false,
+            "dump_movie_start_frame": 0,
+            "dump_start_frame": 0,
+            "format_angles_degrees": false,
+            "format_decimal_points": 4,
+            "ghost_path": "E:\\repos\\SM64LuaRedux\\src\\recording.ghost",
+            "grid_gap": 2,
+            "grid_size": 35,
+            "hotkeys": [
+                {
+                    "identifier": "movement_mode_disabled",
+                    "keys": [
+                        "control",
+                        "1"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "movement_mode_match_yaw",
+                    "keys": [
+                        "control",
+                        "2"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "movement_mode_reverse_angle",
+                    "keys": [
+                        "control",
+                        "3"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "movement_mode_match_angle",
+                    "keys": [
+                        "control",
+                        "4"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "preset_down",
+                    "keys": [
+                        "leftbracket"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "preset_up",
+                    "keys": [
+                        "rightbracket"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "copy_yaw_facing_to_match_angle",
+                    "keys": [
+                        "control",
+                        "comma"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "copy_yaw_intended_to_match_angle",
+                    "keys": [
+                        "control",
+                        "period"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "toggle_auto_firsties",
+                    "keys": [
+                        "control",
+                        "I"
+                    ],
+                    "mode": 0
+                },
+                {
+                    "identifier": "angle_down",
+                    "keys": [
+                        
+                    ],
+                    "mode": 1
+                },
+                {
+                    "identifier": "angle_up",
+                    "keys": [
+                        
+                    ],
+                    "mode": 1
+                },
+                {
+                    "identifier": "toggle_spdkick",
+                    "keys": [
+                        "control",
+                        "K"
+                    ]
+                },
+                {
+                    "identifier": "toggle_navbar",
+                    "keys": [
+                        "shift",
+                        "T"
+                    ]
+                }
+            ],
+            "hotkeys_allow_with_active_control": true,
+            "hotkeys_assigning": false,
+            "hotkeys_enabled": true,
+            "hotkeys_selected_index": 1,
+            "locale_index": 1,
+            "mini_visualizer": false,
+            "moved_distance": 0,
+            "moved_distance_axis": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+            },
+            "moved_distance_x": true,
+            "moved_distance_y": true,
+            "moved_distance_z": true,
+            "navbar_visible": true,
+            "notification_style": 1,
+            "override_rng": false,
+            "override_rng_use_index": false,
+            "override_rng_value": 0,
+            "persist_tas_state": true,
+            "repaint_throttle": 2,
+            "semantic_workflow": {
+                "default_section_timeout": 60,
+                "edit_entire_state": true,
+                "fast_foward": true
+            },
+            "settings_tab_index": 1,
+            "show_effective_angles": true,
+            "spd_efficiency_fraction": false,
+            "swimming_button": "A",
+            "tab_index": 1,
+            "timer_auto": true,
+            "track_moved_distance": false,
+            "truncate_effective_angle": false,
+            "variables": [
+                {
+                    "identifier": "yaw_facing",
+                    "visible": true
+                },
+                {
+                    "identifier": "yaw_intended",
+                    "visible": true
+                },
+                {
+                    "identifier": "h_spd",
+                    "visible": true
+                },
+                {
+                    "identifier": "v_spd",
+                    "visible": true
+                },
+                {
+                    "identifier": "spd_efficiency",
+                    "visible": true
+                },
+                {
+                    "identifier": "position_x",
+                    "visible": true
+                },
+                {
+                    "identifier": "position_y",
+                    "visible": true
+                },
+                {
+                    "identifier": "position_z",
+                    "visible": true
+                },
+                {
+                    "identifier": "pitch",
+                    "visible": true
+                },
+                {
+                    "identifier": "yaw_vel",
+                    "visible": false
+                },
+                {
+                    "identifier": "pitch_vel",
+                    "visible": false
+                },
+                {
+                    "identifier": "xz_movement",
+                    "visible": true
+                },
+                {
+                    "identifier": "action",
+                    "visible": true
+                },
+                {
+                    "identifier": "rng",
+                    "visible": true
+                },
+                {
+                    "identifier": "global_timer",
+                    "visible": false
+                },
+                {
+                    "identifier": "moved_dist",
+                    "visible": true
+                },
+                {
+                    "identifier": "atan_basic",
+                    "visible": true
+                },
+                {
+                    "identifier": "atan_start_frame",
+                    "visible": true
+                }
+            ],
+            "worldviz_enabled": false
+        }
+    ]
+}
