@@ -120,12 +120,18 @@ return {
             text = Locales.str('TOOLS_WORLD_VISUALIZER'),
             is_checked = Settings.worldviz_enabled,
         })
-        Settings.auto_firsties = ugui.toggle_button({
+        
+        local old_auto_firsties = Settings.auto_firsties
+        local auto_firsties = ugui.toggle_button({
             uid = 35,
             rectangle = grid_rect(3, EXPERIMENTS_ROW + 1, 3, 1),
             text = Locales.str('TOOLS_AUTO_FIRSTIES'),
-            is_checked = Settings.auto_firsties,
+            is_checked = old_auto_firsties,
         })
+        if auto_firsties ~= old_auto_firsties then
+            action.invoke(ACTION_TOGGLE_AUTOFIRSTIES)
+        end
+        
         Settings.mini_visualizer = ugui.toggle_button({
             uid = 36,
             rectangle = grid_rect(0, EXPERIMENTS_ROW + 1, 3, 1),

@@ -7,11 +7,12 @@
 Actions = {}
 
 local ROOT = 'SM64 Lua Redux > '
-ACTION_SET_MOVEMENT_MODE_MANUAL = ROOT .. 'Movement Mode --- > Manual ---'
-ACTION_SET_MOVEMENT_MODE_DISABLED = ROOT .. 'Movement Mode --- > Disabled'
-ACTION_SET_MOVEMENT_MODE_MATCH_YAW = ROOT .. 'Movement Mode --- > Match Yaw'
-ACTION_SET_MOVEMENT_MODE_REVERSE_ANGLE = ROOT .. 'Movement Mode --- > Reverse Angle'
-ACTION_SET_MOVEMENT_MODE_MATCH_ANGLE = ROOT .. 'Movement Mode --- > Match Angle'
+ACTION_MOVEMENT_MODE = ROOT .. 'Movement Mode ---'
+ACTION_SET_MOVEMENT_MODE_MANUAL = ACTION_MOVEMENT_MODE .. ' > Manual ---'
+ACTION_SET_MOVEMENT_MODE_DISABLED = ACTION_MOVEMENT_MODE .. ' > Disabled'
+ACTION_SET_MOVEMENT_MODE_MATCH_YAW = ACTION_MOVEMENT_MODE .. ' > Match Yaw'
+ACTION_SET_MOVEMENT_MODE_REVERSE_ANGLE = ACTION_MOVEMENT_MODE .. ' > Reverse Angle'
+ACTION_SET_MOVEMENT_MODE_MATCH_ANGLE = ACTION_MOVEMENT_MODE .. ' > Match Angle'
 ACTION_SET_GOAL_ANGLE_TO_FACING_YAW = ROOT .. 'Set Angle to Facing Yaw'
 ACTION_SET_GOAL_ANGLE_TO_INTENDED_YAW = ROOT .. 'Set Angle to Inteded Yaw'
 ACTION_DECREMENT_ANGLE = ROOT .. 'Angle -1'
@@ -24,7 +25,7 @@ ACTION_TOGGLE_STRAIN_RIGHT = ROOT .. 'D-Yaw > Strain Right'
 ACTION_SET_GOAL_ANGLE = ROOT .. 'Set Angle... ---'
 ACTION_RESET_MAGNITUDE = ROOT .. 'Magnitude --- > Reset'
 ACTION_SET_MAGNITUDE = ROOT .. 'Magnitude --- > Set... ---'
-ACTION_SET_HIGH_MAGNITUDE = ROOT .. 'Magnitude --- > High-Magnitude'
+ACTION_TOGGLE_HIGH_MAGNITUDE = ROOT .. 'Magnitude --- > High-Magnitude'
 ACTION_SET_SPDKICK = ROOT .. 'Speedkick'
 ACTION_TOGGLE_FRAMEWALK = ROOT .. 'Framewalk'
 ACTION_TOGGLE_SWIM = ROOT .. 'Swim'
@@ -51,6 +52,7 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MOVEMENT_MODE_MANUAL,
     on_press = function()
         TASState.movement_mode = MovementModes.manual
+        action.notify_active_changed(ACTION_MOVEMENT_MODE .. '>*')
     end,
     get_active = function()
         return TASState.movement_mode == MovementModes.manual
@@ -61,6 +63,7 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MOVEMENT_MODE_DISABLED,
     on_press = function()
         TASState.movement_mode = MovementModes.disabled
+        action.notify_active_changed(ACTION_MOVEMENT_MODE .. '>*')
     end,
     get_active = function()
         return TASState.movement_mode == MovementModes.disabled
@@ -71,6 +74,7 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MOVEMENT_MODE_MATCH_YAW,
     on_press = function()
         TASState.movement_mode = MovementModes.match_yaw
+        action.notify_active_changed(ACTION_MOVEMENT_MODE .. '>*')
     end,
     get_active = function()
         return TASState.movement_mode == MovementModes.match_yaw
@@ -81,9 +85,21 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MOVEMENT_MODE_REVERSE_ANGLE,
     on_press = function()
         TASState.movement_mode = MovementModes.reverse_angle
+        action.notify_active_changed(ACTION_MOVEMENT_MODE .. '>*')
     end,
     get_active = function()
         return TASState.movement_mode == MovementModes.reverse_angle
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_SET_MOVEMENT_MODE_MATCH_ANGLE,
+    on_press = function()
+        TASState.movement_mode = MovementModes.match_angle
+        action.notify_active_changed(ACTION_MOVEMENT_MODE .. '>*')
+    end,
+    get_active = function()
+        return TASState.movement_mode == MovementModes.match_angle
     end,
 })
 
@@ -139,21 +155,11 @@ actions[#actions + 1] = wrap_params({
     end,
 })
 
-
-actions[#actions + 1] = wrap_params({
-    path = ACTION_SET_MOVEMENT_MODE_MATCH_ANGLE,
-    on_press = function()
-        TASState.movement_mode = MovementModes.match_angle
-    end,
-    get_active = function()
-        return TASState.movement_mode == MovementModes.match_angle
-    end,
-})
-
 actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_D99_ENABLED,
     on_press = function()
         TASState.strain_speed_target = not TASState.strain_speed_target
+        action.notify_active_changed(ACTION_TOGGLE_D99_ENABLED)
     end,
     get_active = function()
         return TASState.strain_speed_target
@@ -164,6 +170,7 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_D99_ALWAYS,
     on_press = function()
         TASState.strain_always = not TASState.strain_always
+        action.notify_active_changed(ACTION_TOGGLE_D99_ALWAYS)
     end,
     get_active = function()
         return TASState.strain_always
@@ -174,6 +181,7 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_DYAW,
     on_press = function()
         TASState.dyaw = not TASState.dyaw
+        action.notify_active_changed(ACTION_TOGGLE_DYAW)
     end,
     get_active = function()
         return TASState.dyaw
@@ -189,6 +197,8 @@ actions[#actions + 1] = wrap_params({
             TASState.strain_left = true
             TASState.strain_right = false
         end
+        action.notify_active_changed(ACTION_TOGGLE_STRAIN_LEFT)
+        action.notify_active_changed(ACTION_TOGGLE_STRAIN_RIGHT)
     end,
     get_active = function()
         return TASState.strain_left
@@ -204,6 +214,8 @@ actions[#actions + 1] = wrap_params({
             TASState.strain_right = true
             TASState.strain_left = false
         end
+        action.notify_active_changed(ACTION_TOGGLE_STRAIN_LEFT)
+        action.notify_active_changed(ACTION_TOGGLE_STRAIN_RIGHT)
     end,
     get_active = function()
         return TASState.strain_right
@@ -241,9 +253,10 @@ actions[#actions + 1] = wrap_params({
 })
 
 actions[#actions + 1] = wrap_params({
-    path = ACTION_SET_HIGH_MAGNITUDE,
+    path = ACTION_TOGGLE_HIGH_MAGNITUDE,
     on_press = function()
         TASState.high_magnitude = not TASState.high_magnitude
+        action.notify_active_changed(ACTION_TOGGLE_HIGH_MAGNITUDE)
     end,
     get_active = function()
         return TASState.high_magnitude
@@ -261,6 +274,7 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_FRAMEWALK,
     on_press = function()
         TASState.framewalk = not TASState.framewalk
+        action.notify_active_changed(ACTION_TOGGLE_FRAMEWALK)
     end,
     get_active = function()
         return TASState.framewalk
@@ -271,6 +285,7 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_SWIM,
     on_press = function()
         TASState.swim = not TASState.swim
+        action.notify_active_changed(ACTION_TOGGLE_SWIM)
     end,
     get_active = function()
         return TASState.swim
