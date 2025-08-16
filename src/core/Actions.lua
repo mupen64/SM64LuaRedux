@@ -12,6 +12,10 @@ ACTION_SET_MOVEMENT_MODE_DISABLED = ROOT .. 'Movement Mode --- > Disabled'
 ACTION_SET_MOVEMENT_MODE_MATCH_YAW = ROOT .. 'Movement Mode --- > Match Yaw'
 ACTION_SET_MOVEMENT_MODE_REVERSE_ANGLE = ROOT .. 'Movement Mode --- > Reverse Angle'
 ACTION_SET_MOVEMENT_MODE_MATCH_ANGLE = ROOT .. 'Movement Mode --- > Match Angle'
+ACTION_SET_GOAL_ANGLE_TO_FACING_YAW = ROOT .. 'Set Angle to Facing Yaw'
+ACTION_SET_GOAL_ANGLE_TO_INTENDED_YAW = ROOT .. 'Set Angle to Inteded Yaw'
+ACTION_DECREMENT_ANGLE = ROOT .. 'Angle -1'
+ACTION_INCREMENT_ANGLE = ROOT .. 'Angle +1'
 ACTION_TOGGLE_D99_ENABLED = ROOT .. '.99 --- > Enabled ---'
 ACTION_TOGGLE_D99_ALWAYS = ROOT .. '.99 --- > Always'
 ACTION_TOGGLE_DYAW = ROOT .. 'D-Yaw > Enabled ---'
@@ -24,6 +28,8 @@ ACTION_SET_HIGH_MAGNITUDE = ROOT .. 'Magnitude --- > High-Magnitude'
 ACTION_SET_SPDKICK = ROOT .. 'Speedkick'
 ACTION_TOGGLE_FRAMEWALK = ROOT .. 'Framewalk'
 ACTION_TOGGLE_SWIM = ROOT .. 'Swim'
+ACTION_TOGGLE_AUTOFIRSTIES = ROOT .. 'Auto-Firsties ---'
+ACTION_TOGGLE_NAVBAR = ROOT .. 'Navigation Bar'
 
 ---Wraps callbacks of action parameters to show notifications.
 ---@param params ActionParams
@@ -43,7 +49,7 @@ local actions = {}
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MOVEMENT_MODE_MANUAL,
-    down_callback = function()
+    on_press = function()
         TASState.movement_mode = MovementModes.manual
     end,
     get_active = function()
@@ -53,7 +59,7 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MOVEMENT_MODE_DISABLED,
-    down_callback = function()
+    on_press = function()
         TASState.movement_mode = MovementModes.disabled
     end,
     get_active = function()
@@ -63,7 +69,7 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MOVEMENT_MODE_MATCH_YAW,
-    down_callback = function()
+    on_press = function()
         TASState.movement_mode = MovementModes.match_yaw
     end,
     get_active = function()
@@ -73,7 +79,7 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MOVEMENT_MODE_REVERSE_ANGLE,
-    down_callback = function()
+    on_press = function()
         TASState.movement_mode = MovementModes.reverse_angle
     end,
     get_active = function()
@@ -82,8 +88,61 @@ actions[#actions + 1] = wrap_params({
 })
 
 actions[#actions + 1] = wrap_params({
+    path = ACTION_SET_GOAL_ANGLE_TO_FACING_YAW,
+    on_press = function()
+        TASState.goal_angle = Memory.current.mario_facing_yaw
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_SET_GOAL_ANGLE_TO_INTENDED_YAW,
+    on_press = function()
+        TASState.goal_angle = Memory.current.mario_intended_yaw
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_DECREMENT_ANGLE,
+    on_press = function()
+        if ugui.internal.active_control then
+            return
+        end
+
+        TASState.goal_angle = TASState.goal_angle - 16
+
+        if TASState.goal_angle < 0 then
+            TASState.goal_angle = 65535
+        else
+            if TASState.goal_angle % 16 ~= 0 then
+                TASState.goal_angle = math.floor((TASState.goal_angle + 8) / 16) * 16
+            end
+        end
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_INCREMENT_ANGLE,
+    on_press = function()
+        if ugui.internal.active_control then
+            return
+        end
+
+        TASState.goal_angle = TASState.goal_angle - 16
+
+        if TASState.goal_angle < 0 then
+            TASState.goal_angle = 65535
+        else
+            if TASState.goal_angle % 16 ~= 0 then
+                TASState.goal_angle = math.floor((TASState.goal_angle + 8) / 16) * 16
+            end
+        end
+    end,
+})
+
+
+actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MOVEMENT_MODE_MATCH_ANGLE,
-    down_callback = function()
+    on_press = function()
         TASState.movement_mode = MovementModes.match_angle
     end,
     get_active = function()
@@ -93,7 +152,7 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_D99_ENABLED,
-    down_callback = function()
+    on_press = function()
         TASState.strain_speed_target = not TASState.strain_speed_target
     end,
     get_active = function()
@@ -103,7 +162,7 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_D99_ALWAYS,
-    down_callback = function()
+    on_press = function()
         TASState.strain_always = not TASState.strain_always
     end,
     get_active = function()
@@ -113,7 +172,7 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_DYAW,
-    down_callback = function()
+    on_press = function()
         TASState.dyaw = not TASState.dyaw
     end,
     get_active = function()
@@ -123,7 +182,7 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_STRAIN_LEFT,
-    down_callback = function()
+    on_press = function()
         if TASState.strain_left then
             TASState.strain_left = false
         else
@@ -138,7 +197,7 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_STRAIN_RIGHT,
-    down_callback = function()
+    on_press = function()
         if TASState.strain_right then
             TASState.strain_right = false
         else
@@ -153,7 +212,7 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_GOAL_ANGLE,
-    down_callback = function()
+    on_press = function()
         local result = tonumber(input.prompt(action.get_display_name(ACTION_SET_GOAL_ANGLE), tostring(TASState.goal_angle)))
         if result == nil then
             return
@@ -164,7 +223,7 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_RESET_MAGNITUDE,
-    down_callback = function()
+    on_press = function()
         TASState.goal_mag = 127
         TASState.high_magnitude = false
     end,
@@ -172,7 +231,7 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MAGNITUDE,
-    down_callback = function()
+    on_press = function()
         local result = tonumber(input.prompt(action.get_display_name(ACTION_SET_MAGNITUDE), tostring(TASState.goal_mag)))
         if result == nil then
             return
@@ -183,7 +242,7 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_HIGH_MAGNITUDE,
-    down_callback = function()
+    on_press = function()
         TASState.high_magnitude = not TASState.high_magnitude
     end,
     get_active = function()
@@ -193,14 +252,14 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_SPDKICK,
-    down_callback = function()
+    on_press = function()
         Engine.toggle_speedkick()
     end,
 })
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_FRAMEWALK,
-    down_callback = function()
+    on_press = function()
         TASState.framewalk = not TASState.framewalk
     end,
     get_active = function()
@@ -210,11 +269,33 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_SWIM,
-    down_callback = function()
+    on_press = function()
         TASState.swim = not TASState.swim
     end,
     get_active = function()
         return TASState.swim
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_TOGGLE_AUTOFIRSTIES,
+    on_press = function()
+        Settings.auto_firsties = not Settings.auto_firsties
+        action.notify_active_changed(ACTION_TOGGLE_AUTOFIRSTIES)
+    end,
+    get_active = function()
+        return Settings.auto_firsties
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_TOGGLE_NAVBAR,
+    on_press = function()
+        Settings.navbar_visible = not Settings.navbar_visible
+        action.notify_active_changed(ACTION_TOGGLE_NAVBAR)
+    end,
+    get_active = function()
+        return Settings.navbar_visible
     end,
 })
 
