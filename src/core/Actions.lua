@@ -8,6 +8,7 @@ Actions = {}
 
 ROOT = 'SM64 Lua Redux > '
 ACTION_MOVEMENT_MODE = ROOT .. 'Movement Mode ---'
+ACTION_SET_MOVEMENT_MODE_MANUAL = ACTION_MOVEMENT_MODE .. ' > Manual ---'
 ACTION_SET_MOVEMENT_MODE_DISABLED = ACTION_MOVEMENT_MODE .. ' > Disabled'
 ACTION_SET_MOVEMENT_MODE_MATCH_YAW = ACTION_MOVEMENT_MODE .. ' > Match Yaw'
 ACTION_SET_MOVEMENT_MODE_REVERSE_ANGLE = ACTION_MOVEMENT_MODE .. ' > Reverse Angle'
@@ -53,6 +54,17 @@ end
 
 ---@type ActionParamsWithDefaultHotkey[]
 local actions = {}
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_SET_MOVEMENT_MODE_MANUAL,
+    on_press = function()
+        TASState.movement_mode = MovementModes.manual
+        action.notify_active_changed(ACTION_MOVEMENT_MODE .. '>*')
+    end,
+    get_active = function()
+        return TASState.movement_mode == MovementModes.manual
+    end,
+})
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MOVEMENT_MODE_DISABLED,

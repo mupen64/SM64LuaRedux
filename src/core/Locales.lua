@@ -106,6 +106,7 @@ Locales = {}
 ---@field public SEMANTIC_WORKFLOW_PREFERENCES_FAST_FORWARD string
 ---@field public SEMANTIC_WORKFLOW_PREFERENCES_DEFAULT_SECTION_TIMEOUT string
 ---@field public SETTINGS_VISUALS_TAB_NAME string
+---@field public SETTINGS_INTERACTION_TAB_NAME string
 ---@field public SETTINGS_VARWATCH_TAB_NAME string
 ---@field public SETTINGS_MEMORY_TAB_NAME string
 ---@field public SETTINGS_VISUALS_STYLE string

@@ -6,6 +6,7 @@
 
 local views = {
     dofile(views_path .. 'VisualSettings.lua'),
+    dofile(views_path .. 'InteractionSettings.lua'),
     dofile(views_path .. 'VarWatchSettings.lua'),
     dofile(views_path .. 'MemorySettings.lua'),
 }

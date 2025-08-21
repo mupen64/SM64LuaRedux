@@ -117,6 +117,7 @@ This action cannot be undone.
     SEMANTIC_WORKFLOW_PREFERENCES_DEFAULT_SECTION_TIMEOUT = 'Default section timeout:',
     -- Settings Tab
     SETTINGS_VISUALS_TAB_NAME = 'Visuals',
+    SETTINGS_INTERACTION_TAB_NAME = 'Interaction',
     SETTINGS_VARWATCH_TAB_NAME = 'Varwatch',
     SETTINGS_MEMORY_TAB_NAME = 'Memory',
     SETTINGS_VISUALS_STYLE = 'Style',
@@ -129,6 +130,7 @@ This action cannot be undone.
     SETTINGS_VISUALS_UPDATE_EVERY_VI = 'Update every VI',
     SETTINGS_VISUALS_UPDATE_EVERY_VI_TOOLTIP =
     'Updates the UI every VI, improving mupen capture sync. Reduces performance.',
+    SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT = "Enable manual mode on joystick interact",
     SETTINGS_VARWATCH_DISABLED = '(disabled)',
     SETTINGS_VARWATCH_HIDE = 'Hide',
     SETTINGS_VARWATCH_ANGLE_FORMAT = 'Angle formatting',
