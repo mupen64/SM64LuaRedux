@@ -325,5 +325,9 @@ actions[#actions + 1] = wrap_params({
 action.begin_batch_work()
 for _, params in pairs(actions) do
     assert(action.add(params))
+
+    if params.hotkey then
+        assert(action.associate_hotkey(params.path, params.hotkey))
+    end
 end
 action.end_batch_work()
