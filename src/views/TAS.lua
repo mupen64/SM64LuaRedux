@@ -161,7 +161,7 @@ return {
 
         local joystick_rect = grid(0, 4, 4, 4)
         local displayPosition = { x = Engine.stick_for_input_x(TASState), y = -Engine.stick_for_input_y(TASState) }
-        local newPosition = ugui.joystick({
+        ugui.joystick({
             uid = 70,
             rectangle = {
                 x = joystick_rect[1],
@@ -174,11 +174,6 @@ return {
             x_snap = 8,
             y_snap = 8,
         })
-        if (newPosition.x ~= displayPosition.x or newPosition.y ~= displayPosition.y) then
-            action.invoke(ACTION_SET_MOVEMENT_MODE_MANUAL)
-            TASState.manual_joystick_x = math.min(127, math.floor(newPosition.x + 0.5))
-            TASState.manual_joystick_y = math.min(127, -math.floor(newPosition.y + 0.5))
-        end
 
         local atan_strain = ugui.toggle_button({
             uid = 75,
