@@ -119,7 +119,6 @@ This action cannot be undone.
     SETTINGS_VISUALS_TAB_NAME = 'Visuals',
     SETTINGS_VARWATCH_TAB_NAME = 'Varwatch',
     SETTINGS_MEMORY_TAB_NAME = 'Memory',
-    SETTINGS_HOTKEYS_TAB_NAME = 'Hotkeys',
     SETTINGS_VISUALS_STYLE = 'Style',
     SETTINGS_VISUALS_LOCALE = 'Locale',
     SETTINGS_VISUALS_NOTIFICATIONS = 'Notifications',

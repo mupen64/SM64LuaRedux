@@ -45,7 +45,7 @@ dofile(core_path .. 'Styles.lua')
 dofile(core_path .. 'Locales.lua')
 dofile(core_path .. 'Presets.lua')
 dofile(core_path .. 'Dumping.lua')
-dofile(core_path .. 'Hotkeys.lua')
+dofile(core_path .. 'Actions.lua')
 Addresses = dofile(core_path .. 'Addresses.lua')
 
 apply_math_shim()
@@ -55,6 +55,7 @@ Joypad.update()
 Drawing.size_up()
 Presets.restore()
 Presets.apply(Presets.persistent.current_index)
+Actions.register_all()
 
 local views = {
     dofile(views_path .. 'TAS.lua'),
@@ -106,7 +107,7 @@ local function at_input()
         local address_source = Addresses[Settings.address_source_index]
 
         if Settings.override_rng_use_index then
-            memory.writeword(address_source.rng_value, get_value(Settings.override_rng_value))
+            memory.writeword(address_source.rng_value, RNG.get_value(Settings.override_rng_value))
         else
             memory.writeword(address_source.rng_value, Settings.override_rng_value)
         end
@@ -147,7 +148,6 @@ local function draw_navbar()
     local preset_picker_rect = grid_rect(5.5, 16, 2.5, 1)
     local preset_index = Presets.persistent.current_index
 
-
     if reset_preset_menu_open then
         local result = ugui.menu({
             uid = -5010,
@@ -156,15 +156,14 @@ local function draw_navbar()
                 {
                     text = Locales.str('GENERIC_RESET'),
                     callback = function()
-                        Presets.reset(Presets.persistent.current_index)
-                        Presets.apply(Presets.persistent.current_index)
+                        action.invoke(ACTION_RESET_PRESET)
                     end,
                 },
                 {
                     text = Locales.str('PRESET_CONTEXT_MENU_PERSIST_TAS_STATE'),
                     checked = Settings.persist_tas_state,
                     callback = function()
-                        Settings.persist_tas_state = not Settings.persist_tas_state
+                        action.invoke(ACTION_TOGGLE_REMEMBER_TAS_STATE)
                     end,
                 },
             },
@@ -196,8 +195,10 @@ local function draw_navbar()
         selected_index = preset_index,
     })
 
-    if preset_index ~= Presets.persistent.current_index then
-        Presets.apply(preset_index)
+    if preset_index > Presets.persistent.current_index then
+        action.invoke(ACTION_SET_PRESET_UP)
+    elseif preset_index < Presets.persistent.current_index then
+        action.invoke(ACTION_SET_PRESET_DOWN)
     end
 end
 
@@ -216,12 +217,6 @@ local function atdrawd2d()
 
     last_keys = ugui.internal.deep_clone(keys)
     keys = input.get()
-
-    if dictlen(input.diff(keys, last_keys)) > 0 then
-        Hotkeys.on_key_down(keys)
-    end
-
-    Hotkeys.update()
 
     if keys.rightclick and not last_keys.rightclick then
         last_rmb_down_position = {

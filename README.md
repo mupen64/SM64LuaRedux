@@ -31,7 +31,7 @@ or...
 - RNG
 - Timer
 - Customizable ramwatch
-- Hotkeys
+- Actions and Hotkeys
 - Dynamic resizing[^2]
 - Framewalk
 - Auto firsties

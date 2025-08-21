@@ -108,7 +108,6 @@ Locales = {}
 ---@field public SETTINGS_VISUALS_TAB_NAME string
 ---@field public SETTINGS_VARWATCH_TAB_NAME string
 ---@field public SETTINGS_MEMORY_TAB_NAME string
----@field public SETTINGS_HOTKEYS_TAB_NAME string
 ---@field public SETTINGS_VISUALS_STYLE string
 ---@field public SETTINGS_VISUALS_LOCALE string
 ---@field public SETTINGS_VISUALS_NOTIFICATIONS string
