@@ -14,7 +14,7 @@ ACTION_SET_MOVEMENT_MODE_MATCH_YAW = ACTION_MOVEMENT_MODE .. ' > Match Yaw'
 ACTION_SET_MOVEMENT_MODE_REVERSE_ANGLE = ACTION_MOVEMENT_MODE .. ' > Reverse Angle'
 ACTION_SET_MOVEMENT_MODE_MATCH_ANGLE = ACTION_MOVEMENT_MODE .. ' > Match Angle'
 ACTION_SET_GOAL_ANGLE_TO_FACING_YAW = ROOT .. 'Set Angle to Facing Yaw'
-ACTION_SET_GOAL_ANGLE_TO_INTENDED_YAW = ROOT .. 'Set Angle to Inteded Yaw'
+ACTION_SET_GOAL_ANGLE_TO_INTENDED_YAW = ROOT .. 'Set Angle to Intended Yaw'
 ACTION_DECREMENT_ANGLE = ROOT .. 'Angle -1'
 ACTION_INCREMENT_ANGLE = ROOT .. 'Angle +1'
 ACTION_TOGGLE_D99_ENABLED = ROOT .. '.99 --- > Enabled ---'
@@ -32,9 +32,12 @@ ACTION_TOGGLE_SWIM = ROOT .. 'Swim'
 ACTION_TOGGLE_AUTOFIRSTIES = ROOT .. 'Auto-Firsties ---'
 ACTION_TOGGLE_NAVBAR = ROOT .. 'Navigation Bar'
 
+---@class ActionParamsWithDefaultHotkey : ActionParams
+---@field hotkey Hotkey?
+
 ---Wraps callbacks of action parameters to show notifications.
----@param params ActionParams
----@return ActionParams
+---@param params ActionParamsWithDefaultHotkey
+---@return ActionParamsWithDefaultHotkey
 local function wrap_params(params)
     local new_params = ugui.internal.deep_clone(params)
 
@@ -44,8 +47,7 @@ local function wrap_params(params)
 end
 
 
-
----@type ActionParams[]
+---@type ActionParamsWithDefaultHotkey[]
 local actions = {}
 
 actions[#actions + 1] = wrap_params({
@@ -61,6 +63,7 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MOVEMENT_MODE_DISABLED,
+    hotkey = { ctrl = true, key = string.byte('1') },
     on_press = function()
         TASState.movement_mode = MovementModes.disabled
         action.notify_active_changed(ACTION_MOVEMENT_MODE .. '>*')
@@ -72,6 +75,7 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MOVEMENT_MODE_MATCH_YAW,
+    hotkey = { ctrl = true, key = string.byte('2') },
     on_press = function()
         TASState.movement_mode = MovementModes.match_yaw
         action.notify_active_changed(ACTION_MOVEMENT_MODE .. '>*')
@@ -83,6 +87,7 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MOVEMENT_MODE_REVERSE_ANGLE,
+    hotkey = { ctrl = true, key = string.byte('3') },
     on_press = function()
         TASState.movement_mode = MovementModes.reverse_angle
         action.notify_active_changed(ACTION_MOVEMENT_MODE .. '>*')
@@ -94,6 +99,7 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MOVEMENT_MODE_MATCH_ANGLE,
+    hotkey = { ctrl = true, key = string.byte('4') },
     on_press = function()
         TASState.movement_mode = MovementModes.match_angle
         action.notify_active_changed(ACTION_MOVEMENT_MODE .. '>*')
@@ -119,6 +125,7 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_DECREMENT_ANGLE,
+    hotkey = { ctrl = true, key = Mupen.VKeycodes.VK_OEM_MINUS },
     on_press = function()
         if ugui.internal.active_control then
             return
@@ -138,6 +145,7 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_INCREMENT_ANGLE,
+    hotkey = { ctrl = true, key = Mupen.VKeycodes.VK_OEM_PLUS },
     on_press = function()
         if ugui.internal.active_control then
             return
