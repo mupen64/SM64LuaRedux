@@ -30,6 +30,11 @@ ACTION_SET_SPDKICK = ROOT .. 'Speedkick'
 ACTION_TOGGLE_FRAMEWALK = ROOT .. 'Framewalk'
 ACTION_TOGGLE_SWIM = ROOT .. 'Swim'
 ACTION_TOGGLE_AUTOFIRSTIES = ROOT .. 'Auto-Firsties ---'
+ACTION_PRESET = ROOT .. 'Preset > '
+ACTION_SET_PRESET_DOWN = ACTION_PRESET .. 'Select Previous'
+ACTION_SET_PRESET_UP = ACTION_PRESET .. 'Select Next ---'
+ACTION_TOGGLE_REMEMBER_TAS_STATE = ACTION_PRESET .. 'Remember TAS State'
+ACTION_RESET_PRESET = ACTION_PRESET .. 'Reset to Default'
 ACTION_TOGGLE_NAVBAR = ROOT .. 'Navigation Bar'
 
 ---@class ActionParamsWithDefaultHotkey : ActionParams
@@ -310,6 +315,40 @@ actions[#actions + 1] = wrap_params({
         return Settings.auto_firsties
     end,
 })
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_SET_PRESET_DOWN,
+    on_press = function()
+        Presets.apply(ugui.internal.clamp(Presets.persistent.current_index - 1, 1, #Presets.persistent.presets))
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_SET_PRESET_UP,
+    on_press = function()
+        Presets.apply(ugui.internal.clamp(Presets.persistent.current_index + 1, 1, #Presets.persistent.presets))
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_TOGGLE_REMEMBER_TAS_STATE,
+    on_press = function()
+        Settings.persist_tas_state = not Settings.persist_tas_state
+        action.notify_active_changed(ACTION_TOGGLE_REMEMBER_TAS_STATE)
+    end,
+    get_active = function()
+        return Settings.persist_tas_state
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_RESET_PRESET,
+    on_press = function()
+        Presets.reset(Presets.persistent.current_index)
+        Presets.apply(Presets.persistent.current_index)
+    end,
+})
+
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_NAVBAR,

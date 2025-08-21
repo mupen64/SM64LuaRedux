@@ -148,7 +148,6 @@ local function draw_navbar()
     local preset_picker_rect = grid_rect(5.5, 16, 2.5, 1)
     local preset_index = Presets.persistent.current_index
 
-
     if reset_preset_menu_open then
         local result = ugui.menu({
             uid = -5010,
@@ -157,15 +156,14 @@ local function draw_navbar()
                 {
                     text = Locales.str('GENERIC_RESET'),
                     callback = function()
-                        Presets.reset(Presets.persistent.current_index)
-                        Presets.apply(Presets.persistent.current_index)
+                        action.invoke(ACTION_RESET_PRESET)
                     end,
                 },
                 {
                     text = Locales.str('PRESET_CONTEXT_MENU_PERSIST_TAS_STATE'),
                     checked = Settings.persist_tas_state,
                     callback = function()
-                        Settings.persist_tas_state = not Settings.persist_tas_state
+                        action.invoke(ACTION_TOGGLE_REMEMBER_TAS_STATE)
                     end,
                 },
             },
@@ -197,8 +195,10 @@ local function draw_navbar()
         selected_index = preset_index,
     })
 
-    if preset_index ~= Presets.persistent.current_index then
-        Presets.apply(preset_index)
+    if preset_index > Presets.persistent.current_index then
+        action.invoke(ACTION_SET_PRESET_UP)
+    elseif preset_index < Presets.persistent.current_index then
+        action.invoke(ACTION_SET_PRESET_DOWN)
     end
 end
 
