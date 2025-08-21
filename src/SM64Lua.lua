@@ -45,6 +45,7 @@ dofile(core_path .. 'Styles.lua')
 dofile(core_path .. 'Locales.lua')
 dofile(core_path .. 'Presets.lua')
 dofile(core_path .. 'Dumping.lua')
+dofile(core_path .. 'Actions.lua')
 Addresses = dofile(core_path .. 'Addresses.lua')
 
 apply_math_shim()
@@ -54,8 +55,7 @@ Joypad.update()
 Drawing.size_up()
 Presets.restore()
 Presets.apply(Presets.persistent.current_index)
-
-dofile(core_path .. 'Actions.lua')
+Actions.register_all()
 
 local views = {
     dofile(views_path .. 'TAS.lua'),

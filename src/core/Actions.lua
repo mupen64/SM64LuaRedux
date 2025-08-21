@@ -6,7 +6,7 @@
 
 Actions = {}
 
-local ROOT = 'SM64 Lua Redux > '
+ROOT = 'SM64 Lua Redux > '
 ACTION_MOVEMENT_MODE = ROOT .. 'Movement Mode ---'
 ACTION_SET_MOVEMENT_MODE_MANUAL = ACTION_MOVEMENT_MODE .. ' > Manual ---'
 ACTION_SET_MOVEMENT_MODE_DISABLED = ACTION_MOVEMENT_MODE .. ' > Disabled'
@@ -320,6 +320,7 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_SET_PRESET_DOWN,
     on_press = function()
         Presets.apply(ugui.internal.clamp(Presets.persistent.current_index - 1, 1, #Presets.persistent.presets))
+        Actions.notify_all_changed()
     end,
 })
 
@@ -327,6 +328,7 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_SET_PRESET_UP,
     on_press = function()
         Presets.apply(ugui.internal.clamp(Presets.persistent.current_index + 1, 1, #Presets.persistent.presets))
+        Actions.notify_all_changed()
     end,
 })
 
@@ -346,9 +348,9 @@ actions[#actions + 1] = wrap_params({
     on_press = function()
         Presets.reset(Presets.persistent.current_index)
         Presets.apply(Presets.persistent.current_index)
+        Actions.notify_all_changed()
     end,
 })
-
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_NAVBAR,
@@ -361,12 +363,21 @@ actions[#actions + 1] = wrap_params({
     end,
 })
 
-action.begin_batch_work()
-for _, params in pairs(actions) do
-    assert(action.add(params))
+---Registers all actions. Can only be called once.
+function Actions.register_all()
+    action.begin_batch_work()
+    for _, params in pairs(actions) do
+        assert(action.add(params))
 
-    if params.hotkey then
-        assert(action.associate_hotkey(params.path, params.hotkey))
+        if params.hotkey then
+            assert(action.associate_hotkey(params.path, params.hotkey))
+        end
     end
+    action.end_batch_work()
 end
-action.end_batch_work()
+
+---Notifies the action system that all actions have changed their state.
+function Actions.notify_all_changed()
+    -- We only deal with the active state for now since it's all we use
+    action.notify_active_changed(ROOT .. '*')
+end
