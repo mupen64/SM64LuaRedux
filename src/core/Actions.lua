@@ -156,7 +156,7 @@ actions[#actions + 1] = wrap_params({
             return
         end
 
-        TASState.goal_angle = TASState.goal_angle - 16
+        TASState.goal_angle = TASState.goal_angle + 16
 
         if TASState.goal_angle < 0 then
             TASState.goal_angle = 65535
