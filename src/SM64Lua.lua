@@ -225,6 +225,9 @@ local function atdrawd2d()
         }
     end
 
+    -- HACK: We turn off hotkeys while a control is capturing inputs
+    action.lock_hotkeys(ugui.internal.active_control ~= nil)
+
     VarWatch_update()
 
     local focused = emu.ismainwindowinforeground()
