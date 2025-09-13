@@ -20,6 +20,7 @@ iohelper = {}
 avi = {}
 hotkey = {}
 action = {}
+clipboard = {}
 
 Mupen = {
     ---@enum Result
@@ -102,7 +103,7 @@ Mupen = {
 
     ---@alias VKeycode integer
     ---A virtual keycode.
-    
+
     ---@enum VKeycodes
     -- A complete enum of Windows Virtual-Key codes.
     VKeycodes = {
@@ -750,17 +751,9 @@ function memory.writedouble(address, data) end
 ---@return nil
 function memory.writesize(address, size, data) end
 
----See [memory.recompile](lua://memory.recompile).
----@param addr integer
-function memory.recompilenow(addr) end
-
 ---Queues up a recompilation of the block at the specified address.
 ---@param addr integer
 function memory.recompile(addr) end
-
----See [memory.recompile](lua://memory.recompile).
----@param addr integer
-function memory.recompilenext(addr) end
 
 ---Queues up a recompilation of all blocks.
 function memory.recompilenextall() end
@@ -1314,12 +1307,11 @@ function input.get() end
 ---@return table
 function input.diff(t1, t2) end
 
----Opens a window where the user can input text.
----If `OK` is clicked, that text is returned.
----If `Cancel` is clicked or the window is closed, `nil` is returned.
+---Opens a dialog in which the user can input text. 
+---If the dialog is cancelled, `nil` is returned.
 ---@nodiscard
----@param title string? The title of the text box. Defaults to "input:".
----@param placeholder string? The text box is filled with this string when it opens. Defaults to "".
+---@param title string? The title of the text box. Defaults to `"input:"`.
+---@param placeholder string? The text box is filled with this string when it opens. Defaults to `""`.
 ---@return string|nil
 function input.prompt(title, placeholder) end
 
@@ -1520,6 +1512,7 @@ function avi.stopcapture() end
 ---@field ctrl boolean? Whether the control modifier is pressed.
 ---@field shift boolean? Whether the shift modifier is pressed.
 ---@field alt boolean? Whether the alt modifier is pressed.
+---@field assigned boolean? Whether the hotkey is assigned. Defaults to `true`.
 
 ---Shows a dialog prompting the user to enter a hotkey.
 ---@param caption string The headline to display in the dialog.
@@ -1597,6 +1590,21 @@ function action.notify_active_changed(filter) end
 ---@return string # The action's display name or an empty string if the display name couldn't be resolved.
 function action.get_display_name(filter, ignore_override) end
 
+---Gets whether an action is enabled.
+---@param path ActionPath A path.
+---@return boolean # The action's enabled state.
+function action.get_enabled(path) end
+
+---Gets whether an action is active.
+---@param path ActionPath A path.
+---@return boolean # The action's active state.
+function action.get_active(path) end
+
+---Gets whether an action has been registered with an active state callback.
+---@param path ActionPath A path.
+---@return boolean # The action's activatability.
+function action.get_activatability(path) end
+
 ---Gets all action paths that match the specified filter.
 ---@param filter ActionFilter A filter.
 ---@return ActionPath[] # A collection of action paths that match the filter.
@@ -1606,5 +1614,39 @@ function action.get_actions_matching_filter(filter) end
 ---@param path ActionPath A path.
 ---@param up boolean? If true, the action is considered to be released, otherwise it is considered to be pressed down.
 function action.invoke(path, up) end
+
+---Locks or unlocks action invocations from hotkeys.
+---@param lock boolean Whether to lock or unlock action invocations from hotkeys.
+function action.lock_hotkeys(lock) end
+
+---@return boolean # Whether action invocations from hotkeys are currently locked.
+function action.get_hotkeys_locked() end
+
+--#endregion
+
+
+-- clipboard functions
+--#region
+
+---@alias ClipboardContentType "text"
+
+---Gets the clipboard content as text.
+---@param type ClipboardContentType["text"] The clipboard content type.
+---@return string? The clipboard content in the desired type, or `nil` if the clipboard content isn't of the same type as requested.
+function clipboard.get(type) end
+
+---Gets the content type of the current clipboard contents.
+---@return "text" | nil # The clipboard content type, or `nil` if the clipboard is empty.
+function clipboard.get_content_type() end
+
+---Sets the clipboard content to the specified text.
+---@param type ClipboardContentType["text"] The clipboard content type.
+---@param value string The new clipboard value.
+---@return boolean # Whether the operation succeeded.
+function clipboard.set(type, value) end
+
+---Clears the clipboard.
+---@return boolean # Whether the operation succeeded.
+function clipboard.clear() end
 
 --#endregion
