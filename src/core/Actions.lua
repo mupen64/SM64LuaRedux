@@ -58,11 +58,11 @@ local actions = {}
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MOVEMENT_MODE_MANUAL,
     on_press = function()
-        TASState.movement_mode = MovementModes.manual
+        Settings.tas.movement_mode = MovementModes.manual
         action.notify_active_changed(ACTION_MOVEMENT_MODE .. '>*')
     end,
     get_active = function()
-        return TASState.movement_mode == MovementModes.manual
+        return Settings.tas.movement_mode == MovementModes.manual
     end,
 })
 
@@ -70,11 +70,11 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MOVEMENT_MODE_DISABLED,
     hotkey = { ctrl = true, key = string.byte('1') },
     on_press = function()
-        TASState.movement_mode = MovementModes.disabled
+        Settings.tas.movement_mode = MovementModes.disabled
         action.notify_active_changed(ACTION_MOVEMENT_MODE .. '>*')
     end,
     get_active = function()
-        return TASState.movement_mode == MovementModes.disabled
+        return Settings.tas.movement_mode == MovementModes.disabled
     end,
 })
 
@@ -82,11 +82,11 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MOVEMENT_MODE_MATCH_YAW,
     hotkey = { ctrl = true, key = string.byte('2') },
     on_press = function()
-        TASState.movement_mode = MovementModes.match_yaw
+        Settings.tas.movement_mode = MovementModes.match_yaw
         action.notify_active_changed(ACTION_MOVEMENT_MODE .. '>*')
     end,
     get_active = function()
-        return TASState.movement_mode == MovementModes.match_yaw
+        return Settings.tas.movement_mode == MovementModes.match_yaw
     end,
 })
 
@@ -94,11 +94,11 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MOVEMENT_MODE_REVERSE_ANGLE,
     hotkey = { ctrl = true, key = string.byte('3') },
     on_press = function()
-        TASState.movement_mode = MovementModes.reverse_angle
+        Settings.tas.movement_mode = MovementModes.reverse_angle
         action.notify_active_changed(ACTION_MOVEMENT_MODE .. '>*')
     end,
     get_active = function()
-        return TASState.movement_mode == MovementModes.reverse_angle
+        return Settings.tas.movement_mode == MovementModes.reverse_angle
     end,
 })
 
@@ -106,25 +106,25 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MOVEMENT_MODE_MATCH_ANGLE,
     hotkey = { ctrl = true, key = string.byte('4') },
     on_press = function()
-        TASState.movement_mode = MovementModes.match_angle
+        Settings.tas.movement_mode = MovementModes.match_angle
         action.notify_active_changed(ACTION_MOVEMENT_MODE .. '>*')
     end,
     get_active = function()
-        return TASState.movement_mode == MovementModes.match_angle
+        return Settings.tas.movement_mode == MovementModes.match_angle
     end,
 })
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_GOAL_ANGLE_TO_FACING_YAW,
     on_press = function()
-        TASState.goal_angle = Memory.current.mario_facing_yaw
+        Settings.tas.goal_angle = Memory.current.mario_facing_yaw
     end,
 })
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_GOAL_ANGLE_TO_INTENDED_YAW,
     on_press = function()
-        TASState.goal_angle = Memory.current.mario_intended_yaw
+        Settings.tas.goal_angle = Memory.current.mario_intended_yaw
     end,
 })
 
@@ -136,13 +136,13 @@ actions[#actions + 1] = wrap_params({
             return
         end
 
-        TASState.goal_angle = TASState.goal_angle - 16
+        Settings.tas.goal_angle = Settings.tas.goal_angle - 16
 
-        if TASState.goal_angle < 0 then
-            TASState.goal_angle = 65535
+        if Settings.tas.goal_angle < 0 then
+            Settings.tas.goal_angle = 65535
         else
-            if TASState.goal_angle % 16 ~= 0 then
-                TASState.goal_angle = math.floor((TASState.goal_angle + 8) / 16) * 16
+            if Settings.tas.goal_angle % 16 ~= 0 then
+                Settings.tas.goal_angle = math.floor((Settings.tas.goal_angle + 8) / 16) * 16
             end
         end
     end,
@@ -156,13 +156,13 @@ actions[#actions + 1] = wrap_params({
             return
         end
 
-        TASState.goal_angle = TASState.goal_angle + 16
+        Settings.tas.goal_angle = Settings.tas.goal_angle + 16
 
-        if TASState.goal_angle < 0 then
-            TASState.goal_angle = 65535
+        if Settings.tas.goal_angle < 0 then
+            Settings.tas.goal_angle = 65535
         else
-            if TASState.goal_angle % 16 ~= 0 then
-                TASState.goal_angle = math.floor((TASState.goal_angle + 8) / 16) * 16
+            if Settings.tas.goal_angle % 16 ~= 0 then
+                Settings.tas.goal_angle = math.floor((Settings.tas.goal_angle + 8) / 16) * 16
             end
         end
     end,
@@ -171,108 +171,108 @@ actions[#actions + 1] = wrap_params({
 actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_D99_ENABLED,
     on_press = function()
-        TASState.strain_speed_target = not TASState.strain_speed_target
+        Settings.tas.strain_speed_target = not Settings.tas.strain_speed_target
         action.notify_active_changed(ACTION_TOGGLE_D99_ENABLED)
     end,
     get_active = function()
-        return TASState.strain_speed_target
+        return Settings.tas.strain_speed_target
     end,
 })
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_D99_ALWAYS,
     on_press = function()
-        TASState.strain_always = not TASState.strain_always
+        Settings.tas.strain_always = not Settings.tas.strain_always
         action.notify_active_changed(ACTION_TOGGLE_D99_ALWAYS)
     end,
     get_active = function()
-        return TASState.strain_always
+        return Settings.tas.strain_always
     end,
 })
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_DYAW,
     on_press = function()
-        TASState.dyaw = not TASState.dyaw
+        Settings.tas.dyaw = not Settings.tas.dyaw
         action.notify_active_changed(ACTION_TOGGLE_DYAW)
     end,
     get_active = function()
-        return TASState.dyaw
+        return Settings.tas.dyaw
     end,
 })
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_STRAIN_LEFT,
     on_press = function()
-        if TASState.strain_left then
-            TASState.strain_left = false
+        if Settings.tas.strain_left then
+            Settings.tas.strain_left = false
         else
-            TASState.strain_left = true
-            TASState.strain_right = false
+            Settings.tas.strain_left = true
+            Settings.tas.strain_right = false
         end
         action.notify_active_changed(ACTION_TOGGLE_STRAIN_LEFT)
         action.notify_active_changed(ACTION_TOGGLE_STRAIN_RIGHT)
     end,
     get_active = function()
-        return TASState.strain_left
+        return Settings.tas.strain_left
     end,
 })
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_STRAIN_RIGHT,
     on_press = function()
-        if TASState.strain_right then
-            TASState.strain_right = false
+        if Settings.tas.strain_right then
+            Settings.tas.strain_right = false
         else
-            TASState.strain_right = true
-            TASState.strain_left = false
+            Settings.tas.strain_right = true
+            Settings.tas.strain_left = false
         end
         action.notify_active_changed(ACTION_TOGGLE_STRAIN_LEFT)
         action.notify_active_changed(ACTION_TOGGLE_STRAIN_RIGHT)
     end,
     get_active = function()
-        return TASState.strain_right
+        return Settings.tas.strain_right
     end,
 })
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_GOAL_ANGLE,
     on_press = function()
-        local result = tonumber(input.prompt(action.get_display_name(ACTION_SET_GOAL_ANGLE), tostring(TASState.goal_angle)))
+        local result = tonumber(input.prompt(action.get_display_name(ACTION_SET_GOAL_ANGLE), tostring(Settings.tas.goal_angle)))
         if result == nil then
             return
         end
-        TASState.goal_angle = result
+        Settings.tas.goal_angle = result
     end,
 })
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_RESET_MAGNITUDE,
     on_press = function()
-        TASState.goal_mag = 127
-        TASState.high_magnitude = false
+        Settings.tas.goal_mag = 127
+        Settings.tas.high_magnitude = false
     end,
 })
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MAGNITUDE,
     on_press = function()
-        local result = tonumber(input.prompt(action.get_display_name(ACTION_SET_MAGNITUDE), tostring(TASState.goal_mag)))
+        local result = tonumber(input.prompt(action.get_display_name(ACTION_SET_MAGNITUDE), tostring(Settings.tas.goal_mag)))
         if result == nil then
             return
         end
-        TASState.goal_mag = result
+        Settings.tas.goal_mag = result
     end,
 })
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_HIGH_MAGNITUDE,
     on_press = function()
-        TASState.high_magnitude = not TASState.high_magnitude
+        Settings.tas.high_magnitude = not Settings.tas.high_magnitude
         action.notify_active_changed(ACTION_TOGGLE_HIGH_MAGNITUDE)
     end,
     get_active = function()
-        return TASState.high_magnitude
+        return Settings.tas.high_magnitude
     end,
 })
 
@@ -286,22 +286,22 @@ actions[#actions + 1] = wrap_params({
 actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_FRAMEWALK,
     on_press = function()
-        TASState.framewalk = not TASState.framewalk
+        Settings.tas.framewalk = not Settings.tas.framewalk
         action.notify_active_changed(ACTION_TOGGLE_FRAMEWALK)
     end,
     get_active = function()
-        return TASState.framewalk
+        return Settings.tas.framewalk
     end,
 })
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_SWIM,
     on_press = function()
-        TASState.swim = not TASState.swim
+        Settings.tas.swim = not Settings.tas.swim
         action.notify_active_changed(ACTION_TOGGLE_SWIM)
     end,
     get_active = function()
-        return TASState.swim
+        return Settings.tas.swim
     end,
 })
 
@@ -329,17 +329,6 @@ actions[#actions + 1] = wrap_params({
     on_press = function()
         Presets.apply(ugui.internal.clamp(Presets.persistent.current_index + 1, 1, #Presets.persistent.presets))
         Actions.notify_all_changed()
-    end,
-})
-
-actions[#actions + 1] = wrap_params({
-    path = ACTION_TOGGLE_REMEMBER_TAS_STATE,
-    on_press = function()
-        Settings.persist_tas_state = not Settings.persist_tas_state
-        action.notify_active_changed(ACTION_TOGGLE_REMEMBER_TAS_STATE)
-    end,
-    get_active = function()
-        return Settings.persist_tas_state
     end,
 })
 

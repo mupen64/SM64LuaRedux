@@ -159,13 +159,6 @@ local function draw_navbar()
                         action.invoke(ACTION_RESET_PRESET)
                     end,
                 },
-                {
-                    text = Locales.str('PRESET_CONTEXT_MENU_PERSIST_TAS_STATE'),
-                    checked = Settings.persist_tas_state,
-                    callback = function()
-                        action.invoke(ACTION_TOGGLE_REMEMBER_TAS_STATE)
-                    end,
-                },
             },
         })
 

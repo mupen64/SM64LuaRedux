@@ -6,7 +6,7 @@
 
 return {
     process = function(input)
-        if not TASState.framewalk then
+        if not Settings.tas.framewalk then
             return input
         end
 

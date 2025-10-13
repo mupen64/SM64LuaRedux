@@ -86,13 +86,13 @@ local var_funcs = {
     end,
     ['atan_basic'] = function()
         return string.format('E: %s R: %s D: %s N: %s', Settings.atan_exp,
-            MoreMaths.round(TASState.atan_r, Settings.format_decimal_points),
-            MoreMaths.round(TASState.atan_d, Settings.format_decimal_points),
-            MoreMaths.round(TASState.atan_n, Settings.format_decimal_points)
+            MoreMaths.round(Settings.tas.atan_r, Settings.format_decimal_points),
+            MoreMaths.round(Settings.tas.atan_d, Settings.format_decimal_points),
+            MoreMaths.round(Settings.tas.atan_n, Settings.format_decimal_points)
         )
     end,
     ['atan_start_frame'] = function()
-        return 'S: ' .. math.floor(TASState.atan_start + 1)
+        return 'S: ' .. math.floor(Settings.tas.atan_start + 1)
     end,
 }
 VarWatch = {

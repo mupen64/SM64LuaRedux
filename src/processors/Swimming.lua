@@ -12,7 +12,7 @@ local WATER_IDLE = 0x380022C0
 
 return {
 	process = function(input)
-		if not TASState.swim then
+		if not Settings.tas.swim then
 			return input
 		end
 

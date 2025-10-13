@@ -10,6 +10,30 @@ HOTKEY_MODE_REPEAT = 1
 NOTIFICATION_STYLE_BUBBLE = 1
 NOTIFICATION_STYLE_CONSOLE = 2
 
+function NewTASState()
+    return {
+        movement_mode = 1,
+        manual_joystick_x = 0,
+        manual_joystick_y = 0,
+        goal_angle = 0,
+        goal_mag = 127,
+        strain_always = false,
+        high_magnitude = false,
+        strain_left = true,
+        strain_right = false,
+        dyaw = false,
+        strain_speed_target = true,
+        swim = false,
+        framewalk = false,
+        atan_strain = false,
+        reverse_arc = false,
+        atan_start = 0,
+        atan_r = 1.0,
+        atan_d = 0.0,
+        atan_n = 10,
+    }
+end
+
 Settings = {
     swimming_button = 'A',
     controller_index = 1,
@@ -54,7 +78,6 @@ Settings = {
     hotkeys_selected_index = 1,
     hotkeys_allow_with_active_control = true,
     spd_efficiency_fraction = false,
-    persist_tas_state = true,
     enable_manual_on_joystick_interact = false,
     timer_auto = true,
     semantic_workflow = {
@@ -137,4 +160,5 @@ Settings = {
         },
     },
     address_source_index = 1,
+    tas = NewTASState(),
 }

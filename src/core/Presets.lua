@@ -30,22 +30,9 @@ function Presets.get_default_preset()
 end
 
 function Presets.apply(i)
-    -- HACK: The TASState isn't currently serialized properly.
-    -- Here, the TASState contents are injected into the presets and are also restored when loading.
-    for key, value in pairs(TASState) do
-        Settings['tasstate_' .. key] = value
-    end
-
     Presets.persistent.current_index = ugui.internal.clamp(i, 1, #Presets.persistent.presets)
     Settings = Presets.persistent.presets[Presets.persistent.current_index]
     Styles.update_style()
-
-    -- HACK: See above
-    if Settings.persist_tas_state then
-        for key, value in pairs(TASState) do
-            TASState[key] = Settings['tasstate_' .. key] == nil and NewTASState()[key] or Settings['tasstate_' .. key]
-        end
-    end
 end
 
 function Presets.reset(i)
