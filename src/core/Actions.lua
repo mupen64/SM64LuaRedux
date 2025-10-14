@@ -319,7 +319,7 @@ actions[#actions + 1] = wrap_params({
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_PRESET_DOWN,
     on_press = function()
-        Presets.apply(ugui.internal.clamp(Presets.persistent.current_index - 1, 1, #Presets.persistent.presets))
+        Presets.change_index(Presets.persistent.current_index - 1)
         Actions.notify_all_changed()
     end,
 })
@@ -327,7 +327,7 @@ actions[#actions + 1] = wrap_params({
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_PRESET_UP,
     on_press = function()
-        Presets.apply(ugui.internal.clamp(Presets.persistent.current_index + 1, 1, #Presets.persistent.presets))
+        Presets.change_index(Presets.persistent.current_index + 1)
         Actions.notify_all_changed()
     end,
 })

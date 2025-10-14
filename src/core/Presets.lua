@@ -5,12 +5,7 @@
 --
 
 local PRESETS_PATH <const> = 'presets.json'
-
-local function create_default_preset()
-    return ugui.internal.deep_clone(Settings)
-end
-
-local default_preset = create_default_preset()
+local DEFAULT_PRESET <const> = ugui.internal.deep_clone(Settings)
 
 Presets = {
     persistent = {
@@ -19,15 +14,7 @@ Presets = {
     },
 }
 
-print('Creating default presets...')
-
-for i = 1, 6, 1 do
-    Presets.persistent.presets[i] = create_default_preset()
-end
-
-function Presets.get_default_preset()
-    return ugui.internal.deep_clone(default_preset)
-end
+Presets.persistent.presets[1] = ugui.internal.deep_clone(DEFAULT_PRESET)
 
 function Presets.apply(i)
     Presets.persistent.current_index = ugui.internal.clamp(i, 1, #Presets.persistent.presets)
@@ -36,7 +23,7 @@ function Presets.apply(i)
 end
 
 function Presets.reset(i)
-    Presets.persistent.presets[i] = ugui.internal.deep_clone(default_preset)
+    Presets.persistent.presets[i] = ugui.internal.deep_clone(DEFAULT_PRESET)
 end
 
 function Presets.save()
@@ -69,4 +56,18 @@ function Presets.restore()
     deserialized = deep_merge(Presets.persistent, deserialized)
 
     Presets.persistent = deserialized
+end
+
+---Sets the preset index.
+---@param i integer
+function Presets.change_index(i)
+    i = math.max(1, i)
+
+    if #Presets.persistent.presets < i then
+        Presets.persistent.presets[i] = ugui.internal.deep_clone(DEFAULT_PRESET)
+    end
+
+    Presets.persistent.current_index = i
+
+    Presets.apply(i)
 end
