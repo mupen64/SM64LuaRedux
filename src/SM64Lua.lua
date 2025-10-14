@@ -178,13 +178,16 @@ local function draw_navbar()
         reset_preset_menu_open = true
     end
 
+    local preset_items = lualinq.select(Presets.persistent.presets, function(_, i)
+        return Locales.str('PRESET') .. i
+    end)
+    preset_items[#preset_items + 1] = Locales.str('PRESET') .. (#Presets.persistent.presets + 1)
+
     preset_index = ugui.carrousel_button({
         uid = -5005,
         rectangle = preset_picker_rect,
         is_enabled = not Settings.hotkeys_assigning,
-        items = lualinq.select(Presets.persistent.presets, function(_, i)
-            return Locales.str('PRESET') .. i
-        end),
+        items = preset_items,
         selected_index = preset_index,
     })
 
