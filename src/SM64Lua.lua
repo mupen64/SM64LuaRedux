@@ -53,7 +53,7 @@ apply_math_shim()
 Memory.initialize()
 Joypad.update()
 Drawing.size_up()
-Presets.restore()
+Presets.load()
 Presets.apply(Presets.persistent.current_index)
 Actions.register_all()
 

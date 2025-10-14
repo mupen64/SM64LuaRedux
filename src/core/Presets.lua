@@ -34,6 +34,7 @@ function Presets.reset(i)
     end
 end
 
+---Saves presets to disk.
 function Presets.save()
     print('Saving preset...')
     Presets.apply(Presets.persistent.current_index)
@@ -49,9 +50,9 @@ function Presets.save()
     io.close(file)
 end
 
-function Presets.restore()
-    print('Restoring presets...')
-
+---Loads presets from disk.
+function Presets.load()
+    print('Loading presets...')
     local file = io.open(PRESETS_PATH, 'r')
     if not file then
         return
