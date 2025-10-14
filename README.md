@@ -6,11 +6,7 @@
   SM64 Lua Redux
 </h1>
 
-SM64 Lua Redux is an SM64 TASing utility powered by [mupen-lua-ugui](https://github.com/Aurumaker72/mupen-lua-ugui).
-
-# Usage 
-
-The [SM64 Lua Redux Wiki](https://github.com/Mupen64-Rewrite/SM64LuaRedux/wiki) contains information about usage.
+SM64 Lua Redux is the leading SM64 TASing utility.
 
 # Quickstart
 
@@ -23,6 +19,8 @@ The [SM64 Lua Redux Wiki](https://github.com/Mupen64-Rewrite/SM64LuaRedux/wiki) 
 or...
 
 3. Drag and drop the `src/SM64Lua.lua` file onto Mupen64
+
+The [SM64 Lua Redux Wiki](https://github.com/Mupen64-Rewrite/SM64LuaRedux/wiki) contains information about usage.
 
 # What's new
 
@@ -41,11 +39,6 @@ or...
 - 3D World Visualization[^7]
 
 [^2]: The script will resize its elements intelligently to fit, and will thus work on small and huge resolutions
-[^3]: A preset saves your current choices (e.g.: Match Yaw with DYaw = 11111), and allow you to change between saved presets for spontaneously testing new strats or reusing older known configurations
+[^3]: Save and restore an infinite amount of program states. 
 [^6]: The amount of decimal points values are rounded to can be changed, as well as angles being expressed as degrees or game units
 [^7]: Allows you to see object positions as well as other useful information directly in the game world
-
-# Showcase
-
-![grafik](https://github.com/Mupen64-Rewrite/SM64LuaRedux/assets/48759429/baa1f152-7b4f-4fb9-b978-f5536ef0c1eb)
-
