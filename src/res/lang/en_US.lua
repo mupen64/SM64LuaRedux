@@ -21,6 +21,8 @@ return {
     TOOLS_TAB_NAME = 'Tools',
     TIMER_TAB_NAME = 'Timer',
     PRESET = 'Preset ',
+    -- Preset Context Menu
+    PRESET_CONTEXT_MENU_DELETE_ALL = 'Delete All',
     -- TAS Tab
     DISABLED = 'Disabled',
     MATCH_YAW = 'Match Yaw',

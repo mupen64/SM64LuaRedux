@@ -63,6 +63,6 @@ Changes the current tab.
 
 Changes the current preset.
 
-Presets hold a configuration of SM64Lua Redux across restarts. There are a total of 6 presets available which can be cycled through by clicking the selector.
+Presets hold a configuration of SM64Lua Redux across restarts. There's an infinite number of presets available which can be cycled through by clicking the selector.
 
 Right-clicking the preset switcher will show a context menu with useful options related to presets.
