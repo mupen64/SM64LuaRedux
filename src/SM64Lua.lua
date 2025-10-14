@@ -146,7 +146,6 @@ local function draw_navbar()
     })
 
     local preset_picker_rect = grid_rect(5.5, 16, 2.5, 1)
-    local preset_index = Presets.persistent.current_index
 
     if reset_preset_menu_open then
         local result = ugui.menu({
@@ -157,6 +156,12 @@ local function draw_navbar()
                     text = Locales.str('GENERIC_RESET'),
                     callback = function()
                         action.invoke(ACTION_RESET_PRESET)
+                    end,
+                },
+                {
+                    text = Locales.str('PRESET_CONTEXT_MENU_DELETE_ALL'),
+                    callback = function()
+                        action.invoke(ACTION_DELETE_ALL_PRESETS)
                     end,
                 },
             },
@@ -183,6 +188,7 @@ local function draw_navbar()
     end)
     preset_items[#preset_items + 1] = Locales.str('PRESET') .. (#Presets.persistent.presets + 1)
 
+    local preset_index = Presets.persistent.current_index
     preset_index = ugui.carrousel_button({
         uid = -5005,
         rectangle = preset_picker_rect,
@@ -191,10 +197,13 @@ local function draw_navbar()
         selected_index = preset_index,
     })
 
-    if preset_index > Presets.persistent.current_index then
+    if preset_index == Presets.persistent.current_index + 1 then
         action.invoke(ACTION_SET_PRESET_UP)
-    elseif preset_index < Presets.persistent.current_index then
+    elseif preset_index == Presets.persistent.current_index - 1 then
         action.invoke(ACTION_SET_PRESET_DOWN)
+    else
+        Presets.apply(preset_index)
+        Actions.notify_all_changed()
     end
 end
 

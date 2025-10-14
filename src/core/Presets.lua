@@ -24,6 +24,13 @@ function Presets.apply(i)
     Styles.update_style()
 end
 
+---Deletes and resets all presets, leaving only a default preset.
+function Presets.delete_all()
+    Presets.persistent.presets = { ugui.internal.deep_clone(DEFAULT_PRESET) }
+    Presets.apply(Presets.persistent.current_index)
+    print(Presets.persistent.current_index)
+end
+
 ---Resets the preset at the specified index, applying it if it's the current one.
 ---@param i integer
 function Presets.reset(i)
