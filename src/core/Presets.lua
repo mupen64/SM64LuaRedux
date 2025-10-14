@@ -75,8 +75,11 @@ function Presets.load()
 end
 
 ---Sets the preset index.
----@param i integer
+---@param i integer The new preset index. If the index is out of bounds, a new preset is created. Values below `1` will cause a wraparound to a new preset at the end.
 function Presets.change_index(i)
+    if i < 1 then
+        i = #Presets.persistent.presets + 1
+    end
     i = math.max(1, i)
 
     if #Presets.persistent.presets < i then
