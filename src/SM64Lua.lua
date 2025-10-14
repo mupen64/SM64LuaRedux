@@ -79,12 +79,7 @@ Notifications = dofile(views_path .. 'Notifications.lua')
 
 ugui_environment = {}
 local mouse_wheel = 0
-
--- Amount of updatescreen invocations, used for throttling repaints during ff
-local paints = 0
-
--- Whether the current paint cycle is being skipped
-paint_skipped = false
+local last_paint_time = os.clock()
 
 -- Flag keeping track of whether atinput has fired for one time
 local first_input = true
@@ -196,13 +191,13 @@ local function draw_navbar()
 end
 
 local function atdrawd2d()
-    paints = paints + 1
-    paint_skipped = (paints % Settings.repaint_throttle) ~= 0 and emu.get_ff and emu.get_ff()
+    local DESIRED_TIME_BETWEEN_PAINTS <const> = 1 / Settings.ff_fps
 
-    -- Throttle repaints in ff
-    if paint_skipped then
+    if emu.get_ff() and (os.clock() - last_paint_time < DESIRED_TIME_BETWEEN_PAINTS) then
         return
     end
+
+    last_paint_time = os.clock()
 
     if d2d and d2d.clear then
         d2d.clear(0, 0, 0, 0)

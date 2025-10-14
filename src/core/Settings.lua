@@ -67,7 +67,7 @@ Settings = {
     autodetect_address = true,
     auto_firsties = false,
     mini_visualizer = false,
-    repaint_throttle = 2,
+    ff_fps = 30,
     -- Writes memory values, input data, and frame indicies to a buffer each frame
     dump_enabled = false,
     dump_start_frame = 0,

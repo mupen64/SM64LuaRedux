@@ -104,9 +104,6 @@ VarWatch_compute_value = function(key)
 end
 
 VarWatch_update = function()
-    if paint_skipped then
-        return
-    end
     VarWatch.processed_values = {}
     for key, value in pairs(Settings.variables) do
         if value.visible then
