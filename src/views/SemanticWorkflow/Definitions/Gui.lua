@@ -13,11 +13,6 @@ local cls_gui <const> = {
     SMALL_CONTROL_HEIGHT = 0.50,
 }
 
----Allocates UIDs for specific Gui subtype
----@param enum_next fun(count?: integer): integer A function that will generate a new UID whenever called.
----@return table lookup A table from names to UIDs.
-function cls_gui.allocate_uids(enum_next) end
-
 ---Renders a specific Gui subtype.
 ---@param draw any A utility object to streamline draw calls.
 function cls_gui.render(draw) end

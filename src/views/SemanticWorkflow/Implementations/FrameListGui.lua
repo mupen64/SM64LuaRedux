@@ -10,8 +10,6 @@ local __impl = __impl
 
 --#region Constants
 
-local UID <const> = dofile(views_path .. 'SemanticWorkflow/UID.lua')['FrameList']
-
 local MODE_TEXTS <const> = { '-', 'D', 'M', 'Y', 'R', 'A' }
 local BUTTONS <const> = {
     { input = 'A',      text = 'A' },
@@ -69,7 +67,7 @@ local VIEW_MODE_HEADERS <const> = { 'SEMANTIC_WORKFLOW_FRAMELIST_STICK', 'SEMANT
 
 local scroll_offset = 0
 
-function __impl.allocate_uids(enum_next)
+local UID = UIDProvider.allocate_once('FrameListGui', function(enum_next)
     local base = enum_next(MAX_DISPLAYED_SECTIONS * NUM_UIDS_PER_ROW)
     return {
         SheetName = enum_next(),
@@ -78,7 +76,7 @@ function __impl.allocate_uids(enum_next)
             return base + (index - 1) * NUM_UIDS_PER_ROW
         end,
     }
-end
+end)
 
 ---@alias IterateInputsCallback fun(section: Section, input: SectionInputs, section_index: integer, total_inputs_counted: integer, input_index: integer): boolean?
 

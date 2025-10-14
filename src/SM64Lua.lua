@@ -26,6 +26,7 @@ lualinq = dofile(lib_path .. 'linq.lua')
 
 json = dofile(lib_path .. 'json.lua')
 dofile(styles_path .. 'base_style.lua')
+dofile(core_path .. 'UIDProvider.lua')
 dofile(core_path .. 'Helpers.lua')
 dofile(core_path .. 'Settings.lua')
 dofile(core_path .. 'Formatter.lua')
