@@ -336,7 +336,6 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_RESET_PRESET,
     on_press = function()
         Presets.reset(Presets.persistent.current_index)
-        Presets.apply(Presets.persistent.current_index)
         Actions.notify_all_changed()
     end,
 })

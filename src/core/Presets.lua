@@ -16,14 +16,22 @@ Presets = {
 
 Presets.persistent.presets[1] = ugui.internal.deep_clone(DEFAULT_PRESET)
 
+---Applies the preset at the specified index.
+---@param i integer
 function Presets.apply(i)
     Presets.persistent.current_index = ugui.internal.clamp(i, 1, #Presets.persistent.presets)
     Settings = Presets.persistent.presets[Presets.persistent.current_index]
     Styles.update_style()
 end
 
+---Resets the preset at the specified index, applying it if it's the current one.
+---@param i integer
 function Presets.reset(i)
     Presets.persistent.presets[i] = ugui.internal.deep_clone(DEFAULT_PRESET)
+
+    if Presets.persistent.current_index == i then
+        Presets.apply(Presets.persistent.current_index)
+    end
 end
 
 function Presets.save()
