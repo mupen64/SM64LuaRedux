@@ -25,7 +25,7 @@ local UID = UIDProvider.allocate_once('Timer', function(enum_next)
         CR = enum_next(),
         CU = enum_next(),
         CD = enum_next(),
-        ProcessedValues = enum_next(),
+        ProcessedValues = enum_next(3),
     }
 end)
 

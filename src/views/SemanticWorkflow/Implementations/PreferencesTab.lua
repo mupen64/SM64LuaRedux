@@ -18,7 +18,7 @@ local UID = UIDProvider.allocate_once(__impl.name, function(enum_next)
     return {
         ToggleEditEntireState = enum_next(),
         ToggleFastForward = enum_next(),
-        DefaultSectionTimeout = enum_next(),
+        DefaultSectionTimeout = enum_next(2),
     }
 end)
 

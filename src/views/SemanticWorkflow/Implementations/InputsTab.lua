@@ -48,8 +48,8 @@ local UID =  UIDProvider.allocate_once(__impl.name, function(enum_next)
         Joypad = enum_next(),
         JoypadSpinnerX = enum_next(3),
         JoypadSpinnerY = enum_next(3),
-        GoalAngle = enum_next(),
-        GoalMag = enum_next(),
+        GoalAngle = enum_next(2),
+        GoalMag = enum_next(2),
         HighMag = enum_next(),
         StrainLeft = enum_next(),
         StrainRight = enum_next(),
@@ -73,7 +73,7 @@ local UID =  UIDProvider.allocate_once(__impl.name, function(enum_next)
 
         -- Section Controls
         Kind = enum_next(),
-        Timeout = enum_next(),
+        Timeout = enum_next(2),
         EndAction = enum_next(),
         EndActionTextbox = enum_next(),
         AvailableActions = enum_next(MAX_ACTION_GUESSES),

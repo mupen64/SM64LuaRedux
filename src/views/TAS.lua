@@ -6,9 +6,9 @@
 
 local UID = UIDProvider.allocate_once('TAS', function(enum_next)
     return {
-        ProcessedValues = enum_next(),
-        GoalAngle = enum_next(),
-        GoalMag = enum_next(),
+        ProcessedValues = enum_next(3),
+        GoalAngle = enum_next(2),
+        GoalMag = enum_next(2),
         HighMagnitude = enum_next(),
         ResetMag = enum_next(),
         SpeedKick = enum_next(),

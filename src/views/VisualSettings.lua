@@ -6,10 +6,10 @@
 
 local UID = UIDProvider.allocate_once('VisualSettings', function(enum_next)
     return {
-        ActiveStyle = enum_next(),
-        Locale = enum_next(),
+        ActiveStyle = enum_next(2),
+        Locale = enum_next(2),
         NotificationStyle = enum_next(),
-        RepaintThrottle = enum_next(),
+        RepaintThrottle = enum_next(2),
     }
 end)
 

@@ -1,6 +1,6 @@
 return UIDProvider.allocate_once("SemanticWorkflow", function(enum_next)
     return {
-        VarWatch = enum_next(),
+        VarWatch = enum_next(3),
         SelectTab = enum_next(3 + 1), -- TODO: consider the number of required tabs... carefully!
         ToggleHelp = enum_next(),
         HelpNext = enum_next(),
