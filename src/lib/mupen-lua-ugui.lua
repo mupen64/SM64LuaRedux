@@ -148,6 +148,9 @@ ugui.internal = {
     ---@type SceneEntry[]
     scene = {},
 
+    ---@type table<UID, ControlType>
+    control_types = {},
+
     ---@type table<UID, any>
     ---Map of control UIDs to their data.
     control_data = {},
@@ -2635,6 +2638,7 @@ ugui.control = function(control, type)
         ugui.internal.control_data[control.uid] = {}
         return
     end
+    ---@cast type ControlType
 
     ---@type ControlRegistryEntry?
     local registry_entry = ugui.registry[type]
@@ -2664,6 +2668,12 @@ ugui.control = function(control, type)
         end
     end
 
+    -- Check that any existing control with the same UID matches this control's type
+    local stored_control_type = ugui.internal.control_types[control.uid]
+    if stored_control_type ~= nil and stored_control_type ~= type then
+        error(string.format('Attempted to reuse UID %d of %s for %s.', control.uid, ugui.internal.control_types[control.uid], type))
+    end
+
     registry_entry.validate(control)
 
     -- Run logic pass immediately for the current frame so callers receive an up-to-date value instead of the previous frame's result.
@@ -2673,6 +2683,7 @@ ugui.control = function(control, type)
         control = control,
         type = type,
     }
+    ugui.internal.control_types[control.uid] = type
     return return_value
 end
 
