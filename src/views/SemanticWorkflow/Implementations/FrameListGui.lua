@@ -276,17 +276,12 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
         local frame_box = span(COL0 + 0.3, COL1)
 
         local uid_base = UID.Row(total_inputs - scroll_offset)
-        local uid_offset = -1
-        local function next_uid()
-            uid_offset = uid_offset + 1
-            return uid_offset + uid_base
-        end
 
         BreitbandGraphics.fill_rectangle(section_rect, { r = shade, g = shade, b = shade * blue_multiplier, a = 66 })
 
         if input_sub_index == 1 then
             section.collapsed = not ugui.toggle_button({
-                uid = next_uid(),
+                uid = uid_base + 0,
                 rectangle = span(COL0, COL0 + 0.3),
                 text = section.collapsed and '[icon:arrow_right]' or '[icon:arrow_down]',
                 tooltip = Locales.str(section.collapsed and 'SEMANTIC_WORKFLOW_INPUTS_EXPAND_SECTION' or
@@ -308,7 +303,7 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
             -- mini joysticks and yaw numbers
             local joystick_box = span(COL1, COL2)
             ugui.joystick({
-                uid = next_uid(),
+                uid = uid_base + 1,
                 rectangle = span(COL1, COL2, FRAME_COLUMN_HEIGHT),
                 position = { x = input.joy.X, y = -input.joy.Y },
             })
