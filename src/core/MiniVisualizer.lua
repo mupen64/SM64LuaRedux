@@ -54,7 +54,7 @@ MiniVisualizer.draw = function()
         uid = UID.S,
         rectangle = grid_rect_abs(6, 16, 1, 1),
         text = 'S',
-        is_checked = Joypad.input.S,
+        is_checked = Joypad.input.start,
     })
     ugui.toggle_button({
         uid = UID.R,
