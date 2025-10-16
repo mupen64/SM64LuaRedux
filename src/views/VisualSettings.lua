@@ -4,12 +4,21 @@
 -- SPDX-License-Identifier: GPL-2.0-or-later
 --
 
+local UID = UIDProvider.allocate_once('VisualSettings', function(enum_next)
+    return {
+        ActiveStyle = enum_next(2),
+        Locale = enum_next(2),
+        NotificationStyle = enum_next(),
+        RepaintThrottle = enum_next(2),
+    }
+end)
+
 local items = {
     {
         text = Locales.str('SETTINGS_VISUALS_STYLE'),
         func = function(rect)
             local new_active_style_index = ugui.combobox({
-                uid = 1,
+                uid = UID.ActiveStyle,
                 rectangle = rect,
                 items = Styles.theme_names(),
                 selected_index = Settings.active_style_index,
@@ -25,7 +34,7 @@ local items = {
         text = Locales.str('SETTINGS_VISUALS_LOCALE'),
         func = function(rect)
             local new_locale_index = ugui.combobox({
-                uid = 3,
+                uid = UID.Locale,
                 rectangle = rect,
                 items = Locales.names(),
                 selected_index = Settings.locale_index,
@@ -42,7 +51,7 @@ local items = {
             }
 
             local index = ugui.carrousel_button({
-                uid = 5,
+                uid = UID.NotificationStyle,
                 rectangle = rect,
                 items = notification_styles,
                 selected_index = Settings.notification_style,
@@ -57,7 +66,7 @@ local items = {
         text = Locales.str('SETTINGS_VISUALS_FRAMESKIP'),
         func = function(rect)
             Settings.repaint_throttle = math.max(1, math.abs(ugui.numberbox({
-                uid = 20,
+                uid = UID.RepaintThrottle,
                 rectangle = rect,
                 tooltip = Locales.str('SETTINGS_VISUALS_FRAMESKIP_TOOLTIP'),
                 value = Settings.repaint_throttle,

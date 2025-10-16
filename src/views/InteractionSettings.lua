@@ -4,12 +4,18 @@
 -- SPDX-License-Identifier: GPL-2.0-or-later
 --
 
+local UID = UIDProvider.allocate_once('InteractionSettings', function(enum_next)
+    return {
+        EnableManualOnJoystickInteract = enum_next()
+    }
+end)
+
 local items = {
     {
         text = Locales.str('SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT'),
         func = function(rect)
             Settings.enable_manual_on_joystick_interact = ugui.toggle_button({
-                uid = 5,
+                uid = UID.EnableManualOnJoystickInteract,
                 rectangle = rect,
                 is_checked = Settings.enable_manual_on_joystick_interact,
                 text = Locales.str('GENERIC_ON'),

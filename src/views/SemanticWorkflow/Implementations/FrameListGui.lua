@@ -10,8 +10,6 @@ local __impl = __impl
 
 --#region Constants
 
-local UID <const> = dofile(views_path .. 'SemanticWorkflow/UID.lua')['FrameList']
-
 local MODE_TEXTS <const> = { '-', 'D', 'M', 'Y', 'R', 'A' }
 local BUTTONS <const> = {
     { input = 'A',      text = 'A' },
@@ -69,7 +67,7 @@ local VIEW_MODE_HEADERS <const> = { 'SEMANTIC_WORKFLOW_FRAMELIST_STICK', 'SEMANT
 
 local scroll_offset = 0
 
-function __impl.allocate_uids(enum_next)
+local UID = UIDProvider.allocate_once('FrameListGui', function(enum_next)
     local base = enum_next(MAX_DISPLAYED_SECTIONS * NUM_UIDS_PER_ROW)
     return {
         SheetName = enum_next(),
@@ -78,7 +76,7 @@ function __impl.allocate_uids(enum_next)
             return base + (index - 1) * NUM_UIDS_PER_ROW
         end,
     }
-end
+end)
 
 ---@alias IterateInputsCallback fun(section: Section, input: SectionInputs, section_index: integer, total_inputs_counted: integer, input_index: integer): boolean?
 
@@ -278,17 +276,12 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
         local frame_box = span(COL0 + 0.3, COL1)
 
         local uid_base = UID.Row(total_inputs - scroll_offset)
-        local uid_offset = -1
-        local function next_uid()
-            uid_offset = uid_offset + 1
-            return uid_offset + uid_base
-        end
 
         BreitbandGraphics.fill_rectangle(section_rect, { r = shade, g = shade, b = shade * blue_multiplier, a = 66 })
 
         if input_sub_index == 1 then
             section.collapsed = not ugui.toggle_button({
-                uid = next_uid(),
+                uid = uid_base + 0,
                 rectangle = span(COL0, COL0 + 0.3),
                 text = section.collapsed and '[icon:arrow_right]' or '[icon:arrow_down]',
                 tooltip = Locales.str(section.collapsed and 'SEMANTIC_WORKFLOW_INPUTS_EXPAND_SECTION' or
@@ -310,7 +303,7 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
             -- mini joysticks and yaw numbers
             local joystick_box = span(COL1, COL2)
             ugui.joystick({
-                uid = next_uid(),
+                uid = uid_base + 1,
                 rectangle = span(COL1, COL2, FRAME_COLUMN_HEIGHT),
                 position = { x = input.joy.X, y = -input.joy.Y },
             })

@@ -22,8 +22,6 @@ local Gui = dofile(views_path .. 'SemanticWorkflow/Definitions/Gui.lua')
 
 --#region Constants
 
-local UID <const> = dofile(views_path .. 'SemanticWorkflow/UID.lua')[__impl.name]
-
 local LABEL_HEIGHT <const> = 0.25
 
 local TOP <const> = 10.25
@@ -38,7 +36,7 @@ local selected_view_index = 1
 local previous_preview_frame
 local atan_start = 0
 
-function __impl.allocate_uids(enum_next)
+local UID =  UIDProvider.allocate_once(__impl.name, function(enum_next)
     return {
         ViewCarrousel = enum_next(),
         InsertInput = enum_next(),
@@ -50,8 +48,8 @@ function __impl.allocate_uids(enum_next)
         Joypad = enum_next(),
         JoypadSpinnerX = enum_next(3),
         JoypadSpinnerY = enum_next(3),
-        GoalAngle = enum_next(),
-        GoalMag = enum_next(),
+        GoalAngle = enum_next(2),
+        GoalMag = enum_next(2),
         HighMag = enum_next(),
         StrainLeft = enum_next(),
         StrainRight = enum_next(),
@@ -75,12 +73,12 @@ function __impl.allocate_uids(enum_next)
 
         -- Section Controls
         Kind = enum_next(),
-        Timeout = enum_next(),
+        Timeout = enum_next(2),
         EndAction = enum_next(),
         EndActionTextbox = enum_next(),
         AvailableActions = enum_next(MAX_ACTION_GUESSES),
     }
-end
+end)
 
 local function any_entries(table)
     for _ in pairs(table) do return true end

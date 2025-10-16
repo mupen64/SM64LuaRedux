@@ -4,11 +4,20 @@
 -- SPDX-License-Identifier: GPL-2.0-or-later
 --
 
+local UID = UIDProvider.allocate_once('MemorySettings', function(enum_next)
+    return {
+        LoadMapFile = enum_next(),
+        Region = enum_next(2),
+        AutoDetect = enum_next(),
+        DetectOnStart = enum_next(),
+    }
+end)
+
 return {
     name = Locales.str('SETTINGS_MEMORY_TAB_NAME'),
     draw = function()
         if ugui.button({
-                uid = 600,
+                uid = UID.LoadMapFile,
                 rectangle = grid_rect(0, 0, 4, 1),
                 text = Locales.str('SETTINGS_MEMORY_FILE_SELECT'),
                 is_enabled = false,
@@ -23,7 +32,7 @@ return {
         end
 
         Settings.address_source_index = ugui.combobox({
-            uid = 650,
+            uid = UID.Region,
             rectangle = grid_rect(4, 0, 4, 1),
             items = lualinq.select_key(Addresses, 'name'),
             selected_index = Settings.address_source_index,
@@ -31,7 +40,7 @@ return {
         })
 
         if ugui.button({
-                uid = 700,
+                uid = UID.AutoDetect,
                 rectangle = grid_rect(0, 1, 4, 1),
                 text = Locales.str('SETTINGS_MEMORY_DETECT_NOW'),
                 tooltip = 'Autodetects the game region based on the currently running game',
@@ -40,7 +49,7 @@ return {
         end
 
         Settings.autodetect_address = ugui.toggle_button({
-            uid = 750,
+            uid = UID.DetectOnStart,
             rectangle = grid_rect(4, 1, 4, 1),
             text = Locales.str('SETTINGS_MEMORY_DETECT_ON_START'),
             is_checked = Settings.autodetect_address,
