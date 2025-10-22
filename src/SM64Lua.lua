@@ -192,11 +192,7 @@ local function draw_navbar()
         selected_index = preset_index,
     })
 
-    if preset_index == Presets.persistent.current_index + 1 then
-        action.invoke(ACTION_SET_PRESET_UP)
-    elseif preset_index == Presets.persistent.current_index - 1 then
-        action.invoke(ACTION_SET_PRESET_DOWN)
-    else
+    if preset_index ~= Presets.persistent.current_index then
         Presets.apply(preset_index)
         Actions.notify_all_changed()
     end
