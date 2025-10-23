@@ -36,7 +36,7 @@ local selected_view_index = 1
 local previous_preview_frame
 local atan_start = 0
 
-local UID =  UIDProvider.allocate_once(__impl.name, function(enum_next)
+local UID = UIDProvider.allocate_once(__impl.name, function(enum_next)
     return {
         ViewCarrousel = enum_next(),
         InsertInput = enum_next(),
@@ -407,8 +407,6 @@ local function joystick_controls_for_selected(draw, edited_section, edited_input
         new_values.manual_joystick_x = math.min(127, math.floor(new_position.x + 0.5)) or old_values.manual_joystick_x
         new_values.manual_joystick_y = math.min(127, -math.floor(new_position.y + 0.5)) or old_values.manual_joystick_y
     end
-    local previous_thickness = ugui.standard_styler.params.spinner.button_size
-    ugui.standard_styler.params.spinner.button_size = 4
     local rect = grid_rect(0, top + 3, 1, Gui.SMALL_CONTROL_HEIGHT, 0)
     rect.y = rect.y + Settings.grid_gap
     new_values.manual_joystick_x = ugui.spinner({
@@ -418,6 +416,11 @@ local function joystick_controls_for_selected(draw, edited_section, edited_input
         minimum_value = -128,
         maximum_value = 127,
         increment = 1,
+        styler_mixin = {
+            spinner = {
+                button_size = 4,
+            },
+        },
     })
     rect.x = rect.x + rect.width
     new_values.manual_joystick_y = ugui.spinner({
@@ -427,6 +430,11 @@ local function joystick_controls_for_selected(draw, edited_section, edited_input
         minimum_value = -128,
         maximum_value = 127,
         increment = 1,
+        styler_mixin = {
+            spinner = {
+                button_size = 4,
+            },
+        },
     })
 
     new_values.goal_angle = math.abs(ugui.numberbox({
@@ -527,8 +535,6 @@ local function joystick_controls_for_selected(draw, edited_section, edited_input
 
     magnitude_controls(draw, sheet, new_values, top + 3)
     atan_controls(draw, sheet, new_values, top + 4)
-
-    ugui.standard_styler.params.spinner.button_size = previous_thickness
 
     local changes = CloneInto(old_values, new_values)
     local any_changes = any_entries(changes)

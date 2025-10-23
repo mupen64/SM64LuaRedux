@@ -118,17 +118,16 @@ local function draw_headers(sheet, draw, view_index, button_draw_data)
     BreitbandGraphics.fill_rectangle(grid_rect(0, ROW0, COL_1, ROW2 - ROW0, 0), background_color)
 
     draw:text(grid_rect(3, ROW0, 1, 0.5), 'start', Locales.str('SEMANTIC_WORKFLOW_FRAMELIST_NAME'))
-    local prev_font_size = ugui.standard_styler.params.font_size
-    ugui.standard_styler.params.font_size = ugui.standard_styler.params.font_size * 0.75
     sheet.name = ugui.textbox({
         uid = UID.SheetName,
         is_enabled = true,
         rectangle = grid_rect(4, ROW0, 4, 0.5),
         text = sheet.name,
+        styler_mixin = {
+            font_size = ugui.standard_styler.params.font_size * 0.75
+        }
     })
     SemanticWorkflowProject:set_current_name(sheet.name)
-    ugui.standard_styler.params.font_size = prev_font_size
-    ugui.standard_styler.font_size = prev_font_size
 
     draw:text(grid_rect(COL0, ROW1, COL1 - COL0, 1), 'start', Locales.str('SEMANTIC_WORKFLOW_FRAMELIST_SECTION'))
     draw:text(grid_rect(COL1, ROW1, COL6 - COL1, 1), 'start', Locales.str(VIEW_MODE_HEADERS[view_index]))
@@ -306,6 +305,11 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
                 uid = uid_base + 1,
                 rectangle = span(COL1, COL2, FRAME_COLUMN_HEIGHT),
                 position = { x = input.joy.X, y = -input.joy.Y },
+                styler_mixin = {
+                    joystick = {
+                        tip_size = 4 * Drawing.scale,
+                    }
+                }
             })
 
             if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, joystick_box) then
@@ -392,8 +396,5 @@ function __impl.render(draw)
         current_sheet:run_to_preview()
     end
 
-    local prev_joystick_tip_size = ugui.standard_styler.params.joystick.tip_size
-    ugui.standard_styler.params.joystick.tip_size = 4 * Drawing.scale
     draw_sections_gui(current_sheet, draw, __impl.view_index, section_rect, button_draw_data)
-    ugui.standard_styler.params.joystick.tip_size = prev_joystick_tip_size
 end
