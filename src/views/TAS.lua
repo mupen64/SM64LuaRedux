@@ -209,8 +209,12 @@ return {
             x_snap = 8,
             y_snap = 8,
         })
+
         if Settings.enable_manual_on_joystick_interact and (newPosition.x ~= displayPosition.x or newPosition.y ~= displayPosition.y) then
             action.invoke(ACTION_SET_MOVEMENT_MODE_MANUAL)
+        end
+
+        if Settings.enable_manual_on_joystick_interact then
             Settings.tas.manual_joystick_x = math.min(127, math.floor(newPosition.x + 0.5))
             Settings.tas.manual_joystick_y = math.min(127, -math.floor(newPosition.y + 0.5))
         end
