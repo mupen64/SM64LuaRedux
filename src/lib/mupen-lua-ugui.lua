@@ -39,6 +39,7 @@ end
 
 ---@class Control
 ---@field public uid UID The unique identifier of the control.
+---@field public styler_mixin any? An optional styler-specific mixin table which is merged into the control's rendering params prior to rendering it.
 ---@field public rectangle Rectangle The rectangle in which the control is drawn.
 ---@field public is_enabled boolean? Whether the control is enabled. If nil or true, the control is enabled.
 ---@field public tooltip string? The control's tooltip. If nil, no tooltip will be shown.
@@ -247,6 +248,37 @@ ugui.internal = {
                 v, s)
         end
         return res
+    end,
+
+    ---Merges two tables deeply, combining their contents while giving precedence to the second table's values.
+    ---@param a table The first table to merge.
+    ---@param b table The second table to merge.
+    ---@return table The merged table.
+    ---@nodiscard
+    deep_merge = function(a, b)
+        local result = {}
+
+        local function merge(t1, t2)
+            local merged = {}
+            for key, value in pairs(t1) do
+                if type(value) == 'table' and type(t2[key]) == 'table' then
+                    merged[key] = merge(value, t2[key])
+                else
+                    merged[key] = value
+                end
+            end
+
+            for key, value in pairs(t2) do
+                if type(value) == 'table' and type(t1[key]) == 'table' then
+                else
+                    merged[key] = value
+                end
+            end
+
+            return merged
+        end
+
+        return merge(a, b)
     end,
 
     ---Performs an in-place stable sort on the specified table.
@@ -2603,7 +2635,21 @@ ugui.end_frame = function()
         local control = ugui.internal.scene[i].control
         local type = ugui.internal.scene[i].type
 
-        ugui.registry[type].draw(control)
+        local entry = ugui.registry[type]
+
+        -- If there's a styler mixin, we merge it into the control's rendering params
+        local prev_styler_params
+        if control.styler_mixin then
+            prev_styler_params = ugui.internal.deep_clone(ugui.standard_styler.params)
+            ugui.standard_styler.params = ugui.internal.deep_merge(ugui.standard_styler.params, control.styler_mixin)
+        end
+
+        entry.draw(control)
+
+        -- Revert the styler mixin. This is really slow :(
+        if control.styler_mixin then
+            ugui.standard_styler.params = prev_styler_params
+        end
 
         if ugui.DEBUG then
             if ugui.internal.keyboard_captured_control == control.uid then
