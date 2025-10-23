@@ -39,7 +39,7 @@ end
 
 ---@class Control
 ---@field public uid UID The unique identifier of the control.
----@field public styler_mixin any? An optional styler-specific mixin table which is merged into the control's rendering params prior to rendering it.
+---@field public styler_mixin any? An optional styler mixin table which can override specific styler parameters for this control.
 ---@field public rectangle Rectangle The rectangle in which the control is drawn.
 ---@field public is_enabled boolean? Whether the control is enabled. If nil or true, the control is enabled.
 ---@field public tooltip string? The control's tooltip. If nil, no tooltip will be shown.
@@ -557,6 +557,24 @@ ugui.internal = {
             selection_end = selection_end,
             caret_index = caret_index,
         }
+    end,
+
+    ---Applies a control's styler mixin if it has one.
+    ---@param control Control The control.
+    ---@return function # A function which reverts the styler mixin application when called.
+    apply_styler_mixin = function(control)
+        if not control.styler_mixin then
+            return function() end
+        end
+
+        -- If there's a styler mixin, we merge it into the control's rendering params
+        local prev_styler_params = ugui.internal.deep_clone(ugui.standard_styler.params)
+        ugui.standard_styler.params = ugui.internal.deep_merge(ugui.standard_styler.params, control.styler_mixin)
+
+        -- Revert the styler mixin. This is really slow :(
+        return function()
+            ugui.standard_styler.params = prev_styler_params
+        end
     end,
 
     ---Shows the tooltip for the currently hovered control.
@@ -2637,19 +2655,11 @@ ugui.end_frame = function()
 
         local entry = ugui.registry[type]
 
-        -- If there's a styler mixin, we merge it into the control's rendering params
-        local prev_styler_params
-        if control.styler_mixin then
-            prev_styler_params = ugui.internal.deep_clone(ugui.standard_styler.params)
-            ugui.standard_styler.params = ugui.internal.deep_merge(ugui.standard_styler.params, control.styler_mixin)
-        end
+        local revert_styler_mixin = ugui.internal.apply_styler_mixin(control)
 
         entry.draw(control)
 
-        -- Revert the styler mixin. This is really slow :(
-        if control.styler_mixin then
-            ugui.standard_styler.params = prev_styler_params
-        end
+        revert_styler_mixin()
 
         if ugui.DEBUG then
             if ugui.internal.keyboard_captured_control == control.uid then
@@ -2695,6 +2705,8 @@ ugui.control = function(control, type)
 
     local return_value
 
+    local revert_styler_mixin = ugui.internal.apply_styler_mixin(control)
+
     -- If the control has only just been added, we run its setup.
     if ugui.internal.control_data[control.uid] == nil then
         ugui.internal.control_data[control.uid] = {}
@@ -2730,6 +2742,9 @@ ugui.control = function(control, type)
         type = type,
     }
     ugui.internal.control_types[control.uid] = type
+
+    revert_styler_mixin()
+
     return return_value
 end
 
