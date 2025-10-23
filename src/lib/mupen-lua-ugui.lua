@@ -139,6 +139,14 @@ end
 
 ---@alias ControlType "button" | "toggle_button" | "carrousel_button" | "textbox" | "joystick" | "trackbar" | "listbox" | "scrollbar" | "combobox" | "menu" | "numberbox"
 
+---@class ControlRegistryEntry
+---@field public validate fun(control: Control) Verifies that a control instance matches the desired type.
+---@field public setup fun(control: Control, data: any)? Sets up the initial control data to be used in `logic` and `draw`.
+---@field public added fun(control: Control, data: any)? Notifies about a control being added to a scene.
+---@field public logic fun(control: Control, data: any): any Executes control logic.
+---@field public draw fun(control: Control) Draws the control.
+---Represents an entry in the control registry.
+
 --#endregion
 
 --#region ugui.internal
@@ -1939,669 +1947,683 @@ ugui.standard_styler = {
     end,
 }
 
----@class ControlRegistryEntry
----@field public validate fun(control: Control) Verifies that a control instance matches the desired type.
----@field public setup fun(control: Control, data: any)? Sets up the initial control data to be used in `logic` and `draw`.
----@field public added fun(control: Control, data: any)? Notifies about a control being added to a scene.
----@field public logic fun(control: Control, data: any): any Executes control logic.
----@field public draw fun(control: Control) Draws the control.
+---@type { [string]: ControlRegistryEntry }
+ugui.registry = {}
 
----@type { [ControlType]: ControlRegistryEntry }
-ugui.registry = {
-    button = {
-        validate = function(control)
-            ---@cast control Button
-            ugui.internal.assert(type(control.text) == 'string', 'expected text to be string')
-        end,
-        logic = function(control, data)
-            ---@cast control Button
-            return ugui.internal.clicked_control == control.uid
-        end,
-        draw = function(control)
-            ---@cast control Button
-            ugui.standard_styler.draw_button(control)
-        end,
-    },
-    toggle_button = {
-        validate = function(control)
-            ---@cast control ToggleButton
-            ugui.registry.button.validate(control)
-            ugui.internal.assert(type(control.is_checked) == 'boolean', 'expected is_checked to be boolean')
-        end,
-        logic = function(control, data)
-            ---@cast control ToggleButton
-            data.is_checked = control.is_checked
-            if ugui.internal.clicked_control == control.uid then
-                data.is_checked = not data.is_checked
+---@type ControlRegistryEntry
+ugui.registry.button = {
+    ---@param control Button
+    validate = function(control)
+        ugui.internal.assert(type(control.text) == 'string', 'expected text to be string')
+    end,
+    ---@param control Button
+    logic = function(control, data)
+        return ugui.internal.clicked_control == control.uid
+    end,
+    ---@param control Button
+    draw = function(control)
+        ugui.standard_styler.draw_button(control)
+    end,
+}
+
+---@type ControlRegistryEntry
+ugui.registry.toggle_button = {
+    ---@param control ToggleButton
+    validate = function(control)
+        ugui.registry.button.validate(control)
+        ugui.internal.assert(type(control.is_checked) == 'boolean', 'expected is_checked to be boolean')
+    end,
+    ---@param control ToggleButton
+    logic = function(control, data)
+        data.is_checked = control.is_checked
+        if ugui.internal.clicked_control == control.uid then
+            data.is_checked = not data.is_checked
+        end
+        return data.is_checked
+    end,
+    ---@param control ToggleButton
+    draw = function(control)
+        ugui.standard_styler.draw_togglebutton(control)
+    end,
+}
+
+---@type ControlRegistryEntry
+ugui.registry.carrousel_button = {
+    ---@param control CarrouselButton
+    validate = function(control)
+        ugui.internal.assert(type(control.items) == 'table', 'expected items to be string[]')
+        ugui.internal.assert(type(control.selected_index) == 'number', 'expected selected_index to be number')
+    end,
+    ---@param control CarrouselButton
+    logic = function(control, data)
+        data.selected_index = control.selected_index
+
+        if ugui.internal.clicked_control == control.uid then
+            local relative_x = ugui.internal.environment.mouse_position.x - control.rectangle.x
+            if relative_x > control.rectangle.width / 2 then
+                data.selected_index = data.selected_index + 1
+                if data.selected_index > #control.items then
+                    data.selected_index = 1
+                end
+            else
+                data.selected_index = data.selected_index - 1
+                if data.selected_index < 1 then
+                    data.selected_index = #control.items
+                end
             end
-            return data.is_checked
-        end,
-        draw = function(control)
-            ---@cast control ToggleButton
-            ugui.standard_styler.draw_togglebutton(control)
-        end,
-    },
-    carrousel_button = {
-        validate = function(control)
-            ---@cast control CarrouselButton
-            ugui.internal.assert(type(control.items) == 'table', 'expected items to be string[]')
-            ugui.internal.assert(type(control.selected_index) == 'number', 'expected selected_index to be number')
-        end,
-        logic = function(control, data)
-            ---@cast control CarrouselButton
-            data.selected_index = control.selected_index
+        end
 
-            if ugui.internal.clicked_control == control.uid then
-                local relative_x = ugui.internal.environment.mouse_position.x - control.rectangle.x
-                if relative_x > control.rectangle.width / 2 then
-                    data.selected_index = data.selected_index + 1
-                    if data.selected_index > #control.items then
+        return (control.items and ugui.internal.clamp(data.selected_index, 1, #control.items) or nil)
+    end,
+    ---@param control CarrouselButton
+    draw = function(control)
+        ugui.standard_styler.draw_carrousel_button(control)
+    end,
+}
+
+---@type ControlRegistryEntry
+ugui.registry.textbox = {
+    ---@param control TextBox
+    validate = function(control)
+        ugui.internal.assert(type(control.text) == 'string', 'expected text to be string')
+    end,
+    ---@param control TextBox
+    setup = function(control, data)
+        if data.caret_index == nil then
+            data.caret_index = 1
+        end
+        if data.selection_start == nil then
+            data.selection_start = 1
+        end
+        if data.selection_end == nil then
+            data.selection_end = 1
+        end
+    end,
+    ---@param control TextBox
+    logic = function(control, data)
+        data.text = control.text
+
+        local index_at_mouse = ugui.internal.get_caret_index(data.text, ugui.internal.environment.mouse_position.x - control.rectangle.x)
+
+        -- If the control was just clicked, start a new selection.
+        if ugui.internal.clicked_control == control.uid then
+            data.caret_index = index_at_mouse
+            data.selection_start = index_at_mouse
+            data.selection_end = index_at_mouse
+        end
+
+        -- If we're dragging the control, extend the existing selection.
+        if ugui.internal.mouse_captured_control == control.uid then
+            data.selection_end = index_at_mouse
+        end
+
+        -- If we're capturing the keyboard, we process all the key presses.
+        if ugui.internal.keyboard_captured_control == control.uid then
+            local just_pressed_keys = ugui.internal.get_just_pressed_keys()
+            local has_selection = data.selection_start ~=
+                data.selection_end
+
+            for key, _ in pairs(just_pressed_keys) do
+                local result = ugui.internal.handle_special_key(key, has_selection, data.text,
+                    data.selection_start,
+                    data.selection_end,
+                    data.caret_index)
+
+
+                -- special key press wasn't handled, we proceed to just insert the pressed character (or replace the selection)
+                if not result.handled then
+                    if #key ~= 1 then
+                        goto continue
+                    end
+
+                    if has_selection then
+                        local lower_selection = math.min(data.selection_start, data.selection_end)
+                        local higher_selection = math.max(data.selection_start, data.selection_end)
+                        data.text = ugui.internal.remove_range(data.text, lower_selection, higher_selection)
+                        data.caret_index = lower_selection
+                        data.selection_start = lower_selection
+                        data.selection_end = lower_selection
+                        data.text = ugui.internal.insert_at(data.text, key,
+                            data.caret_index - 1)
+                        data.caret_index = ugui.internal
+                            .control_data[control.uid]
+                            .caret_index + 1
+                    else
+                        data.text = ugui.internal.insert_at(data.text, key,
+                            data.caret_index - 1)
+                        data.caret_index = ugui.internal
+                            .control_data[control.uid]
+                            .caret_index + 1
+                    end
+
+                    goto continue
+                end
+
+                data.caret_index = result.caret_index
+                data.selection_start = result.selection_start
+                data.selection_end = result.selection_end
+                data.text = result.text
+
+                ::continue::
+            end
+        end
+
+        data.caret_index = ugui.internal.clamp(data.caret_index, 1, #data.text + 1)
+
+        return data.text
+    end,
+    ---@param control TextBox
+    draw = function(control)
+        ugui.standard_styler.draw_textbox(control)
+    end,
+}
+
+---@type ControlRegistryEntry
+ugui.registry.joystick = {
+    ---@param control Joystick
+    validate = function(control)
+        ugui.internal.assert(type(control.position) == 'table', 'expected position to be table')
+        ugui.internal.assert(type(control.position.x) == 'number', 'expected position.x to be number')
+        ugui.internal.assert(type(control.position.y) == 'number', 'expected position.y to be number')
+        ugui.internal.assert(type(control.mag) == 'nil' or type(control.mag) == 'number', 'expected mag to be nil or number')
+        ugui.internal.assert(type(control.x_snap) == 'nil' or type(control.x_snap) == 'number', 'expected x_snap to be nil or number')
+        ugui.internal.assert(type(control.y_snap) == 'nil' or type(control.y_snap) == 'number', 'expected y_snap to be nil or number')
+    end,
+    ---@param control Joystick
+    logic = function(control, data)
+        data.position = control.position
+
+        if ugui.internal.mouse_captured_control == control.uid then
+            data.position.x = ugui.internal.clamp(
+                ugui.internal.remap(ugui.internal.environment.mouse_position.x - control.rectangle.x, 0,
+                    control.rectangle.width, -128, 128), -128, 128)
+            data.position.y = ugui.internal.clamp(
+                ugui.internal.remap(ugui.internal.environment.mouse_position.y - control.rectangle.y, 0,
+                    control.rectangle.height, -128, 128), -128, 128)
+            if control.x_snap and data.position.x > -control.x_snap and data.position.x < control.x_snap then
+                data.position.x = 0
+            end
+            if control.y_snap and data.position.y > -control.y_snap and data.position.y < control.y_snap then
+                data.position.y = 0
+            end
+        end
+
+        return data.position
+    end,
+    ---@param control Joystick
+    draw = function(control)
+        ugui.standard_styler.draw_joystick(control)
+    end,
+}
+
+---@type ControlRegistryEntry
+ugui.registry.trackbar = {
+    ---@param control Trackbar
+    validate = function(control)
+        ugui.internal.assert(type(control.value) == 'number', 'expected position to be number')
+    end,
+    ---@param control Trackbar
+    logic = function(control, data)
+        data.value = control.value
+
+        if ugui.internal.mouse_captured_control == control.uid then
+            if control.rectangle.width > control.rectangle.height then
+                data.value = (ugui.internal.environment.mouse_position.x - control.rectangle.x) / control.rectangle.width
+            else
+                data.value = (ugui.internal.environment.mouse_position.y - control.rectangle.y) / control.rectangle.height
+            end
+        end
+
+        data.value = ugui.internal.clamp(data.value, 0, 1)
+
+        return data.value
+    end,
+    ---@param control Trackbar
+    draw = function(control)
+        ugui.standard_styler.draw_trackbar(control)
+    end,
+}
+
+---@type ControlRegistryEntry
+ugui.registry.listbox = {
+    ---@param control ListBox
+    validate = function(control)
+        ugui.internal.assert(type(control.items) == 'table', 'expected items to be table')
+        ugui.internal.assert(type(control.selected_index) == 'number' or type(control.selected_index) == 'nil', 'expected selected_index to be number or nil')
+        ugui.internal.assert(type(control.horizontal_scroll) == 'nil' or type(control.horizontal_scroll) == 'boolean', 'expected horizontal_scroll to be boolean or nil')
+    end,
+    ---@param control ListBox
+    setup = function(control, data)
+        if data.scroll_x == nil then
+            data.scroll_x = 0
+        end
+        if data.scroll_y == nil then
+            data.scroll_y = 0
+        end
+    end,
+    ---@param control ListBox
+    logic = function(control, data)
+        data.selected_index = control.selected_index
+
+        local prev_rect = ugui.internal.deep_clone(control.rectangle)
+        local content_bounds = ugui.standard_styler.get_desired_listbox_content_bounds(control)
+        local x_overflow = content_bounds.width > control.rectangle.width
+        local y_overflow = content_bounds.height > control.rectangle.height
+
+        if x_overflow then
+            control.rectangle.height = control.rectangle.height - ugui.standard_styler.params.scrollbar.thickness
+        end
+        if y_overflow then
+            control.rectangle.width = control.rectangle.width - ugui.standard_styler.params.scrollbar.thickness
+        end
+
+        if ugui.internal.mouse_captured_control == control.uid then
+            -- Mouse-based selection
+            local relative_y = ugui.internal.environment.mouse_position.y - control.rectangle.y
+            local new_index = math.ceil((relative_y + (data.scroll_y *
+                    ((ugui.standard_styler.params.listbox_item.height * #control.items) - control.rectangle.height))) /
+                ugui.standard_styler.params.listbox_item.height)
+            if new_index <= #control.items then
+                data.selected_index = ugui.internal.clamp(new_index, 1, #control.items)
+            end
+        end
+
+        -- Keyboard-based selection. FIXME: Why is this based on the mouse being inside it???
+        -- FIXME: We want the separate concept of "keyboard focus" to be introduced
+        if ugui.internal.mouse_captured_control == control.uid or BreitbandGraphics.is_point_inside_rectangle(ugui.internal.environment.mouse_position, control.rectangle) then
+            for key, _ in pairs(ugui.internal.get_just_pressed_keys()) do
+                if key == 'up' and data.selected_index ~= nil then
+                    data.selected_index = ugui.internal.clamp(data.selected_index - 1, 1, #control.items)
+                end
+                if key == 'down' and data.selected_index ~= nil then
+                    data.selected_index = ugui.internal.clamp(data.selected_index + 1, 1, #control.items)
+                end
+                if not y_overflow then
+                    if key == 'pageup' or key == 'home' then
                         data.selected_index = 1
                     end
-                else
-                    data.selected_index = data.selected_index - 1
-                    if data.selected_index < 1 then
+                    if key == 'pagedown' or key == 'end' then
                         data.selected_index = #control.items
                     end
                 end
             end
+        end
 
-            return (control.items and ugui.internal.clamp(data.selected_index, 1, #control.items) or nil)
-        end,
-        draw = function(control)
-            ---@cast control CarrouselButton
-            ugui.standard_styler.draw_carrousel_button(control)
-        end,
-    },
-    textbox = {
-        validate = function(control)
-            ---@cast control TextBox
-            ugui.internal.assert(type(control.text) == 'string', 'expected text to be string')
-        end,
-        setup = function(control, data)
-            ---@cast control TextBox
-            if data.caret_index == nil then
-                data.caret_index = 1
+        if y_overflow and (ugui.internal.mouse_captured_control == control.uid or BreitbandGraphics.is_point_inside_rectangle(ugui.internal.environment.mouse_position, control.rectangle)) then
+            local inc = 0
+            if ugui.internal.is_mouse_wheel_up() then
+                inc = -1 / #control.items
             end
-            if data.selection_start == nil then
-                data.selection_start = 1
-            end
-            if data.selection_end == nil then
-                data.selection_end = 1
-            end
-        end,
-        logic = function(control, data)
-            ---@cast control TextBox
-            data.text = control.text
-
-            local index_at_mouse = ugui.internal.get_caret_index(data.text, ugui.internal.environment.mouse_position.x - control.rectangle.x)
-
-            -- If the control was just clicked, start a new selection.
-            if ugui.internal.clicked_control == control.uid then
-                data.caret_index = index_at_mouse
-                data.selection_start = index_at_mouse
-                data.selection_end = index_at_mouse
+            if ugui.internal.is_mouse_wheel_down() then
+                inc = 1 / #control.items
             end
 
-            -- If we're dragging the control, extend the existing selection.
-            if ugui.internal.mouse_captured_control == control.uid then
-                data.selection_end = index_at_mouse
-            end
-
-            -- If we're capturing the keyboard, we process all the key presses.
-            if ugui.internal.keyboard_captured_control == control.uid then
-                local just_pressed_keys = ugui.internal.get_just_pressed_keys()
-                local has_selection = data.selection_start ~=
-                    data.selection_end
-
-                for key, _ in pairs(just_pressed_keys) do
-                    local result = ugui.internal.handle_special_key(key, has_selection, data.text,
-                        data.selection_start,
-                        data.selection_end,
-                        data.caret_index)
-
-
-                    -- special key press wasn't handled, we proceed to just insert the pressed character (or replace the selection)
-                    if not result.handled then
-                        if #key ~= 1 then
-                            goto continue
-                        end
-
-                        if has_selection then
-                            local lower_selection = math.min(data.selection_start, data.selection_end)
-                            local higher_selection = math.max(data.selection_start, data.selection_end)
-                            data.text = ugui.internal.remove_range(data.text, lower_selection, higher_selection)
-                            data.caret_index = lower_selection
-                            data.selection_start = lower_selection
-                            data.selection_end = lower_selection
-                            data.text = ugui.internal.insert_at(data.text, key,
-                                data.caret_index - 1)
-                            data.caret_index = ugui.internal
-                                .control_data[control.uid]
-                                .caret_index + 1
-                        else
-                            data.text = ugui.internal.insert_at(data.text, key,
-                                data.caret_index - 1)
-                            data.caret_index = ugui.internal
-                                .control_data[control.uid]
-                                .caret_index + 1
-                        end
-
-                        goto continue
-                    end
-
-                    data.caret_index = result.caret_index
-                    data.selection_start = result.selection_start
-                    data.selection_end = result.selection_end
-                    data.text = result.text
-
-                    ::continue::
+            for key, _ in pairs(ugui.internal.get_just_pressed_keys()) do
+                if key == 'pageup' then
+                    inc = -math.floor(control.rectangle.height / ugui.standard_styler.params.listbox_item.height) / #control.items
+                end
+                if key == 'pagedown' then
+                    inc = math.floor(control.rectangle.height / ugui.standard_styler.params.listbox_item.height) / #control.items
+                end
+                if key == 'home' then
+                    inc = -1
+                end
+                if key == 'end' then
+                    inc = 1
                 end
             end
 
-            data.caret_index = ugui.internal.clamp(data.caret_index, 1, #data.text + 1)
+            data.scroll_y = ugui.internal.clamp(data.scroll_y + inc, 0, 1)
+        end
 
-            return data.text
-        end,
-        draw = function(control)
-            ---@cast control TextBox
-            ugui.standard_styler.draw_textbox(control)
-        end,
-    },
-    joystick = {
-        validate = function(control)
-            ---@cast control Joystick
-            ugui.internal.assert(type(control.position) == 'table', 'expected position to be table')
-            ugui.internal.assert(type(control.position.x) == 'number', 'expected position.x to be number')
-            ugui.internal.assert(type(control.position.y) == 'number', 'expected position.y to be number')
-            ugui.internal.assert(type(control.mag) == 'nil' or type(control.mag) == 'number', 'expected mag to be nil or number')
-            ugui.internal.assert(type(control.x_snap) == 'nil' or type(control.x_snap) == 'number', 'expected x_snap to be nil or number')
-            ugui.internal.assert(type(control.y_snap) == 'nil' or type(control.y_snap) == 'number', 'expected y_snap to be nil or number')
-        end,
-        logic = function(control, data)
-            ---@cast control Joystick
-            data.position = control.position
+        control.rectangle = prev_rect
 
-            if ugui.internal.mouse_captured_control == control.uid then
-                data.position.x = ugui.internal.clamp(
-                    ugui.internal.remap(ugui.internal.environment.mouse_position.x - control.rectangle.x, 0,
-                        control.rectangle.width, -128, 128), -128, 128)
-                data.position.y = ugui.internal.clamp(
-                    ugui.internal.remap(ugui.internal.environment.mouse_position.y - control.rectangle.y, 0,
-                        control.rectangle.height, -128, 128), -128, 128)
-                if control.x_snap and data.position.x > -control.x_snap and data.position.x < control.x_snap then
-                    data.position.x = 0
-                end
-                if control.y_snap and data.position.y > -control.y_snap and data.position.y < control.y_snap then
-                    data.position.y = 0
-                end
-            end
+        return data.selected_index
+    end,
+    ---@param control ListBox
+    draw = function(control)
+        ugui.standard_styler.draw_listbox(control)
+    end,
+}
 
-            return data.position
-        end,
-        draw = function(control)
-            ---@cast control Joystick
-            ugui.standard_styler.draw_joystick(control)
-        end,
-    },
-    trackbar = {
-        validate = function(control)
-            ---@cast control Trackbar
-            ugui.internal.assert(type(control.value) == 'number', 'expected position to be number')
-        end,
-        logic = function(control, data)
-            ---@cast control Trackbar
-            data.value = control.value
+---@type ControlRegistryEntry
+ugui.registry.scrollbar = {
+    ---@param control ScrollBar
+    validate = function(control)
+        ugui.internal.assert(type(control.value) == 'number', 'expected value to be number')
+        ugui.internal.assert(type(control.ratio) == 'number', 'expected ratio to be number')
+    end,
+    ---@param control ScrollBar
+    logic = function(control, data)
+        data.value = control.value
 
-            if ugui.internal.mouse_captured_control == control.uid then
-                if control.rectangle.width > control.rectangle.height then
-                    data.value = (ugui.internal.environment.mouse_position.x - control.rectangle.x) / control.rectangle.width
-                else
-                    data.value = (ugui.internal.environment.mouse_position.y - control.rectangle.y) / control.rectangle.height
-                end
-            end
+        local is_horizontal = control.rectangle.width > control.rectangle.height
 
-            data.value = ugui.internal.clamp(data.value, 0, 1)
-
-            return data.value
-        end,
-        draw = function(control)
-            ---@cast control Trackbar
-            ugui.standard_styler.draw_trackbar(control)
-        end,
-    },
-    listbox = {
-        validate = function(control)
-            ---@cast control ListBox
-            ugui.internal.assert(type(control.items) == 'table', 'expected items to be table')
-            ugui.internal.assert(type(control.selected_index) == 'number' or type(control.selected_index) == 'nil', 'expected selected_index to be number or nil')
-            ugui.internal.assert(type(control.horizontal_scroll) == 'nil' or type(control.horizontal_scroll) == 'boolean', 'expected horizontal_scroll to be boolean or nil')
-        end,
-        setup = function(control, data)
-            ---@cast control ListBox
-            if data.scroll_x == nil then
-                data.scroll_x = 0
-            end
-            if data.scroll_y == nil then
-                data.scroll_y = 0
-            end
-        end,
-        logic = function(control, data)
-            ---@cast control ListBox
-            data.selected_index = control.selected_index
-
-            local prev_rect = ugui.internal.deep_clone(control.rectangle)
-            local content_bounds = ugui.standard_styler.get_desired_listbox_content_bounds(control)
-            local x_overflow = content_bounds.width > control.rectangle.width
-            local y_overflow = content_bounds.height > control.rectangle.height
-
-            if x_overflow then
-                control.rectangle.height = control.rectangle.height - ugui.standard_styler.params.scrollbar.thickness
-            end
-            if y_overflow then
-                control.rectangle.width = control.rectangle.width - ugui.standard_styler.params.scrollbar.thickness
-            end
-
-            if ugui.internal.mouse_captured_control == control.uid then
-                -- Mouse-based selection
-                local relative_y = ugui.internal.environment.mouse_position.y - control.rectangle.y
-                local new_index = math.ceil((relative_y + (data.scroll_y *
-                        ((ugui.standard_styler.params.listbox_item.height * #control.items) - control.rectangle.height))) /
-                    ugui.standard_styler.params.listbox_item.height)
-                if new_index <= #control.items then
-                    data.selected_index = ugui.internal.clamp(new_index, 1, #control.items)
-                end
-            end
-
-            -- Keyboard-based selection. FIXME: Why is this based on the mouse being inside it???
-            -- FIXME: We want the separate concept of "keyboard focus" to be introduced
-            if ugui.internal.mouse_captured_control == control.uid or BreitbandGraphics.is_point_inside_rectangle(ugui.internal.environment.mouse_position, control.rectangle) then
-                for key, _ in pairs(ugui.internal.get_just_pressed_keys()) do
-                    if key == 'up' and data.selected_index ~= nil then
-                        data.selected_index = ugui.internal.clamp(data.selected_index - 1, 1, #control.items)
-                    end
-                    if key == 'down' and data.selected_index ~= nil then
-                        data.selected_index = ugui.internal.clamp(data.selected_index + 1, 1, #control.items)
-                    end
-                    if not y_overflow then
-                        if key == 'pageup' or key == 'home' then
-                            data.selected_index = 1
-                        end
-                        if key == 'pagedown' or key == 'end' then
-                            data.selected_index = #control.items
-                        end
-                    end
-                end
-            end
-
-            if y_overflow and (ugui.internal.mouse_captured_control == control.uid or BreitbandGraphics.is_point_inside_rectangle(ugui.internal.environment.mouse_position, control.rectangle)) then
-                local inc = 0
-                if ugui.internal.is_mouse_wheel_up() then
-                    inc = -1 / #control.items
-                end
-                if ugui.internal.is_mouse_wheel_down() then
-                    inc = 1 / #control.items
-                end
-
-                for key, _ in pairs(ugui.internal.get_just_pressed_keys()) do
-                    if key == 'pageup' then
-                        inc = -math.floor(control.rectangle.height / ugui.standard_styler.params.listbox_item.height) / #control.items
-                    end
-                    if key == 'pagedown' then
-                        inc = math.floor(control.rectangle.height / ugui.standard_styler.params.listbox_item.height) / #control.items
-                    end
-                    if key == 'home' then
-                        inc = -1
-                    end
-                    if key == 'end' then
-                        inc = 1
-                    end
-                end
-
-                data.scroll_y = ugui.internal.clamp(data.scroll_y + inc, 0, 1)
-            end
-
-            control.rectangle = prev_rect
-
-            return data.selected_index
-        end,
-        draw = function(control)
-            ---@cast control ListBox
-            ugui.standard_styler.draw_listbox(control)
-        end,
-    },
-    scrollbar = {
-        validate = function(control)
-            ---@cast control ScrollBar
-            ugui.internal.assert(type(control.value) == 'number', 'expected value to be number')
-            ugui.internal.assert(type(control.ratio) == 'number', 'expected ratio to be number')
-        end,
-        logic = function(control, data)
-            ---@cast control ScrollBar
-            data.value = control.value
-
-            local is_horizontal = control.rectangle.width > control.rectangle.height
-
-            if ugui.internal.mouse_captured_control == control.uid then
-                local relative_mouse = {
-                    x = ugui.internal.environment.mouse_position.x - control.rectangle.x,
-                    y = ugui.internal.environment.mouse_position.y - control.rectangle.y,
-                }
-                local relative_mouse_down = {
-                    x = ugui.internal.mouse_down_position.x - control.rectangle.x,
-                    y = ugui.internal.mouse_down_position.y - control.rectangle.y,
-                }
-                local current
-                local start
-                if is_horizontal then
-                    current = relative_mouse.x / control.rectangle.width
-                    start = relative_mouse_down.x / control.rectangle.width
-                else
-                    current = relative_mouse.y / control.rectangle.height
-                    start = relative_mouse_down.y / control.rectangle.height
-                end
-                data.value = ugui.internal.clamp(start + (current - start), 0, 1)
-            end
-
-            return data.value
-        end,
-        draw = function(control)
-            ---@cast control ScrollBar
-            local data = ugui.internal.control_data[control.uid]
-            local is_horizontal = control.rectangle.width > control.rectangle.height
-
-            ---@type Rectangle
-            local thumb_rectangle
-
-            if is_horizontal then
-                local scrollbar_width = control.rectangle.width * control.ratio
-                local scrollbar_x = ugui.internal.remap(data.value, 0, 1, 0, control.rectangle.width - scrollbar_width)
-                thumb_rectangle = {
-                    x = control.rectangle.x + scrollbar_x,
-                    y = control.rectangle.y,
-                    width = scrollbar_width,
-                    height = control.rectangle.height,
-                }
-            else
-                local scrollbar_height = control.rectangle.height * control.ratio
-                local scrollbar_y = ugui.internal.remap(data.value, 0, 1, 0, control.rectangle.height - scrollbar_height)
-                thumb_rectangle = {
-                    x = control.rectangle.x,
-                    y = control.rectangle.y + scrollbar_y,
-                    width = control.rectangle.width,
-                    height = scrollbar_height,
-                }
-            end
-
-            ugui.standard_styler.draw_scrollbar(control, thumb_rectangle)
-        end,
-    },
-    combobox = {
-        validate = function(control)
-            ---@cast control ComboBox
-            ugui.internal.assert(type(control.items) == 'table', 'expected items to be table')
-            ugui.internal.assert(type(control.selected_index) == 'number', 'expected selected_index to be number')
-        end,
-        setup = function(control, data)
-            ---@cast control ComboBox
-            if data.open == nil then
-                data.open = false
-            end
-            if data.hovered_index == nil then
-                data.hovered_index = control.selected_index
-            end
-        end,
-        logic = function(control, data)
-            ---@cast control ComboBox
-            data.selected_index = control.selected_index
-
-            if control.is_enabled == false then
-                data.open = false
-            end
-
-            if ugui.internal.clicked_control == control.uid then
-                data.open = not data.open
-            end
-
-            if data.open and ugui.internal.is_mouse_just_down() and not ugui.internal.is_point_inside_control(ugui.internal.environment.mouse_position, control) then
-                local content_bounds = ugui.standard_styler.get_desired_listbox_content_bounds(control)
-                if not BreitbandGraphics.is_point_inside_rectangle(ugui.internal.environment.mouse_position, {
-                        x = control.rectangle.x,
-                        y = control.rectangle.y + control.rectangle.height,
-                        width = control.rectangle.width,
-                        height = content_bounds.height,
-                    }) then
-                    data.open = false
-                end
-            end
-
-            return data.selected_index
-        end,
-        draw = function(control)
-            ---@cast control ComboBox
-            ugui.standard_styler.draw_combobox(control)
-        end,
-    },
-    menu = {
-        validate = function(control)
-            ---@cast control Menu
-            ugui.internal.assert(type(control.items) == 'table', 'expected items to be table')
-        end,
-        setup = function(control, data)
-            data.dismissed = 0
-        end,
-        logic = function(control, data)
-            ---@cast control Menu
-
-            local function reset_hovered_index_for_all_child_menus(uid, items)
-                if ugui.internal.control_data[uid] then
-                    ugui.internal.control_data[uid].hovered_index = nil
-                end
-                for _, item in pairs(items) do
-                    if item.items then
-                        reset_hovered_index_for_all_child_menus(uid + 1, item.items)
-                    end
-                end
-            end
-
-            local result = {
-                item = nil,
-                dismissed = false,
+        if ugui.internal.mouse_captured_control == control.uid then
+            local relative_mouse = {
+                x = ugui.internal.environment.mouse_position.x - control.rectangle.x,
+                y = ugui.internal.environment.mouse_position.y - control.rectangle.y,
             }
-
-            -- We want to delay returning the dismissed state by a frame because we don't get to handle inputs otherwise,
-            -- so we turn the dismissed flag into a tristate.
-            if data.dismissed == 2 then
-                data.dismissed = 0
-                result.dismissed = true
+            local relative_mouse_down = {
+                x = ugui.internal.mouse_down_position.x - control.rectangle.x,
+                y = ugui.internal.mouse_down_position.y - control.rectangle.y,
+            }
+            local current
+            local start
+            if is_horizontal then
+                current = relative_mouse.x / control.rectangle.width
+                start = relative_mouse_down.x / control.rectangle.width
+            else
+                current = relative_mouse.y / control.rectangle.height
+                start = relative_mouse_down.y / control.rectangle.height
             end
+            data.value = ugui.internal.clamp(start + (current - start), 0, 1)
+        end
 
-            if data.dismissed == 1 then
-                data.dismissed = 2
+        return data.value
+    end,
+    ---@param control ScrollBar
+    draw = function(control)
+        local data = ugui.internal.control_data[control.uid]
+        local is_horizontal = control.rectangle.width > control.rectangle.height
+
+        ---@type Rectangle
+        local thumb_rectangle
+
+        if is_horizontal then
+            local scrollbar_width = control.rectangle.width * control.ratio
+            local scrollbar_x = ugui.internal.remap(data.value, 0, 1, 0, control.rectangle.width - scrollbar_width)
+            thumb_rectangle = {
+                x = control.rectangle.x + scrollbar_x,
+                y = control.rectangle.y,
+                width = scrollbar_width,
+                height = control.rectangle.height,
+            }
+        else
+            local scrollbar_height = control.rectangle.height * control.ratio
+            local scrollbar_y = ugui.internal.remap(data.value, 0, 1, 0, control.rectangle.height - scrollbar_height)
+            thumb_rectangle = {
+                x = control.rectangle.x,
+                y = control.rectangle.y + scrollbar_y,
+                width = control.rectangle.width,
+                height = scrollbar_height,
+            }
+        end
+
+        ugui.standard_styler.draw_scrollbar(control, thumb_rectangle)
+    end,
+}
+
+---@type ControlRegistryEntry
+ugui.registry.combobox = {
+    ---@param control ComboBox
+    validate = function(control)
+        ugui.internal.assert(type(control.items) == 'table', 'expected items to be table')
+        ugui.internal.assert(type(control.selected_index) == 'number', 'expected selected_index to be number')
+    end,
+    ---@param control ComboBox
+    setup = function(control, data)
+        if data.open == nil then
+            data.open = false
+        end
+        if data.hovered_index == nil then
+            data.hovered_index = control.selected_index
+        end
+    end,
+    ---@param control ComboBox
+    logic = function(control, data)
+        data.selected_index = control.selected_index
+
+        if control.is_enabled == false then
+            data.open = false
+        end
+
+        if ugui.internal.clicked_control == control.uid then
+            data.open = not data.open
+        end
+
+        if data.open and ugui.internal.is_mouse_just_down() and not ugui.internal.is_point_inside_control(ugui.internal.environment.mouse_position, control) then
+            local content_bounds = ugui.standard_styler.get_desired_listbox_content_bounds(control)
+            if not BreitbandGraphics.is_point_inside_rectangle(ugui.internal.environment.mouse_position, {
+                    x = control.rectangle.x,
+                    y = control.rectangle.y + control.rectangle.height,
+                    width = control.rectangle.width,
+                    height = content_bounds.height,
+                }) then
+                data.open = false
             end
+        end
 
-            if ugui.internal.is_mouse_just_down() and not BreitbandGraphics.is_point_inside_rectangle(ugui.internal.mouse_down_position, control.rectangle) then
-                data.dismissed = 1
+        return data.selected_index
+    end,
+    ---@param control ComboBox
+    draw = function(control)
+        ugui.standard_styler.draw_combobox(control)
+    end,
+}
+
+---@type ControlRegistryEntry
+ugui.registry.menu = {
+    ---@param control Menu
+    validate = function(control)
+        ugui.internal.assert(type(control.items) == 'table', 'expected items to be table')
+    end,
+    ---@param control Menu
+    setup = function(control, data)
+        data.dismissed = 0
+    end,
+    ---@param control Menu
+    logic = function(control, data)
+        local function reset_hovered_index_for_all_child_menus(uid, items)
+            if ugui.internal.control_data[uid] then
+                ugui.internal.control_data[uid].hovered_index = nil
             end
-
-            if ugui.internal.hovered_control == control.uid then
-                reset_hovered_index_for_all_child_menus(control.uid, control.items)
-
-                local i = math.floor((ugui.internal.environment.mouse_position.y - control.rectangle.y) / ugui.standard_styler.params.menu_item.height) + 1
-                data.hovered_index = ugui.internal.clamp(i, 1, #control.items)
-            end
-
-            if ugui.internal.clicked_control == control.uid then
-                local item = control.items[data.hovered_index]
-
-                -- Only child-less items can be clicked
-                if item.enabled ~= false and (item.items == nil or #item.items == 0) then
-                    result.item = item
+            for _, item in pairs(items) do
+                if item.items then
+                    reset_hovered_index_for_all_child_menus(uid + 1, item.items)
                 end
             end
+        end
 
-            if result.dismissed or result.item then
-                reset_hovered_index_for_all_child_menus(control.uid, control.items)
+        local result = {
+            item = nil,
+            dismissed = false,
+        }
+
+        -- We want to delay returning the dismissed state by a frame because we don't get to handle inputs otherwise,
+        -- so we turn the dismissed flag into a tristate.
+        if data.dismissed == 2 then
+            data.dismissed = 0
+            result.dismissed = true
+        end
+
+        if data.dismissed == 1 then
+            data.dismissed = 2
+        end
+
+        if ugui.internal.is_mouse_just_down() and not BreitbandGraphics.is_point_inside_rectangle(ugui.internal.mouse_down_position, control.rectangle) then
+            data.dismissed = 1
+        end
+
+        if ugui.internal.hovered_control == control.uid then
+            reset_hovered_index_for_all_child_menus(control.uid, control.items)
+
+            local i = math.floor((ugui.internal.environment.mouse_position.y - control.rectangle.y) / ugui.standard_styler.params.menu_item.height) + 1
+            data.hovered_index = ugui.internal.clamp(i, 1, #control.items)
+        end
+
+        if ugui.internal.clicked_control == control.uid then
+            local item = control.items[data.hovered_index]
+
+            -- Only child-less items can be clicked
+            if item.enabled ~= false and (item.items == nil or #item.items == 0) then
+                result.item = item
             end
+        end
 
+        if result.dismissed or result.item then
+            reset_hovered_index_for_all_child_menus(control.uid, control.items)
+        end
 
-            return result
-        end,
-        draw = function(control)
-            ---@cast control Menu
-            ugui.standard_styler.draw_menu(control, control.rectangle)
-        end,
-    },
-    numberbox = {
-        validate = function(control)
-            ---@cast control NumberBox
-            ugui.internal.assert(type(control.value) == 'number', 'expected value to be number')
-            ugui.internal.assert(type(control.places) == 'number', 'expected places to be number')
-            ugui.internal.assert(type(control.show_negative) == 'boolean' or type(control.show_negative) == 'nil', 'expected show_negative to be boolean or nil')
-        end,
-        setup = function(control, data)
-            data.caret_index = 1
-        end,
-        logic = function(control, data)
-            ---@cast control NumberBox
-            local prev_value_negative = control.value < 0
-            data.value = math.abs(control.value)
+        return result
+    end,
+    ---@param control Menu
+    draw = function(control)
+        ugui.standard_styler.draw_menu(control, control.rectangle)
+    end,
+}
 
-            local function get_caret_index_at_relative_x(x)
-                local font_size = ugui.standard_styler.params.font_size * ugui.standard_styler.params.numberbox.font_scale
-                local font_name = ugui.standard_styler.params.monospace_font_name
-                local text = string.format('%0' .. tostring(control.places) .. 'd', data.value)
+---@type ControlRegistryEntry
+ugui.registry.numberbox = {
+    ---@param control NumberBox
+    validate = function(control)
+        ugui.internal.assert(type(control.value) == 'number', 'expected value to be number')
+        ugui.internal.assert(type(control.places) == 'number', 'expected places to be number')
+        ugui.internal.assert(type(control.show_negative) == 'boolean' or type(control.show_negative) == 'nil', 'expected show_negative to be boolean or nil')
+    end,
+    ---@param control NumberBox
+    setup = function(control, data)
+        data.caret_index = 1
+    end,
+    ---@param control NumberBox
+    logic = function(control, data)
+        local prev_value_negative = control.value < 0
+        data.value = math.abs(control.value)
 
-                -- award for most painful basic geometry
-                local full_width = BreitbandGraphics.get_text_size(text,
-                    font_size,
-                    font_name).width
-
-                local positions = {}
-                for i = 1, #text, 1 do
-                    local width = BreitbandGraphics.get_text_size(text:sub(1, i),
-                        font_size,
-                        font_name).width
-
-                    local left = control.rectangle.width / 2 - full_width / 2
-                    positions[#positions + 1] = width + left
-                end
-
-                for i = #positions, 1, -1 do
-                    if x > positions[i] then
-                        return ugui.internal.clamp(i + 1, 1, #positions)
-                    end
-                end
-                return 1
-            end
-
-            local function increment_digit(index, value)
-                data.value = ugui.internal.set_digit(data.value, control.places,
-                    ugui.internal.get_digit(data.value, control.places, index) + value, index)
-            end
-
-            if ugui.internal.clicked_control == control.uid then
-                data.caret_index = get_caret_index_at_relative_x(ugui.internal.environment.mouse_position.x - control.rectangle.x)
-            end
-
-            if ugui.internal.keyboard_captured_control == control.uid then
-                -- handle number key press
-                for key, _ in pairs(ugui.internal.get_just_pressed_keys()) do
-                    local num_1 = tonumber(key)
-                    local num_2 = tonumber(key:sub(7))
-                    local value = num_1 and num_1 or num_2
-
-                    if value then
-                        local oldkey = math.floor(value / math.pow(10, control.places - data.caret_index)) % 10
-                        value = value + (value - oldkey) * math.pow(10, control.places - data.caret_index)
-                        data.caret_index = data.caret_index + 1
-                    end
-
-                    if key == 'left' then
-                        data.caret_index = data.caret_index - 1
-                    end
-                    if key == 'right' then
-                        data.caret_index = data.caret_index + 1
-                    end
-                    if key == 'up' then
-                        increment_digit(data.caret_index, 1)
-                    end
-                    if key == 'down' then
-                        increment_digit(data.caret_index, -1)
-                    end
-                end
-
-                if ugui.internal.is_mouse_wheel_up() then
-                    increment_digit(data.caret_index, 1)
-                end
-                if ugui.internal.is_mouse_wheel_down() then
-                    increment_digit(data.caret_index, -1)
-                end
-            end
-
-            data.caret_index = ugui.internal.clamp(data.caret_index, 1, control.places)
-
-            if prev_value_negative then
-                data.value = -math.abs(data.value)
-            end
-
-            return data.value
-        end,
-        draw = function(control)
-            ---@cast control NumberBox
-            local data = ugui.internal.control_data[control.uid]
+        local function get_caret_index_at_relative_x(x)
             local font_size = ugui.standard_styler.params.font_size * ugui.standard_styler.params.numberbox.font_scale
             local font_name = ugui.standard_styler.params.monospace_font_name
-            local text = string.format('%0' .. tostring(control.places) .. 'd', math.abs(control.value))
+            local text = string.format('%0' .. tostring(control.places) .. 'd', data.value)
 
-            local visual_state = ugui.get_visual_state(control)
-            if ugui.internal.keyboard_captured_control == control.uid then
-                visual_state = ugui.visual_states.active
-            end
-            ugui.standard_styler.draw_edit_frame(control, control.rectangle, visual_state)
-
-            BreitbandGraphics.draw_text2({
-                text = text,
-                rectangle = control.rectangle,
-                color = ugui.standard_styler.params.textbox.text[visual_state],
-                font_name = font_name,
-                font_size = font_size,
-                aliased = not ugui.standard_styler.params.cleartype,
-            })
-
-            local text_width_up_to_caret = BreitbandGraphics.get_text_size(
-                text:sub(1, data.caret_index - 1),
-                font_size,
-                font_name).width
-
+            -- award for most painful basic geometry
             local full_width = BreitbandGraphics.get_text_size(text,
                 font_size,
                 font_name).width
 
-            local left = control.rectangle.width / 2 - full_width / 2
+            local positions = {}
+            for i = 1, #text, 1 do
+                local width = BreitbandGraphics.get_text_size(text:sub(1, i),
+                    font_size,
+                    font_name).width
 
-            local selected_char_rect = {
-                x = control.rectangle.x + left + text_width_up_to_caret,
-                y = control.rectangle.y,
-                width = font_size / 2,
-                height = control.rectangle.height,
-            }
-
-            if ugui.internal.keyboard_captured_control == control.uid then
-                BreitbandGraphics.fill_rectangle(selected_char_rect, ugui.standard_styler.params.numberbox.selection)
-                BreitbandGraphics.push_clip(selected_char_rect)
-                BreitbandGraphics.draw_text2({
-                    text = text,
-                    rectangle = control.rectangle,
-                    color = BreitbandGraphics.invert_color(ugui.standard_styler.params.textbox.text[visual_state]),
-                    font_name = font_name,
-                    font_size = font_size,
-                    aliased = not ugui.standard_styler.params.cleartype,
-                })
-                BreitbandGraphics.pop_clip()
+                local left = control.rectangle.width / 2 - full_width / 2
+                positions[#positions + 1] = width + left
             end
-        end,
-    },
+
+            for i = #positions, 1, -1 do
+                if x > positions[i] then
+                    return ugui.internal.clamp(i + 1, 1, #positions)
+                end
+            end
+            return 1
+        end
+
+        local function increment_digit(index, value)
+            data.value = ugui.internal.set_digit(data.value, control.places,
+                ugui.internal.get_digit(data.value, control.places, index) + value, index)
+        end
+
+        if ugui.internal.clicked_control == control.uid then
+            data.caret_index = get_caret_index_at_relative_x(ugui.internal.environment.mouse_position.x - control.rectangle.x)
+        end
+
+        if ugui.internal.keyboard_captured_control == control.uid then
+            -- handle number key press
+            for key, _ in pairs(ugui.internal.get_just_pressed_keys()) do
+                local num_1 = tonumber(key)
+                local num_2 = tonumber(key:sub(7))
+                local value = num_1 and num_1 or num_2
+
+                if value then
+                    local oldkey = math.floor(value / math.pow(10, control.places - data.caret_index)) % 10
+                    value = value + (value - oldkey) * math.pow(10, control.places - data.caret_index)
+                    data.caret_index = data.caret_index + 1
+                end
+
+                if key == 'left' then
+                    data.caret_index = data.caret_index - 1
+                end
+                if key == 'right' then
+                    data.caret_index = data.caret_index + 1
+                end
+                if key == 'up' then
+                    increment_digit(data.caret_index, 1)
+                end
+                if key == 'down' then
+                    increment_digit(data.caret_index, -1)
+                end
+            end
+
+            if ugui.internal.is_mouse_wheel_up() then
+                increment_digit(data.caret_index, 1)
+            end
+            if ugui.internal.is_mouse_wheel_down() then
+                increment_digit(data.caret_index, -1)
+            end
+        end
+
+        data.caret_index = ugui.internal.clamp(data.caret_index, 1, control.places)
+
+        if prev_value_negative then
+            data.value = -math.abs(data.value)
+        end
+
+        return data.value
+    end,
+    ---@param control NumberBox
+    draw = function(control)
+        local data = ugui.internal.control_data[control.uid]
+        local font_size = ugui.standard_styler.params.font_size * ugui.standard_styler.params.numberbox.font_scale
+        local font_name = ugui.standard_styler.params.monospace_font_name
+        local text = string.format('%0' .. tostring(control.places) .. 'd', math.abs(control.value))
+
+        local visual_state = ugui.get_visual_state(control)
+        if ugui.internal.keyboard_captured_control == control.uid then
+            visual_state = ugui.visual_states.active
+        end
+        ugui.standard_styler.draw_edit_frame(control, control.rectangle, visual_state)
+
+        BreitbandGraphics.draw_text2({
+            text = text,
+            rectangle = control.rectangle,
+            color = ugui.standard_styler.params.textbox.text[visual_state],
+            font_name = font_name,
+            font_size = font_size,
+            aliased = not ugui.standard_styler.params.cleartype,
+        })
+
+        local text_width_up_to_caret = BreitbandGraphics.get_text_size(
+            text:sub(1, data.caret_index - 1),
+            font_size,
+            font_name).width
+
+        local full_width = BreitbandGraphics.get_text_size(text,
+            font_size,
+            font_name).width
+
+        local left = control.rectangle.width / 2 - full_width / 2
+
+        local selected_char_rect = {
+            x = control.rectangle.x + left + text_width_up_to_caret,
+            y = control.rectangle.y,
+            width = font_size / 2,
+            height = control.rectangle.height,
+        }
+
+        if ugui.internal.keyboard_captured_control == control.uid then
+            BreitbandGraphics.fill_rectangle(selected_char_rect, ugui.standard_styler.params.numberbox.selection)
+            BreitbandGraphics.push_clip(selected_char_rect)
+            BreitbandGraphics.draw_text2({
+                text = text,
+                rectangle = control.rectangle,
+                color = BreitbandGraphics.invert_color(ugui.standard_styler.params.textbox.text[visual_state]),
+                font_name = font_name,
+                font_size = font_size,
+                aliased = not ugui.standard_styler.params.cleartype,
+            })
+            BreitbandGraphics.pop_clip()
+        end
+    end,
 }
 
 --#endregion
