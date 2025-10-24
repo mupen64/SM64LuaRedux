@@ -11,18 +11,16 @@ local __impl = __impl
 __impl.name = 'Preferences'
 __impl.help_key = 'PREFERENCES_TAB'
 
-local UID <const> = dofile(views_path .. 'SemanticWorkflow/UID.lua')[__impl.name]
-
 ---@type Gui
 local Gui = dofile(views_path .. 'SemanticWorkflow/Definitions/Gui.lua')
 
-function __impl.allocate_uids(enum_next)
+local UID = UIDProvider.allocate_once(__impl.name, function(enum_next)
     return {
         ToggleEditEntireState = enum_next(),
         ToggleFastForward = enum_next(),
-        DefaultSectionTimeout = enum_next(),
+        DefaultSectionTimeout = enum_next(2),
     }
-end
+end)
 
 function __impl.render(draw)
     local top = 1

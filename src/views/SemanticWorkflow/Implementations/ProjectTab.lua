@@ -17,9 +17,7 @@ local Project = dofile(views_path .. 'SemanticWorkflow/Definitions/Project.lua')
 ---@type Gui
 local Gui = dofile(views_path .. 'SemanticWorkflow/Definitions/Gui.lua')
 
-local UID <const> = dofile(views_path .. 'SemanticWorkflow/UID.lua')[__impl.name]
-
-function __impl.allocate_uids(enum_next)
+local UID = UIDProvider.allocate_once(__impl.name, function(enum_next)
     return {
         NewProject = enum_next(),
         OpenProject = enum_next(),
@@ -31,7 +29,7 @@ function __impl.allocate_uids(enum_next)
         ConfirmationYes = enum_next(),
         ConfirmationNo = enum_next(),
     }
-end
+end)
 
 local function create_confirm_dialog(prompt, on_confirmed)
     return function()

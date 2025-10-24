@@ -191,8 +191,10 @@ ugui_ext.apply_nineslice = function(style)
         ugui.standard_styler.draw_rich_text(text_rect, BreitbandGraphics.alignment.start, nil, item, ugui.standard_styler.params.listbox_item.text[visual_state], control.plaintext)
     end
 
-    ugui.standard_styler.draw_scrollbar = function(container_rectangle, thumb_rectangle, visual_state)
-        BreitbandGraphics.draw_image(container_rectangle,
+    ugui.standard_styler.draw_scrollbar = function(control, thumb_rectangle)
+        local visual_state = ugui.get_visual_state(control)
+
+        BreitbandGraphics.draw_image(control.rectangle,
             style.scrollbar_rail,
             style.path, BreitbandGraphics.colors.white, 'nearest')
 

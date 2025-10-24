@@ -4,7 +4,7 @@
 -- SPDX-License-Identifier: GPL-2.0-or-later
 --
 
-local UID <const> = dofile(views_path .. 'SemanticWorkflow/UID.lua')
+local UID = dofile(views_path .. "SemanticWorkflow/SharedUIDs.lua")
 
 return {
     GetDialog = function(key)

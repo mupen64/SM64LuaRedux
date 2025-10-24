@@ -6,6 +6,17 @@
 
 MiniVisualizer = {}
 
+local UID = UIDProvider.allocate_once('MiniVisualizer', function(enum_next)
+    return {
+        Joystick = enum_next(),
+        A = enum_next(),
+        B = enum_next(),
+        Z = enum_next(),
+        S = enum_next(),
+        R = enum_next(),
+    }
+end)
+
 MiniVisualizer.draw = function()
     if not Settings.mini_visualizer then
         return
@@ -15,7 +26,7 @@ MiniVisualizer.draw = function()
     }, ugui.visual_states.normal)
     
     ugui.joystick({
-        uid = -100,
+        uid = UID.Joystick,
         rectangle = grid_rect_abs(0, 14, 3, 3),
         position = {
             x = Joypad.input.X,
@@ -24,31 +35,31 @@ MiniVisualizer.draw = function()
         mag = 0,
     })
     ugui.toggle_button({
-        uid = -101,
+        uid = UID.A,
         rectangle = grid_rect_abs(3, 16, 1, 1),
         text = 'A',
         is_checked = Joypad.input.A,
     })
     ugui.toggle_button({
-        uid = -102,
+        uid = UID.B,
         rectangle = grid_rect_abs(4, 16, 1, 1),
         text = 'B',
         is_checked = Joypad.input.B,
     })
     ugui.toggle_button({
-        uid = -103,
+        uid = UID.Z,
         rectangle = grid_rect_abs(5, 16, 1, 1),
         text = 'Z',
         is_checked = Joypad.input.Z,
     })
     ugui.toggle_button({
-        uid = -104,
+        uid = UID.S,
         rectangle = grid_rect_abs(6, 16, 1, 1),
         text = 'S',
         is_checked = Joypad.input.start,
     })
     ugui.toggle_button({
-        uid = -105,
+        uid = UID.R,
         rectangle = grid_rect_abs(7, 16, 1, 1),
         text = 'R',
         is_checked = Joypad.input.R,

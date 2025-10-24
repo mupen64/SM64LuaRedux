@@ -10,8 +10,6 @@ local __impl = __impl
 
 --#region Constants
 
-local UID <const> = dofile(views_path .. 'SemanticWorkflow/UID.lua')['FrameList']
-
 local MODE_TEXTS <const> = { '-', 'D', 'M', 'Y', 'R', 'A' }
 local BUTTONS <const> = {
     { input = 'A',      text = 'A' },
@@ -69,7 +67,7 @@ local VIEW_MODE_HEADERS <const> = { 'SEMANTIC_WORKFLOW_FRAMELIST_STICK', 'SEMANT
 
 local scroll_offset = 0
 
-function __impl.allocate_uids(enum_next)
+local UID = UIDProvider.allocate_once('FrameListGui', function(enum_next)
     local base = enum_next(MAX_DISPLAYED_SECTIONS * NUM_UIDS_PER_ROW)
     return {
         SheetName = enum_next(),
@@ -78,7 +76,7 @@ function __impl.allocate_uids(enum_next)
             return base + (index - 1) * NUM_UIDS_PER_ROW
         end,
     }
-end
+end)
 
 ---@alias IterateInputsCallback fun(section: Section, input: SectionInputs, section_index: integer, total_inputs_counted: integer, input_index: integer): boolean?
 
@@ -120,17 +118,16 @@ local function draw_headers(sheet, draw, view_index, button_draw_data)
     BreitbandGraphics.fill_rectangle(grid_rect(0, ROW0, COL_1, ROW2 - ROW0, 0), background_color)
 
     draw:text(grid_rect(3, ROW0, 1, 0.5), 'start', Locales.str('SEMANTIC_WORKFLOW_FRAMELIST_NAME'))
-    local prev_font_size = ugui.standard_styler.params.font_size
-    ugui.standard_styler.params.font_size = ugui.standard_styler.params.font_size * 0.75
     sheet.name = ugui.textbox({
         uid = UID.SheetName,
         is_enabled = true,
         rectangle = grid_rect(4, ROW0, 4, 0.5),
         text = sheet.name,
+        styler_mixin = {
+            font_size = ugui.standard_styler.params.font_size * 0.75
+        }
     })
     SemanticWorkflowProject:set_current_name(sheet.name)
-    ugui.standard_styler.params.font_size = prev_font_size
-    ugui.standard_styler.font_size = prev_font_size
 
     draw:text(grid_rect(COL0, ROW1, COL1 - COL0, 1), 'start', Locales.str('SEMANTIC_WORKFLOW_FRAMELIST_SECTION'))
     draw:text(grid_rect(COL1, ROW1, COL6 - COL1, 1), 'start', Locales.str(VIEW_MODE_HEADERS[view_index]))
@@ -278,17 +275,12 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
         local frame_box = span(COL0 + 0.3, COL1)
 
         local uid_base = UID.Row(total_inputs - scroll_offset)
-        local uid_offset = -1
-        local function next_uid()
-            uid_offset = uid_offset + 1
-            return uid_offset + uid_base
-        end
 
         BreitbandGraphics.fill_rectangle(section_rect, { r = shade, g = shade, b = shade * blue_multiplier, a = 66 })
 
         if input_sub_index == 1 then
             section.collapsed = not ugui.toggle_button({
-                uid = next_uid(),
+                uid = uid_base + 0,
                 rectangle = span(COL0, COL0 + 0.3),
                 text = section.collapsed and '[icon:arrow_right]' or '[icon:arrow_down]',
                 tooltip = Locales.str(section.collapsed and 'SEMANTIC_WORKFLOW_INPUTS_EXPAND_SECTION' or
@@ -310,9 +302,14 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
             -- mini joysticks and yaw numbers
             local joystick_box = span(COL1, COL2)
             ugui.joystick({
-                uid = next_uid(),
+                uid = uid_base + 1,
                 rectangle = span(COL1, COL2, FRAME_COLUMN_HEIGHT),
                 position = { x = input.joy.X, y = -input.joy.Y },
+                styler_mixin = {
+                    joystick = {
+                        tip_size = 4 * Drawing.scale,
+                    }
+                }
             })
 
             if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, joystick_box) then
@@ -399,8 +396,5 @@ function __impl.render(draw)
         current_sheet:run_to_preview()
     end
 
-    local prev_joystick_tip_size = ugui.standard_styler.params.joystick.tip_size
-    ugui.standard_styler.params.joystick.tip_size = 4 * Drawing.scale
     draw_sections_gui(current_sheet, draw, __impl.view_index, section_rect, button_draw_data)
-    ugui.standard_styler.params.joystick.tip_size = prev_joystick_tip_size
 end

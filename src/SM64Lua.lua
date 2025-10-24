@@ -26,6 +26,7 @@ lualinq = dofile(lib_path .. 'linq.lua')
 
 json = dofile(lib_path .. 'json.lua')
 dofile(styles_path .. 'base_style.lua')
+dofile(core_path .. 'UIDProvider.lua')
 dofile(core_path .. 'Helpers.lua')
 dofile(core_path .. 'Settings.lua')
 dofile(core_path .. 'Formatter.lua')
@@ -89,6 +90,14 @@ local last_rmb_down_position = { x = 0, y = 0 }
 local keys = input.get()
 local last_keys = input.get()
 
+local UID = UIDProvider.allocate_once('SM64Lua', function(enum_next)
+    return {
+        TabIndex = enum_next(),
+        ResetPreset = enum_next(),
+        PresetIndex = enum_next(),
+    }
+end)
+
 local function at_input()
     -- TODO: Move this to Memory.lua
     if first_input then
@@ -133,7 +142,7 @@ local function draw_navbar()
         return
     end
     Settings.tab_index = ugui.carrousel_button({
-        uid = -5000,
+        uid = UID.TabIndex,
         rectangle = grid_rect(0, 16, 5.5, 1),
         is_enabled = not Settings.hotkeys_assigning,
         items = lualinq.select_key(views, 'name'),
@@ -144,7 +153,7 @@ local function draw_navbar()
 
     if reset_preset_menu_open then
         local result = ugui.menu({
-            uid = -5010,
+            uid = UID.ResetPreset,
             rectangle = ugui.internal.deep_clone(last_rmb_down_position),
             items = {
                 {
@@ -185,7 +194,7 @@ local function draw_navbar()
 
     local preset_index = Presets.persistent.current_index
     preset_index = ugui.carrousel_button({
-        uid = -5005,
+        uid = UID.PresetIndex,
         rectangle = preset_picker_rect,
         is_enabled = not Settings.hotkeys_assigning,
         items = preset_items,
