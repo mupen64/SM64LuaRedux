@@ -196,7 +196,7 @@ return {
 
         local joystick_rect = grid(0, 4, 4, 4)
         local displayPosition = { x = Engine.stick_for_input_x(Settings.tas), y = -Engine.stick_for_input_y(Settings.tas) }
-        local newPosition = ugui.joystick({
+        local newPosition, meta = ugui.joystick({
             uid = UID.Joystick,
             rectangle = {
                 x = joystick_rect[1],
@@ -210,7 +210,7 @@ return {
             y_snap = 8,
         })
 
-        if Settings.enable_manual_on_joystick_interact and (newPosition.x ~= displayPosition.x or newPosition.y ~= displayPosition.y) then
+        if Settings.enable_manual_on_joystick_interact and meta.signal_change == ugui.signal_change_states.started then
             action.invoke(ACTION_SET_MOVEMENT_MODE_MANUAL)
         end
 
