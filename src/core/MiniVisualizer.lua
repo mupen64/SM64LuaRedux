@@ -21,8 +21,10 @@ MiniVisualizer.draw = function()
     if not Settings.mini_visualizer then
         return
     end
-    BreitbandGraphics.fill_rectangle(grid_rect_abs(3, 14, 5, 2),
-        Styles.theme().background_color)
+    ugui.standard_styler.draw_raised_frame({
+        rectangle = grid_rect_abs(3, 14, 5, 2),
+    }, ugui.visual_states.normal)
+    
     ugui.joystick({
         uid = UID.Joystick,
         rectangle = grid_rect_abs(0, 14, 3, 3),
@@ -62,8 +64,7 @@ MiniVisualizer.draw = function()
         text = 'R',
         is_checked = Joypad.input.R,
     })
-    local foreground_color = BreitbandGraphics.invert_color(Styles.theme()
-        .background_color)
+    local foreground_color = ugui.standard_styler.params.button.text[ugui.visual_states.normal]
     BreitbandGraphics.draw_text(
         grid_rect_abs(3, 15, 5, 1),
         'center',

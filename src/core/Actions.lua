@@ -35,6 +35,7 @@ ACTION_SET_PRESET_DOWN = ACTION_PRESET .. 'Select Previous'
 ACTION_SET_PRESET_UP = ACTION_PRESET .. 'Select Next ---'
 ACTION_TOGGLE_REMEMBER_TAS_STATE = ACTION_PRESET .. 'Remember TAS State'
 ACTION_RESET_PRESET = ACTION_PRESET .. 'Reset to Default'
+ACTION_DELETE_ALL_PRESETS = ACTION_PRESET .. 'Delete All'
 ACTION_TOGGLE_NAVBAR = ROOT .. 'Navigation Bar'
 
 ---@class ActionParamsWithDefaultHotkey : ActionParams
@@ -319,7 +320,7 @@ actions[#actions + 1] = wrap_params({
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_PRESET_DOWN,
     on_press = function()
-        Presets.apply(ugui.internal.clamp(Presets.persistent.current_index - 1, 1, #Presets.persistent.presets))
+        Presets.change_index(Presets.persistent.current_index - 1)
         Actions.notify_all_changed()
     end,
 })
@@ -327,7 +328,7 @@ actions[#actions + 1] = wrap_params({
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_PRESET_UP,
     on_press = function()
-        Presets.apply(ugui.internal.clamp(Presets.persistent.current_index + 1, 1, #Presets.persistent.presets))
+        Presets.change_index(Presets.persistent.current_index + 1)
         Actions.notify_all_changed()
     end,
 })
@@ -336,7 +337,14 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_RESET_PRESET,
     on_press = function()
         Presets.reset(Presets.persistent.current_index)
-        Presets.apply(Presets.persistent.current_index)
+        Actions.notify_all_changed()
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_DELETE_ALL_PRESETS,
+    on_press = function()
+        Presets.delete_all()
         Actions.notify_all_changed()
     end,
 })

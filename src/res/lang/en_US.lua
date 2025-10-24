@@ -21,6 +21,8 @@ return {
     TOOLS_TAB_NAME = 'Tools',
     TIMER_TAB_NAME = 'Timer',
     PRESET = 'Preset ',
+    -- Preset Context Menu
+    PRESET_CONTEXT_MENU_DELETE_ALL = 'Delete All',
     -- TAS Tab
     DISABLED = 'Disabled',
     MATCH_YAW = 'Match Yaw',
@@ -123,8 +125,8 @@ This action cannot be undone.
     SETTINGS_VISUALS_NOTIFICATIONS = 'Notifications',
     SETTINGS_VISUALS_NOTIFICATIONS_BUBBLE = 'Bubble',
     SETTINGS_VISUALS_NOTIFICATIONS_CONSOLE = 'Console',
-    SETTINGS_VISUALS_FRAMESKIP = 'Fast-forward frame skip',
-    SETTINGS_VISUALS_FRAMESKIP_TOOLTIP = 'Skips every nth frame when fast-forwarding to increase performance.',
+    SETTINGS_VISUALS_FF_FPS = 'FPS during Fast-Forward',
+    SETTINGS_VISUALS_FF_FPS_TOOLTIP = 'The FPS to render at when fast-forwarding. Decrease to increase performance.',
     SETTINGS_VISUALS_UPDATE_EVERY_VI = 'Update every VI',
     SETTINGS_VISUALS_UPDATE_EVERY_VI_TOOLTIP =
     'Updates the UI every VI, improving mupen capture sync. Reduces performance.',

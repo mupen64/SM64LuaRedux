@@ -22,6 +22,7 @@ Locales = {}
 ---@field public TOOLS_TAB_NAME string
 ---@field public TIMER_TAB_NAME string
 ---@field public PRESET string
+---@field public PRESET_CONTEXT_MENU_DELETE_ALL string
 ---@field public DISABLED string
 ---@field public MATCH_YAW string
 ---@field public REVERSE_ANGLE string
@@ -113,8 +114,8 @@ Locales = {}
 ---@field public SETTINGS_VISUALS_NOTIFICATIONS string
 ---@field public SETTINGS_VISUALS_NOTIFICATIONS_BUBBLE string
 ---@field public SETTINGS_VISUALS_NOTIFICATIONS_CONSOLE string
----@field public SETTINGS_VISUALS_FRAMESKIP string
----@field public SETTINGS_VISUALS_FRAMESKIP_TOOLTIP string
+---@field public SETTINGS_VISUALS_FF_FPS string
+---@field public SETTINGS_VISUALS_FF_FPS_TOOLTIP string
 ---@field public SETTINGS_VISUALS_UPDATE_EVERY_VI string
 ---@field public SETTINGS_VISUALS_UPDATE_EVERY_VI_TOOLTIP string
 ---@field public SETTINGS_VARWATCH_DISABLED string

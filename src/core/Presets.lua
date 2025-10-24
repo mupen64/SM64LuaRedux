@@ -5,12 +5,7 @@
 --
 
 local PRESETS_PATH <const> = 'presets.json'
-
-local function create_default_preset()
-    return ugui.internal.deep_clone(Settings)
-end
-
-local default_preset = create_default_preset()
+local DEFAULT_PRESET <const> = ugui.internal.deep_clone(Settings)
 
 Presets = {
     persistent = {
@@ -19,26 +14,34 @@ Presets = {
     },
 }
 
-print('Creating default presets...')
+Presets.persistent.presets[1] = ugui.internal.deep_clone(DEFAULT_PRESET)
 
-for i = 1, 6, 1 do
-    Presets.persistent.presets[i] = create_default_preset()
-end
-
-function Presets.get_default_preset()
-    return ugui.internal.deep_clone(default_preset)
-end
-
+---Applies the preset at the specified index.
+---@param i integer
 function Presets.apply(i)
     Presets.persistent.current_index = ugui.internal.clamp(i, 1, #Presets.persistent.presets)
     Settings = Presets.persistent.presets[Presets.persistent.current_index]
     Styles.update_style()
 end
 
-function Presets.reset(i)
-    Presets.persistent.presets[i] = ugui.internal.deep_clone(default_preset)
+---Deletes and resets all presets, leaving only a default preset.
+function Presets.delete_all()
+    Presets.persistent.presets = { ugui.internal.deep_clone(DEFAULT_PRESET) }
+    Presets.apply(Presets.persistent.current_index)
+    print(Presets.persistent.current_index)
 end
 
+---Resets the preset at the specified index, applying it if it's the current one.
+---@param i integer
+function Presets.reset(i)
+    Presets.persistent.presets[i] = ugui.internal.deep_clone(DEFAULT_PRESET)
+
+    if Presets.persistent.current_index == i then
+        Presets.apply(Presets.persistent.current_index)
+    end
+end
+
+---Saves presets to disk.
 function Presets.save()
     print('Saving preset...')
     Presets.apply(Presets.persistent.current_index)
@@ -54,9 +57,9 @@ function Presets.save()
     io.close(file)
 end
 
-function Presets.restore()
-    print('Restoring presets...')
-
+---Loads presets from disk.
+function Presets.load()
+    print('Loading presets...')
     local file = io.open(PRESETS_PATH, 'r')
     if not file then
         return
@@ -69,4 +72,21 @@ function Presets.restore()
     deserialized = deep_merge(Presets.persistent, deserialized)
 
     Presets.persistent = deserialized
+end
+
+---Sets the preset index.
+---@param i integer The new preset index. If the index is out of bounds, a new preset is created. Values below `1` will cause a wraparound to a new preset at the end.
+function Presets.change_index(i)
+    if i < 1 then
+        i = #Presets.persistent.presets + 1
+    end
+    i = math.max(1, i)
+
+    if #Presets.persistent.presets < i then
+        Presets.persistent.presets[i] = ugui.internal.deep_clone(DEFAULT_PRESET)
+    end
+
+    Presets.persistent.current_index = i
+
+    Presets.apply(i)
 end

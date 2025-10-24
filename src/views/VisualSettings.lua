@@ -63,14 +63,14 @@ local items = {
         end,
     },
     {
-        text = Locales.str('SETTINGS_VISUALS_FRAMESKIP'),
+        text = Locales.str('SETTINGS_VISUALS_FF_FPS'),
         func = function(rect)
-            Settings.repaint_throttle = math.max(1, math.abs(ugui.numberbox({
+            Settings.ff_fps = math.max(1, math.abs(ugui.numberbox({
                 uid = UID.RepaintThrottle,
                 rectangle = rect,
-                tooltip = Locales.str('SETTINGS_VISUALS_FRAMESKIP_TOOLTIP'),
-                value = Settings.repaint_throttle,
-                places = 1,
+                tooltip = Locales.str('SETTINGS_VISUALS_FF_FPS_TOOLTIP'),
+                value = Settings.ff_fps,
+                places = 2,
             })))
         end,
     },
