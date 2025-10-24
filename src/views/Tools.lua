@@ -13,7 +13,7 @@ local UID = UIDProvider.allocate_once('Tools', function(enum_next)
     return {
         RngLock = enum_next(),
         RngUse = enum_next(),
-        RngValue = enum_next(3),
+        RngValue = enum_next(4),
         Dump = enum_next(),
         RecordGhost = enum_next(),
         WorldVisualizer = enum_next(),
