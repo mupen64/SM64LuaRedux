@@ -619,7 +619,8 @@ ugui.internal = {
             return ugui.signal_change_states.none
         end
 
-        ugui.internal.assert(false, 'Unreachable code reached in process_signal_changes')
+        ugui.internal.assert(false, string.format('Got unexpected signal change state %s and changing %s combination',
+            tostring(signal_change_state), tostring(signal_changing)))
     end,
 
     ---Shows the tooltip for the currently hovered control.
@@ -2847,8 +2848,14 @@ end
 ---@param type ControlType | "" The control's type. If the type is `""`, no control will be placed, but the control data entry will be initialized.
 ---@return ControlReturnValue # The control's return value, or `nil` if the type is `""`.
 ugui.control = function(control, type)
+    local function init_control_data(uid)
+        ugui.internal.control_data[uid] = {
+            signal_change = ugui.signal_change_states.none,
+        }
+    end
+
     if type == '' then
-        ugui.internal.control_data[control.uid] = {}
+        init_control_data(control.uid)
         return nil
     end
     ---@cast type ControlType
@@ -2866,9 +2873,7 @@ ugui.control = function(control, type)
 
     -- If the control has only just been added, we run its setup.
     if ugui.internal.control_data[control.uid] == nil then
-        ugui.internal.control_data[control.uid] = {}
-
-        ugui.internal.control_data[control.uid].signal_change = ugui.signal_change_states.none
+        init_control_data(control.uid)
 
         if registry_entry.setup then
             registry_entry.setup(control, ugui.internal.control_data[control.uid])
