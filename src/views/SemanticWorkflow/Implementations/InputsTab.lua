@@ -397,12 +397,12 @@ local function joystick_controls_for_selected(draw, edited_section, edited_input
     CloneInto(new_values, old_values)
 
     local display_position = { x = old_values.manual_joystick_x or 0, y = -(old_values.manual_joystick_y or 0) }
-    local new_position = ugui.joystick({
+    local new_position, meta = ugui.joystick({
         uid = UID.Joypad,
         rectangle = grid_rect(0, top + 1, 2, 2),
         position = display_position,
     })
-    if new_position.x ~= display_position.x or new_position.y ~= display_position.y then
+    if meta.signal_change == ugui.signal_change_states.started then
         new_values.movement_mode = MovementModes.manual
         new_values.manual_joystick_x = math.min(127, math.floor(new_position.x + 0.5)) or old_values.manual_joystick_x
         new_values.manual_joystick_y = math.min(127, -math.floor(new_position.y + 0.5)) or old_values.manual_joystick_y
