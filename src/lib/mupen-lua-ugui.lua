@@ -2225,7 +2225,7 @@ ugui.registry.joystick = {
     ---@param control Joystick
     ---@return ControlReturnValue
     logic = function(control, data)
-        data.position = control.position
+        data.position = ugui.internal.deep_clone(control.position)
 
         if ugui.internal.mouse_captured_control == control.uid then
             data.position.x = ugui.internal.clamp(
