@@ -852,6 +852,9 @@ ugui.standard_styler = {
         --- The monospace variant font name.
         monospace_font_name = 'Consolas',
 
+        --- The color filter used for rendering controls. Only applies to cached control rendering using ugui-ext.  
+        color_filter = BreitbandGraphics.hex_to_color('#FFFFFFFF'),
+
         --- The font size.
         font_size = 12,
 

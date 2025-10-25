@@ -131,7 +131,7 @@ ugui_ext.apply_nineslice = function(style)
 
         local adjusted_rect = scale_and_center(rect, rectangle, ugui.standard_styler.params.icon_size, true)
         BreitbandGraphics.draw_image(adjusted_rect, rectangles[visual_state], Styles.theme().path,
-            BreitbandGraphics.colors.white, 'linear')
+            ugui.standard_styler.params.color_filter, 'linear')
     end
 
     ugui.standard_styler.draw_raised_frame = function(control, visual_state)
@@ -141,7 +141,7 @@ ugui_ext.apply_nineslice = function(style)
             BreitbandGraphics.draw_image_nineslice(eff_rectangle,
                 style.button.states[visual_state].source,
                 style.button.states[visual_state].center,
-                style.path, BreitbandGraphics.colors.white, 'nearest')
+                style.path, ugui.standard_styler.params.color_filter, 'nearest')
         end)
     end
 
@@ -153,7 +153,7 @@ ugui_ext.apply_nineslice = function(style)
             BreitbandGraphics.draw_image_nineslice(eff_rectangle,
                 style.textbox.states[visual_state].source,
                 style.textbox.states[visual_state].center,
-                style.path, BreitbandGraphics.colors.white, 'nearest')
+                style.path, ugui.standard_styler.params.color_filter, 'nearest')
         end)
     end
 
@@ -164,7 +164,7 @@ ugui_ext.apply_nineslice = function(style)
             BreitbandGraphics.draw_image_nineslice(eff_rectangle,
                 style.listbox.states[visual_state].source,
                 style.listbox.states[visual_state].center,
-                style.path, BreitbandGraphics.colors.white, 'nearest')
+                style.path, ugui.standard_styler.params.color_filter, 'nearest')
         end)
     end
 
@@ -175,11 +175,11 @@ ugui_ext.apply_nineslice = function(style)
 
         local rect = BreitbandGraphics.inflate_rectangle(rectangle, -1)
 
-        -- bad idea to cache these
+        -- These aren't cached because they may change frequently
         BreitbandGraphics.draw_image_nineslice(rect,
             style.listbox_item.states[visual_state].source,
             style.listbox_item.states[visual_state].center,
-            style.path, BreitbandGraphics.colors.white, 'nearest')
+            style.path, ugui.standard_styler.params.color_filter, 'nearest')
 
         local text_rect = {
             x = rectangle.x + 2,
@@ -196,7 +196,7 @@ ugui_ext.apply_nineslice = function(style)
 
         BreitbandGraphics.draw_image(control.rectangle,
             style.scrollbar_rail,
-            style.path, BreitbandGraphics.colors.white, 'nearest')
+            style.path, ugui.standard_styler.params.color_filter, 'nearest')
 
         local key = ugui_ext.internal.params_to_key('scrollbar_thumb', thumb_rectangle, visual_state)
 
@@ -207,7 +207,7 @@ ugui_ext.apply_nineslice = function(style)
                 BreitbandGraphics.draw_image_nineslice(eff_rectangle,
                     style.scrollbar_thumb.states[visual_state].source,
                     style.scrollbar_thumb.states[visual_state].center,
-                    style.path, BreitbandGraphics.colors.white, 'nearest')
+                    style.path, ugui.standard_styler.params.color_filter, 'nearest')
             end)
     end
 end
