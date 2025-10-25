@@ -30,7 +30,7 @@ function WriteAll(file, content)
     return content
 end
 
-local UID = dofile(views_path .. "SemanticWorkflow/SharedUIDs.lua")
+local UID = dofile(views_path .. 'SemanticWorkflow/SharedUIDs.lua')
 
 ---@type Project
 local Project = dofile(views_path .. 'SemanticWorkflow/Definitions/Project.lua')
@@ -147,15 +147,14 @@ return {
 
         Tabs[selected_tab_index].render(draw)
 
-        -- hack to make the listbox transparent
-        local previous_alpha = BreitbandGraphics.colors.white.a
-        BreitbandGraphics.colors.white.a = 110
         ugui.listbox({
             uid = UID.VarWatch,
             rectangle = grid_rect(-6, 10, 6, 7),
             selected_index = nil,
             items = VarWatch.processed_values,
+            styler_mixin = {
+                color_filter = { r = 255, g = 255, b = 255, a = 110 },
+            },
         })
-        BreitbandGraphics.colors.white.a = previous_alpha
     end,
 }
