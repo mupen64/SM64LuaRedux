@@ -124,8 +124,8 @@ local function draw_headers(sheet, draw, view_index, button_draw_data)
         rectangle = grid_rect(4, ROW0, 4, 0.5),
         text = sheet.name,
         styler_mixin = {
-            font_size = ugui.standard_styler.params.font_size * 0.75
-        }
+            font_size = ugui.standard_styler.params.font_size * 0.75,
+        },
     })
     SemanticWorkflowProject:set_current_name(sheet.name)
 
@@ -308,8 +308,8 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
                 styler_mixin = {
                     joystick = {
                         tip_size = 4 * Drawing.scale,
-                    }
-                }
+                    },
+                },
             })
 
             if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, joystick_box) then
@@ -326,7 +326,9 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
             end
 
             if input.editing then
-                BreitbandGraphics.fill_rectangle(joystick_box, '#00C80064')
+                defer(function()
+                    BreitbandGraphics.fill_rectangle(joystick_box, '#00C80064')
+                end)
             end
 
             draw:text(span(COL2, COL3), 'center', MODE_TEXTS[tas_state.movement_mode + 1])

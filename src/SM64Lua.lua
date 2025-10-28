@@ -89,6 +89,7 @@ local reset_preset_menu_open = false
 local last_rmb_down_position = { x = 0, y = 0 }
 local keys = input.get()
 local last_keys = input.get()
+local defer_queue = {}
 
 local UID = UIDProvider.allocate_once('SM64Lua', function(enum_next)
     return {
@@ -97,6 +98,18 @@ local UID = UIDProvider.allocate_once('SM64Lua', function(enum_next)
         PresetIndex = enum_next(),
     }
 end)
+
+---Defers a callback to be executed at the end of the current `atdrawd2d` call.
+function defer(fn)
+    table.insert(defer_queue, fn)
+end
+
+local function execute_defer_queue()
+    for i = 1, #defer_queue, 1 do
+        defer_queue[i]()
+    end
+    defer_queue = {}
+end
 
 local function at_input()
     -- TODO: Move this to Memory.lua
@@ -275,6 +288,8 @@ local function atdrawd2d()
     draw_navbar()
 
     ugui.end_frame()
+
+    execute_defer_queue()
 end
 
 local function at_loadstate()
