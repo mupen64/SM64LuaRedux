@@ -1,8 +1,5 @@
--- mupen-lua-ugui-ext 2.0.0
--- https://github.com/Aurumaker72/mupen-lua-ugui
-
 local ugui_ext = {
-    _VERSION = 'v2.0.0',
+    _VERSION = 'v3.0.0',
     _URL = 'https://github.com/Aurumaker72/mupen-lua-ugui',
     _DESCRIPTION = 'Extension library for mupen-lua-ugui',
     _LICENSE = 'GPL-3',

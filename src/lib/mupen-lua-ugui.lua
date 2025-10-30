@@ -1,5 +1,5 @@
 local ugui = {
-    _VERSION = 'v2.0.0',
+    _VERSION = 'v3.0.0',
     _URL = 'https://github.com/Aurumaker72/mupen-lua-ugui',
     _DESCRIPTION = 'Flexible immediate-mode GUI library for Mupen Lua',
     _LICENSE = 'GPL-3',
