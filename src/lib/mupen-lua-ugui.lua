@@ -1,5 +1,5 @@
 local ugui = {
-    _VERSION = 'v3.0.0',
+    _VERSION = 'v3.0.1',
     _URL = 'https://github.com/Aurumaker72/mupen-lua-ugui',
     _DESCRIPTION = 'Flexible immediate-mode GUI library for Mupen Lua',
     _LICENSE = 'GPL-3',
@@ -9,6 +9,16 @@ local ugui = {
 if not BreitbandGraphics then
     error('BreitbandGraphics must be present in the global scope as \'BreitbandGraphics\' prior to executing ugui', 0)
     return
+end
+
+-- Cursed global shims, good for now.
+if not math.pow then
+    math.pow = function(base, exponent)
+        return base ^ exponent
+    end
+end
+if not math.atan2 then
+    math.atan2 = math.atan
 end
 
 --#region Types
@@ -852,7 +862,7 @@ ugui.standard_styler = {
         --- The monospace variant font name.
         monospace_font_name = 'Consolas',
 
-        --- The color filter used for rendering controls. Only applies to cached control rendering using ugui-ext.  
+        --- The color filter used for rendering controls. Only applies to cached control rendering using ugui-ext.
         color_filter = BreitbandGraphics.hex_to_color('#FFFFFFFF'),
 
         --- The font size.
@@ -2667,11 +2677,10 @@ ugui.registry.numberbox = {
             for key, _ in pairs(ugui.internal.get_just_pressed_keys()) do
                 local num_1 = tonumber(key)
                 local num_2 = tonumber(key:sub(7))
-                local value = num_1 and num_1 or num_2
+                local digit = num_1 and num_1 or num_2
 
-                if value then
-                    local oldkey = math.floor(value / math.pow(10, control.places - data.caret_index)) % 10
-                    value = value + (value - oldkey) * math.pow(10, control.places - data.caret_index)
+                if digit then
+                    data.value = ugui.internal.set_digit(data.value, control.places, digit, data.caret_index)
                     data.caret_index = data.caret_index + 1
                 end
 
