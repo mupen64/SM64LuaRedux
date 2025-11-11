@@ -1,5 +1,5 @@
 local ugui = {
-    _VERSION = 'v3.0.1',
+    _VERSION = 'v3.0.2',
     _URL = 'https://github.com/Aurumaker72/mupen-lua-ugui',
     _DESCRIPTION = 'Flexible immediate-mode GUI library for Mupen Lua',
     _LICENSE = 'GPL-3',
@@ -767,6 +767,12 @@ ugui.internal = {
         -- If the clicked control is disabled, we clear it now at the end of input processing, effectively "swallowing" the click.
         if clicked_control and clicked_control.is_enabled == false then
             clicked_control = nil
+        end
+
+        -- If we click outside of any control, we reset mouse and keyboard capture.
+        if ugui.internal.is_mouse_just_down() and clicked_control == nil then
+            mouse_captured_control = nil
+            keyboard_captured_control = nil
         end
 
         -- Clear hovered control if it's disabled
