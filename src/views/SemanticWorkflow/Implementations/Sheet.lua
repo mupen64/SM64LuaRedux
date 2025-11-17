@@ -25,7 +25,7 @@ function __impl.new(name, create_savestate)
         busy = false,
         _savestate = nil,
         _base_sheet = nil,
-        _update_pending = false,
+        _invalidated = true,
         _rebasing = false,
         _section_index = 1,
         _frame_counter = 1,
@@ -35,6 +35,7 @@ function __impl.new(name, create_savestate)
         set_base_sheet = __impl.set_base_sheet,
         save = __impl.save,
         load = __impl.load,
+        invalidated = __impl.invalidated,
     }
     if create_savestate then
         savestate.do_memory('', 'save', function(result, data) new_instance._savestate = data end)
@@ -81,36 +82,50 @@ function __impl:evaluate_frame()
     return section and section.inputs[math.min(self._frame_counter, #section.inputs)] or nil
 end
 
-function __impl:run_to_preview(load_state)
-    if self.busy or #self.sections == 0 then return end
-    self.busy = true
+---@param sheet Sheet
+---@param from_base boolean | nil
+local function run_to_preview_internal(sheet, from_base)
+    sheet.busy = true
 
-    if self._base_sheet ~= nil then
-        print(self.name .. " MUST ASK DADDY :(")
-        self._base_sheet._on_preview_frame_reached = function()
-            --TODO: set the in-memory savestate here I guess...
-            self._section_index = 1
-            self._frame_counter = 1
+    if from_base == nil or from_base then
+        if sheet._base_sheet ~= nil then
+            if sheet._savestate == nil or sheet._base_sheet:invalidated() then
+                -- Run the sheet without loading a savestate because it's a continuation of its base sheet
+                sheet._base_sheet._on_preview_frame_reached = function()
+                    sheet._base_sheet._invalidated = false
+                    savestate.do_memory('', 'save', function(result, data) sheet._savestate = data end)
+                    sheet._section_index = 1
+                    sheet._frame_counter = 1
+                end
+                run_to_preview_internal(sheet._base_sheet, from_base)
+                return
+            end
         end
-        self._base_sheet:run_to_preview(load_state) -- TODO: reconsider the meaning of load_state for this scenario
-        return
-    end
 
-    if self._base_sheet == nil and load_state == nil or load_state then
-        -- Run from the sheet's dedicated savestate
-        savestate.do_memory(self._savestate, 'load', function()
+        -- Run the sheet from its savestate, which is either its dedicated savestate or the valid "cache" for where its base sheet ends up
+        savestate.do_memory(sheet._savestate, 'load', function()
             emu.pause(true)
             emu.set_ff(Settings.semantic_workflow.fast_foward)
         end)
     else
-        -- Run the sheet without loading a savestate, as it is either a continuation from its base sheet,
-        -- or the user decided to ignore the dedicated savestate
+        -- Run the sheet without loading a savestate because the user decided to ignore the dedicated savestate
         emu.pause(true)
         emu.set_ff(Settings.semantic_workflow.fast_foward)
     end
 
-    self._section_index = 1
-    self._frame_counter = 1
+    sheet._section_index = 1
+    sheet._frame_counter = 1
+end
+
+function __impl:invalidated()
+    return self._invalidated or (self._base_sheet ~= nil and self._base_sheet:invalidated())
+end
+
+function __impl:run_to_preview(from_base)
+    self._invalidated = true
+    if self.busy or #self.sections == 0 then return end
+
+    run_to_preview_internal(self, from_base)
 end
 
 function __impl:save(file)
