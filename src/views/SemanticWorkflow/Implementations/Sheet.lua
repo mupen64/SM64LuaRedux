@@ -149,5 +149,4 @@ end
 function __impl:set_base_sheet(sheet)
     self._base_sheet = sheet
     self._savestate = nil
-    --self:run_to_preview(true)
 end
