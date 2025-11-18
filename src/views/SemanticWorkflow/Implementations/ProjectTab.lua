@@ -208,6 +208,7 @@ function __impl.render(draw)
                         bs = bs._base_sheet
                     end
 
+                    SemanticWorkflowProject.meta.sheets[selecting_sheet_base_for].base_sheet = available_sheets[i]
                     sheet:set_base_sheet(SemanticWorkflowProject.all[available_sheets[i]])
                     sheet:run_to_preview()
 
