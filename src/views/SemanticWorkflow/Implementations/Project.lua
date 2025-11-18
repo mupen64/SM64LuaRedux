@@ -14,6 +14,7 @@ local Sheet = dofile(views_path .. 'SemanticWorkflow/Definitions/Sheet.lua')
 local function new_sheet_meta(name)
     return {
         name = name,
+        base_sheet = nil,
     }
 end
 

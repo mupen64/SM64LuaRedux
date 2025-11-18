@@ -185,26 +185,60 @@ function __impl.render(draw)
             or 'SEMANTIC_WORKFLOW_PROJECT_SELECT_TOOL_TIP'
         )
 
-        if ugui.toggle_button({
+        if selecting_sheet_base_for ~= nil then
+            if ugui.toggle_button({
+                uid = uid,
+                rectangle = grid_rect(0, y, 3, Gui.MEDIUM_CONTROL_HEIGHT),
+                text = available_sheets[i],
+                tooltip = i <= #SemanticWorkflowProject.meta.sheets and tooltip or nil,
+                is_checked = false,
+            }) then
+                -- finish the base setter, unless the target is the same as the source
+                local sheet = SemanticWorkflowProject.all[available_sheets[selecting_sheet_base_for]]
+                if selecting_sheet_base_for ~= i then
+
+                    -- prevent recursive base sheet cycles
+                    local new_base = SemanticWorkflowProject.all[available_sheets[i]]
+                    local bs = new_base
+                    while bs ~= nil do
+                        if bs == sheet then
+                            print('Attempted to recursively rebase ' .. new_base.name .. ' onto ' .. sheet.name .. "!")
+                            goto dont
+                        end
+                        bs = bs._base_sheet
+                    end
+
+                    sheet:set_base_sheet(SemanticWorkflowProject.all[available_sheets[i]])
+                    sheet:run_to_preview()
+
+                    ::dont::
+                end
+                selecting_sheet_base_for = nil
+            end
+        else
+            if ugui.toggle_button({
                 uid = uid,
                 rectangle = grid_rect(0, y, 3, Gui.MEDIUM_CONTROL_HEIGHT),
                 text = available_sheets[i],
                 tooltip = i <= #SemanticWorkflowProject.meta.sheets and tooltip or nil,
                 is_checked = is_checked,
             }) then
-            if i == #SemanticWorkflowProject.meta.sheets + 1 then -- add new sheet
-                SemanticWorkflowProject:add_sheet()
-                SemanticWorkflowProject:select(#SemanticWorkflowProject.meta.sheets)
-            elseif SemanticWorkflowProject.disabled or i ~= SemanticWorkflowProject.meta.selection_index then -- select sheet
-                SemanticWorkflowProject:select(i)
+                if i == #SemanticWorkflowProject.meta.sheets + 1 then -- add new sheet
+                    SemanticWorkflowProject:add_sheet()
+                    SemanticWorkflowProject:select(#SemanticWorkflowProject.meta.sheets)
+                elseif SemanticWorkflowProject.disabled or i ~= SemanticWorkflowProject.meta.selection_index then -- select sheet
+                    SemanticWorkflowProject:select(i)
+                end
+            elseif is_checked then
+                SemanticWorkflowProject.disabled = true
             end
-        elseif is_checked then
-            SemanticWorkflowProject.disabled = true
         end
         uid = uid + 1
 
         -- prevent rendering options for the "add..." button
         if i > #SemanticWorkflowProject.meta.sheets then break end
+
+        local sheet = SemanticWorkflowProject.all[SemanticWorkflowProject.meta.sheets[i].name]
 
         local x = 3
         local function draw_utility_button(text, tooltip, enabled, width)
@@ -221,6 +255,20 @@ function __impl.render(draw)
             return result
         end
 
+        local function draw_utility_toggle_button(text, tooltip, toggled, width)
+            width = width or 0.5
+            local result = ugui.toggle_button({
+                uid = uid,
+                rectangle = grid_rect(x, y, width, Gui.MEDIUM_CONTROL_HEIGHT),
+                text = text,
+                tooltip = tooltip,
+                is_checked = toggled,
+            })
+            uid = uid + 1
+            x = x + width
+            return result ~= toggled
+        end
+
         if (draw_utility_button('^', Locales.str('SEMANTIC_WORKFLOW_PROJECT_MOVE_SHEET_UP_TOOL_TIP'), i > 1)) then
             SemanticWorkflowProject:move_sheet(i, -1)
         end
@@ -233,14 +281,27 @@ function __impl.render(draw)
             SemanticWorkflowDialog = render_confirm_deletion_prompt(i)
         end
 
-        if (draw_utility_button('.st', Locales.str('SEMANTIC_WORKFLOW_PROJECT_REBASE_SHEET_TOOL_TIP'), true, 0.75)) then
+        if (draw_utility_toggle_button(
+            selecting_sheet_base_for == i and '...' or 'bs',
+            sheet._base_sheet ~= nil and (Locales.str('SEMANTIC_WORKFLOW_PROJECT_BASE_SHEET_TOOL_TIP') .. sheet._base_sheet.name) or Locales.str('SEMANTIC_WORKFLOW_PROJECT_NO_BASE_SHEET_TOOL_TIP'),
+            sheet._base_sheet ~= nil,
+            0.75
+        )) then
+            if selecting_sheet_base_for ~= i then
+                selecting_sheet_base_for = i
+            else
+                selecting_sheet_base_for = nil
+            end
+        end
+
+        if (draw_utility_toggle_button('.st', Locales.str('SEMANTIC_WORKFLOW_PROJECT_REBASE_SHEET_TOOL_TIP'), sheet._base_sheet == nil, 0.75)) then
             SemanticWorkflowProject:rebase(i)
         end
 
         if (draw_utility_button('.sws', Locales.str('SEMANTIC_WORKFLOW_PROJECT_REPLACE_INPUTS_TOOL_TIP'), true, 0.75)) then
             local path = iohelper.filediag('*.sws', 0)
             if string.len(path) > 0 then
-                SemanticWorkflowProject.all[SemanticWorkflowProject.meta.sheets[i].name]:load(path, false)
+                sheet:load(path, false)
             end
         end
 
