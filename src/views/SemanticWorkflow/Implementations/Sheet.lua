@@ -115,7 +115,9 @@ end
 
 function __impl:save(file)
     self.version = SEMANTIC_WORKFLOW_FILE_VERSION
-    WriteAll(file .. '.savestate', self._savestate)
+    if self._base_sheet == nil then
+        WriteAll(file .. '.savestate', self._savestate)
+    end
     WriteAll(
         file,
         json.encode({
@@ -128,10 +130,10 @@ function __impl:save(file)
     )
 end
 
-function __impl:load(file)
+function __impl:load(file, load_state)
     local contents = json.decode(ReadAll(file));
     if contents ~= nil then
-        if contents._base_sheet == nil then
+        if load_state then
             self._savestate = ReadAll(file .. '.savestate')
         end
         CloneInto(self, contents)
