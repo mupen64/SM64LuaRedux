@@ -392,7 +392,7 @@ Engine.scaleInputsForMagnitude = function(result, goal_mag, use_high_mag)
 		for j = -32, 32 do
 			local x, y = clamp(-127, x0 + i, 127), clamp(-127, y0 + j, 127)
 			--print(string.format("%d,%d", x, y))
-			local mag = magnitude(x, y)
+			local mag = Engine.get_magnitude_for_stick(x, y)
 			if (mag <= goal_mag) and (mag * mag >= err) then
 				local angle = effectiveAngle(x, y)
 				--print(string.format("%d:%d: %f (%f)", x,y,angle,goal_angle))
