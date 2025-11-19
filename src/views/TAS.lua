@@ -82,12 +82,9 @@ return {
 
         local _, meta = ugui.toggle_button({
             uid = UID.MovementModeMatchAngle,
-            rectangle = grid_rect(0, 1, 2, 1),
+            rectangle = grid_rect(0, 1, 2.5, 1),
             text = Locales.str('MATCH_ANGLE'),
             is_checked = Settings.tas.movement_mode == MovementModes.match_angle,
-            styler_mixin = {
-                font_size = theme.font_size * 0.9,
-            },
         })
 
         if meta.signal_change == ugui.signal_change_states.started then
@@ -97,7 +94,7 @@ return {
         local _, dyaw_meta = ugui.toggle_button({
             uid = UID.DYaw,
             is_enabled = Settings.tas.movement_mode == MovementModes.match_angle,
-            rectangle = grid_rect(2, 1, 2, 1),
+            rectangle = grid_rect(2.5, 1, 2, 1),
             text = Locales.str('DYAW'),
             is_checked = Settings.tas.dyaw,
         })
@@ -107,7 +104,7 @@ return {
 
         local _, meta = ugui.toggle_button({
             uid = UID.StrainLeft,
-            rectangle = grid_rect(4, 1, 0.75, 1),
+            rectangle = grid_rect(4.5, 1, 0.75, 1),
             text = '[icon:arrow_left]',
             is_checked = Settings.tas.strain_left,
         })
@@ -117,7 +114,7 @@ return {
 
         local _, meta = ugui.toggle_button({
             uid = UID.StrainRight,
-            rectangle = grid_rect(4.75, 1, 0.75, 1),
+            rectangle = grid_rect(5.25, 1, 0.75, 1),
             text = '[icon:arrow_right]',
             is_checked = Settings.tas.strain_right,
         })
@@ -128,7 +125,7 @@ return {
         Settings.tas.goal_angle = math.abs(ugui.numberbox({
             uid = UID.GoalAngle,
             is_enabled = Settings.tas.movement_mode == MovementModes.match_angle,
-            rectangle = grid_rect(5.5, 1, 2.5, 1),
+            rectangle = grid_rect(6, 1, 2, 1),
             places = 5,
             value = Settings.tas.goal_angle,
         }))
