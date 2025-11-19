@@ -45,35 +45,50 @@ return {
         local theme = Styles.theme()
         -- TODO: Expose this as a helper in `Drawing` or something
         local foreground_color = BreitbandGraphics.invert_color(theme.background_color)
-
         local stick_x = Engine.stick_for_input_x(Settings.tas)
         local stick_y = Engine.stick_for_input_y(Settings.tas)
+        local movement_mode_changed = false
 
-        if ugui.toggle_button({
-                uid = UID.MovementModeMatchYaw,
-                rectangle = grid_rect(0, 0, 4, 1),
-                text = Locales.str('MATCH_YAW'),
-                is_checked = Settings.tas.movement_mode == MovementModes.match_yaw,
-            }) ~= (Settings.tas.movement_mode == MovementModes.match_yaw) then
-            action.invoke(ACTION_SET_MOVEMENT_MODE_MATCH_YAW)
+        local function set_movement_mode(mode, target_action)
+            if movement_mode_changed then
+                action.invoke(target_action)
+                return
+            end 
+            action.invoke(Settings.tas.movement_mode == mode and ACTION_SET_MOVEMENT_MODE_DISABLED or target_action)
+            movement_mode_changed = true
         end
 
-        if ugui.toggle_button({
-                uid = UID.MovementModeReverseAngle,
-                rectangle = grid_rect(4, 0, 4, 1),
-                text = Locales.str('REVERSE_ANGLE'),
-                is_checked = Settings.tas.movement_mode == MovementModes.reverse_angle,
-            }) ~= (Settings.tas.movement_mode == MovementModes.reverse_angle) then
-            action.invoke(ACTION_SET_MOVEMENT_MODE_REVERSE_ANGLE)
+        local _, meta = ugui.toggle_button({
+            uid = UID.MovementModeMatchYaw,
+            rectangle = grid_rect(0, 0, 4, 1),
+            text = Locales.str('MATCH_YAW'),
+            is_checked = Settings.tas.movement_mode == MovementModes.match_yaw,
+        })
+
+        if meta.signal_change == ugui.signal_change_states.started then
+            set_movement_mode(MovementModes.match_yaw, ACTION_SET_MOVEMENT_MODE_MATCH_YAW)
         end
 
-        if ugui.toggle_button({
-                uid = UID.MovementModeMatchAngle,
-                rectangle = grid_rect(0, 1, 2, 1),
-                text = Locales.str('MATCH_ANGLE'),
-                is_checked = Settings.tas.movement_mode == MovementModes.match_angle,
-            }) ~= (Settings.tas.movement_mode == MovementModes.match_angle) then
-            action.invoke(ACTION_SET_MOVEMENT_MODE_MATCH_ANGLE)
+        local _, meta = ugui.toggle_button({
+            uid = UID.MovementModeReverseAngle,
+            rectangle = grid_rect(4, 0, 4, 1),
+            text = Locales.str('REVERSE_ANGLE'),
+            is_checked = Settings.tas.movement_mode == MovementModes.reverse_angle,
+        })
+
+        if meta.signal_change == ugui.signal_change_states.started then
+            set_movement_mode(MovementModes.reverse_angle, ACTION_SET_MOVEMENT_MODE_REVERSE_ANGLE)
+        end
+
+        local _, meta = ugui.toggle_button({
+            uid = UID.MovementModeMatchAngle,
+            rectangle = grid_rect(0, 1, 2, 1),
+            text = Locales.str('MATCH_ANGLE'),
+            is_checked = Settings.tas.movement_mode == MovementModes.match_angle,
+        })
+
+        if meta.signal_change == ugui.signal_change_states.started then
+            set_movement_mode(MovementModes.match_angle, ACTION_SET_MOVEMENT_MODE_MATCH_ANGLE)
         end
 
         local _, dyaw_meta = ugui.toggle_button({
