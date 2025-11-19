@@ -34,7 +34,7 @@ local UID = UIDProvider.allocate_once('TAS', function(enum_next)
         AtanStartMinus = enum_next(),
         MovementModeDisabled = enum_next(),
         MovementModeMatchYaw = enum_next(),
-        MovementModeReverseAngle = enum_next(),
+        MovementModeReverseYaw = enum_next(),
         MovementModeMatchAngle = enum_next(),
     }
 end)
@@ -70,14 +70,14 @@ return {
         end
 
         local _, meta = ugui.toggle_button({
-            uid = UID.MovementModeReverseAngle,
+            uid = UID.MovementModeReverseYaw,
             rectangle = grid_rect(4, 0, 4, 1),
-            text = Locales.str('REVERSE_ANGLE'),
-            is_checked = Settings.tas.movement_mode == MovementModes.reverse_angle,
+            text = Locales.str('REVERSE_YAW'),
+            is_checked = Settings.tas.movement_mode == MovementModes.reverse_yaw,
         })
 
         if meta.signal_change == ugui.signal_change_states.started then
-            set_movement_mode(MovementModes.reverse_angle, ACTION_SET_MOVEMENT_MODE_REVERSE_ANGLE)
+            set_movement_mode(MovementModes.reverse_yaw, ACTION_SET_MOVEMENT_MODE_REVERSE_YAW)
         end
 
         local _, meta = ugui.toggle_button({

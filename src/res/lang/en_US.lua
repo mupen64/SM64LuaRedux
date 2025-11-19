@@ -26,7 +26,7 @@ return {
     -- TAS Tab
     DISABLED = 'Disabled',
     MATCH_YAW = 'Match Yaw',
-    REVERSE_ANGLE = 'Reverse Angle',
+    REVERSE_YAW = 'Reverse Yaw',
     MATCH_ANGLE = 'Match Angle',
     D99_ALWAYS = 'Always',
     D99 = '.99',
@@ -58,7 +58,7 @@ return {
     SEMANTIC_WORKFLOW_CONTROL_MANUAL = 'Manual',
     SEMANTIC_WORKFLOW_CONTROL_MATCH_YAW = 'Yaw',
     SEMANTIC_WORKFLOW_CONTROL_MATCH_ANGLE = 'Angle',
-    SEMANTIC_WORKFLOW_CONTROL_REVERSE_ANGLE = 'Reverse',
+    SEMANTIC_WORKFLOW_CONTROL_REVERSE_YAW = 'Reverse',
     SEMANTIC_WORKFLOW_CONTROL_DYAW = 'DYaw',
     SEMANTIC_WORKFLOW_CONTROL_ATAN_RETIME = 'Retime...',
     SEMANTIC_WORKFLOW_CONTROL_ATAN_SELECT_START = 'Select start...',

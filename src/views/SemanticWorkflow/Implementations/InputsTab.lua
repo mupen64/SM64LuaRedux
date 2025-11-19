@@ -58,7 +58,7 @@ local UID = UIDProvider.allocate_once(__impl.name, function(enum_next)
         MovementModeManual = enum_next(),
         MovementModeMatchYaw = enum_next(),
         MovementModeMatchAngle = enum_next(),
-        MovementModeReverseAngle = enum_next(),
+        MovementModeReverseYaw = enum_next(),
         DYaw = enum_next(),
         Atan = enum_next(),
         AtanReverse = enum_next(),
@@ -511,12 +511,12 @@ local function joystick_controls_for_selected(draw, edited_section, edited_input
     end
 
     if ugui.toggle_button({
-            uid = UID.MovementModeReverseAngle,
+            uid = UID.MovementModeReverseYaw,
             rectangle = grid_rect(6.5, top + 2, 1.5, Gui.LARGE_CONTROL_HEIGHT),
-            text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_REVERSE_ANGLE'),
-            is_checked = new_values.movement_mode == MovementModes.reverse_angle,
+            text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_REVERSE_YAW'),
+            is_checked = new_values.movement_mode == MovementModes.reverse_yaw,
         }) then
-        new_values.movement_mode = MovementModes.reverse_angle
+        new_values.movement_mode = MovementModes.reverse_yaw
     end
 
     new_values.dyaw = ugui.toggle_button({
