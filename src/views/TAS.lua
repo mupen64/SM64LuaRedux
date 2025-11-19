@@ -46,6 +46,9 @@ return {
         -- TODO: Expose this as a helper in `Drawing` or something
         local foreground_color = BreitbandGraphics.invert_color(theme.background_color)
 
+        local stick_x = Engine.stick_for_input_x(Settings.tas)
+        local stick_y = Engine.stick_for_input_y(Settings.tas)
+
         if ugui.toggle_button({
                 uid = UID.MovementModeMatchYaw,
                 rectangle = grid_rect(0, 0, 4, 1),
@@ -73,7 +76,7 @@ return {
             action.invoke(ACTION_SET_MOVEMENT_MODE_MATCH_ANGLE)
         end
 
-        local dyaw, dyaw_meta = ugui.toggle_button({
+        local _, dyaw_meta = ugui.toggle_button({
             uid = UID.DYaw,
             is_enabled = Settings.tas.movement_mode == MovementModes.match_angle,
             rectangle = grid_rect(2, 1, 2, 1),
@@ -84,7 +87,7 @@ return {
             action.invoke(ACTION_TOGGLE_DYAW)
         end
 
-        local strain_left, meta = ugui.toggle_button({
+        local _, meta = ugui.toggle_button({
             uid = UID.StrainLeft,
             rectangle = grid_rect(4, 1, 0.75, 1),
             text = '[icon:arrow_left]',
@@ -94,7 +97,7 @@ return {
             action.invoke(ACTION_TOGGLE_STRAIN_LEFT)
         end
 
-        local strain_right, meta = ugui.toggle_button({
+        local _, meta = ugui.toggle_button({
             uid = UID.StrainRight,
             rectangle = grid_rect(4.75, 1, 0.75, 1),
             text = '[icon:arrow_right]',
@@ -111,9 +114,6 @@ return {
             places = 5,
             value = Settings.tas.goal_angle,
         }))
-
-
-
 
         local _, meta = ugui.toggle_button({
             uid = UID.D99,
@@ -173,7 +173,6 @@ return {
             }) then
             Settings.atan_exp = math.max(-4, math.min(Settings.atan_exp - 1, 4))
         end
-
 
         BreitbandGraphics.draw_text(
             grid_rect(1.5, 3, 1, 1),
@@ -277,8 +276,6 @@ return {
             Settings.tas.atan_start = math.max(0, Settings.tas.atan_start - math.pow(10, math.max(0, Settings.atan_exp)))
         end
 
-        local stick_x = Engine.stick_for_input_x(Settings.tas)
-        local stick_y = Engine.stick_for_input_y(Settings.tas)
         BreitbandGraphics.draw_text(
             grid_rect(4, 4, 2, 1),
             'center',
@@ -309,7 +306,7 @@ return {
             'Consolas',
             'Mag: ' .. Formatter.u(Engine.get_magnitude_for_stick(stick_x, stick_y), 0))
 
-            Settings.tas.goal_mag = math.abs(ugui.numberbox({
+        Settings.tas.goal_mag = math.abs(ugui.numberbox({
             uid = UID.GoalMag,
             rectangle = grid_rect(4, 6, 2, 1),
             places = 3,
