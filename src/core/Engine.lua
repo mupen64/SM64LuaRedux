@@ -22,6 +22,14 @@ function Engine.stick_for_input_y(state)
 	return state.movement_mode == MovementModes.manual and state.manual_joystick_y or Joypad.input.Y or 0
 end
 
+---Gets the magnitude of the joystick input, accounting for the deadzone.
+---@param x number
+---@param y number
+---@return number
+function Engine.get_magnitude_for_stick(x, y)
+	return math.sqrt(math.max(0, math.abs(x) - 6) ^ 2 + math.max(0, math.abs(y) - 6) ^ 2)
+end
+
 function Engine.get_effective_angle(angle)
 	-- NOTE: previous input lua snaps angle to multiple 16 by default, incurring a precision loss
 	if Settings.truncate_effective_angle then
@@ -317,10 +325,6 @@ function Engine.GetHSlidingSpeed()
 	return math.sqrt((Memory.current.mario_x_sliding_speed ^ 2) + (Memory.current.mario_z_sliding_speed ^ 2))
 end
 
-local function magnitude(x, y)
-	return math.sqrt(math.max(0, math.abs(x) - 6) ^ 2 + math.max(0, math.abs(y) - 6) ^ 2)
-end
-
 local function clamp(min, n, max)
 	if n < min then return min end
 	if n > max then return max end
@@ -348,7 +352,7 @@ Engine.scaleInputsForMagnitude = function(result, goal_mag, use_high_mag)
 	if goal_mag >= 127 then return end
 
 	local start_x, start_y = result.X, result.Y
-	local current_mag = magnitude(start_x, start_y)
+	local current_mag = Engine.get_magnitude_for_stick(start_x, start_y)
 	local ideal_x, ideal_y = start_x * goal_mag / current_mag, start_y * goal_mag / current_mag
 	--print(magnitude(ideal_x, ideal_y))
 	--print(goal_mag)

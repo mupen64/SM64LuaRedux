@@ -27,9 +27,11 @@ end
 
 ---Formats a number as a unit
 ---@param value number The value to be formatted
+---@param places number? The number of decimal places to round to. Defaults to `Settings.format_decimal_points`.
 ---@return string The value's string representation
-Formatter.u = function(value)
-    return tostring(MoreMaths.round(value, Settings.format_decimal_points))
+Formatter.u = function(value, places)
+    places = places or Settings.format_decimal_points
+    return tostring(MoreMaths.round(value, places))
 end
 
 ---Formats a number (standard bounds 0-1) as a percentage

@@ -30,7 +30,7 @@ return {
     MATCH_ANGLE = 'Match Angle',
     D99_ALWAYS = 'Always',
     D99 = '.99',
-    DYAW = 'D-Yaw',
+    DYAW = 'Relative',
     ATAN_STRAIN = 'Arctan Strain',
     ATAN_STRAIN_REV = 'I',
     MAG_RESET = 'R',
