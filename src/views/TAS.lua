@@ -22,16 +22,7 @@ local UID = UIDProvider.allocate_once('TAS', function(enum_next)
         Joystick = enum_next(),
         AtanStrain = enum_next(),
         AtanStrainReverse = enum_next(),
-        AtanExpPlus = enum_next(),
-        AtanExpMinus = enum_next(),
-        AtanRatioPlus = enum_next(),
-        AtanRatioMinus = enum_next(),
-        AtanDPlus = enum_next(),
-        AtanDMinus = enum_next(),
-        AtanNPlus = enum_next(),
-        AtanNMinus = enum_next(),
-        AtanStartPlus = enum_next(),
-        AtanStartMinus = enum_next(),
+        AtanButtons = enum_next(10),
         MovementModeDisabled = enum_next(),
         MovementModeMatchYaw = enum_next(),
         MovementModeReverseYaw = enum_next(),
@@ -172,137 +163,89 @@ return {
         })
 
         if Settings.tas.atan_strain then
-            BreitbandGraphics.draw_text(
-                grid_rect(0, 3, 1, 1),
-                'start',
-                'center',
-                { aliased = not theme.cleartype, fit = true },
-                foreground_color,
-                theme.font_size * Drawing.scale,
-                'Consolas',
-                'E: ' .. tostring(Settings.atan_exp))
+            local function atan_field(index, text, up_callback, down_callback)
+                local x = index * 2
+                local width = 2
+                BreitbandGraphics.draw_text(
+                    grid_rect(x, 3, width, 0.5),
+                    'center',
+                    'center',
+                    { aliased = not theme.cleartype, fit = true },
+                    foreground_color,
+                    theme.font_size * Drawing.scale,
+                    'Consolas',
+                    text)
 
-            if ugui.button({
-                    uid = UID.AtanExpPlus,
-                    rectangle = grid_rect(1, 3, 0.5, 0.5),
-                    text = '+',
-                }) then
-                Settings.atan_exp = math.max(-4, math.min(Settings.atan_exp + 1, 4))
-            end
-            if ugui.button({
-                    uid = UID.AtanExpMinus,
-                    rectangle = grid_rect(1, 3.5, 0.5, 0.5),
-                    text = '-',
-                }) then
-                Settings.atan_exp = math.max(-4, math.min(Settings.atan_exp - 1, 4))
-            end
+                if ugui.button({
+                        uid = UID.AtanButtons + index * 2,
+                        rectangle = grid_rect(x, 3.5, width / 2, 0.5),
+                        text = '-',
+                    }) then
+                    down_callback()
+                end
 
-            BreitbandGraphics.draw_text(
-                grid_rect(1.5, 3, 1, 1),
-                'start',
-                'center',
-                { aliased = not theme.cleartype, fit = true },
-                foreground_color,
-                theme.font_size * Drawing.scale,
-                'Consolas',
-                'R: ' .. tostring(Settings.tas.atan_r))
-
-            if ugui.button({
-                    uid = UID.AtanRatioPlus,
-                    rectangle = grid_rect(2.5, 3, 0.5, 0.5),
-                    text = '+',
-                }) then
-                Settings.tas.atan_r = Settings.tas.atan_r + math.pow(10, Settings.atan_exp)
-            end
-            if ugui.button({
-                    uid = UID.AtanRatioMinus,
-                    rectangle = grid_rect(2.5, 3.5, 0.5, 0.5),
-                    text = '-',
-                }) then
-                Settings.tas.atan_r = Settings.tas.atan_r - math.pow(10, Settings.atan_exp)
+                if ugui.button({
+                        uid = UID.AtanButtons + index * 2 + 1,
+                        rectangle = grid_rect(x + width / 2, 3.5, width / 2, 0.5),
+                        text = '+',
+                    }) then
+                    up_callback()
+                end
             end
 
-            BreitbandGraphics.draw_text(
-                grid_rect(3, 3, 1, 1),
-                'start',
-                'center',
-                { aliased = not theme.cleartype, fit = true },
-                foreground_color,
-                theme.font_size * Drawing.scale,
-                'Consolas',
-                'D: ' .. tostring(Settings.tas.atan_d))
+            atan_field(0,
+                'E: ' .. tostring(Settings.atan_exp),
+                function()
+                    Settings.atan_exp = math.max(-4, math.min(Settings.atan_exp + 1, 4))
+                end,
+                function()
+                    Settings.atan_exp = math.max(-4, math.min(Settings.atan_exp - 1, 4))
+                end)
 
-            if ugui.button({
-                    uid = UID.AtanDPlus,
-                    rectangle = grid_rect(4, 3, 0.5, 0.5),
-                    text = '+',
-                }) then
-                Settings.tas.atan_d = Settings.tas.atan_d + math.pow(10, Settings.atan_exp)
-            end
-            if ugui.button({
-                    uid = UID.AtanDMinus,
-                    rectangle = grid_rect(4, 3.5, 0.5, 0.5),
-                    text = '-',
-                }) then
-                Settings.tas.atan_d = Settings.tas.atan_d - math.pow(10, Settings.atan_exp)
-            end
+            atan_field(1,
+                'R: ' .. tostring(Settings.tas.atan_r),
+                function()
+                    Settings.tas.atan_r = Settings.tas.atan_r + math.pow(10, Settings.atan_exp)
+                end,
+                function()
+                    Settings.tas.atan_r = Settings.tas.atan_r - math.pow(10, Settings.atan_exp)
+                end)
 
-            BreitbandGraphics.draw_text(
-                grid_rect(4.5, 3, 1, 1),
-                'start',
-                'center',
-                { aliased = not theme.cleartype, fit = true },
-                foreground_color,
-                theme.font_size * Drawing.scale,
-                'Consolas',
-                'N: ' .. tostring(Settings.tas.atan_n))
 
-            if ugui.button({
-                    uid = UID.AtanNPlus,
-                    rectangle = grid_rect(5.5, 3, 0.5, 0.5),
-                    text = '+',
-                }) then
-                Settings.tas.atan_n = math.max(0,
-                    Settings.tas.atan_n + math.pow(10, math.max(-0.6020599913279624, Settings.atan_exp)), 2)
-            end
-            if ugui.button({
-                    uid = UID.AtanNMinus,
-                    rectangle = grid_rect(5.5, 3.5, 0.5, 0.5),
-                    text = '-',
-                }) then
-                Settings.tas.atan_n = math.max(0,
-                    Settings.tas.atan_n - math.pow(10, math.max(-0.6020599913279624, Settings.atan_exp)), 2)
-            end
+            atan_field(2,
+                'D: ' .. tostring(Settings.tas.atan_d),
+                function()
+                    Settings.tas.atan_d = Settings.tas.atan_d - math.pow(10, Settings.atan_exp)
+                end,
+                function()
+                    Settings.tas.atan_d = Settings.tas.atan_d + math.pow(10, Settings.atan_exp)
+                end)
 
-            BreitbandGraphics.draw_text(
-                grid_rect(6, 3, 1, 1),
-                'start',
-                'center',
-                { aliased = not theme.cleartype, fit = true },
-                foreground_color,
-                theme.font_size * Drawing.scale,
-                'Consolas',
-                'S: ' .. tostring(Settings.tas.atan_start))
+            atan_field(3,
+                'N: ' .. tostring(Settings.tas.atan_n),
+                function()
+                    Settings.tas.atan_n = math.max(0,
+                        Settings.tas.atan_n - math.pow(10, math.max(-0.6020599913279624, Settings.atan_exp)), 2)
+                end,
+                function()
+                    Settings.tas.atan_n = math.max(0,
+                        Settings.tas.atan_n + math.pow(10, math.max(-0.6020599913279624, Settings.atan_exp)), 2)
+                end)
 
-            if ugui.button({
-                    uid = UID.AtanStartPlus,
-                    rectangle = grid_rect(7, 3, 0.5, 0.5),
-                    text = '+',
-                }) then
-                Settings.tas.atan_start = math.max(0, Settings.tas.atan_start + math.pow(10, math.max(0, Settings.atan_exp)))
-            end
-            if ugui.button({
-                    uid = UID.AtanStartMinus,
-                    rectangle = grid_rect(7, 3.5, 0.5, 0.5),
-                    text = '-',
-                }) then
-                Settings.tas.atan_start = math.max(0, Settings.tas.atan_start - math.pow(10, math.max(0, Settings.atan_exp)))
-            end
+
+            atan_field(4,
+                'S: ' .. tostring(Settings.tas.atan_start),
+                function()
+                    Settings.tas.atan_start = math.max(0, Settings.tas.atan_start - math.pow(10, math.max(0, Settings.atan_exp)))
+                end,
+                function()
+                    Settings.tas.atan_start = math.max(0, Settings.tas.atan_start + math.pow(10, math.max(0, Settings.atan_exp)))
+                end)
         end
 
         -- Shift elements down to make place for atan panel if atan strain is enabled.
         local YORG = Settings.tas.atan_strain and 4 or 3
-        
+
         BreitbandGraphics.draw_text(
             grid_rect(4, YORG, 2, 1),
             'center',
