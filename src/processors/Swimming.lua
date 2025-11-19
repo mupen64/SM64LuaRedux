@@ -21,7 +21,7 @@ return {
 			or Memory.current.mario_action == WATER_IDLE
 			or Memory.current.mario_action == 0x300024D4
 			or Memory.current.mario_action == 0x380022C1 then
-			input[Settings.swimming_button] = 1
+			input[Settings.swimming_button] = true
 		end
 		return input
 	end,
