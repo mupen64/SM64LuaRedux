@@ -85,6 +85,9 @@ return {
             rectangle = grid_rect(0, 1, 2, 1),
             text = Locales.str('MATCH_ANGLE'),
             is_checked = Settings.tas.movement_mode == MovementModes.match_angle,
+            styler_mixin = {
+                font_size = theme.font_size * 0.9,
+            }
         })
 
         if meta.signal_change == ugui.signal_change_states.started then
