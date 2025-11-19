@@ -22,7 +22,7 @@ local UID = UIDProvider.allocate_once('TAS', function(enum_next)
         Joystick = enum_next(),
         AtanStrain = enum_next(),
         AtanStrainReverse = enum_next(),
-        AtanButtons = enum_next(10),
+        AtanButtons = enum_next(20),
         MovementModeDisabled = enum_next(),
         MovementModeMatchYaw = enum_next(),
         MovementModeReverseYaw = enum_next(),
@@ -164,8 +164,8 @@ return {
 
         if Settings.tas.atan_strain then
             local function atan_field(index, text, up_callback, down_callback)
-                local x = index * 2
-                local width = 2
+                local width = 1.6
+                local x = index * width
                 BreitbandGraphics.draw_text(
                     grid_rect(x, 3, width, 0.5),
                     'center',
@@ -215,23 +215,22 @@ return {
             atan_field(2,
                 'D: ' .. tostring(Settings.tas.atan_d),
                 function()
-                    Settings.tas.atan_d = Settings.tas.atan_d - math.pow(10, Settings.atan_exp)
+                    Settings.tas.atan_d = Settings.tas.atan_d + math.pow(10, Settings.atan_exp)
                 end,
                 function()
-                    Settings.tas.atan_d = Settings.tas.atan_d + math.pow(10, Settings.atan_exp)
+                    Settings.tas.atan_d = Settings.tas.atan_d - math.pow(10, Settings.atan_exp)
                 end)
 
             atan_field(3,
                 'N: ' .. tostring(Settings.tas.atan_n),
                 function()
                     Settings.tas.atan_n = math.max(0,
-                        Settings.tas.atan_n - math.pow(10, math.max(-0.6020599913279624, Settings.atan_exp)), 2)
+                        Settings.tas.atan_n + math.pow(10, math.max(-0.6020599913279624, Settings.atan_exp)), 2)
                 end,
                 function()
                     Settings.tas.atan_n = math.max(0,
-                        Settings.tas.atan_n + math.pow(10, math.max(-0.6020599913279624, Settings.atan_exp)), 2)
+                        Settings.tas.atan_n - math.pow(10, math.max(-0.6020599913279624, Settings.atan_exp)), 2)
                 end)
-
 
             atan_field(4,
                 'S: ' .. tostring(Settings.tas.atan_start),
