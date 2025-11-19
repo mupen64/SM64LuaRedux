@@ -235,10 +235,10 @@ return {
             atan_field(4,
                 'S: ' .. tostring(Settings.tas.atan_start),
                 function()
-                    Settings.tas.atan_start = math.max(0, Settings.tas.atan_start - math.pow(10, math.max(0, Settings.atan_exp)))
+                    Settings.tas.atan_start = math.max(0, Settings.tas.atan_start + math.pow(10, math.max(0, Settings.atan_exp)))
                 end,
                 function()
-                    Settings.tas.atan_start = math.max(0, Settings.tas.atan_start + math.pow(10, math.max(0, Settings.atan_exp)))
+                    Settings.tas.atan_start = math.max(0, Settings.tas.atan_start - math.pow(10, math.max(0, Settings.atan_exp)))
                 end)
         end
 
