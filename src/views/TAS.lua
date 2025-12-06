@@ -286,15 +286,21 @@ return {
                 uid = UID.ResetMag,
                 rectangle = grid_rect(4, YORG + 3, 1, 1),
                 text = Locales.str('MAG_RESET'),
+                styler_mixin = {
+                    font_size = theme.font_size * Drawing.scale * 0.9,
+                },
             }) then
             action.invoke(ACTION_RESET_MAGNITUDE)
         end
 
-        local high_magnitude, meta = ugui.toggle_button({
+        local _, meta = ugui.toggle_button({
             uid = UID.HighMagnitude,
             rectangle = grid_rect(5, YORG + 3, 1, 1),
             text = Locales.str('MAG_HI'),
             is_checked = Settings.tas.high_magnitude,
+            styler_mixin = {
+                font_size = theme.font_size * Drawing.scale * 0.9,
+            },
         })
         if meta.signal_change == ugui.signal_change_states.started then
             action.invoke(ACTION_TOGGLE_HIGH_MAGNITUDE)
