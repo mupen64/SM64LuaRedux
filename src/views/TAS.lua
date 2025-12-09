@@ -6,6 +6,13 @@
 
 local UID = UIDProvider.allocate_once('TAS', function(enum_next)
     return {
+        Stack1 = enum_next(),
+        Stack2 = enum_next(),
+        Stack3 = enum_next(),
+        Stack4 = enum_next(),
+        Stack5 = enum_next(),
+        Stack6 = enum_next(),
+        Stack7 = enum_next(),
         ProcessedValues = enum_next(4),
         GoalAngle = enum_next(2),
         GoalMag = enum_next(2),
@@ -35,7 +42,7 @@ return {
     draw = function()
         local theme = Styles.theme()
         local foreground_color = Drawing.foreground_color()
-        
+
         local stick_x = Engine.stick_for_input_x(Settings.tas)
         local stick_y = Engine.stick_for_input_y(Settings.tas)
         local movement_mode_changed = false
@@ -49,9 +56,20 @@ return {
             movement_mode_changed = true
         end
 
+        ugui.enter_stack({
+            uid = UID.Stack1,
+            rectangle = grid_rect(0, 0, 8, 12),
+        })
+
+        ugui.enter_stack({
+            uid = UID.Stack2,
+            rectangle = grid_pos(0, 0),
+            horizontal = true,
+        })
+
         local _, meta = ugui.toggle_button({
             uid = UID.MovementModeMatchYaw,
-            rectangle = grid_rect(0, 0, 4, 1),
+            rectangle = grid_pos(4, 1),
             text = Locales.str('MATCH_YAW'),
             is_checked = Settings.tas.movement_mode == MovementModes.match_yaw,
         })
@@ -62,7 +80,7 @@ return {
 
         local _, meta = ugui.toggle_button({
             uid = UID.MovementModeReverseYaw,
-            rectangle = grid_rect(4, 0, 4, 1),
+            rectangle = grid_pos(4, 1),
             text = Locales.str('REVERSE_YAW'),
             is_checked = Settings.tas.movement_mode == MovementModes.reverse_yaw,
         })
@@ -71,9 +89,17 @@ return {
             set_movement_mode(MovementModes.reverse_yaw, ACTION_SET_MOVEMENT_MODE_REVERSE_YAW)
         end
 
+        ugui.leave_control()
+
+        ugui.enter_stack({
+            uid = UID.Stack3,
+            rectangle = grid_pos(0, 0),
+            horizontal = true,
+        })
+
         local _, meta = ugui.toggle_button({
             uid = UID.MovementModeMatchAngle,
-            rectangle = grid_rect(0, 1, 2.5, 1),
+            rectangle = grid_pos(2.5, 1),
             text = Locales.str('MATCH_ANGLE'),
             is_checked = Settings.tas.movement_mode == MovementModes.match_angle,
         })
@@ -85,7 +111,7 @@ return {
         local _, dyaw_meta = ugui.toggle_button({
             uid = UID.DYaw,
             is_enabled = Settings.tas.movement_mode == MovementModes.match_angle,
-            rectangle = grid_rect(2.5, 1, 2, 1),
+            rectangle = grid_pos(2, 1),
             text = Locales.str('DYAW'),
             is_checked = Settings.tas.dyaw,
         })
@@ -95,7 +121,7 @@ return {
 
         local _, meta = ugui.toggle_button({
             uid = UID.StrainLeft,
-            rectangle = grid_rect(4.5, 1, 0.75, 1),
+            rectangle = grid_pos(0.75, 1),
             text = '[icon:arrow_left]',
             is_checked = Settings.tas.strain_left,
         })
@@ -105,7 +131,7 @@ return {
 
         local _, meta = ugui.toggle_button({
             uid = UID.StrainRight,
-            rectangle = grid_rect(5.25, 1, 0.75, 1),
+            rectangle = grid_pos(0.75, 1),
             text = '[icon:arrow_right]',
             is_checked = Settings.tas.strain_right,
         })
@@ -116,14 +142,22 @@ return {
         Settings.tas.goal_angle = math.abs(ugui.numberbox({
             uid = UID.GoalAngle,
             is_enabled = Settings.tas.movement_mode == MovementModes.match_angle,
-            rectangle = grid_rect(6, 1, 2, 1),
+            rectangle = grid_pos(2, 1),
             places = 5,
             value = Settings.tas.goal_angle,
         }))
 
+        ugui.leave_control()
+
+        ugui.enter_stack({
+            uid = UID.Stack4,
+            rectangle = grid_pos(0, 0),
+            horizontal = true,
+        })
+
         local _, meta = ugui.toggle_button({
             uid = UID.D99,
-            rectangle = grid_rect(0, 2, 2, 1),
+            rectangle = grid_pos(2, 1),
             text = Locales.str('D99'),
             is_checked = Settings.tas.strain_speed_target,
         })
@@ -134,7 +168,7 @@ return {
         local _, meta = ugui.toggle_button({
             uid = UID.D99Always,
             is_enabled = Settings.tas.strain_speed_target,
-            rectangle = grid_rect(2, 2, 2, 1),
+            rectangle = grid_pos(2, 1),
             text = Locales.str('D99_ALWAYS'),
             is_checked = Settings.tas.strain_always,
         })
@@ -144,7 +178,7 @@ return {
 
         local atan_strain, meta = ugui.toggle_button({
             uid = UID.AtanStrain,
-            rectangle = grid_rect(4, 2, 3, 1),
+            rectangle = grid_pos(3, 1),
             text = Locales.str('ATAN_STRAIN'),
             is_checked = Settings.tas.atan_strain,
         })
@@ -157,17 +191,19 @@ return {
 
         Settings.tas.reverse_arc = ugui.toggle_button({
             uid = UID.AtanStrainReverse,
-            rectangle = grid_rect(7, 2, 1, 1),
+            rectangle = grid_pos(1, 1),
             text = Locales.str('ATAN_STRAIN_REV'),
             is_checked = Settings.tas.reverse_arc,
         })
+
+        ugui.leave_control()
 
         if Settings.tas.atan_strain then
             local function atan_field(index, text, up_callback, down_callback)
                 local width = 1.6
                 local x = index * width
                 BreitbandGraphics.draw_text(
-                    grid_rect(x, 3, width, 0.5),
+                    grid_pos(width, 0.5),
                     'center',
                     'center',
                     { aliased = not theme.cleartype, fit = true },
@@ -178,7 +214,7 @@ return {
 
                 if ugui.button({
                         uid = UID.AtanButtons + index * 2,
-                        rectangle = grid_rect(x, 3.5, width / 2, 0.5),
+                        rectangle = grid_pos(width / 2, 0.5),
                         text = '-',
                     }) then
                     down_callback()
@@ -186,7 +222,7 @@ return {
 
                 if ugui.button({
                         uid = UID.AtanButtons + index * 2 + 1,
-                        rectangle = grid_rect(x + width / 2, 3.5, width / 2, 0.5),
+                        rectangle = grid_pos(width / 2, 0.5),
                         text = '+',
                     }) then
                     up_callback()
@@ -242,11 +278,8 @@ return {
                 end)
         end
 
-        -- Shift elements down to make place for atan panel if atan strain is enabled.
-        local YORG = Settings.tas.atan_strain and 4 or 3
-
         BreitbandGraphics.draw_text(
-            grid_rect(4, YORG, 2, 1),
+            grid_rect(4, 0, 2, 1),
             'center',
             'center',
             { aliased = not theme.cleartype },
@@ -256,7 +289,7 @@ return {
             'X: ' .. stick_x)
 
         BreitbandGraphics.draw_text(
-            grid_rect(6, YORG, 2, 1),
+            grid_rect(6, 0, 2, 1),
             'center',
             'center',
             { aliased = not theme.cleartype },
@@ -266,7 +299,7 @@ return {
             'Y: ' .. stick_y)
 
         BreitbandGraphics.draw_text(
-            grid_rect(4, YORG + 1, 2, 1),
+            grid_rect(4, 0, 2, 1),
             'center',
             'center',
             { aliased = not theme.cleartype, fit = true },
@@ -275,75 +308,16 @@ return {
             'Consolas',
             'Mag: ' .. Formatter.u(Engine.get_magnitude_for_stick(stick_x, stick_y), 0))
 
-        Settings.tas.goal_mag = math.abs(ugui.numberbox({
-            uid = UID.GoalMag,
-            rectangle = grid_rect(4, YORG + 2, 2, 1),
-            places = 3,
-            value = Settings.tas.goal_mag,
-        }))
-
-        if ugui.button({
-                uid = UID.ResetMag,
-                rectangle = grid_rect(4, YORG + 3, 1, 1),
-                text = Locales.str('MAG_RESET'),
-                styler_mixin = {
-                    font_size = theme.font_size * Drawing.scale * 0.9,
-                },
-            }) then
-            action.invoke(ACTION_RESET_MAGNITUDE)
-        end
-
-        local _, meta = ugui.toggle_button({
-            uid = UID.HighMagnitude,
-            rectangle = grid_rect(5, YORG + 3, 1, 1),
-            text = Locales.str('MAG_HI'),
-            is_checked = Settings.tas.high_magnitude,
-            styler_mixin = {
-                font_size = theme.font_size * Drawing.scale * 0.9,
-            },
+        ugui.enter_stack({
+            uid = UID.Stack5,
+            rectangle = grid_pos(0, 0),
+            horizontal = true,
         })
-        if meta.signal_change == ugui.signal_change_states.started then
-            action.invoke(ACTION_TOGGLE_HIGH_MAGNITUDE)
-        end
 
-        if ugui.button({
-                uid = UID.SpeedKick,
-                rectangle = grid_rect(6, YORG + 1, 2, 1),
-                text = Locales.str('SPDKICK'),
-            }) then
-            action.invoke(ACTION_SET_SPDKICK)
-        end
-
-        local _, meta = ugui.toggle_button({
-            uid = UID.FrameWalk,
-            rectangle = grid_rect(6, YORG + 2, 2, 1),
-            text = Locales.str('FRAMEWALK'),
-            is_checked = Settings.tas.framewalk,
-        })
-        if meta.signal_change == ugui.signal_change_states.started then
-            action.invoke(ACTION_TOGGLE_FRAMEWALK)
-        end
-
-        local _, meta = ugui.toggle_button({
-            uid = UID.Swim,
-            rectangle = grid_rect(6, YORG + 3, 2, 1),
-            text = Locales.str('SWIM'),
-            is_checked = Settings.tas.swim,
-        })
-        if meta.signal_change == ugui.signal_change_states.started then
-            action.invoke(ACTION_TOGGLE_SWIM)
-        end
-
-        local joystick_rect = grid(0, YORG, 4, 4)
         local displayPosition = { x = Engine.stick_for_input_x(Settings.tas), y = -Engine.stick_for_input_y(Settings.tas) }
         local newPosition, meta = ugui.joystick({
             uid = UID.Joystick,
-            rectangle = {
-                x = joystick_rect[1],
-                y = joystick_rect[2],
-                width = joystick_rect[3],
-                height = joystick_rect[4],
-            },
+            rectangle = grid_pos(4, 4),
             position = displayPosition,
             mag = Settings.tas.goal_mag >= 127 and 0 or Settings.tas.goal_mag,
             x_snap = 8,
@@ -359,11 +333,87 @@ return {
             Settings.tas.manual_joystick_y = math.min(127, -math.floor(newPosition.y + 0.5))
         end
 
+        ugui.enter_stack({
+            uid = UID.Stack6,
+            rectangle = grid_pos(0, 0),
+            horizontal = true,
+        })
+
+        Settings.tas.goal_mag = math.abs(ugui.numberbox({
+            uid = UID.GoalMag,
+            rectangle = grid_pos(2, 1),
+            places = 3,
+            value = Settings.tas.goal_mag,
+        }))
+
+        if ugui.button({
+                uid = UID.ResetMag,
+                rectangle = grid_pos(1, 1),
+                text = Locales.str('MAG_RESET'),
+                styler_mixin = {
+                    font_size = theme.font_size * Drawing.scale * 0.9,
+                },
+            }) then
+            action.invoke(ACTION_RESET_MAGNITUDE)
+        end
+
+        local _, meta = ugui.toggle_button({
+            uid = UID.HighMagnitude,
+            rectangle = grid_pos(1, 1),
+            text = Locales.str('MAG_HI'),
+            is_checked = Settings.tas.high_magnitude,
+            styler_mixin = {
+                font_size = theme.font_size * Drawing.scale * 0.9,
+            },
+        })
+        if meta.signal_change == ugui.signal_change_states.started then
+            action.invoke(ACTION_TOGGLE_HIGH_MAGNITUDE)
+        end
+
+        ugui.enter_stack({
+            uid = UID.Stack7,
+            rectangle = grid_pos(0, 0),
+        })
+
+        if ugui.button({
+                uid = UID.SpeedKick,
+                rectangle = grid_pos(2, 1),
+                text = Locales.str('SPDKICK'),
+            }) then
+            action.invoke(ACTION_SET_SPDKICK)
+        end
+
+        local _, meta = ugui.toggle_button({
+            uid = UID.FrameWalk,
+            rectangle = grid_pos(2, 1),
+            text = Locales.str('FRAMEWALK'),
+            is_checked = Settings.tas.framewalk,
+        })
+        if meta.signal_change == ugui.signal_change_states.started then
+            action.invoke(ACTION_TOGGLE_FRAMEWALK)
+        end
+
+        local _, meta = ugui.toggle_button({
+            uid = UID.Swim,
+            rectangle = grid_pos(2, 1),
+            text = Locales.str('SWIM'),
+            is_checked = Settings.tas.swim,
+        })
+        if meta.signal_change == ugui.signal_change_states.started then
+            action.invoke(ACTION_TOGGLE_SWIM)
+        end
+
+        ugui.leave_control()
+        ugui.leave_control()
+        ugui.leave_control()
+
         ugui.listbox({
             uid = UID.ProcessedValues,
-            rectangle = grid_rect(0, YORG + 4, 8, (8 - YORG) + 4),
+            rectangle = grid_pos(8, 4),
             selected_index = nil,
             items = VarWatch.processed_values,
         })
+
+        ugui.leave_control()
     end,
 }

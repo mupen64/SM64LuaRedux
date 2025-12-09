@@ -124,6 +124,16 @@ function grid_rect(x, y, x_span, y_span, gap)
     }
 end
 
+function grid_pos(width, height)
+    local value = grid(0, 0, width, height, false, nil)
+    return {
+        x = 0,
+        y = 0,
+        width = value[3],
+        height = value[4],
+    }
+end
+
 function grid_rect_abs(x, y, x_span, y_span, gap)
     local value = grid(x, y, x_span, y_span, true, gap)
     return {
