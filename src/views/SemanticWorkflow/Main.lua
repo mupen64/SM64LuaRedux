@@ -63,7 +63,7 @@ local selected_tab_index = 1
 
 local function draw_factory(theme)
     return {
-        foreground_color = BreitbandGraphics.invert_color(theme.background_color),
+        foreground_color = Drawing.foreground_color(),
         background_color = theme.background_color,
         font_size = theme.font_size * Drawing.scale * 0.75,
 

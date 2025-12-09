@@ -34,8 +34,8 @@ return {
     name = Locales.str('TAS_TAB_NAME'),
     draw = function()
         local theme = Styles.theme()
-        -- TODO: Expose this as a helper in `Drawing` or something
-        local foreground_color = BreitbandGraphics.invert_color(theme.background_color)
+        local foreground_color = Drawing.foreground_color()
+        
         local stick_x = Engine.stick_for_input_x(Settings.tas)
         local stick_y = Engine.stick_for_input_y(Settings.tas)
         local movement_mode_changed = false

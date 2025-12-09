@@ -88,7 +88,8 @@ end
 ---@param pos Vector2 The initial position of the settings list in grid coordinates.
 function Drawing.setting_list(items, pos)
     local theme = Styles.theme()
-    local foreground_color = BreitbandGraphics.invert_color(theme.background_color)
+    local foreground_color = Drawing.foreground_color()
+
     local y = pos.y
     for i = 1, #items, 1 do
         local item = items[i]
@@ -107,6 +108,10 @@ function Drawing.setting_list(items, pos)
 
         y = y + 1.75
     end
+end
+
+function Drawing.foreground_color()
+    return BreitbandGraphics.invert_color(Styles.theme().background_color)
 end
 
 function grid_rect(x, y, x_span, y_span, gap)

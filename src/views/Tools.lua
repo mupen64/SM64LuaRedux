@@ -30,7 +30,7 @@ return {
     name = Locales.str('TOOLS_TAB_NAME'),
     draw = function()
         local theme = Styles.theme()
-        local foreground_color = BreitbandGraphics.invert_color(theme.background_color)
+        local foreground_color = Drawing.foreground_color()
 
         BreitbandGraphics.draw_text(
             grid_rect(0, RNG_ROW - 1, 8, 1),
