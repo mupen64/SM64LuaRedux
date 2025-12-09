@@ -11,7 +11,7 @@ ACTION_MOVEMENT_MODE = ROOT .. 'Movement Mode ---'
 ACTION_SET_MOVEMENT_MODE_MANUAL = ACTION_MOVEMENT_MODE .. ' > Manual ---'
 ACTION_SET_MOVEMENT_MODE_DISABLED = ACTION_MOVEMENT_MODE .. ' > Disabled'
 ACTION_SET_MOVEMENT_MODE_MATCH_YAW = ACTION_MOVEMENT_MODE .. ' > Match Yaw'
-ACTION_SET_MOVEMENT_MODE_REVERSE_ANGLE = ACTION_MOVEMENT_MODE .. ' > Reverse Angle'
+ACTION_SET_MOVEMENT_MODE_REVERSE_YAW = ACTION_MOVEMENT_MODE .. ' > Reverse Yaw'
 ACTION_SET_MOVEMENT_MODE_MATCH_ANGLE = ACTION_MOVEMENT_MODE .. ' > Match Angle'
 ACTION_SET_GOAL_ANGLE_TO_FACING_YAW = ROOT .. 'Set Angle to Facing Yaw'
 ACTION_SET_GOAL_ANGLE_TO_INTENDED_YAW = ROOT .. 'Set Angle to Intended Yaw'
@@ -92,14 +92,14 @@ actions[#actions + 1] = wrap_params({
 })
 
 actions[#actions + 1] = wrap_params({
-    path = ACTION_SET_MOVEMENT_MODE_REVERSE_ANGLE,
+    path = ACTION_SET_MOVEMENT_MODE_REVERSE_YAW,
     hotkey = { ctrl = true, key = string.byte('3') },
     on_press = function()
-        Settings.tas.movement_mode = MovementModes.reverse_angle
+        Settings.tas.movement_mode = MovementModes.reverse_yaw
         action.notify_active_changed(ACTION_MOVEMENT_MODE .. '>*')
     end,
     get_active = function()
-        return Settings.tas.movement_mode == MovementModes.reverse_angle
+        return Settings.tas.movement_mode == MovementModes.reverse_yaw
     end,
 })
 

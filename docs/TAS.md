@@ -2,7 +2,7 @@
 
 Holds the angle most closely matching Mario's facing direction.
 
-# Reverse Angle
+# Reverse Yaw
 
 Holds the angle most closely matching Mario's opposite facing direction.
 

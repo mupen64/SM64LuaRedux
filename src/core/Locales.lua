@@ -25,7 +25,7 @@ Locales = {}
 ---@field public PRESET_CONTEXT_MENU_DELETE_ALL string
 ---@field public DISABLED string
 ---@field public MATCH_YAW string
----@field public REVERSE_ANGLE string
+---@field public REVERSE_YAW string
 ---@field public MATCH_ANGLE string
 ---@field public D99_ALWAYS string
 ---@field public D99 string
@@ -55,7 +55,7 @@ Locales = {}
 ---@field public SEMANTIC_WORKFLOW_CONTROL_MANUAL string
 ---@field public SEMANTIC_WORKFLOW_CONTROL_MATCH_YAW string
 ---@field public SEMANTIC_WORKFLOW_CONTROL_MATCH_ANGLE string
----@field public SEMANTIC_WORKFLOW_CONTROL_REVERSE_ANGLE string
+---@field public SEMANTIC_WORKFLOW_CONTROL_REVERSE_YAW string
 ---@field public SEMANTIC_WORKFLOW_CONTROL_DYAW string
 ---@field public SEMANTIC_WORKFLOW_CONTROL_ATAN_RETIME string
 ---@field public SEMANTIC_WORKFLOW_CONTROL_ATAN_SELECT_START string
