@@ -55,7 +55,7 @@ function __impl:evaluate_frame()
             and self.preview_frame.frame_index
             and self._frame_counter >= self.preview_frame.frame_index - 1
         ) then
-        emu.pause(false)
+        emu.pause(true)
         emu.set_ff(false)
         self.busy = false
     end
@@ -76,11 +76,11 @@ function __impl:run_to_preview(load_state)
 
     if load_state == nil and true or load_state then
         savestate.do_memory(self._savestate, 'load', function()
-            emu.pause(true)
+            emu.pause(false)
             emu.set_ff(Settings.semantic_workflow.fast_foward)
         end)
     else
-        emu.pause(true)
+        emu.pause(false)
         emu.set_ff(Settings.semantic_workflow.fast_foward)
     end
 
