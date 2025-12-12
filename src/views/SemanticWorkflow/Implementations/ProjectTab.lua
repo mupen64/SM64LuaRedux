@@ -186,34 +186,37 @@ function __impl.render(draw)
         )
 
         if selecting_sheet_base_for ~= nil then
+            local sheet = SemanticWorkflowProject.all[available_sheets[selecting_sheet_base_for]]
+            local function IsValidTarget()
+                if i > #SemanticWorkflowProject.meta.sheets or i == selecting_sheet_base_for then
+                    return false
+                end
+
+                -- prevent recursive base sheet cycles
+                local new_base = SemanticWorkflowProject.all[available_sheets[i]]
+                local bs = new_base
+                while bs ~= nil do
+                    if bs == sheet then
+                        return false
+                    end
+                    bs = bs._base_sheet
+                end
+
+                return true
+            end
+
+            tooltip = Locales.str('SEMANTIC_WORKFLOW_PROJECT_SET_BASE_SHEET_TOOL_TIP') .. sheet.name
             if ugui.toggle_button({
                 uid = uid,
                 rectangle = grid_rect(0, y, 3, Gui.MEDIUM_CONTROL_HEIGHT),
                 text = available_sheets[i],
                 tooltip = i <= #SemanticWorkflowProject.meta.sheets and tooltip or nil,
                 is_checked = false,
+                is_enabled = IsValidTarget()
             }) then
-                -- finish the base setter, unless the target is the same as the source
-                local sheet = SemanticWorkflowProject.all[available_sheets[selecting_sheet_base_for]]
-                if selecting_sheet_base_for ~= i then
-
-                    -- prevent recursive base sheet cycles
-                    local new_base = SemanticWorkflowProject.all[available_sheets[i]]
-                    local bs = new_base
-                    while bs ~= nil do
-                        if bs == sheet then
-                            print('Attempted to recursively rebase ' .. new_base.name .. ' onto ' .. sheet.name .. "!")
-                            goto dont
-                        end
-                        bs = bs._base_sheet
-                    end
-
-                    SemanticWorkflowProject.meta.sheets[selecting_sheet_base_for].base_sheet = available_sheets[i]
-                    sheet:set_base_sheet(SemanticWorkflowProject.all[available_sheets[i]])
-                    sheet:run_to_preview()
-
-                    ::dont::
-                end
+                SemanticWorkflowProject.meta.sheets[selecting_sheet_base_for].base_sheet = available_sheets[i]
+                sheet:set_base_sheet(SemanticWorkflowProject.all[available_sheets[i]])
+                SemanticWorkflowProject:select(selecting_sheet_base_for)
                 selecting_sheet_base_for = nil
             end
         else
