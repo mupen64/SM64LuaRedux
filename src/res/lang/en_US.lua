@@ -93,6 +93,7 @@ This action cannot be undone.
     SEMANTIC_WORKFLOW_PROJECT_REBASE_SHEET_TOOL_TIP = 'Set start to now',
     SEMANTIC_WORKFLOW_PROJECT_BASE_SHEET_TOOL_TIP = 'This sheet is based on ',
     SEMANTIC_WORKFLOW_PROJECT_NO_BASE_SHEET_TOOL_TIP = 'This sheet is not based on another sheet.',
+    SEMANTIC_WORKFLOW_PROJECT_SET_BASE_SHEET_TOOL_TIP = 'Set as base sheet for ',
     SEMANTIC_WORKFLOW_PROJECT_REPLACE_INPUTS_TOOL_TIP = 'Replace inputs',
     SEMANTIC_WORKFLOW_PROJECT_PLAY_WITHOUT_ST_TOOL_TIP = 'Play without loading .st',
     SEMANTIC_WORKFLOW_PROJECT_DELETE_SHEET_TOOL_TIP = 'Delete',
