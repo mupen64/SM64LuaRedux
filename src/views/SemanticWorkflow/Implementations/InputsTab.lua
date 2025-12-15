@@ -238,15 +238,9 @@ end
 --#region Joystick Controls
 
 local function magnitude_controls(draw, sheet, new_values, top)
-    new_values.high_magnitude = ugui.toggle_button({
-        uid = UID.HighMag,
-        rectangle = grid_rect(2, top, 2, Gui.MEDIUM_CONTROL_HEIGHT),
-        text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_HIGH_MAG'),
-        is_checked = new_values.high_magnitude,
-    })
     new_values.goal_mag = ugui.numberbox({
         uid = UID.GoalMag,
-        rectangle = grid_rect(4, top, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
+        rectangle = grid_rect(2, top, 2, Gui.LARGE_CONTROL_HEIGHT),
         places = 3,
         value = math.max(0, math.min(127, new_values.goal_mag)),
     })
@@ -257,10 +251,10 @@ local function magnitude_controls(draw, sheet, new_values, top)
     if new_values.goal_mag >= 900 then new_values.goal_mag = 0 end
 
     if ugui.button({
-            uid = UID.SpeedKick,
-            rectangle = grid_rect(5.5, top, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
-            text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_SPDKICK'),
-        }) then
+        uid = UID.SpeedKick,
+        rectangle = grid_rect(4, top, 1.5, Gui.LARGE_CONTROL_HEIGHT),
+        text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_SPDKICK'),
+    }) then
         if new_values.goal_mag ~= 48 then
             new_values.goal_mag = 48
         else
@@ -268,11 +262,18 @@ local function magnitude_controls(draw, sheet, new_values, top)
         end
     end
 
+    new_values.high_magnitude = ugui.toggle_button({
+        uid = UID.HighMag,
+        rectangle = grid_rect(5.5, top, 1.5, Gui.LARGE_CONTROL_HEIGHT),
+        text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_HIGH_MAG'),
+        is_checked = new_values.high_magnitude,
+    })
+
     if ugui.button({
-            uid = UID.ResetMag,
-            rectangle = grid_rect(7, top, 1, Gui.MEDIUM_CONTROL_HEIGHT),
-            text = Locales.str('MAG_RESET'),
-        }) then
+        uid = UID.ResetMag,
+        rectangle = grid_rect(7, top, 1, Gui.LARGE_CONTROL_HEIGHT),
+        text = Locales.str('MAG_RESET'),
+    }) then
         new_values.goal_mag = 127
     end
 end
@@ -479,20 +480,20 @@ local function angle_controls(draw, sheet, new_values, old_values, top)
         new_values.manual_joystick_y = math.min(127, -math.floor(new_position.y + 0.5)) or old_values.manual_joystick_y
     end
 
-    draw:text(grid_rect(2, top + 3, 0.5, Gui.SMALL_CONTROL_HEIGHT), 'end', 'X:')
+    draw:text(grid_rect(2, top + 4, 0.5, Gui.SMALL_CONTROL_HEIGHT), 'end', 'X:')
     new_values.manual_joystick_x = ugui.spinner({
         uid = UID.JoypadSpinnerX,
-        rectangle = grid_rect(2.5, top + 3, 1.5, Gui.SMALL_CONTROL_HEIGHT, 0),
+        rectangle = grid_rect(2.5, top + 4, 1.5, Gui.SMALL_CONTROL_HEIGHT, 0),
         value = new_values.manual_joystick_x,
         minimum_value = -128,
         maximum_value = 127,
         increment = 1,
     })
 
-    draw:text(grid_rect(2, top + 3.5, 0.5, Gui.SMALL_CONTROL_HEIGHT), 'end', 'Y:')
+    draw:text(grid_rect(2, top + 4.5, 0.5, Gui.SMALL_CONTROL_HEIGHT), 'end', 'Y:')
     new_values.manual_joystick_y = ugui.spinner({
         uid = UID.JoypadSpinnerY,
-        rectangle = grid_rect(2.5, top + 3.5, 1.5, Gui.SMALL_CONTROL_HEIGHT, 0),
+        rectangle = grid_rect(2.5, top + 4.5, 1.5, Gui.SMALL_CONTROL_HEIGHT, 0),
         value = new_values.manual_joystick_y,
         minimum_value = -128,
         maximum_value = 127,
@@ -501,7 +502,7 @@ local function angle_controls(draw, sheet, new_values, old_values, top)
 
     new_values.swim = ugui.toggle_button({
         uid = UID.Swim,
-        rectangle = grid_rect(6.5, top + 4, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
+        rectangle = grid_rect(6.5, top + 4, 1.5, Gui.LARGE_CONTROL_HEIGHT),
         text = 'Swim',
         is_checked = new_values.swim,
     })
@@ -518,8 +519,7 @@ local function joystick_controls_for_selected(draw, edited_section, edited_input
     CloneInto(new_values, old_values)
 
     angle_controls(draw, sheet, new_values, old_values, top + 0.75)
-
-    -- magnitude_controls(draw, sheet, new_values, top + 3)
+    magnitude_controls(draw, sheet, new_values, top + 3.75)
     -- atan_controls(draw, sheet, new_values, top + 4)
 
     local changes = CloneInto(old_values, new_values)
