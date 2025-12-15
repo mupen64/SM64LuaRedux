@@ -52,7 +52,6 @@ Locales = {}
 ---@field public SEMANTIC_WORKFLOW_FRAMELIST_STICK string
 ---@field public SEMANTIC_WORKFLOW_FRAMELIST_UNTIL string
 ---@field public SEMANTIC_WORKFLOW_TOOL_COPY_ENTIRE_STATE string
----@field public SEMANTIC_WORKFLOW_CONTROL_MANUAL string
 ---@field public SEMANTIC_WORKFLOW_CONTROL_MATCH_YAW string
 ---@field public SEMANTIC_WORKFLOW_CONTROL_MATCH_ANGLE string
 ---@field public SEMANTIC_WORKFLOW_CONTROL_REVERSE_YAW string

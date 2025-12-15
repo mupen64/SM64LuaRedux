@@ -386,82 +386,52 @@ local function atan_controls(draw, sheet, new_values, top)
     })
 end
 
-local function joystick_controls_for_selected(draw, edited_section, edited_input)
-    local top = TOP
-
-    local sheet = SemanticWorkflowProject:asserted_current()
-
-    local new_values = {}
-
-    local old_values = edited_input.tas_state
-    CloneInto(new_values, old_values)
-
-    local display_position = { x = old_values.manual_joystick_x or 0, y = -(old_values.manual_joystick_y or 0) }
-    local new_position, meta = ugui.joystick({
-        uid = UID.Joypad,
-        rectangle = grid_rect(0, top + 1, 2, 2),
-        position = display_position,
-    })
-    if meta.signal_change == ugui.signal_change_states.started then
-        new_values.movement_mode = MovementModes.manual
-        new_values.manual_joystick_x = math.min(127, math.floor(new_position.x + 0.5)) or old_values.manual_joystick_x
-        new_values.manual_joystick_y = math.min(127, -math.floor(new_position.y + 0.5)) or old_values.manual_joystick_y
+local function angle_controls(draw, sheet, new_values, old_values, top)
+    if ugui.toggle_button({
+        uid = UID.MovementModeMatchYaw,
+        rectangle = grid_rect(0, top, 4, Gui.LARGE_CONTROL_HEIGHT),
+        text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_MATCH_YAW'),
+        is_checked = new_values.movement_mode == MovementModes.match_yaw,
+    }) then
+        new_values.movement_mode = MovementModes.match_yaw
     end
-    local rect = grid_rect(0, top + 3, 1, Gui.SMALL_CONTROL_HEIGHT, 0)
-    rect.y = rect.y + Settings.grid_gap
-    new_values.manual_joystick_x = ugui.spinner({
-        uid = UID.JoypadSpinnerX,
-        rectangle = rect,
-        value = new_values.manual_joystick_x,
-        minimum_value = -128,
-        maximum_value = 127,
-        increment = 1,
-        styler_mixin = {
-            spinner = {
-                button_size = 4,
-            },
-        },
-    })
-    rect.x = rect.x + rect.width
-    new_values.manual_joystick_y = ugui.spinner({
-        uid = UID.JoypadSpinnerY,
-        rectangle = rect,
-        value = new_values.manual_joystick_y,
-        minimum_value = -128,
-        maximum_value = 127,
-        increment = 1,
-        styler_mixin = {
-            spinner = {
-                button_size = 4,
-            },
-        },
-    })
+
+    if ugui.toggle_button({
+        uid = UID.MovementModeReverseYaw,
+        rectangle = grid_rect(4, top, 4, Gui.LARGE_CONTROL_HEIGHT),
+        text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_REVERSE_YAW'),
+        is_checked = new_values.movement_mode == MovementModes.reverse_yaw,
+    }) then
+        new_values.movement_mode = MovementModes.reverse_yaw
+    end
 
     new_values.goal_angle = math.abs(ugui.numberbox({
         uid = UID.GoalAngle,
         is_enabled = new_values.movement_mode == MovementModes.match_angle,
-        rectangle = grid_rect(3, top + 2, 2, Gui.LARGE_CONTROL_HEIGHT),
+        rectangle = grid_rect(6, top + 1, 2, Gui.LARGE_CONTROL_HEIGHT),
         places = 5,
         value = new_values.goal_angle,
     }))
 
-    new_values.strain_always = ugui.toggle_button({
-        uid = UID.StrainAlways,
-        rectangle = grid_rect(2, top + 1, 1.5, Gui.SMALL_CONTROL_HEIGHT),
-        text = Locales.str('D99_ALWAYS'),
-        is_checked = new_values.strain_always,
-    })
+    if ugui.toggle_button({
+            uid = UID.MovementModeMatchAngle,
+            rectangle = grid_rect(0, top + 1, 3, Gui.LARGE_CONTROL_HEIGHT),
+            text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_MATCH_ANGLE'),
+            is_checked = new_values.movement_mode == MovementModes.match_angle,
+        }) then
+        new_values.movement_mode = MovementModes.match_angle
+    end
 
-    new_values.strain_speed_target = ugui.toggle_button({
-        uid = UID.StrainSpeedTarget,
-        rectangle = grid_rect(3.5, top + 1, 1.5, Gui.SMALL_CONTROL_HEIGHT),
-        text = Locales.str('D99'),
-        is_checked = new_values.strain_speed_target,
+    new_values.dyaw = ugui.toggle_button({
+        uid = UID.DYaw,
+        rectangle = grid_rect(3, top + 1, 1.5, Gui.LARGE_CONTROL_HEIGHT),
+        text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_DYAW'),
+        is_checked = new_values.dyaw,
     })
 
     if ugui.toggle_button({
             uid = UID.StrainLeft,
-            rectangle = grid_rect(2, top + 1.5, 1.5, Gui.SMALL_CONTROL_HEIGHT),
+            rectangle = grid_rect(4.5, top + 1, 0.75, Gui.LARGE_CONTROL_HEIGHT),
             text = '[icon:arrow_left]',
             is_checked = new_values.strain_left,
         }) then
@@ -473,7 +443,7 @@ local function joystick_controls_for_selected(draw, edited_section, edited_input
 
     if ugui.toggle_button({
             uid = UID.StrainRight,
-            rectangle = grid_rect(3.5, top + 1.5, 1.5, Gui.SMALL_CONTROL_HEIGHT),
+            rectangle = grid_rect(5.25, top + 1, 0.75, Gui.LARGE_CONTROL_HEIGHT),
             text = '[icon:arrow_right]',
             is_checked = new_values.strain_right,
         }) then
@@ -483,47 +453,50 @@ local function joystick_controls_for_selected(draw, edited_section, edited_input
         new_values.strain_right = false
     end
 
-    if ugui.toggle_button({
-            uid = UID.MovementModeManual,
-            rectangle = grid_rect(5, top + 1, 1.5, Gui.LARGE_CONTROL_HEIGHT),
-            text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_MANUAL'),
-            is_checked = new_values.movement_mode == MovementModes.manual,
-        }) then
+    new_values.strain_speed_target = ugui.toggle_button({
+        uid = UID.StrainSpeedTarget,
+        rectangle = grid_rect(0, top + 2, 2, Gui.LARGE_CONTROL_HEIGHT),
+        text = Locales.str('D99'),
+        is_checked = new_values.strain_speed_target,
+    })
+
+    new_values.strain_always = ugui.toggle_button({
+        uid = UID.StrainAlways,
+        rectangle = grid_rect(2, top + 2, 2, Gui.LARGE_CONTROL_HEIGHT),
+        text = Locales.str('D99_ALWAYS'),
+        is_checked = new_values.strain_always,
+    })
+
+    local display_position = { x = old_values.manual_joystick_x or 0, y = -(old_values.manual_joystick_y or 0) }
+    local new_position, meta = ugui.joystick({
+        uid = UID.Joypad,
+        rectangle = grid_rect(0, top + 3, 2, 2),
+        position = display_position,
+    })
+    if meta.signal_change == ugui.signal_change_states.started then
         new_values.movement_mode = MovementModes.manual
+        new_values.manual_joystick_x = math.min(127, math.floor(new_position.x + 0.5)) or old_values.manual_joystick_x
+        new_values.manual_joystick_y = math.min(127, -math.floor(new_position.y + 0.5)) or old_values.manual_joystick_y
     end
 
-    if ugui.toggle_button({
-            uid = UID.MovementModeMatchYaw,
-            rectangle = grid_rect(6.5, top + 1, 1.5, Gui.LARGE_CONTROL_HEIGHT),
-            text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_MATCH_YAW'),
-            is_checked = new_values.movement_mode == MovementModes.match_yaw,
-        }) then
-        new_values.movement_mode = MovementModes.match_yaw
-    end
+    draw:text(grid_rect(2, top + 3, 0.5, Gui.SMALL_CONTROL_HEIGHT), 'end', 'X:')
+    new_values.manual_joystick_x = ugui.spinner({
+        uid = UID.JoypadSpinnerX,
+        rectangle = grid_rect(2.5, top + 3, 1.5, Gui.SMALL_CONTROL_HEIGHT, 0),
+        value = new_values.manual_joystick_x,
+        minimum_value = -128,
+        maximum_value = 127,
+        increment = 1,
+    })
 
-    if ugui.toggle_button({
-            uid = UID.MovementModeMatchAngle,
-            rectangle = grid_rect(5, top + 2, 1.5, Gui.LARGE_CONTROL_HEIGHT),
-            text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_MATCH_ANGLE'),
-            is_checked = new_values.movement_mode == MovementModes.match_angle,
-        }) then
-        new_values.movement_mode = MovementModes.match_angle
-    end
-
-    if ugui.toggle_button({
-            uid = UID.MovementModeReverseYaw,
-            rectangle = grid_rect(6.5, top + 2, 1.5, Gui.LARGE_CONTROL_HEIGHT),
-            text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_REVERSE_YAW'),
-            is_checked = new_values.movement_mode == MovementModes.reverse_yaw,
-        }) then
-        new_values.movement_mode = MovementModes.reverse_yaw
-    end
-
-    new_values.dyaw = ugui.toggle_button({
-        uid = UID.DYaw,
-        rectangle = grid_rect(2, top + 2, 1, Gui.LARGE_CONTROL_HEIGHT),
-        text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_DYAW'),
-        is_checked = new_values.dyaw,
+    draw:text(grid_rect(2, top + 3.5, 0.5, Gui.SMALL_CONTROL_HEIGHT), 'end', 'Y:')
+    new_values.manual_joystick_y = ugui.spinner({
+        uid = UID.JoypadSpinnerY,
+        rectangle = grid_rect(2.5, top + 3.5, 1.5, Gui.SMALL_CONTROL_HEIGHT, 0),
+        value = new_values.manual_joystick_y,
+        minimum_value = -128,
+        maximum_value = 127,
+        increment = 1,
     })
 
     new_values.swim = ugui.toggle_button({
@@ -532,9 +505,22 @@ local function joystick_controls_for_selected(draw, edited_section, edited_input
         text = 'Swim',
         is_checked = new_values.swim,
     })
+end
 
-    magnitude_controls(draw, sheet, new_values, top + 3)
-    atan_controls(draw, sheet, new_values, top + 4)
+local function joystick_controls_for_selected(draw, edited_section, edited_input)
+    local top = TOP
+
+    local sheet = SemanticWorkflowProject:asserted_current()
+
+    local new_values = {}
+
+    local old_values = edited_input.tas_state
+    CloneInto(new_values, old_values)
+
+    angle_controls(draw, sheet, new_values, old_values, top + 0.75)
+
+    -- magnitude_controls(draw, sheet, new_values, top + 3)
+    -- atan_controls(draw, sheet, new_values, top + 4)
 
     local changes = CloneInto(old_values, new_values)
     local any_changes = any_entries(changes)
