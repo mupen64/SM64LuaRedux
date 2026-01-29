@@ -244,7 +244,7 @@ local function atdrawd2d()
     end
 
     -- HACK: We turn off hotkeys while a control is capturing inputs
-    action.lock_hotkeys(ugui.internal.active_control ~= nil)
+    action.lock_hotkeys(ugui.internal.keyboard_captured_control ~= nil)
 
     VarWatch_update()
 
