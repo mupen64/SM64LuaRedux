@@ -133,7 +133,7 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_DECREMENT_ANGLE,
     hotkey = { ctrl = true, key = Mupen.VKeycodes.VK_OEM_MINUS },
     on_press = function()
-        if ugui.internal.active_control then
+        if ugui.internal.keyboard_captured_control then
             return
         end
 
@@ -153,7 +153,7 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_INCREMENT_ANGLE,
     hotkey = { ctrl = true, key = Mupen.VKeycodes.VK_OEM_PLUS },
     on_press = function()
-        if ugui.internal.active_control then
+        if ugui.internal.keyboard_captured_control then
             return
         end
 
@@ -239,7 +239,8 @@ actions[#actions + 1] = wrap_params({
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_GOAL_ANGLE,
     on_press = function()
-        local result = tonumber(input.prompt(action.get_display_name(ACTION_SET_GOAL_ANGLE), tostring(Settings.tas.goal_angle)))
+        local result = tonumber(input.prompt(action.get_display_name(ACTION_SET_GOAL_ANGLE),
+            tostring(Settings.tas.goal_angle)))
         if result == nil then
             return
         end
@@ -258,7 +259,8 @@ actions[#actions + 1] = wrap_params({
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MAGNITUDE,
     on_press = function()
-        local result = tonumber(input.prompt(action.get_display_name(ACTION_SET_MAGNITUDE), tostring(Settings.tas.goal_mag)))
+        local result = tonumber(input.prompt(action.get_display_name(ACTION_SET_MAGNITUDE),
+            tostring(Settings.tas.goal_mag)))
         if result == nil then
             return
         end

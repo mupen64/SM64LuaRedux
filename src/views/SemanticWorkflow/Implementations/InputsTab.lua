@@ -170,7 +170,7 @@ local function controls_for_end_action(section, draw, column, top)
                 tooltip = Locales.str('SEMANTIC_WORKFLOW_INPUTS_END_ACTION_TOOL_TIP'),
             }) then
             end_action_search_text = ''
-            ugui.internal.active_control = UID.EndActionTextbox
+            ugui.internal.keyboard_captured_control = UID.EndActionTextbox
             ugui.internal.clear_active_control_after_mouse_up = false
         end
     end
