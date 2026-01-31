@@ -182,7 +182,7 @@ local function draw_navbar()
                     end,
                 },
             },
-        })
+        }).primary
 
         if result.dismissed then
             reset_preset_menu_open = false
