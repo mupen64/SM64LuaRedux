@@ -124,9 +124,6 @@ Locales = {}
 ---@field public SETTINGS_VARWATCH_ANGLE_FORMAT_SHORT string
 ---@field public SETTINGS_VARWATCH_ANGLE_FORMAT_DEGREE string
 ---@field public SETTINGS_VARWATCH_DECIMAL_POINTS string
----@field public SETTINGS_VARWATCH_SPD_EFFICIENCY string
----@field public SETTINGS_VARWATCH_SPD_EFFICIENCY_PERCENTAGE string
----@field public SETTINGS_VARWATCH_SPD_EFFICIENCY_FRACTION string
 ---@field public SETTINGS_MEMORY_FILE_SELECT string
 ---@field public SETTINGS_MEMORY_DETECT_NOW string
 ---@field public SETTINGS_MEMORY_DETECT_ON_START string
@@ -164,8 +161,7 @@ Locales = {}
 ---@field public VARWATCH_H_SPEED string
 ---@field public VARWATCH_H_SLIDING string
 ---@field public VARWATCH_Y_SPEED string
----@field public VARWATCH_SPD_EFFICIENCY_PERCENTAGE string
----@field public VARWATCH_SPD_EFFICIENCY_FRACTION string
+---@field public VARWATCH_SPD_EFFICIENCY string
 ---@field public VARWATCH_POS_X string
 ---@field public VARWATCH_POS_Y string
 ---@field public VARWATCH_POS_Z string

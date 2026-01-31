@@ -8,7 +8,6 @@ local UID = UIDProvider.allocate_once('VarWatchSettings', function(enum_next)
     return {
         AngleFormat = enum_next(),
         DecimalPlaces = enum_next(2),
-        SpeedEfficiency = enum_next(),
         SelectedVar = enum_next(4),
         MoveVarUp = enum_next(),
         MoveVarDown = enum_next(),
@@ -40,19 +39,6 @@ local items = {
                 places = 1,
                 tooltip = 'The maximum number of decimal places displayed in numbers.',
             }))
-        end,
-    },
-    {
-        text = Locales.str('SETTINGS_VARWATCH_SPD_EFFICIENCY'),
-        func = function(rect)
-            if ugui.button({
-                    uid = UID.SpeedEfficiency,
-                    rectangle = rect,
-                    text = Settings.spd_efficiency_fraction and Locales.str('SETTINGS_VARWATCH_SPD_EFFICIENCY_FRACTION') or Locales.str('SETTINGS_VARWATCH_SPD_EFFICIENCY_PERCENTAGE'),
-                    tooltip = 'The formatting style for the speed efficiency variable.\n    Percentage: Shows the speed efficiency as a percentage (0-100%)\n    Fraction: Shows the speed efficiency as a mathematical fraction (e.g. 1/4)',
-                }) then
-                Settings.spd_efficiency_fraction = not Settings.spd_efficiency_fraction
-            end
         end,
     },
 }

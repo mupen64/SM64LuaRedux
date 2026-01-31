@@ -25,25 +25,25 @@ local var_funcs = {
         return string.format(Locales.str('VARWATCH_Y_SPEED'), Formatter.ups(y_speed))
     end,
     ['spd_efficiency'] = function()
-        if Settings.spd_efficiency_fraction then
-            local spd_efficiency = Engine.GetSpeedEfficiency()
-            local d
-            if spd_efficiency < 0.01 then
-                d = 0
-            elseif spd_efficiency < 0.25 then
-                d = 1
-            elseif spd_efficiency < 0.5 then
-                d = 2
-            elseif spd_efficiency < 0.75 then
-                d = 3
-            else
-                d = 4
-            end
-            return string.format(Locales.str('VARWATCH_SPD_EFFICIENCY_FRACTION'), d)
+        local percentage = Formatter.percent(Engine.GetSpeedEfficiency())
+
+        local spd_efficiency = Engine.GetSpeedEfficiency()
+        local d
+        if spd_efficiency < 0.01 then
+            d = 0
+        elseif spd_efficiency < 0.25 then
+            d = 1
+        elseif spd_efficiency < 0.5 then
+            d = 2
+        elseif spd_efficiency < 0.75 then
+            d = 3
         else
-            return string.format(Locales.str('VARWATCH_SPD_EFFICIENCY_PERCENTAGE'),
-                Formatter.percent(Engine.GetSpeedEfficiency()))
+            d = 4
         end
+        local fraction = string.format("%d/4", d)
+        local full = string.format("%s (%s)", percentage, fraction)
+
+        return string.format(Locales.str('VARWATCH_SPD_EFFICIENCY'), full)
     end,
     ['position_x'] = function()
         return string.format(Locales.str('VARWATCH_POS_X'), Formatter.u(Memory.current.mario_x))
