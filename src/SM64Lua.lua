@@ -46,6 +46,7 @@ dofile(core_path .. 'Styles.lua')
 dofile(core_path .. 'Locales.lua')
 dofile(core_path .. 'Presets.lua')
 dofile(core_path .. 'Dumping.lua')
+Validators = dofile(core_path .. 'Validators.lua')
 dofile(core_path .. 'Actions.lua')
 Addresses = dofile(core_path .. 'Addresses.lua')
 
