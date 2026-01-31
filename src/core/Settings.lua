@@ -77,7 +77,6 @@ Settings = {
     hotkeys_assigning = false,
     hotkeys_selected_index = 1,
     hotkeys_allow_with_active_control = true,
-    spd_efficiency_fraction = false,
     enable_manual_on_joystick_interact = false,
     timer_auto = true,
     semantic_workflow = {
