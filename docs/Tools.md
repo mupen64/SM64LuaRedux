@@ -18,7 +18,7 @@ Records a ghost file, which is stored in SM64Lua Redux's directory as `recording
 
 To play back a ghost file, use [Frame's STROOP](https://github.com/chaosBrick/STROOP/releases) and press "Enable Ghost Hack" after having recorded a ghost using SM64 Lua Redux, then save and load a savestate. The resulting emulator state and savestate should contain the ghost hack.
 
-# Experiments
+# Trackers
 
 ## Moved Dist
 
@@ -28,14 +28,26 @@ Shows the distance between Mario's current position and his position when "Moved
 
 Isolates axes for "Moved Dist".
 
+# Overlays
+
 ## Input Overlay
 
 Shows an input overlay.
+
+## World Visualizer
+
+Shows information about the game world as an overlay.
+
+# Automation
 
 ## Auto-firsties
 
 Presses A on the first frame of a wallkick.
 
-## World Visualizer
+## Framewalk
 
-Shows information about the game world as an overlay.
+Zeroes out the joystick every other frame.
+
+## Swim
+
+Swims automatically and optimally while underwater.
