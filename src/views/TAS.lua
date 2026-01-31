@@ -12,10 +12,8 @@ local UID = UIDProvider.allocate_once('TAS', function(enum_next)
         HighMagnitude = enum_next(),
         ResetMag = enum_next(),
         SpeedKick = enum_next(),
-        FrameWalk = enum_next(),
         D99Always = enum_next(),
         D99 = enum_next(),
-        Swim = enum_next(),
         DYaw = enum_next(),
         StrainLeft = enum_next(),
         StrainRight = enum_next(),
@@ -35,7 +33,7 @@ return {
     draw = function()
         local theme = Styles.theme()
         local foreground_color = Drawing.foreground_color()
-        
+
         local stick_x = Engine.stick_for_input_x(Settings.tas)
         local stick_y = Engine.stick_for_input_y(Settings.tas)
         local movement_mode_changed = false
@@ -235,10 +233,12 @@ return {
             atan_field(4,
                 'S: ' .. tostring(Settings.tas.atan_start),
                 function()
-                    Settings.tas.atan_start = math.max(0, Settings.tas.atan_start + math.pow(10, math.max(0, Settings.atan_exp)))
+                    Settings.tas.atan_start = math.max(0,
+                        Settings.tas.atan_start + math.pow(10, math.max(0, Settings.atan_exp)))
                 end,
                 function()
-                    Settings.tas.atan_start = math.max(0, Settings.tas.atan_start - math.pow(10, math.max(0, Settings.atan_exp)))
+                    Settings.tas.atan_start = math.max(0,
+                        Settings.tas.atan_start - math.pow(10, math.max(0, Settings.atan_exp)))
                 end)
         end
 
@@ -266,7 +266,7 @@ return {
             'Y: ' .. stick_y)
 
         BreitbandGraphics.draw_text(
-            grid_rect(4, YORG + 1, 2, 1),
+            grid_rect(4, YORG + 1, 4, 1),
             'center',
             'center',
             { aliased = not theme.cleartype, fit = true },
@@ -284,7 +284,7 @@ return {
 
         if ugui.button({
                 uid = UID.ResetMag,
-                rectangle = grid_rect(4, YORG + 3, 1, 1),
+                rectangle = grid_rect(4, YORG + 3, 2, 1),
                 text = Locales.str('MAG_RESET'),
                 styler_mixin = {
                     font_size = theme.font_size * Drawing.scale * 0.9,
@@ -295,7 +295,7 @@ return {
 
         local _, meta = ugui.toggle_button({
             uid = UID.HighMagnitude,
-            rectangle = grid_rect(5, YORG + 3, 1, 1),
+            rectangle = grid_rect(6, YORG + 3, 2, 1),
             text = Locales.str('MAG_HI'),
             is_checked = Settings.tas.high_magnitude,
             styler_mixin = {
@@ -308,30 +308,10 @@ return {
 
         if ugui.button({
                 uid = UID.SpeedKick,
-                rectangle = grid_rect(6, YORG + 1, 2, 1),
+                rectangle = grid_rect(6, YORG + 2, 2, 1),
                 text = Locales.str('SPDKICK'),
             }) then
             action.invoke(ACTION_SET_SPDKICK)
-        end
-
-        local _, meta = ugui.toggle_button({
-            uid = UID.FrameWalk,
-            rectangle = grid_rect(6, YORG + 2, 2, 1),
-            text = Locales.str('FRAMEWALK'),
-            is_checked = Settings.tas.framewalk,
-        })
-        if meta.signal_change == ugui.signal_change_states.started then
-            action.invoke(ACTION_TOGGLE_FRAMEWALK)
-        end
-
-        local _, meta = ugui.toggle_button({
-            uid = UID.Swim,
-            rectangle = grid_rect(6, YORG + 3, 2, 1),
-            text = Locales.str('SWIM'),
-            is_checked = Settings.tas.swim,
-        })
-        if meta.signal_change == ugui.signal_change_states.started then
-            action.invoke(ACTION_TOGGLE_SWIM)
         end
 
         local joystick_rect = grid(0, YORG, 4, 4)

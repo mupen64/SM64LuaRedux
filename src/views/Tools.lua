@@ -25,6 +25,8 @@ local UID = UIDProvider.allocate_once('Tools', function(enum_next)
         TrackMovedDistanceX = enum_next(),
         TrackMovedDistanceY = enum_next(),
         TrackMovedDistanceZ = enum_next(),
+        FrameWalk = enum_next(),
+        Swim = enum_next(),
     }
 end)
 
@@ -210,6 +212,26 @@ return {
         })
         if meta.signal_change == ugui.signal_change_states.started then
             action.invoke(ACTION_TOGGLE_AUTOFIRSTIES)
+        end
+
+        local _, meta = ugui.toggle_button({
+            uid = UID.FrameWalk,
+            rectangle = grid_rect(3, AUTOMATION_ROW, 2, 1),
+            text = Locales.str('FRAMEWALK'),
+            is_checked = Settings.tas.framewalk,
+        })
+        if meta.signal_change == ugui.signal_change_states.started then
+            action.invoke(ACTION_TOGGLE_FRAMEWALK)
+        end
+
+        local _, meta = ugui.toggle_button({
+            uid = UID.Swim,
+            rectangle = grid_rect(5, AUTOMATION_ROW, 2, 1),
+            text = Locales.str('SWIM'),
+            is_checked = Settings.tas.swim,
+        })
+        if meta.signal_change == ugui.signal_change_states.started then
+            action.invoke(ACTION_TOGGLE_SWIM)
         end
     end,
 }
