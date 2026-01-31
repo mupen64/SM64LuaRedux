@@ -142,7 +142,7 @@ return {
 
         local atan_strain, meta = ugui.toggle_button({
             uid = UID.AtanStrain,
-            rectangle = grid_rect(4, 2, 3, 1),
+            rectangle = Settings.tas.atan_strain and grid_rect(4, 2, 3, 1) or grid_rect(4, 2, 4, 1),
             text = Locales.str('ATAN_STRAIN'),
             is_checked = Settings.tas.atan_strain,
         })
@@ -153,12 +153,14 @@ return {
             Settings.tas.atan_start = Memory.current.mario_global_timer
         end
 
-        Settings.tas.reverse_arc = ugui.toggle_button({
-            uid = UID.AtanStrainReverse,
-            rectangle = grid_rect(7, 2, 1, 1),
-            text = Locales.str('ATAN_STRAIN_REV'),
-            is_checked = Settings.tas.reverse_arc,
-        })
+        if Settings.tas.atan_strain then
+            Settings.tas.reverse_arc = ugui.toggle_button({
+                uid = UID.AtanStrainReverse,
+                rectangle = grid_rect(7, 2, 1, 1),
+                text = Locales.str('ATAN_STRAIN_REV'),
+                is_checked = Settings.tas.reverse_arc,
+            })
+        end
 
         if Settings.tas.atan_strain then
             local function atan_field(index, text, up_callback, down_callback)
