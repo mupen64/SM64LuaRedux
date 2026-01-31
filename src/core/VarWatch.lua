@@ -25,9 +25,8 @@ local var_funcs = {
         return string.format(Locales.str('VARWATCH_Y_SPEED'), Formatter.ups(y_speed))
     end,
     ['spd_efficiency'] = function()
-        local percentage = Formatter.percent(Engine.GetSpeedEfficiency())
-
         local spd_efficiency = Engine.GetSpeedEfficiency()
+        local percentage = Formatter.percent(spd_efficiency)
         local d
         if spd_efficiency < 0.01 then
             d = 0
