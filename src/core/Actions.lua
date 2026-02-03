@@ -133,7 +133,7 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_DECREMENT_ANGLE,
     hotkey = { ctrl = true, key = Mupen.VKeycodes.VK_OEM_MINUS },
     on_press = function()
-        if ugui.internal.keyboard_captured_control then
+        if is_keyboard_captured then
             return
         end
 
@@ -153,7 +153,7 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_INCREMENT_ANGLE,
     hotkey = { ctrl = true, key = Mupen.VKeycodes.VK_OEM_PLUS },
     on_press = function()
-        if ugui.internal.keyboard_captured_control then
+        if is_keyboard_captured then
             return
         end
 
