@@ -4,6 +4,53 @@
 -- SPDX-License-Identifier: GPL-2.0-or-later
 --
 
+local AIR_HIT_WALL = 0x000008A7
+local BACKWARDS_AIR_KB = 0x010208B0
+local SOFT_BONK = 0x010208B6
+local HOLDING_POLE = 0x08100340
+local CLIMBING_POLE = 0x00100343
+local WALKING = 0x04000440
+local DECELERATING = 0x0400044A
+local LAVA_BOOST = 0x010208B7
+local LAVA_BOOST_LAND = 0x08000239
+local LONG_JUMP = 0x03000888
+local LONG_JUMP_LAND = 0x00000479
+local FREEFALL_LAND_STOP = 0x0C000232
+local CROUCH_SLIDE = 0x04808459
+local HOLD_WALKING = 0x00000442 -- Replace 0x04000442 with this?
+local TURNING_AROUND = 0x00000443 -- Replace 0x04000443 with this?
+local BRAKING = 0x04000445 
+local HOLD_BUTT_SLIDE = 0x00840454
+local BUTT_SLIDE = 0x00840452
+local TRIPLE_JUMP = 0x01000882
+local FLYING_TRIPLE_JUMP = 0x03000894
+local SPECIAL_TRIPLE_JUMP = 0x030008AF
+local BACKFLIP_LAND = 0x0400047A
+local BACKFLIP_LAND_STOP = 0x0800022F
+local WALL_KICK = 0x03000886
+local SIDEFLIP = 0x01000887
+local FREEFALL = 0x0100088C
+local DIVE_SLIDE = 0x00880456
+
+-- MARIO action >= 0x04000470, <= 0x04000473
+local JUMP_LAND = 0x04000470 
+local FREEFALL_LAND = 0x04000471 
+local DOUBLE_JUMP_LAND = 0x04000472 
+local SIDE_FLIP_LAND = 0x04000473 
+
+-- MARIO action >= 0x00000474, <= 0x00000477
+local HOLD_JUMP_LAND = 0x00000474 
+local HOLD_FREEFALL_LAND = 0x00000475 
+local QUICKSAND_JUMP_LAND = 0x00000476 
+local HOLD_QUICKSAND_JUMP_LAND = 0x00000477
+
+-- MARIO action >= 0x0C008220, <= 0x0C008223
+local CROUCHING = 0x0C008220
+local START_CROUCHING = 0x0C008221 
+local STOP_CROUCHING = 0x0C008222 
+local START_CRAWLING = 0x0C008223 
+
+
 Engine = {}
 
 MovementModes = {
@@ -78,7 +125,7 @@ function Engine.getArctanAngle(r, d, n, s, goal)
 	s = s - 1
 	if (s < Memory.current.mario_global_timer and s > Memory.current.mario_global_timer - n - 1) then
 		yaw = 0
-		if (Memory.current.mario_action == 0x000008A7 or Memory.current.mario_action == 0x010208B6 or Memory.current.mario_action == 0x010208B0 or Memory.current.mario_action == 0x08100340 or Memory.current.mario_action == 0x00100343 and ENABLE_REVERSE_YAW_ON_WALLKICK) then
+		if (Memory.current.mario_action == AIR_HIT_WALL or Memory.current.mario_action == SOFT_BONK or Memory.current.mario_action == BACKWARDS_AIR_KB or Memory.current.mario_action == HOLDING_POLE or Memory.current.mario_action == CLIMBING_POLE and ENABLE_REVERSE_YAW_ON_WALLKICK) then
 			yaw = 32768
 		end
 		if Settings.tas.movement_mode == MovementModes.match_angle then
@@ -122,13 +169,13 @@ Engine.inputsForAngle = function(goal, curr_input)
 	end
 	if (Settings.tas.movement_mode == MovementModes.match_yaw) then
 		goal = corrected_facing_yaw
-		if ((Memory.current.mario_action == 0x000008A7 or Memory.current.mario_action == 0x010208B6 or Memory.current.mario_action == 0x010208B0 or Memory.current.mario_action == 0x08100340 or Memory.current.mario_action == 0x00100343) and ENABLE_REVERSE_YAW_ON_WALLKICK) then
+		if ((Memory.current.mario_action == AIR_HIT_WALL or Memory.current.mario_action == SOFT_BONK or Memory.current.mario_action == BACKWARDS_AIR_KB or Memory.current.mario_action == HOLDING_POLE or Memory.current.mario_action == CLIMBING_POLE) and ENABLE_REVERSE_YAW_ON_WALLKICK) then
 			goal = (goal + 32768) % 65536
 		end
 	end
 	if (Settings.tas.movement_mode == MovementModes.reverse_yaw) then
 		goal = (corrected_facing_yaw + 32768) % 65536
-		if ((Memory.current.mario_action == 0x000008A7 or Memory.current.mario_action == 0x010208B6 or Memory.current.mario_action == 0x010208B0 or Memory.current.mario_action == 0x08100340 or Memory.current.mario_action == 0x00100343) and ENABLE_REVERSE_YAW_ON_WALLKICK) then
+		if ((Memory.current.mario_action == AIR_HIT_WALL or Memory.current.mario_action == SOFT_BONK or Memory.current.mario_action == BACKWARDS_AIR_KB or Memory.current.mario_action == HOLDING_POLE or Memory.current.mario_action == CLIMBING_POLE) and ENABLE_REVERSE_YAW_ON_WALLKICK) then
 			goal = corrected_facing_yaw
 		end
 	end
@@ -140,12 +187,12 @@ Engine.inputsForAngle = function(goal, curr_input)
 	end
 
 	if Settings.tas.strain_speed_target then
-		if Memory.current.mario_action == 0x04000440 or Memory.current.mario_action == 0x0400044A or Memory.current.mario_action == 0x08000239 or Memory.current.mario_action == 0x0C000232 or Memory.current.mario_action == 0x04000442 or Memory.current.mario_action == 0x04000443 or Memory.current.mario_action == 0x010208B7 or Memory.current.mario_action == 0x04000445 or Memory.current.mario_action == 0x00840454 or Memory.current.mario_action == 0x00840452 or (Memory.current.mario_action > 0x0400046F and Memory.current.mario_action < 0x04000474) or (Memory.current.mario_action > 0x00000473 and Memory.current.mario_action < 0x00000478) then
+		if Memory.current.mario_action == WALKING or Memory.current.mario_action == DECELERATING or Memory.current.mario_action == LAVA_BOOST_LAND or Memory.current.mario_action == FREEFALL_LAND_STOP or Memory.current.mario_action == 0x04000442 or Memory.current.mario_action == 0x04000443 or Memory.current.mario_action == LAVA_BOOST or Memory.current.mario_action == BRAKING or Memory.current.mario_action == HOLD_BUTT_SLIDE or Memory.current.mario_action == BUTT_SLIDE or (Memory.current.mario_action >= JUMP_LAND and Memory.current.mario_action <= SIDE_FLIP_LAND) or (Memory.current.mario_action >= HOLD_JUMP_LAND and Memory.current.mario_action <= HOLD_QUICKSAND_JUMP_LAND) then
 			actionflag = 1
 		else
 			actionflag = 0
 		end
-		if (Memory.current.mario_f_speed > 937 / 30 and Memory.current.mario_f_speed < 31.9 + offset * 3000000 and (Memory.current.mario_action == 0x04808459 or Memory.current.mario_action == 0x00000479) and Memory.current.mario_held_buttons < 128 and curr_input.A and (Memory.current.mario_held_buttons % 128 > 63 or not curr_input.B) and Settings.tas.movement_mode == MovementModes.match_yaw) then
+		if (Memory.current.mario_f_speed > 937 / 30 and Memory.current.mario_f_speed < 31.9 + offset * 3000000 and (Memory.current.mario_action == CROUCH_SLIDE or Memory.current.mario_action == LONG_JUMP_LAND) and Memory.current.mario_held_buttons < 128 and curr_input.A and (Memory.current.mario_held_buttons % 128 > 63 or not curr_input.B) and Settings.tas.movement_mode == MovementModes.match_yaw) then
 			targetspeed = 48 - Memory.current.mario_f_speed / 2
 			speedsign = 1
 			if (Memory.current.mario_f_speed > 32) then
@@ -153,7 +200,7 @@ Engine.inputsForAngle = function(goal, curr_input)
 			else
 				goal = Engine.getDyaw(Engine.getgoal(targetspeed))
 			end
-		elseif (Memory.current.mario_f_speed >= 10 and offset ~= 0 and Memory.current.mario_f_speed < 34.85 and Memory.current.mario_action == 0x04808459 and (Memory.current.mario_held_buttons > 127 or not curr_input.A) and Memory.current.mario_held_buttons % 128 < 64 and curr_input.B and Settings.tas.movement_mode == MovementModes.match_yaw) then
+		elseif (Memory.current.mario_f_speed >= 10 and offset ~= 0 and Memory.current.mario_f_speed < 34.85 and Memory.current.mario_action == CROUCH_SLIDE and (Memory.current.mario_held_buttons > 127 or not curr_input.A) and Memory.current.mario_held_buttons % 128 < 64 and curr_input.B and Settings.tas.movement_mode == MovementModes.match_yaw) then
 			speedsign = 1
 			targetspeed = 32
 			if (Memory.current.mario_f_speed > 32) then
@@ -162,56 +209,56 @@ Engine.inputsForAngle = function(goal, curr_input)
 			else
 				goal = Engine.getDyaw(13927)
 			end
-		elseif (Memory.current.mario_f_speed > -337 / 30 - offset / 1.5 and Memory.current.mario_f_speed < -9.9 and Memory.current.mario_action == 0x00000479 and Settings.tas.movement_mode == MovementModes.reverse_yaw) then
+		elseif (Memory.current.mario_f_speed > -337 / 30 - offset / 1.5 and Memory.current.mario_f_speed < -9.9 and Memory.current.mario_action == LONG_JUMP_LAND and Settings.tas.movement_mode == MovementModes.reverse_yaw) then
 			targetspeed = -16 - Memory.current.mario_f_speed / 2
 			if (Memory.current.mario_f_speed < -11.9) then targetspeed = targetspeed - 2 end
 			speedsign = -1
 			goal = Engine.getDyaw(Engine.getgoal(targetspeed))
-		elseif (Memory.current.mario_f_speed > 46.85 and Memory.current.mario_f_speed < 47.85 + offset and Memory.current.mario_action == 0x03000888 and Settings.tas.movement_mode == MovementModes.match_yaw) then
+		elseif (Memory.current.mario_f_speed > 46.85 and Memory.current.mario_f_speed < 47.85 + offset and Memory.current.mario_action == LONG_JUMP and Settings.tas.movement_mode == MovementModes.match_yaw) then
 			targetspeed = 48
 			if (Memory.current.mario_f_speed > 49.85) then targetspeed = targetspeed + 1 end
 			speedsign = 1
 			goal = Engine.getDyaw(Engine.getgoal(targetspeed))
-		elseif (Memory.current.mario_f_speed > 30.85 and Memory.current.mario_f_speed < 31.85 + offset and (actionflag == 0 or (Memory.current.mario_action == 0x04000472 and Memory.current.mario_hat_state % 16 > 7 and Memory.current.mario_held_buttons < 128 and curr_input.A)) and Memory.current.mario_action ~= 0x03000888 and Memory.current.mario_action ~= 0x00000479 and Memory.current.mario_action ~= 0x04808459 and (Memory.current.mario_action ~= 0x00880456 or ((Memory.current.mario_held_buttons < 128 and curr_input.A) or (Memory.current.mario_held_buttons % 128 < 64 and curr_input.B))) and ((Memory.current.mario_held_buttons % 128 > 63 or not curr_input.B) or Memory.current.mario_action == 0x00880456) and Settings.tas.movement_mode == MovementModes.match_yaw) then
+		elseif (Memory.current.mario_f_speed > 30.85 and Memory.current.mario_f_speed < 31.85 + offset and (actionflag == 0 or (Memory.current.mario_action == DOUBLE_JUMP_LAND and Memory.current.mario_hat_state % 16 > 7 and Memory.current.mario_held_buttons < 128 and curr_input.A)) and Memory.current.mario_action ~= LONG_JUMP and Memory.current.mario_action ~= LONG_JUMP_LAND and Memory.current.mario_action ~= CROUCH_SLIDE and (Memory.current.mario_action ~= DIVE_SLIDE or ((Memory.current.mario_held_buttons < 128 and curr_input.A) or (Memory.current.mario_held_buttons % 128 < 64 and curr_input.B))) and ((Memory.current.mario_held_buttons % 128 > 63 or not curr_input.B) or Memory.current.mario_action == DIVE_SLIDE) and Settings.tas.movement_mode == MovementModes.match_yaw) then
 			targetspeed = 32
 			if (Memory.current.mario_f_speed > 33.85) then targetspeed = targetspeed + 1 end
 			speedsign = 1
 			goal = Engine.getDyaw(Engine.getgoal(targetspeed))
-			if (Memory.current.mario_action == 0x000008A7 or Memory.current.mario_action == 0x010208B6 or Memory.current.mario_action == 0x010208B0 or Memory.current.mario_action == 0x08100340 or Memory.current.mario_action == 0x00100343 and ENABLE_REVERSE_YAW_ON_WALLKICK) then
+			if (Memory.current.mario_action == AIR_HIT_WALL or Memory.current.mario_action == SOFT_BONK or Memory.current.mario_action == BACKWARDS_AIR_KB or Memory.current.mario_action == HOLDING_POLE or Memory.current.mario_action == CLIMBING_POLE and ENABLE_REVERSE_YAW_ON_WALLKICK) then
 				goal = (goal + 32768) % 65536
 			end
-		elseif (Memory.current.mario_f_speed > 15.85 and Memory.current.mario_f_speed < 16.85 + offset and (((Memory.current.mario_action == 0x01000882 or Memory.current.mario_action == 0x030008AF or Memory.current.mario_action == 0x03000886 or Memory.current.mario_action == 0x03000894 or Memory.current.mario_action == 0x01000887 or Memory.current.mario_action == 0x0100088C) or (Memory.current.mario_action == 0x04000472 and Memory.current.mario_hat_state % 16 > 7)) and Memory.current.mario_held_buttons % 128 < 64 and curr_input.B) and Settings.tas.movement_mode == MovementModes.match_yaw) then
+		elseif (Memory.current.mario_f_speed > 15.85 and Memory.current.mario_f_speed < 16.85 + offset and (((Memory.current.mario_action == TRIPLE_JUMP or Memory.current.mario_action == SPECIAL_TRIPLE_JUMP or Memory.current.mario_action == WALL_KICK or Memory.current.mario_action == FLYING_TRIPLE_JUMP or Memory.current.mario_action == SIDEFLIP or Memory.current.mario_action == FREEFALL) or (Memory.current.mario_action == DOUBLE_JUMP_LAND and Memory.current.mario_hat_state % 16 > 7)) and Memory.current.mario_held_buttons % 128 < 64 and curr_input.B) and Settings.tas.movement_mode == MovementModes.match_yaw) then
 			targetspeed = 32 - 15
 			if (Memory.current.mario_f_speed > 18.85) then targetspeed = targetspeed + 1 end
 			speedsign = 1
 			goal = Engine.getDyaw(Engine.getgoal(targetspeed))
-			if (Memory.current.mario_action == 0x000008A7 or Memory.current.mario_action == 0x010208B6 or Memory.current.mario_action == 0x010208B0 or Memory.current.mario_action == 0x08100340 or Memory.current.mario_action == 0x00100343 and ENABLE_REVERSE_YAW_ON_WALLKICK) then
+			if (Memory.current.mario_action == AIR_HIT_WALL or Memory.current.mario_action == SOFT_BONK or Memory.current.mario_action == BACKWARDS_AIR_KB or Memory.current.mario_action == HOLDING_POLE or Memory.current.mario_action == CLIMBING_POLE and ENABLE_REVERSE_YAW_ON_WALLKICK) then
 				goal = (goal + 32768) % 65536
 			end
-		elseif (Memory.current.mario_f_speed > -32 and Memory.current.mario_f_speed < 32 and ((Memory.current.mario_action >= 0x0C008220 and Memory.current.mario_action < 0x0C008224) or Memory.current.mario_action == 0x0400047A or Memory.current.mario_action == 0x0800022F) and Settings.tas.movement_mode == MovementModes.reverse_yaw) then
+		elseif (Memory.current.mario_f_speed > -32 and Memory.current.mario_f_speed < 32 and ((Memory.current.mario_action >= CROUCHING and Memory.current.mario_action <= START_CRAWLING) or Memory.current.mario_action == BACKFLIP_LAND or Memory.current.mario_action == BACKFLIP_LAND_STOP) and Settings.tas.movement_mode == MovementModes.reverse_yaw) then
 			speedsign = -1
 			goal = Engine.getDyaw(18840)
-		elseif (Memory.current.mario_f_speed > -16.85 - offset and Memory.current.mario_f_speed < -14.85 and Memory.current.mario_action ~= 0x00000479 and ((actionflag == 0 and (Memory.current.mario_action ~= 0x01000882 and Memory.current.mario_action ~= 0x030008AF and Memory.current.mario_action ~= 0x03000886 and Memory.current.mario_action ~= 0x03000894 and Memory.current.mario_action ~= 0x01000887 and Memory.current.mario_action ~= 0x0100088C or Memory.current.mario_held_buttons % 128 > 63 or not curr_input.B)) or (Memory.current.mario_action == 0x04000472 and Memory.current.mario_held_buttons < 128 and curr_input.A and (Memory.current.mario_held_buttons % 128 > 63 or not curr_input.B) and Memory.current.mario_hat_state % 16 > 7)) and Settings.tas.movement_mode == MovementModes.reverse_yaw) then
+		elseif (Memory.current.mario_f_speed > -16.85 - offset and Memory.current.mario_f_speed < -14.85 and Memory.current.mario_action ~= LONG_JUMP_LAND and ((actionflag == 0 and (Memory.current.mario_action ~= TRIPLE_JUMP and Memory.current.mario_action ~= SPECIAL_TRIPLE_JUMP and Memory.current.mario_action ~= WALL_KICK and Memory.current.mario_action ~= FLYING_TRIPLE_JUMP and Memory.current.mario_action ~= SIDEFLIP and Memory.current.mario_action ~= FREEFALL or Memory.current.mario_held_buttons % 128 > 63 or not curr_input.B)) or (Memory.current.mario_action == DOUBLE_JUMP_LAND and Memory.current.mario_held_buttons < 128 and curr_input.A and (Memory.current.mario_held_buttons % 128 > 63 or not curr_input.B) and Memory.current.mario_hat_state % 16 > 7)) and Settings.tas.movement_mode == MovementModes.reverse_yaw) then
 			targetspeed = -16
 			if (Memory.current.mario_f_speed < -17.85) then targetspeed = targetspeed - 2 end
 			speedsign = -1
 			goal = Engine.getDyaw(Engine.getgoal(targetspeed))
-		elseif (Memory.current.mario_f_speed > -31.85 - offset and Memory.current.mario_f_speed < -29.85 and Memory.current.mario_action ~= 0x00000479 and (((Memory.current.mario_action == 0x01000882 or Memory.current.mario_action == 0x030008AF or Memory.current.mario_action == 0x03000886 or Memory.current.mario_action == 0x03000894 or Memory.current.mario_action == 0x01000887 or Memory.current.mario_action == 0x0100088C) or (Memory.current.mario_action == 0x04000472 and Memory.current.mario_hat_state % 16 > 7)) and Memory.current.mario_held_buttons % 128 < 64 and curr_input.B) and Settings.tas.movement_mode == MovementModes.reverse_yaw) then
+		elseif (Memory.current.mario_f_speed > -31.85 - offset and Memory.current.mario_f_speed < -29.85 and Memory.current.mario_action ~= LONG_JUMP_LAND and (((Memory.current.mario_action == TRIPLE_JUMP or Memory.current.mario_action == SPECIAL_TRIPLE_JUMP or Memory.current.mario_action == WALL_KICK or Memory.current.mario_action == FLYING_TRIPLE_JUMP or Memory.current.mario_action == SIDEFLIP or Memory.current.mario_action == FREEFALL) or (Memory.current.mario_action == DOUBLE_JUMP_LAND and Memory.current.mario_hat_state % 16 > 7)) and Memory.current.mario_held_buttons % 128 < 64 and curr_input.B) and Settings.tas.movement_mode == MovementModes.reverse_yaw) then
 			targetspeed = -16 - 15
 			if (Memory.current.mario_f_speed < -32.85) then targetspeed = targetspeed - 2 end
 			speedsign = -1
 			goal = Engine.getDyaw(Engine.getgoal(targetspeed))
-		elseif (Memory.current.mario_f_speed > -21.0625 - offset / 0.8 and Memory.current.mario_f_speed < -18.5625 and Memory.current.mario_action ~= 0x00000479 and (Memory.current.mario_action ~= 0x04000472 or Memory.current.mario_hat_state % 16 < 8) and (actionflag == 1 or Memory.current.mario_action == 0x04808459) and Memory.current.mario_held_buttons < 128 and curr_input.A and Settings.tas.movement_mode == MovementModes.reverse_yaw) then
+		elseif (Memory.current.mario_f_speed > -21.0625 - offset / 0.8 and Memory.current.mario_f_speed < -18.5625 and Memory.current.mario_action ~= LONG_JUMP_LAND and (Memory.current.mario_action ~= DOUBLE_JUMP_LAND or Memory.current.mario_hat_state % 16 < 8) and (actionflag == 1 or Memory.current.mario_action == CROUCH_SLIDE) and Memory.current.mario_held_buttons < 128 and curr_input.A and Settings.tas.movement_mode == MovementModes.reverse_yaw) then
 			targetspeed = -16 + Memory.current.mario_f_speed / 5
 			if (Memory.current.mario_f_speed < -22.3125) then targetspeed = targetspeed - 2 end
 			speedsign = -1
 			goal = Engine.getDyaw(Engine.getgoal(targetspeed))
-		elseif (Memory.current.mario_f_speed > 38.5625 and Memory.current.mario_f_speed < 39.8125 + offset / 0.8 and Memory.current.mario_action ~= 0x00000479 and Memory.current.mario_action ~= 0x03000888 and (Memory.current.mario_action ~= 0x04000472 or Memory.current.mario_hat_state % 16 < 8) and actionflag == 1 and Memory.current.mario_held_buttons < 128 and curr_input.A and (Memory.current.mario_held_buttons % 128 > 63 or not curr_input.B) and Settings.tas.movement_mode == MovementModes.match_yaw) then
+		elseif (Memory.current.mario_f_speed > 38.5625 and Memory.current.mario_f_speed < 39.8125 + offset / 0.8 and Memory.current.mario_action ~= LONG_JUMP_LAND and Memory.current.mario_action ~= LONG_JUMP and (Memory.current.mario_action ~= DOUBLE_JUMP_LAND or Memory.current.mario_hat_state % 16 < 8) and actionflag == 1 and Memory.current.mario_held_buttons < 128 and curr_input.A and (Memory.current.mario_held_buttons % 128 > 63 or not curr_input.B) and Settings.tas.movement_mode == MovementModes.match_yaw) then
 			targetspeed = 32 + Memory.current.mario_f_speed / 5
 			if (Memory.current.mario_f_speed > 42.3125) then targetspeed = targetspeed + 1 end
 			speedsign = 1
 			goal = Engine.getDyaw(Engine.getgoal(targetspeed))
-		elseif (Memory.current.mario_f_speed > 20 and Memory.current.mario_f_speed < 21.0625 + offset / 0.8 and Memory.current.mario_action == 0x04000472 and Memory.current.mario_hat_state % 16 < 8 and Memory.current.mario_held_buttons < 128 and curr_input.A and Memory.current.mario_held_buttons % 128 < 64 and curr_input.B and Settings.tas.movement_mode == MovementModes.match_yaw) then
+		elseif (Memory.current.mario_f_speed > 20 and Memory.current.mario_f_speed < 21.0625 + offset / 0.8 and Memory.current.mario_action == DOUBLE_JUMP_LAND and Memory.current.mario_hat_state % 16 < 8 and Memory.current.mario_held_buttons < 128 and curr_input.A and Memory.current.mario_held_buttons % 128 < 64 and curr_input.B and Settings.tas.movement_mode == MovementModes.match_yaw) then
 			targetspeed = 32 - 15 + Memory.current.mario_f_speed / 5
 			if (Memory.current.mario_f_speed > 23.5625) then targetspeed = targetspeed + 1 end
 			speedsign = 1
@@ -223,7 +270,7 @@ Engine.inputsForAngle = function(goal, curr_input)
 	end
 	if (Settings.tas.movement_mode == MovementModes.match_angle and Settings.tas.dyaw) then
 		goal = Engine.getDyaw(goal)
-		if (Memory.current.mario_action == 0x000008A7 or Memory.current.mario_action == 0x010208B6 or Memory.current.mario_action == 0x010208B0 or Memory.current.mario_action == 0x08100340 or Memory.current.mario_action == 0x00100343 and ENABLE_REVERSE_YAW_ON_WALLKICK) then
+		if (Memory.current.mario_action == AIR_HIT_WALL or Memory.current.mario_action == SOFT_BONK or Memory.current.mario_action == BACKWARDS_AIR_KB or Memory.current.mario_action == HOLDING_POLE or Memory.current.mario_action == CLIMBING_POLE and ENABLE_REVERSE_YAW_ON_WALLKICK) then
 			goal = (goal + 32768) % 65536
 		end
 	end
