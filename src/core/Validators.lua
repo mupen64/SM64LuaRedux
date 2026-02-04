@@ -12,7 +12,7 @@ local validators = {}
 function validators.number(str)
     local num = tonumber(str)
     if num == nil then
-        return "Value must be an integer."
+        return "Value must be a number."
     end
 
     return nil
@@ -28,7 +28,7 @@ function validators.number_optional(str)
 
     local num = tonumber(str)
     if num == nil then
-        return "Value must be an integer."
+        return "Value must be a number or empty."
     end
 
     return nil
