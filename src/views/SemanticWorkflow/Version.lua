@@ -13,4 +13,4 @@
 
 -- Minor and Patch version shall behave as normal,
 -- meaning that full downwards compatibility within that Major version shall be guaranteed.
-SEMANTIC_WORKFLOW_FILE_VERSION = '1.0.0'
+SEMANTIC_WORKFLOW_FILE_VERSION = '1.1.0'

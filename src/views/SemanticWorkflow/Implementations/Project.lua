@@ -14,6 +14,7 @@ local Sheet = dofile(views_path .. 'SemanticWorkflow/Definitions/Sheet.lua')
 local function new_sheet_meta(name)
     return {
         name = name,
+        base_sheet = nil,
     }
 end
 
@@ -111,9 +112,16 @@ function __impl:load(file)
     self.all = {}
     local project_folder = self:project_folder()
     for _, sheet_meta in ipairs(self.meta.sheets) do
-        local new_sheet = Sheet.new(sheet_meta.name, false)
-        new_sheet:load(project_folder .. sheet_meta.name .. '.sws')
-        self.all[sheet_meta.name] = new_sheet
+        self.all[sheet_meta.name] = Sheet.new(sheet_meta.name, false)
+    end
+
+    for _, sheet_meta in ipairs(self.meta.sheets) do
+        local new_sheet = self.all[sheet_meta.name]
+        local has_state = sheet_meta.base_sheet == nil
+        new_sheet:load(project_folder .. sheet_meta.name .. '.sws', has_state)
+        if not has_state then
+            self.all[sheet_meta.name]:set_base_sheet(self.all[sheet_meta.base_sheet])
+        end
     end
 end
 
