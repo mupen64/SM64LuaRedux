@@ -273,7 +273,7 @@ local function atdrawd2d()
     end
 
     -- HACK: We turn off hotkeys while a control is capturing inputs
-    action.lock_hotkeys(is_keyboard_captured)
+    action.lock_hotkeys(Settings.lock_hotkeys_when_control_active and is_keyboard_captured or false)
 
     VarWatch_update()
 
