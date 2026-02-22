@@ -1,5 +1,5 @@
 local ugui = {
-    _VERSION = 'v3.0.2',
+    _VERSION = 'v3.0.3',
     _URL = 'https://github.com/Aurumaker72/mupen-lua-ugui',
     _DESCRIPTION = 'Flexible immediate-mode GUI library for Mupen Lua',
     _LICENSE = 'GPL-3',
@@ -274,35 +274,36 @@ ugui.internal = {
         return res
     end,
 
-    ---Merges two tables deeply, combining their contents while giving precedence to the second table's values.
-    ---@param a table The first table to merge.
-    ---@param b table The second table to merge.
-    ---@return table The merged table.
-    ---@nodiscard
+    ---Merges two tables deeply, mutating the second table with the first table's values, giving precedence to the first table's values.
+    ---@param a table The override table, whose values take precedence.
+    ---@param b table The source and target table, mutated in-place.
+    ---@return function A function that rolls back all changes made to b.
     deep_merge = function(a, b)
-        local result = {}
+        local rollback_ops = {}
 
         local function merge(t1, t2)
-            local merged = {}
             for key, value in pairs(t1) do
                 if type(value) == 'table' and type(t2[key]) == 'table' then
-                    merged[key] = merge(value, t2[key])
+                    merge(value, t2[key])
                 else
-                    merged[key] = value
+                    local prev = t2[key]
+                    t2[key] = value
+                    local t2_ref = t2
+                    local k = key
+                    rollback_ops[#rollback_ops + 1] = function()
+                        t2_ref[k] = prev
+                    end
                 end
             end
-
-            for key, value in pairs(t2) do
-                if type(value) == 'table' and type(t1[key]) == 'table' then
-                else
-                    merged[key] = value
-                end
-            end
-
-            return merged
         end
 
-        return merge(a, b)
+        merge(a, b)
+
+        return function()
+            for i = #rollback_ops, 1, -1 do
+                rollback_ops[i]()
+            end
+        end
     end,
 
     ---Performs an in-place stable sort on the specified table.
@@ -591,13 +592,12 @@ ugui.internal = {
             return function() end
         end
 
-        -- If there's a styler mixin, we merge it into the control's rendering params
-        local prev_styler_params = ugui.internal.deep_clone(ugui.standard_styler.params)
-        ugui.standard_styler.params = ugui.internal.deep_merge(ugui.standard_styler.params, control.styler_mixin)
+        -- If there's a styler mixin, we merge it into the control's rendering params.
+        local rollback = ugui.internal.deep_merge(control.styler_mixin, ugui.standard_styler.params)
 
-        -- Revert the styler mixin. This is really slow :(
+        -- Revert the styler mixin.
         return function()
-            ugui.standard_styler.params = prev_styler_params
+            rollback()
         end
     end,
 
