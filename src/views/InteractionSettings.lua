@@ -6,7 +6,8 @@
 
 local UID = UIDProvider.allocate_once('InteractionSettings', function(enum_next)
     return {
-        EnableManualOnJoystickInteract = enum_next()
+        EnableManualOnJoystickInteract = enum_next(),
+        LockHotkeysWhenControlActive = enum_next()
     }
 end)
 
@@ -18,6 +19,17 @@ local items = {
                 uid = UID.EnableManualOnJoystickInteract,
                 rectangle = rect,
                 is_checked = Settings.enable_manual_on_joystick_interact,
+                text = Locales.str('GENERIC_ON'),
+            })
+        end,
+    },
+    {
+        text = Locales.str('SETTINGS_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE'),
+        func = function(rect)
+            Settings.lock_hotkeys_when_control_active = ugui.toggle_button({
+                uid = UID.LockHotkeysWhenControlActive,
+                rectangle = rect,
+                is_checked = Settings.lock_hotkeys_when_control_active,
                 text = Locales.str('GENERIC_ON'),
             })
         end,
