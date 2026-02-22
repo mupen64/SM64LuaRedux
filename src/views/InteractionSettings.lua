@@ -24,7 +24,7 @@ local items = {
         end,
     },
     {
-        text = Locales.str('SETTINGS_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE'),
+        text = Locales.str('SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE'),
         func = function(rect)
             Settings.lock_hotkeys_when_control_active = ugui.toggle_button({
                 uid = UID.LockHotkeysWhenControlActive,
