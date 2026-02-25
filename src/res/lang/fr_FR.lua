@@ -125,6 +125,7 @@ Cette action est irréversible.
     SETTINGS_VISUALS_NOTIFICATIONS = 'Notifications',
     SETTINGS_VISUALS_NOTIFICATIONS_BUBBLE = 'Bulle',
     SETTINGS_VISUALS_NOTIFICATIONS_CONSOLE = 'Console',
+    SETTINGS_VISUALS_NOTIFICATIONS_TOOLTIP = 'Le style utilisé pour les notifications.\n    Bulle : afficher les notifications au-dessus du jeu.\n    Console : afficher les notifications dans la console Lua.',
     SETTINGS_VISUALS_FF_FPS = 'FPS en avance rapide',
     SETTINGS_VISUALS_FF_FPS_TOOLTIP = 'Les FPS lors de l\'avance rapide. Diminuer pour améliorer les performances.',
     SETTINGS_VISUALS_UPDATE_EVERY_VI = 'Mettre à jour chaque VI',
@@ -137,10 +138,20 @@ Cette action est irréversible.
     SETTINGS_VARWATCH_ANGLE_FORMAT = 'Format d\'angle',
     SETTINGS_VARWATCH_ANGLE_FORMAT_SHORT = 'Court',
     SETTINGS_VARWATCH_ANGLE_FORMAT_DEGREE = 'Degré',
+    SETTINGS_VARWATCH_ANGLE_FORMAT_TOOLTIP = 'Le style de formatage pour les variables d\'angle.\n    Court : Formate les angles comme des short (0-65535)\n    Degré : Formate les angles en degrés (0-360)',
     SETTINGS_VARWATCH_DECIMAL_POINTS = 'Décimales',
+    SETTINGS_VARWATCH_DECIMAL_POINTS_TOOLTIP = 'Le nombre maximum de décimales affichées dans les nombres.',
+    SETTINGS_VARWATCH_SPD_EFFICIENCY = 'Visualisation efficacité de vitesse',
+    SETTINGS_VARWATCH_SPD_EFFICIENCY_PERCENTAGE = 'Pourcentage',
+    SETTINGS_VARWATCH_SPD_EFFICIENCY_FRACTION = 'Fraction',
+    SETTINGS_VARWATCH_SPD_EFFICIENCY_TOOLTIP = 'Le style de formatage pour l\'efficacité de vitesse.\n    Pourcentage : affiche en pourcentage (0‑100 %)\n    Fraction : affiche comme fraction mathématique (par ex. 1/4)',
     SETTINGS_MEMORY_FILE_SELECT = 'Sélectionner le fichier de carte...',
+    SETTINGS_MEMORY_FILE_SELECT_TOOLTIP = 'Choisissez un fichier .map pour charger les adresses',
     SETTINGS_MEMORY_DETECT_NOW = 'Détection automatique maintenant',
+    SETTINGS_MEMORY_DETECT_NOW_TOOLTIP = 'Détecte automatiquement la région du jeu en cours d\'exécution',
     SETTINGS_MEMORY_DETECT_ON_START = 'Détection automatique au démarrage',
+    SETTINGS_MEMORY_DETECT_ON_START_TOOLTIP = 'Détecte automatiquement la région du jeu au démarrage du script',
+    SETTINGS_MEMORY_REGION_TOOLTIP = 'La région du jeu actuelle',
     SETTINGS_HOTKEYS_NOTHING = '(rien)',
     SETTINGS_HOTKEYS_CONFIRMATION = 'Appuyer sur Entrée pour confirmer',
     SETTINGS_HOTKEYS_CLEAR = 'Effacer',
@@ -154,6 +165,7 @@ Cette action est irréversible.
     TOOLS_RNG_LOCK = 'Verrouiller sur',
     TOOLS_RNG_USE_INDEX = 'Utiliser l\'index',
     TOOLS_DUMPING = 'Export',
+    TOOLS_EXPERIMENTS = 'Expériences',
     TOOLS_GHOST = 'Fantôme',
     TOOLS_GHOST_START = 'Démarrer l\'enregistrement',
     TOOLS_GHOST_STOP = 'Arrêter l\'enregistrement',
@@ -179,6 +191,8 @@ Cette action est irréversible.
     VARWATCH_H_SLIDING = 'Vitesse de glisse H : %s',
     VARWATCH_Y_SPEED = 'Vitesse Y : %s',
     VARWATCH_SPD_EFFICIENCY = 'Efficacité Vitesse : %s',
+    VARWATCH_SPD_EFFICIENCY_PERCENTAGE = 'Efficacité Vitesse : %s',
+    VARWATCH_SPD_EFFICIENCY_FRACTION = 'Efficacité Vitesse : %d/4',
     VARWATCH_POS_X = 'X : %s',
     VARWATCH_POS_Y = 'Y : %s',
     VARWATCH_POS_Z = 'Z : %s',
@@ -197,6 +211,162 @@ Cette action est irréversible.
     ADDRESS_JAPAN = 'Japon',
     ADDRESS_SHINDOU = 'Shindou',
     ADDRESS_PAL = 'Europe',
+    -- placing help explanations here so they don't clutter the bottom
+    SEMANTIC_WORKFLOW_HELP_EXPLANATIONS = {
+        PROJECT_TAB = {
+            HEADING = 'Projets Flux Sémantique',
+            PAGES = {
+                {
+                    HEADING = 'À propos',
+                    TEXT =
+                    [[
+Cette page vous permet de rejouer une séquence d'entrées TAS en partant d'un état spécifique avec effet immédiat.
+
+Le but est de parcourir rapidement les effets de petits changements "dans le passé" afin d'itérer plus efficacement sur différentes implémentations de la même stratégie.
+
+En gérant les soi-disant "projets de flux sémantique", il est possible de concevoir des runs complets en termes de sémantiques composées de quelques sections seulement.
+
+Cet outil est divisé en plusieurs pages d'onglets que vous pouvez sélectionner en haut. Une fois que vous avez commencé à travailler sur un projet de flux sémantique, une page d'aide dédiée sera disponible pour chaque onglet comme celle-ci.
+
+Cliquez sur la flèche "suivant" en haut pour en savoir plus sur la façon de commencer.
+]],
+                },
+                {
+                    HEADING = 'Premiers pas',
+                    TEXT =
+                    [[
+L'entité principale avec laquelle vous travaillerez est la "Feuille".
+Une Feuille décrit une séquence d'entrées qui, à partir d'un point spécifique, tentera d'effectuer une certaine suite d'actions constituant un segment d'un run complet.
+Les feuilles sont subdivisées en sections, chaque section se terminant soit lorsqu'un certain nombre de frames est passé, soit lorsqu'une autre condition est remplie.
+
+Cette page vous permet de gérer plusieurs feuilles liées dans un "Projet de flux sémantique".
+Les projets de flux sémantique sont en réalité juste un ensemble de feuilles sauvegardées dans un répertoire à côté du fichier de projet (*.swp).
+Vous pouvez créer, sauvegarder et charger des projets en utilisant les boutons correspondants en haut.
+
+Le bouton "Nouveau" demandera un emplacement pour le nouveau projet. Il est recommandé de créer un nouveau dossier vide pour le projet, car avoir plusieurs projets dans le même répertoire peut les faire interférer involontairement.
+Le bouton "Sauvegarder" enregistrera toujours par-dessus le fichier de projet actuellement chargé sans confirmation, sauf si vous n'avez encore ouvert ou créé aucun projet.
+]],
+                },
+                {
+                    HEADING = 'Enregistrement de fichiers .m64',
+                    TEXT =
+                    [[
+Une fois que vous êtes satisfait de votre travail, vous voudrez probablement l'enregistrer dans un fichier .m64.
+Pour ce faire, ouvrez un fichier .m64 dans mupen comme d'habitude et laissez-le jouer jusqu'à un état qui correspond au savestate de la première feuille que vous voulez lire de manière sémantique.
+Ensuite, passez en mode lecture/écriture afin que les frames puissent être enregistrées.
+Vous pouvez également y parvenir en commençant simplement un nouvel enregistrement à partir du savestate de la première feuille.
+
+Ensuite, cliquez sur les flèches pointant vers la droite ("Jouer sans charger .st") pour chaque feuille dans l'ordre.
+(Assurez-vous de les laisser jouer jusqu'à la fin avant d'appuyer sur la suivante)
+Ceci, bien sûr, suppose que les feuilles sont correctement "assemblées", c'est-à-dire que chaque feuille que vous cliquez commence là où la précédente se termine (c'est-à-dire où se trouve son image d'aperçu).
+
+Ne jouez pas de films .m64 pendant que vous créez des feuilles, car cela produira des entrées imprévisibles.
+Lors de la lecture d'un fichier .m64, assurez-vous qu'aucune feuille n'est sélectionnée dans la liste des feuilles du projet.
+]],
+                },
+                {
+                    HEADING = 'Utilisation de git',
+                    TEXT =
+                    [[
+Le fichier de projet de flux sémantique et ses fichiers de feuilles associés suivent un format lisible par l'homme.
+Afin de garder une trace du travail effectué sur un TAS, je recommande d'initialiser un dépôt git local dans le répertoire où se trouve le fichier .swp.
+De cette façon, vous pouvez enregistrer votre projet et faire un commit chaque fois que vous avez fait des progrès significatifs, et gérer différentes branches pour comparer des stratégies.
+Cela aide à suivre les progrès, à prévenir la perte de travail et à garder les choses organisées.
+
+Pour faire un commit, il suffit de cliquer sur « Sauvegarder » et de committer tous les changements.
+Après avoir basculé sur un commit ou une branche, vous devrez « Ouvrir » de nouveau le fichier .swp pour recharger tout depuis le disque.
+
+Vous pouvez même trouver utile de gérer d'autres fichiers avec git, aussi, comme des fantômes, des fichiers .m64 enregistrés, des configurations de traceur STROOP ou des rédactions de stratégies !
+]],
+                },
+                {
+                    HEADING = 'Versions de fichiers',
+                    TEXT =
+                    [[
+Les fichiers .sws et .swp suivent le versionnement sémantique ; c'est-à-dire un format <MAJOR>.<MINOR>.<PATCH>.
+Comparez la version du script en cours d'exécution (en haut à droite à côté du bouton d'aide) avec la version du fichier vue dans l'onglet Projet pour comprendre ce qui se passe :
+
+Les versions MAJEURES peuvent être incompatibles vers le haut comme vers le bas.
+Mettez à jour ou rétrogradez le script en conséquence.
+
+Les versions MINEURES peuvent être incompatibles vers le haut,
+par exemple lorsqu'une version mineure plus élevée introduit une nouvelle fonctionnalité non encore prise en charge par la version de script inférieure.
+
+Les versions PATCH devraient être compatibles vers le haut comme vers le bas dans la même version mineure, car elles sont destinées uniquement aux corrections de bogues.
+Cependant, comme c'est la nature des bogues, cela peut parfois ne pas être fait correctement ¯\\_(ツ)_/¯
+]],
+                },
+            },
+        },
+        INPUTS_TAB = {
+            HEADING = 'Éditeur d\'entrées',
+            PAGES = {
+                {
+                    HEADING = 'Aperçu',
+                    TEXT =
+                    [[
+Cliquez sur la colonne "#Section" dans la liste de sections pour sélectionner l'image d'aperçu (en surbrillance en rouge).
+Vous pouvez développer et réduire les sections qui ont plus d'une frame d'entrée initiale.
+Cliquez la colonne du milieu dans la liste des sections pour sélectionner la "frame active" (en surbrillance en vert), qui est utilisée pour l'édition (plus d'informations sur la page d'aide suivante).
+
+Chaque fois que vous apportez des modifications à des entrées (par ex. changer des boutons), le jeu sera rejoué jusqu'à l'image d'aperçu depuis le début de la feuille avec les nouvelles entrées.
+
+Les boutons "+Section" et "-Section" ajoutent et suppriment respectivement une section à la section actuellement sélectionnée.
+Une feuille doit toujours avoir au moins une section.
+
+Les boutons "+Input" et "-Input" ajoutent et suppriment respectivement une frame à la frame sélectionnée dans la section sélectionnée.
+Ceci est utile pour initier une nouvelle action comme un long jump, par exemple après avoir atterri d'un rollout précédent.
+
+Les contrôles en bas se comportent de la même manière que les vues « TAS » standard auxquelles vous êtes peut-être habitué, juste dans une disposition plus condensée.
+]],
+                },
+                {
+                    HEADING = 'Édition',
+                    TEXT =
+                    [[
+Vous pouvez sélectionner une plage d'entrées de joystick à éditer en cliquant gauche et en faisant glisser sur les mini-joysticks dans la plage désirée. Maintenez la touche CTRL pour ne pas réinitialiser la sélection lors du clic gauche.
+La plage sélectionnée suivra la frame active mise en évidence par une bordure verte.
+Ses valeurs seront affichées dans les contrôles du joystick en bas, et lorsque vous effectuerez des modifications, ces valeurs seront copiées dans la plage sélectionnée.
+
+Si le basculement 'Modifier l'état entier' dans la page de préférences est désactivé, seules les modifications apportées à la frame active (plutôt que toutes ses valeurs) seront copiées dans la plage sélectionnée.
+
+Lorsque la frame active et l'image d'aperçu sont identiques, la surbrillance deviendra d'un vert jaunâtre.
+
+Pour modifier les entrées de boutons, il suffit de cliquer et de faire glisser sur les petits cercles à droite. Cela n'est pas affecté par, et n'affecte pas, votre sélection ou votre frame active.
+]],
+                },
+                {
+                    HEADING = 'Arctan straining',
+                    TEXT =
+                    [[
+L'arctan straining fonctionne de manière similaire à ce dont vous avez l'habitude dans l'onglet TAS.
+Cliquer sur le bouton 'Activer' permettra d'activer l'arctan straining pour les frames d'entrée sélectionnées, mais ne définira pas les variables 'start' et 'N'.
+Pour ce faire, cliquez sur le bouton 'Recalculer...', puis sélectionnez la frame de début désirée (inclusive), suivie de la frame de fin désirée (exclusive).
+Vous pouvez toujours ajuster manuellement les paramètres selon vos besoins par la suite.
+]],
+                },
+            },
+        },
+        PREFERENCES_TAB = {
+            HEADING = 'Préférences',
+            PAGES = {
+                {
+                    HEADING = 'Vue d\'ensemble',
+                    TEXT =
+                    [[
+Cette page affiche et modifie des paramètres qui ne sont pas stockés dans un projet de flux sémantique, et qui persistent plutôt dans vos paramètres locaux.
+Chaque paramètre peut obtenir une page d'aide individuelle ici à l'avenir. Pour l'instant, voici une brève liste de ce que fait chaque paramètre :
+
+- Modifier l'état entier : Copier l'intégralité de l'état du joystick de la frame active dans la plage sélectionnée dans la page « Entrées ». Lorsqu'il est désactivé, seules les valeurs modifiées seront copiées dans la plage sélectionnée.
+
+- Avance rapide : Jouer le jeu en mode vitesse maximale lors de la relecture d'une feuille (par exemple lors de modifications). Lorsqu'il est désactivé, le jeu reviendra en temps réel.
+
+- Délai de section par défaut : Le nombre de frames après lesquelles une nouvelle section expirera par défaut.
+]],
+                },
+            },
+        },
+    },
     -- Actions (kept in English as these are technical SM64 terms)
     ACTIONS = {
         [0x04000201] = 'idle',

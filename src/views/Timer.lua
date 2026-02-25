@@ -36,7 +36,6 @@ return {
 
         if ugui.button({
                 uid = UID.Start,
-
                 rectangle = grid_rect(0, 0, 2, 1),
                 text = Locales.str('TIMER_START'),
             }) then
@@ -44,7 +43,6 @@ return {
         end
         if ugui.button({
                 uid = UID.Stop,
-
                 rectangle = grid_rect(2, 0, 2, 1),
                 text = Locales.str('TIMER_STOP'),
             }) then
@@ -52,7 +50,6 @@ return {
         end
         if ugui.button({
                 uid = UID.Reset,
-
                 rectangle = grid_rect(4, 0, 2, 1),
                 text = Locales.str('TIMER_RESET'),
             }) then

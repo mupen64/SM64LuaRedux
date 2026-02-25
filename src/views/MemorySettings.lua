@@ -36,14 +36,14 @@ return {
             rectangle = grid_rect(4, 0, 4, 1),
             items = lualinq.select_key(Addresses, 'name'),
             selected_index = Settings.address_source_index,
-            tooltip = 'The current game region',
+            tooltip = Locales.str('SETTINGS_MEMORY_REGION_TOOLTIP'),
         })
 
         if ugui.button({
                 uid = UID.AutoDetect,
                 rectangle = grid_rect(0, 1, 4, 1),
                 text = Locales.str('SETTINGS_MEMORY_DETECT_NOW'),
-                tooltip = 'Autodetects the game region based on the currently running game',
+                tooltip = Locales.str('SETTINGS_MEMORY_DETECT_NOW_TOOLTIP'),
             }) then
             Settings.address_source_index = Memory.find_matching_address_source_index()
         end
@@ -53,7 +53,7 @@ return {
             rectangle = grid_rect(4, 1, 4, 1),
             text = Locales.str('SETTINGS_MEMORY_DETECT_ON_START'),
             is_checked = Settings.autodetect_address,
-            tooltip = 'Autodetects the game region when starting the script',
+            tooltip = Locales.str('SETTINGS_MEMORY_DETECT_ON_START_TOOLTIP'),
         })
     end,
 }

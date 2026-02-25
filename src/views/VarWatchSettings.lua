@@ -16,46 +16,48 @@ local UID = UIDProvider.allocate_once('VarWatchSettings', function(enum_next)
     }
 end)
 
-local items = {
-    {
-        text = Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT'),
-        func = function(rect)
-            if ugui.button({
-                    uid = UID.AngleFormat,
+local function make_items()
+    return {
+        {
+            text = Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT'),
+            func = function(rect)
+                if ugui.button({
+                        uid = UID.AngleFormat,
+                        rectangle = rect,
+                        text = Settings.format_angles_degrees and Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT_DEGREE') or Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT_SHORT'),
+                        tooltip = Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT_TOOLTIP'),
+                    }) then
+                    Settings.format_angles_degrees = not Settings.format_angles_degrees
+                end
+            end,
+        },
+        {
+            text = Locales.str('SETTINGS_VARWATCH_DECIMAL_POINTS'),
+            func = function(rect)
+                Settings.format_decimal_points = math.abs(ugui.numberbox({
+                    uid = UID.DecimalPlaces,
                     rectangle = rect,
-                    text = Settings.format_angles_degrees and Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT_DEGREE') or Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT_SHORT'),
-                    tooltip = 'The formatting style for angle variables.\n    Short: Formats angles like signed shorts (0-65535)\n    Degree: Formats angles in degrees (0-360)',
-                }) then
-                Settings.format_angles_degrees = not Settings.format_angles_degrees
-            end
-        end,
-    },
-    {
-        text = Locales.str('SETTINGS_VARWATCH_DECIMAL_POINTS'),
-        func = function(rect)
-            Settings.format_decimal_points = math.abs(ugui.numberbox({
-                uid = UID.DecimalPlaces,
-                rectangle = rect,
-                value = Settings.format_decimal_points,
-                places = 1,
-                tooltip = 'The maximum number of decimal places displayed in numbers.',
-            }))
-        end,
-    },
-    {
-        text = Locales.str('SETTINGS_VARWATCH_SPD_EFFICIENCY'),
-        func = function(rect)
-            if ugui.button({
-                    uid = UID.SpeedEfficiency,
-                    rectangle = rect,
-                    text = Settings.spd_efficiency_fraction and Locales.str('SETTINGS_VARWATCH_SPD_EFFICIENCY_FRACTION') or Locales.str('SETTINGS_VARWATCH_SPD_EFFICIENCY_PERCENTAGE'),
-                    tooltip = 'The formatting style for the speed efficiency variable.\n    Percentage: Shows the speed efficiency as a percentage (0-100%)\n    Fraction: Shows the speed efficiency as a mathematical fraction (e.g. 1/4)',
-                }) then
-                Settings.spd_efficiency_fraction = not Settings.spd_efficiency_fraction
-            end
-        end,
-    },
-}
+                    value = Settings.format_decimal_points,
+                    places = 1,
+                    tooltip = Locales.str('SETTINGS_VARWATCH_DECIMAL_POINTS_TOOLTIP'),
+                }))
+            end,
+        },
+        {
+            text = Locales.str('SETTINGS_VARWATCH_SPD_EFFICIENCY'),
+            func = function(rect)
+                if ugui.button({
+                        uid = UID.SpeedEfficiency,
+                        rectangle = rect,
+                        text = Settings.spd_efficiency_fraction and Locales.str('SETTINGS_VARWATCH_SPD_EFFICIENCY_FRACTION') or Locales.str('SETTINGS_VARWATCH_SPD_EFFICIENCY_PERCENTAGE'),
+                        tooltip = Locales.str('SETTINGS_VARWATCH_SPD_EFFICIENCY_TOOLTIP'),
+                    }) then
+                    Settings.spd_efficiency_fraction = not Settings.spd_efficiency_fraction
+                end
+            end,
+        },
+    }
+end
 local selected_var_index = 1
 
 return {
@@ -100,6 +102,6 @@ return {
             is_checked = not Settings.variables[selected_var_index].visible,
         })
 
-        Drawing.setting_list(items, { x = 0, y = 9 })
+        Drawing.setting_list(make_items(), { x = 0, y = 9 })
     end,
 }

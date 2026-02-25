@@ -90,12 +90,27 @@ function Drawing.setting_list(items, pos)
     local theme = Styles.theme()
     local foreground_color = Drawing.foreground_color()
 
+    -- helper to compute how many grid cells a piece of text needs
+    local function text_span(text)
+        if not text or text == '' then
+            return 1
+        end
+        local size = BreitbandGraphics.get_text_size(
+            text,
+            theme.font_size * Drawing.scale * 1.25,
+            theme.font_name)
+        local cell_width = Settings.grid_size * Drawing.scale
+        local span = math.ceil(size.width / cell_width)
+        return math.max(8, span) -- never shrink below default eight cells
+    end
+
     local y = pos.y
     for i = 1, #items, 1 do
         local item = items[i]
+        local span = text_span(item.text)
 
         BreitbandGraphics.draw_text(
-            grid_rect(pos.x, y, 8, 0.5),
+            grid_rect(pos.x, y, span, 0.5),
             'start',
             'center',
             { aliased = not theme.cleartype },
@@ -122,6 +137,35 @@ function grid_rect(x, y, x_span, y_span, gap)
         width = value[3],
         height = value[4],
     }
+end
+
+---Returns a grid rectangle whose horizontal span is at least the provided
+---`default_span` but will grow to fit the given text if the string is
+---too wide for the allotted number of cells. This is handy for buttons and
+---other controls that ought to accomodate translated labels without
+---overflowing.
+---@param text string The text that will be drawn inside the rectangle.
+---@param x number Grid x coordinate
+---@param y number Grid y coordinate
+---@param default_span number The minimum x span (cells)
+---@param y_span number The y span (cells)
+---@param gap? number Optional gap parameter passed to grid_rect
+---@return Rectangle
+function Drawing.auto_grid_rect(text, x, y, default_span, y_span, gap)
+    -- measure the text at the current UI font settings
+    local theme = Styles.theme()
+    local font_size = theme.font_size * Drawing.scale
+    local font_name = theme.font_name
+    local size = BreitbandGraphics.get_text_size(text, font_size, font_name)
+
+    -- compute cell width in pixels
+    local cell_width = Settings.grid_size * Drawing.scale
+    local needed_span = math.ceil((size.width + (gap or Settings.grid_gap) * 2) / cell_width)
+    if needed_span < default_span then
+        needed_span = default_span
+    end
+
+    return grid_rect(x, y, needed_span, y_span, gap)
 end
 
 function grid_rect_abs(x, y, x_span, y_span, gap)
