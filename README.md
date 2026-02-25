@@ -37,8 +37,10 @@ The [SM64 Lua Redux Wiki](https://github.com/Mupen64-Rewrite/SM64LuaRedux/wiki) 
 - Presets[^3]
 - Customizable formatting[^6]
 - 3D World Visualization[^7]
+- **Multi-language support** – interface can be switched between English and French (and others can be added)[^8]
 
 [^2]: The script will resize its elements intelligently to fit, and will thus work on small and huge resolutions
 [^3]: Save and restore an infinite amount of program states. 
 [^6]: The amount of decimal points values are rounded to can be changed, as well as angles being expressed as degrees or game units
 [^7]: Allows you to see object positions as well as other useful information directly in the game world
+[^8]: See `src/res/lang/` for available locale files; switch language from the Visuals settings tab.
