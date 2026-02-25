@@ -124,9 +124,6 @@ Locales = {}
 ---@field public SETTINGS_VARWATCH_ANGLE_FORMAT_SHORT string
 ---@field public SETTINGS_VARWATCH_ANGLE_FORMAT_DEGREE string
 ---@field public SETTINGS_VARWATCH_DECIMAL_POINTS string
----@field public SETTINGS_VARWATCH_SPD_EFFICIENCY string
----@field public SETTINGS_VARWATCH_SPD_EFFICIENCY_PERCENTAGE string
----@field public SETTINGS_VARWATCH_SPD_EFFICIENCY_FRACTION string
 ---@field public SETTINGS_MEMORY_FILE_SELECT string
 ---@field public SETTINGS_MEMORY_DETECT_NOW string
 ---@field public SETTINGS_MEMORY_DETECT_ON_START string
@@ -147,7 +144,9 @@ Locales = {}
 ---@field public TOOLS_GHOST_STOP string
 ---@field public TOOLS_GHOST_START_RECORDING_FAILED string
 ---@field public TOOLS_GHOST_STOP_RECORDING_FAILED string
----@field public TOOLS_EXPERIMENTS string
+---@field public TOOLS_TRACKERS string
+---@field public TOOLS_OVERLAYS string
+---@field public TOOLS_AUTOMATION string
 ---@field public TOOLS_MOVED_DIST string
 ---@field public TOOLS_MINI_OVERLAY string
 ---@field public TOOLS_AUTO_FIRSTIES string
@@ -162,8 +161,7 @@ Locales = {}
 ---@field public VARWATCH_H_SPEED string
 ---@field public VARWATCH_H_SLIDING string
 ---@field public VARWATCH_Y_SPEED string
----@field public VARWATCH_SPD_EFFICIENCY_PERCENTAGE string
----@field public VARWATCH_SPD_EFFICIENCY_FRACTION string
+---@field public VARWATCH_SPD_EFFICIENCY string
 ---@field public VARWATCH_POS_X string
 ---@field public VARWATCH_POS_Y string
 ---@field public VARWATCH_POS_Z string
@@ -191,6 +189,7 @@ local locales = {}
 
 local files = {
     'en_US',
+    'fr_FR', -- added french locale
 }
 
 for i = 1, #files, 1 do
