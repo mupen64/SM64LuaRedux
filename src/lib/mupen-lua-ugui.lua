@@ -1677,26 +1677,7 @@ ugui.standard_styler = {
         end
 
         ugui.standard_styler.draw_raised_frame(control, visual_state)
-
-        -- determine if text would overflow and compute a scale factor
-        local scale_factor = 1
-        if control.text and control.rectangle then
-            local size = ugui.standard_styler.compute_rich_text(control.text, control.plaintext).size
-            local available = control.rectangle.width - 4
-            if size.x > available and size.x > 0 then
-                scale_factor = available / size.x
-            end
-        end
-
-        -- temporarily adjust font size if scaling is needed
-        if scale_factor < 1 then
-            local old_font = ugui.standard_styler.params.font_size
-            ugui.standard_styler.params.font_size = old_font * scale_factor
-            ugui.standard_styler.draw_rich_text(control.rectangle, nil, nil, control.text, ugui.standard_styler.params.button.text[visual_state], visual_state, control.plaintext)
-            ugui.standard_styler.params.font_size = old_font
-        else
-            ugui.standard_styler.draw_rich_text(control.rectangle, nil, nil, control.text, ugui.standard_styler.params.button.text[visual_state], visual_state, control.plaintext)
-        end
+        ugui.standard_styler.draw_rich_text(control.rectangle, nil, nil, control.text, ugui.standard_styler.params.button.text[visual_state], visual_state, control.plaintext)
     end,
 
     ---Draws a ToggleButton with the specified parameters.
