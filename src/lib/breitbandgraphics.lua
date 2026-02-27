@@ -375,12 +375,29 @@ BreitbandGraphics.inflate_rectangle = function(rectangle, amount)
     }
 end
 
+---Normalize a text value so that callers can pass strings, numbers or
+---functions returning strings.
+---@param text string|number|fun():string
+---@return string
+local function normalize_text(text)
+    if type(text) == 'function' then
+        -- evaluate lazily computed text (e.g. for localization helpers)
+        text = text()
+    end
+    if type(text) ~= 'string' then
+        -- fall back to tostring for anything else; avoids crashes when nil/number
+        text = tostring(text or '')
+    end
+    return text
+end
+
 ---Computes the bounding box of a text string given a font size and font name.
----@param text string The string to be measured.
+---@param text string|number|fun():string The string to be measured.
 ---@param font_size number The font size.
 ---@param font_name string The font name.
 ---@return Size # The text's bounding box.
 BreitbandGraphics.get_text_size = function(text, font_size, font_name)
+    text = normalize_text(text)
     return d2d.get_text_size(text, font_name, font_size, 99999999, 99999999)
 end
 
@@ -491,6 +508,9 @@ BreitbandGraphics.draw_text = function(rectangle, horizontal_alignment, vertical
         text = ''
     end
 
+    -- allow callers to supply a function for dynamic strings (localization, etc.)
+    text = normalize_text(text)
+
     local rect_x = rectangle.x
     local rect_y = rectangle.y
     local rect_w = rectangle.width
@@ -600,6 +620,9 @@ BreitbandGraphics.draw_text2 = function(params)
         return
     end
 
+    -- allow lazy text expressions
+    params.text = normalize_text(params.text)
+
     local internal_alignment_to_d2d_alignment_map = {
         [BreitbandGraphics.alignment.start] = 0,
         [BreitbandGraphics.alignment.center] = 2,
@@ -637,7 +660,7 @@ BreitbandGraphics.draw_text2 = function(params)
     end
     if params.fit then
         -- Try to fit the text into the specified rectangle by reducing the font size
-        local text_size = d2d.get_text_size(params.text, params.font_name, params.font_size, math.maxinteger, math.maxinteger)
+        local text_size = d2d.get_text_size(normalize_text(params.text), params.font_name, params.font_size, math.maxinteger, math.maxinteger)
 
         if text_size.width > params.rectangle.width then
             font_size = font_size / math.max(0.01, (text_size.width / params.rectangle.width))
@@ -646,7 +669,7 @@ BreitbandGraphics.draw_text2 = function(params)
             font_size = font_size / math.max(0.01, (text_size.height / params.rectangle.height))
         end
 
-        local text_size = d2d.get_text_size(params.text, params.font_name, font_size, math.maxinteger, math.maxinteger)
+        local text_size = d2d.get_text_size(normalize_text(params.text), params.font_name, font_size, math.maxinteger, math.maxinteger)
 
         -- Since the rect stays the same, the text will want to wrap.
         -- We solve that by recomputing the rect and alignments
@@ -675,6 +698,8 @@ BreitbandGraphics.draw_text2 = function(params)
 
 
     d2d.set_text_antialias_mode(d_text_antialias_mode)
+    -- final normalization before handing to drawing API
+    params.text = normalize_text(params.text)
     d2d.draw_text(
         rect_x,
         rect_y,

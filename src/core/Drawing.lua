@@ -91,7 +91,15 @@ function Drawing.setting_list(items, pos)
     local foreground_color = Drawing.foreground_color()
 
     -- helper to compute how many grid cells a piece of text needs
+    local function resolve_text(t)
+        if type(t) == 'function' then
+            t = t()
+        end
+        return t
+    end
+
     local function text_span(text)
+        text = resolve_text(text)
         if not text or text == '' then
             return 1
         end
@@ -109,6 +117,7 @@ function Drawing.setting_list(items, pos)
         local item = items[i]
         local span = text_span(item.text)
 
+        local display_text = resolve_text(item.text)
         BreitbandGraphics.draw_text(
             grid_rect(pos.x, y, span, 0.5),
             'start',
@@ -117,7 +126,7 @@ function Drawing.setting_list(items, pos)
             foreground_color,
             theme.font_size * Drawing.scale * 1.25,
             theme.font_name,
-            item.text)
+            display_text)
 
         item.func(grid_rect(pos.x, y + 0.6, 4, 1))
 
@@ -152,6 +161,11 @@ end
 ---@param gap? number Optional gap parameter passed to grid_rect
 ---@return Rectangle
 function Drawing.auto_grid_rect(text, x, y, default_span, y_span, gap)
+    -- resolve possibly-lazy text (callbacks used by some views)
+    if type(text) == 'function' then
+        text = text()
+    end
+
     -- measure the text at the current UI font settings
     local theme = Styles.theme()
     local font_size = theme.font_size * Drawing.scale
