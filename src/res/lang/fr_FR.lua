@@ -12,7 +12,7 @@ return {
     GENERIC_OFF = 'Désactivé',
     GENERIC_START = 'Démarrer',
     GENERIC_STOP = 'Arrêter',
-    GENERIC_RESET = 'Réinitialiser',
+    GENERIC_RESET = 'Effacer',
     GENERIC_NIL = 'nil',
     -- Tab names
     TAS_TAB_NAME = 'TAS',
@@ -131,7 +131,7 @@ Cette action est irréversible.
     SETTINGS_VISUALS_UPDATE_EVERY_VI = 'Mettre à jour chaque VI',
     SETTINGS_VISUALS_UPDATE_EVERY_VI_TOOLTIP =
     'Met à jour l\'UI chaque VI, améliorant la synchronisation de capture mupen. Réduit les performances.',
-    SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT = "Activer le mode manuel lors de l'interaction joystick",
+    SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT = "Interaction joystick",
     SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE = "Verrouiller les raccourcis quand un contrôle est actif",
     SETTINGS_VARWATCH_DISABLED = '(désactivé)',
     SETTINGS_VARWATCH_HIDE = 'Cacher',
@@ -145,7 +145,7 @@ Cette action est irréversible.
     SETTINGS_VARWATCH_SPD_EFFICIENCY_PERCENTAGE = 'Pourcentage',
     SETTINGS_VARWATCH_SPD_EFFICIENCY_FRACTION = 'Fraction',
     SETTINGS_VARWATCH_SPD_EFFICIENCY_TOOLTIP = 'Le style de formatage pour l\'efficacité de vitesse.\n    Pourcentage : affiche en pourcentage (0‑100 %)\n    Fraction : affiche comme fraction mathématique (par ex. 1/4)',
-    SETTINGS_MEMORY_FILE_SELECT = 'fichier de la carte...',
+    SETTINGS_MEMORY_FILE_SELECT = 'Fichier de la carte...',
     SETTINGS_MEMORY_FILE_SELECT_TOOLTIP = 'Choisissez un fichier .map pour charger les adresses',
     SETTINGS_MEMORY_DETECT_NOW = 'Détecter maintenant',
     SETTINGS_MEMORY_DETECT_NOW_TOOLTIP = 'Détecte automatiquement la région du jeu en cours d\'exécution',
@@ -155,7 +155,7 @@ Cette action est irréversible.
     SETTINGS_HOTKEYS_NOTHING = '(rien)',
     SETTINGS_HOTKEYS_CONFIRMATION = 'Appuyer sur Entrée pour confirmer',
     SETTINGS_HOTKEYS_CLEAR = 'Effacer',
-    SETTINGS_HOTKEYS_RESET = 'Réinitialiser',
+    SETTINGS_HOTKEYS_RESET = 'Effacer',
     SETTINGS_HOTKEYS_ASSIGN = 'Assigner',
     SETTINGS_HOTKEYS_ACTIVATION = 'Activation des raccourcis',
     SETTINGS_HOTKEYS_ACTIVATION_ALWAYS = 'Toujours',
@@ -181,7 +181,7 @@ Cette action est irréversible.
     -- Timer Tab
     TIMER_START = 'Démarrer',
     TIMER_STOP = 'Arrêter',
-    TIMER_RESET = 'Réinitialiser',
+    TIMER_RESET = 'Effacer',
     TIMER_MANUAL = 'Manuel',
     TIMER_AUTO = 'Auto',
     -- Varwatch display strings
@@ -324,7 +324,7 @@ Les contrôles en bas se comportent de la même manière que les vues « TAS �
                     HEADING = 'Édition',
                     TEXT =
                     [[
-Vous pouvez sélectionner une plage d'entrées de joystick à éditer en cliquant gauche et en faisant glisser sur les mini-joysticks dans la plage désirée. Maintenez la touche CTRL pour ne pas réinitialiser la sélection lors du clic gauche.
+Vous pouvez sélectionner une plage d'entrées de joystick à éditer en cliquant gauche et en faisant glisser sur les mini-joysticks dans la plage désirée. Maintenez la touche CTRL pour ne pas Effacer la sélection lors du clic gauche.
 La plage sélectionnée suivra la frame active mise en évidence par une bordure verte.
 Ses valeurs seront affichées dans les contrôles du joystick en bas, et lorsque vous effectuerez des modifications, ces valeurs seront copiées dans la plage sélectionnée.
 

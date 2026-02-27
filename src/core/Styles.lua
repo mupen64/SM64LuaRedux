@@ -62,6 +62,7 @@ Styles.update_style = function()
 
     -- HACK: We scale some visual properties according to drawing scale
     local listbox_item_height = theme.listbox_item.height or ugui.standard_styler.params.listbox_item.height
+    -- base font size scaled by window scale
     mod_theme.font_size = theme.font_size * Drawing.scale
     mod_theme.icon_size = theme.icon_size * Drawing.scale
     mod_theme.listbox_item.height = listbox_item_height * Drawing.scale

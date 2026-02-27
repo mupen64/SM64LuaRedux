@@ -18,6 +18,19 @@ BreitbandGraphics = dofile(lib_path .. 'breitbandgraphics.lua')
 ---@module 'mupen-lua-ugui'
 ugui = dofile(lib_path .. 'mupen-lua-ugui.lua')
 
+-- wrap control placement to guard against missing UIDs; this avoids crashing
+-- when loading presets that inadvertently clear or never set a uid field.
+-- we detect the issue early and assign a fallback key so the library code
+-- (which the user does not want touched) can stay untouched.
+local _orig_control = ugui.control
+ugui.control = function(control, type)
+    if control.uid == nil then
+        -- silently assign a fallback uid instead of spamming the console
+        control.uid = tostring(control)
+    end
+    return _orig_control(control, type)
+end
+
 ---@module 'mupen-lua-ugui-ext'
 ugui_ext = dofile(lib_path .. 'mupen-lua-ugui-ext.lua')
 

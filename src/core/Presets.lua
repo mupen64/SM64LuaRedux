@@ -16,11 +16,37 @@ Presets = {
 
 Presets.persistent.presets[1] = ugui.internal.deep_clone(DEFAULT_PRESET)
 
+---Removes any stray `uid` fields from an object tree.  Presets can
+---accidentally capture GUI control tables which contain such fields; if
+---left in place they crash the UI when controls are later constructed.
+---@param obj any
+local function strip_uids(obj)
+    if type(obj) ~= 'table' then
+        return
+    end
+    obj.uid = nil
+    for k, v in pairs(obj) do
+        strip_uids(v)
+    end
+end
+
 ---Applies the preset at the specified index.
 ---@param i integer
 function Presets.apply(i)
     Presets.persistent.current_index = ugui.internal.clamp(i, 1, #Presets.persistent.presets)
-    Settings = Presets.persistent.presets[Presets.persistent.current_index]
+
+    -- start from default preset and merge the saved values on top; this
+    -- prevents missing fields (like new options added to Settings) from
+    -- becoming nil when loading an older preset.
+    local base = ugui.internal.deep_clone(DEFAULT_PRESET)
+    local chosen = Presets.persistent.presets[Presets.persistent.current_index]
+    local merged = deep_merge(base, chosen)
+    Settings = merged
+
+    -- sanitize the loaded settings before they take effect
+    strip_uids(Settings)
+
+
     Styles.update_style()
 end
 
@@ -46,6 +72,11 @@ function Presets.save()
     print('Saving preset...')
     Presets.apply(Presets.persistent.current_index)
 
+    -- sanitize everything we're about to write
+    for _, p in ipairs(Presets.persistent.presets or {}) do
+        strip_uids(p)
+    end
+
     local encoded = json.encode(Presets.persistent)
 
     local file = io.open(PRESETS_PATH, 'w')
@@ -70,6 +101,13 @@ function Presets.load()
     local deserialized = json.decode(encoded)
 
     deserialized = deep_merge(Presets.persistent, deserialized)
+
+    -- sanitize every preset in the loaded data
+    if deserialized.presets then
+        for _, p in ipairs(deserialized.presets) do
+            strip_uids(p)
+        end
+    end
 
     Presets.persistent = deserialized
 end

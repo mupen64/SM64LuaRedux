@@ -7,7 +7,7 @@
 local theme = get_base_style()
 
 theme.background_color = { r = 107, g = 116, b = 121 }
-theme.font_size = 14
+theme.font_size = 10
 -- not preinstalled
 -- theme.font_name = "Cuprum"
 theme.font_name = 'Candara'
