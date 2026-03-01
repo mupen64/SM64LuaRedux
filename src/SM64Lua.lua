@@ -171,7 +171,7 @@ local function draw_navbar()
         uid = UID.TabIndex,
         rectangle = grid_rect(0, 16, 5.5, 1),
         is_enabled = not Settings.hotkeys_assigning,
-        items = lualinq.select_key(views, 'name'),
+        items = lualinq.select(views, function(v) return v.name() end),
         selected_index = Settings.tab_index,
     })
 

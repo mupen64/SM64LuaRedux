@@ -60,7 +60,7 @@ local items = {
 local selected_var_index = 1
 
 return {
-    name = Locales.str('SETTINGS_VARWATCH_TAB_NAME'),
+    name = function() return Locales.str('SETTINGS_VARWATCH_TAB_NAME') end,
     draw = function()
         selected_var_index = ugui.listbox({
             uid = UID.SelectedVar,

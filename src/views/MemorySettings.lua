@@ -14,7 +14,7 @@ local UID = UIDProvider.allocate_once('MemorySettings', function(enum_next)
 end)
 
 return {
-    name = Locales.str('SETTINGS_MEMORY_TAB_NAME'),
+    name = function() return Locales.str('SETTINGS_MEMORY_TAB_NAME') end,
     draw = function()
         if ugui.button({
                 uid = UID.LoadMapFile,

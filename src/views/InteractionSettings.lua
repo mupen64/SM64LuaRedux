@@ -25,7 +25,7 @@ local items = {
 }
 
 return {
-    name = Locales.str('SETTINGS_INTERACTION_TAB_NAME'),
+    name = function() return Locales.str('SETTINGS_INTERACTION_TAB_NAME') end,
     draw = function()
         Drawing.setting_list(items, { x = 0, y = 0.1 })
     end,

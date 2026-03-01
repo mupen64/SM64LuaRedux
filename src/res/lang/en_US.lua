@@ -39,6 +39,9 @@ return {
     FRAMEWALK = 'Framewalk',
     SWIM = 'Swim',
     -- Semantic Workflow Tab
+    SEMANTIC_WORKFLOW_PROJECT_TAB_NAME = 'Project',
+    SEMANTIC_WORKFLOW_INPUTS_TAB_NAME = 'Inputs',
+    SEMANTIC_WORKFLOW_PREFERENCES_TAB_NAME = 'Preferences',
     YES = 'Yes',
     NO = 'No',
     SEMANTIC_WORKFLOW_HELP_HEADER_TITLE = 'Semantic Workflow Help',

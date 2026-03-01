@@ -9,6 +9,7 @@
 local __impl = __impl
 
 __impl.name = 'Project'
+__impl.display_name = function() return Locales.str('SEMANTIC_WORKFLOW_PROJECT_TAB_NAME') end
 __impl.help_key = 'PROJECT_TAB'
 
 ---@type Project

@@ -106,7 +106,7 @@ function CurrentSemanticWorkflowOverride()
 end
 
 return {
-    name = Locales.str('SEMANTIC_WORKFLOW_TAB_NAME'),
+    name = function() return Locales.str('SEMANTIC_WORKFLOW_TAB_NAME') end,
     draw = function()
         -- if we're showing any dialog, stop rendering anything else
         if SemanticWorkflowDialog ~= nil then
@@ -127,7 +127,7 @@ return {
         selected_tab_index = ugui.tabcontrol({
             uid = UID.SelectTab,
             rectangle = grid_rect(0, 0, 6, 1),
-            items = project_loaded and lualinq.select(Tabs, function(e) return e.name end) or { Tabs[1].name },
+            items = project_loaded and lualinq.select(Tabs, function(e) return e.display_name() end) or { Tabs[1].display_name() },
             selected_index = selected_tab_index,
         }).selected_index
 
