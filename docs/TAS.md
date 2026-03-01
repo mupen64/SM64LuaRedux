@@ -51,10 +51,6 @@ Sets the magnitude to 48 and enables High Magnitude.
 
 Removes the magnitude cap and disables High Magnitude.
 
-# Swim
-
-Swims automatically and optimally while underwater.
-
 # Tab Switcher
 
 Changes the current tab.

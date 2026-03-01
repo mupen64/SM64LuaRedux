@@ -7,7 +7,9 @@
 local RNG_ROW = 1
 local DUMPING_ROW = 3
 local GHOST_ROW = 5
-local EXPERIMENTS_ROW = 7
+local TRACKERS_ROW = 7
+local OVERLAYS_ROW = 9
+local AUTOMATION_ROW = 11
 
 local UID = UIDProvider.allocate_once('Tools', function(enum_next)
     return {
@@ -23,6 +25,8 @@ local UID = UIDProvider.allocate_once('Tools', function(enum_next)
         TrackMovedDistanceX = enum_next(),
         TrackMovedDistanceY = enum_next(),
         TrackMovedDistanceZ = enum_next(),
+        FrameWalk = enum_next(),
+        Swim = enum_next(),
     }
 end)
 
@@ -122,71 +126,112 @@ return {
         end
 
         BreitbandGraphics.draw_text(
-            grid_rect(0, EXPERIMENTS_ROW - 1, 8, 1),
+            grid_rect(0, TRACKERS_ROW - 1, 8, 1),
             'start',
             'center',
             { aliased = not theme.cleartype },
             foreground_color,
             theme.font_size * Drawing.scale * 1.25,
             theme.font_name,
-            Locales.str('TOOLS_EXPERIMENTS'))
+            Locales.str('TOOLS_TRACKERS'))
 
-        Settings.worldviz_enabled = ugui.toggle_button({
-            uid = UID.WorldVisualizer,
-            rectangle = grid_rect(0, EXPERIMENTS_ROW + 2, 4, 1),
-            text = Locales.str('TOOLS_WORLD_VISUALIZER'),
-            is_checked = Settings.worldviz_enabled,
-        })
-
-        local old_auto_firsties = Settings.auto_firsties
-        local auto_firsties = ugui.toggle_button({
-            uid = UID.AutoFirsties,
-            rectangle = grid_rect(3, EXPERIMENTS_ROW + 1, 3, 1),
-            text = Locales.str('TOOLS_AUTO_FIRSTIES'),
-            is_checked = old_auto_firsties,
-        })
-        if auto_firsties ~= old_auto_firsties then
-            action.invoke(ACTION_TOGGLE_AUTOFIRSTIES)
-        end
-
-        Settings.mini_visualizer = ugui.toggle_button({
-            uid = UID.MiniVisualizer,
-            rectangle = grid_rect(0, EXPERIMENTS_ROW + 1, 3, 1),
-            text = Locales.str('TOOLS_MINI_OVERLAY'),
-            is_checked = Settings.mini_visualizer,
-        })
-        local previous_track_moved_distance = Settings.track_moved_distance
-        Settings.track_moved_distance = ugui.toggle_button({
+        local track_moved_distance, meta = ugui.toggle_button({
             uid = UID.TrackMovedDistance,
-            rectangle = grid_rect(0, EXPERIMENTS_ROW, 3, 1),
+            rectangle = grid_rect(0, TRACKERS_ROW, 3, 1),
             text = Locales.str('TOOLS_MOVED_DIST'),
             is_checked = Settings.track_moved_distance,
         })
-        if Settings.track_moved_distance and not previous_track_moved_distance then
-            Settings.moved_distance_axis.x = Memory.current.mario_x
-            Settings.moved_distance_axis.y = Memory.current.mario_y
-            Settings.moved_distance_axis.z = Memory.current.mario_z
+        if meta.signal_change == ugui.signal_change_states.started then
+            Settings.track_moved_distance = track_moved_distance
+            if Settings.track_moved_distance then
+                Settings.moved_distance_axis.x = Memory.current.mario_x
+                Settings.moved_distance_axis.y = Memory.current.mario_y
+                Settings.moved_distance_axis.z = Memory.current.mario_z
+            else
+                Settings.moved_distance = Engine.get_distance_moved()
+            end
         end
-        if not Settings.track_moved_distance and previous_track_moved_distance then
-            Settings.moved_distance = Engine.get_distance_moved()
-        end
+
         Settings.moved_distance_x = ugui.toggle_button({
             uid = UID.TrackMovedDistanceX,
-            rectangle = grid_rect(3, EXPERIMENTS_ROW, 1, 1),
+            rectangle = grid_rect(3, TRACKERS_ROW, 1, 1),
             text = 'X',
             is_checked = Settings.moved_distance_x,
         })
         Settings.moved_distance_y = ugui.toggle_button({
             uid = UID.TrackMovedDistanceY,
-            rectangle = grid_rect(4, EXPERIMENTS_ROW, 1, 1),
+            rectangle = grid_rect(4, TRACKERS_ROW, 1, 1),
             text = 'Y',
             is_checked = Settings.moved_distance_y,
         })
         Settings.moved_distance_z = ugui.toggle_button({
             uid = UID.TrackMovedDistanceZ,
-            rectangle = grid_rect(5, EXPERIMENTS_ROW, 1, 1),
+            rectangle = grid_rect(5, TRACKERS_ROW, 1, 1),
             text = 'Z',
             is_checked = Settings.moved_distance_z,
         })
+
+        BreitbandGraphics.draw_text(
+            grid_rect(0, OVERLAYS_ROW - 1, 8, 1),
+            'start',
+            'center',
+            { aliased = not theme.cleartype },
+            foreground_color,
+            theme.font_size * Drawing.scale * 1.25,
+            theme.font_name,
+            Locales.str('TOOLS_OVERLAYS'))
+
+        Settings.worldviz_enabled = ugui.toggle_button({
+            uid = UID.WorldVisualizer,
+            rectangle = grid_rect(0, OVERLAYS_ROW, 3, 1),
+            text = Locales.str('TOOLS_WORLD_VISUALIZER'),
+            is_checked = Settings.worldviz_enabled,
+        })
+        Settings.mini_visualizer = ugui.toggle_button({
+            uid = UID.MiniVisualizer,
+            rectangle = grid_rect(3, OVERLAYS_ROW, 3, 1),
+            text = Locales.str('TOOLS_MINI_OVERLAY'),
+            is_checked = Settings.mini_visualizer,
+        })
+
+        BreitbandGraphics.draw_text(
+            grid_rect(0, AUTOMATION_ROW - 1, 8, 1),
+            'start',
+            'center',
+            { aliased = not theme.cleartype },
+            foreground_color,
+            theme.font_size * Drawing.scale * 1.25,
+            theme.font_name,
+            Locales.str('TOOLS_AUTOMATION'))
+
+        local _, meta = ugui.toggle_button({
+            uid = UID.AutoFirsties,
+            rectangle = grid_rect(0, AUTOMATION_ROW, 3, 1),
+            text = Locales.str('TOOLS_AUTO_FIRSTIES'),
+            is_checked = Settings.auto_firsties,
+        })
+        if meta.signal_change == ugui.signal_change_states.started then
+            action.invoke(ACTION_TOGGLE_AUTOFIRSTIES)
+        end
+
+        local _, meta = ugui.toggle_button({
+            uid = UID.FrameWalk,
+            rectangle = grid_rect(3, AUTOMATION_ROW, 2, 1),
+            text = Locales.str('FRAMEWALK'),
+            is_checked = Settings.tas.framewalk,
+        })
+        if meta.signal_change == ugui.signal_change_states.started then
+            action.invoke(ACTION_TOGGLE_FRAMEWALK)
+        end
+
+        local _, meta = ugui.toggle_button({
+            uid = UID.Swim,
+            rectangle = grid_rect(5, AUTOMATION_ROW, 2, 1),
+            text = Locales.str('SWIM'),
+            is_checked = Settings.tas.swim,
+        })
+        if meta.signal_change == ugui.signal_change_states.started then
+            action.invoke(ACTION_TOGGLE_SWIM)
+        end
     end,
 }

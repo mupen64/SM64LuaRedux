@@ -311,8 +311,8 @@ BreitbandGraphics.invert_color = function(color)
     local converted = color_source_to_float_color(color)
     return BreitbandGraphics.float_to_color({
         r = 1.0 - converted.r,
-        g = 1.0 - converted.r,
-        b = 1.0 - converted.r,
+        g = 1.0 - converted.g,
+        b = 1.0 - converted.b,
         a = converted.a,
     })
 end

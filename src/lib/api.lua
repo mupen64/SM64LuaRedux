@@ -1,12 +1,10 @@
+--
+-- Copyright (c) 2026, Mupen64 maintainers, contributors, and original authors (Hacktarux, ShadowPrince, linker).
+--
+-- SPDX-License-Identifier: GPL-2.0-or-later
+--
+
 ---@meta
-
--- version 1.2.0.1
-
--- This file has meta definitions for the functions implemented in mupen64.
--- https://github.com/mupen64/mupen64-rr-lua/blob/master/src/Views.Win32/lua/LuaRegistry.cpp
-
--- Additional (and very outdated) documentation can be found here:
--- https://docs.google.com/document/d/1SWd-oAFBKsGmwUs0qGiOrk3zfX9wYHhi3x5aKPQS_o0
 
 emu = {}
 memory = {}
@@ -23,6 +21,11 @@ action = {}
 clipboard = {}
 
 Mupen = {
+    _VERSION = '1.3.0-13',
+    _URL = 'https://github.com/mupen64/mupen64-rr-lua',
+    _DESCRIPTION = 'Mupen64 Lua Scripting API',
+    _LICENSE = 'GPL-2',
+
     ---@enum Result
     ---An enum containing results that can be returned by the core.
     result = {
@@ -389,7 +392,6 @@ function emu.atvi(f, unregister) end
 
 ---Similar to `emu.atvi`, but for wgui drawing commands.
 ---Only drawing functions from the wgui namespace will work here, those from d2d will not.
----Emulator execution may be running in parallel with this callback and it's therefore disallowed to call any functions that perform unsynchronized reads or writes from and to the emulator state, such as those from the memory namespace.
 ---If `unregister` is set to true, the function `f` will no longer be called when this event occurs, but it will error if you never registered the function.
 ---@param f fun(): nil The function to be called after every VI frame.
 ---@param unregister boolean? If true, then unregister the function `f`.
@@ -398,7 +400,6 @@ function emu.atupdatescreen(f, unregister) end
 
 ---Similar to `emu.atvi`, but for d2d and wgui drawing commands.
 ---Drawing functions from both the d2d and wgui namespaces will work here, but it's recommended to put wgui drawcalls into the `emu.atupdatescreen` callback for efficiency and compatibility reasons.
----Emulator execution may be running in parallel with this callback and it's therefore disallowed to call any functions that perform unsynchronized reads or writes from and to the emulator state, such as those from the memory namespace.
 ---If `unregister` is set to true, the function `f` will no longer be called when this event occurs, but it will error if you never registered the function.
 ---@param f fun(): nil The function to be called after every VI frame.
 ---@param unregister boolean? If true, then unregister the function `f`.
@@ -414,7 +415,6 @@ function emu.atdrawd2d(f, unregister) end
 function emu.atinput(f, unregister) end
 
 ---Calls the function `f` when the script is stopped.
----Emulator execution may be running in parallel with this callback and it's therefore disallowed to call any functions that perform unsynchronized reads or writes from and to the emulator state, such as those from the memory namespace.
 ---If `unregister` is set to true, the function `f` will no longer be called when this event occurs, but it will error if you never registered the function.
 ---@param f fun(): nil The function to be called when the script is stopped.
 ---@param unregister boolean? If true, then unregister the function `f`.
@@ -425,7 +425,6 @@ function emu.atstop(f, unregister) end
 ---The only message that can be received is WM_MOUSEWHEEL for compatibility.
 ---All other functionality as been deprecated.
 ---The message data is given to the function in 4 parameters.
----Emulator execution may be running in parallel with this callback and it's therefore disallowed to call any functions that perform unsynchronized reads or writes from and to the emulator state, such as those from the memory namespace.
 ---If `unregister` is set to true, the function `f` will no longer be called when this event occurs, but it will error if you never registered the function.
 ---@param f fun(a: integer, b: integer, c: integer, d: integer): nil The function to be called when a window message is received. a: wnd, b: msg, c: wParam, d: lParam.
 ---@param unregister boolean? If true, then unregister the function `f`.
@@ -433,7 +432,6 @@ function emu.atstop(f, unregister) end
 function emu.atwindowmessage(f, unregister) end
 
 ---Calls the function `f` constantly, even when the emulator is paused.
----Emulator execution may be running in parallel with this callback and it's therefore disallowed to call any functions that perform unsynchronized reads or writes from and to the emulator state, such as those from the memory namespace.
 ---If `unregister` is set to true, the function `f` will no longer be called when this event occurs, but it will error if you never registered the function.
 ---@param f fun(): nil The function to be called constantly.
 ---@param unregister boolean? If true, then unregister the function `f`.
@@ -441,7 +439,6 @@ function emu.atwindowmessage(f, unregister) end
 function emu.atinterval(f, unregister) end
 
 ---Calls the function `f` when a movie is played.
----Emulator execution may be running in parallel with this callback and it's therefore disallowed to call any functions that perform unsynchronized reads or writes from and to the emulator state, such as those from the memory namespace.
 ---If `unregister` is set to true, the function `f` will no longer be called when this event occurs, but it will error if you never registered the function.
 ---@param f fun(): nil The function to be called when a movie is played.
 ---@param unregister boolean? If true, then unregister the function `f`.
@@ -449,7 +446,6 @@ function emu.atinterval(f, unregister) end
 function emu.atplaymovie(f, unregister) end
 
 ---Calls the function `f` when a movie is stopped.
----Emulator execution may be running in parallel with this callback and it's therefore disallowed to call any functions that perform unsynchronized reads or writes from and to the emulator state, such as those from the memory namespace.
 ---If `unregister` is set to true, the function `f` will no longer be called when this event occurs, but it will error if you never registered the function.
 ---@param f fun(): nil The function to be called when a movie is stopped.
 ---@param unregister boolean? If true, then unregister the function `f`.
@@ -457,7 +453,6 @@ function emu.atplaymovie(f, unregister) end
 function emu.atstopmovie(f, unregister) end
 
 ---Calls the function `f` when a savestate is loaded.
----Emulator execution may be running in parallel with this callback and it's therefore disallowed to call any functions that perform unsynchronized reads or writes from and to the emulator state, such as those from the memory namespace.
 ---If `unregister` is set to true, the function `f` will no longer be called when this event occurs, but it will error if you never registered the function.
 ---@param f fun(): nil The function to be called when a savestate is loaded.
 ---@param unregister boolean? If true, then unregister the function `f`.
@@ -465,7 +460,6 @@ function emu.atstopmovie(f, unregister) end
 function emu.atloadstate(f, unregister) end
 
 ---Calls the function `f` when a savestate is saved.
----Emulator execution may be running in parallel with this callback and it's therefore disallowed to call any functions that perform unsynchronized reads or writes from and to the emulator state, such as those from the memory namespace.
 ---If `unregister` is set to true, the function `f` will no longer be called when this event occurs, but it will error if you never registered the function.
 ---@param f fun(): nil The function to be called when a savestate is saved.
 ---@param unregister boolean? If true, then unregister the function `f`.
@@ -473,7 +467,6 @@ function emu.atloadstate(f, unregister) end
 function emu.atsavestate(f, unregister) end
 
 ---Calls the function `f` when the emulator is reset.
----Emulator execution may be running in parallel with this callback and it's therefore disallowed to call any functions that perform unsynchronized reads or writes from and to the emulator state, such as those from the memory namespace.
 ---If `unregister` is set to true, the function `f` will no longer be called when this event occurs, but it will error if you never registered the function.
 ---@param f fun(): nil The function to be called when the emulator is reset.
 ---@param unregister boolean? If true, then unregister the function `f`.
@@ -481,14 +474,12 @@ function emu.atsavestate(f, unregister) end
 function emu.atreset(f, unregister) end
 
 ---Calls the function `f` when seek is completed.
----Emulator execution may be running in parallel with this callback and it's therefore disallowed to call any functions that perform unsynchronized reads or writes from and to the emulator state, such as those from the memory namespace.
 ---If `unregister` is set to true, the function `f` will no longer be called when this event occurs, but it will error if you never registered the function.
 ---@param f fun(): nil The function to be called when the seek is completed.
 ---@param unregister boolean? If true, then unregister the function `f`.
 ---@return nil
 function emu.atseekcompleted(f, unregister) end
 
----Emulator execution may be running in parallel with this callback and it's therefore disallowed to call any functions that perform unsynchronized reads or writes from and to the emulator state, such as those from the memory namespace.
 ---If `unregister` is set to true, the function `f` will no longer be called when this event occurs, but it will error if you never registered the function.
 ---@param f fun(): nil The function to be called.
 ---@param unregister boolean? If true, then unregister the function `f`.
@@ -524,8 +515,8 @@ function emu.inputcount() end
 ---@return string version The Mupen version.
 function emu.getversion(type) end
 
----Pauses or unpauses the emulator.
----@param pause boolean True pauses the emulator and false resumes it.
+---Pauses or unpauses the emulator. Note that the pause parameter is inverted for compatibility reasons.
+---@param pause boolean False pauses the emulator and true resumes it.
 ---@return nil
 function emu.pause(pause) end
 
@@ -888,6 +879,11 @@ function wgui.loadimage(path) end
 ---Clears one or all images.
 ---@param idx integer The identifier of the image to clear. If it is 0, clear all iamges.
 function wgui.deleteimage(idx) end
+
+---Saves an image to the specified path.
+---@param idx integer The identifier of the image to save.
+---@param path string The path to save the image to. The file extension determines the file format.
+function wgui.saveimage(idx, path) end
 
 ---Draws the image at index `idx` at the specified coordinates.
 ---@param idx integer
@@ -1307,7 +1303,7 @@ function input.get() end
 ---@return table
 function input.diff(t1, t2) end
 
----Opens a dialog in which the user can input text. 
+---Opens a dialog in which the user can input text.
 ---If the dialog is cancelled, `nil` is returned.
 ---@nodiscard
 ---@param title string? The title of the text box. Defaults to `"input:"`.
@@ -1422,8 +1418,25 @@ function movie.is_seeking() end
 ---@return [integer, integer]
 function movie.get_seek_completion() end
 
----Begins a warp modify.
----@param inputs {[string]: boolean}[]
+---Begins a warp modification operation. A "warp modification operation" is the changing of sample data which is
+---temporally behind the current sample.
+---The VCR engine will find the last common sample between the current input buffer and the provided one.
+---Then, the closest savestate prior to that sample will be loaded and recording will be resumed with the
+---modified inputs up to the sample the function was called at.
+---This operation is long-running and status is reported via the WarpModifyStatusChanged message.
+---A successful warp modify operation can be detected by the status changing from warping to none with no errors
+---inbetween.
+---If the provided buffer is identical to the current input buffer (in both content and size), the operation
+---will succeed with no seek.
+---If the provided buffer is larger than the current input buffer and the first differing input is after the
+---current sample, the operation will succeed with no seek. The input buffer will be overwritten with the
+---provided buffer and when the modified frames are reached in the future, they will be "applied" like in
+---playback mode.
+---If the provided buffer is smaller than the current input buffer, the VCR engine will seek to the last frame
+---and otherwise perform the warp modification as normal.
+---An empty input buffer will cause the operation to fail.
+---@param inputs JoypadInputs[] The new input buffer to use for the warp modification. Note that the X/Y joystick values are mismatched: X is Y and Y is X. This behavior is kept for backwards compatibility.
+---@return Result # The operation result.
 function movie.begin_warp_modify(inputs) end
 
 --#endregion
@@ -1431,16 +1444,6 @@ function movie.begin_warp_modify(inputs) end
 
 -- savestate functions
 --#region
-
----Saves a savestate to `filename`.
----@param filename string
----@return nil
-function savestate.savefile(filename) end
-
----Loads a savestate from `filename`.
----@param filename string
----@return nil
-function savestate.loadfile(filename) end
 
 ---A byte buffer encoded as a string.
 ---@alias ByteBuffer string
@@ -1466,7 +1469,7 @@ function savestate.do_file(path, job, callback, ignore_warnings) end
 function savestate.do_slot(slot, job, callback, ignore_warnings) end
 
 ---Executes a savestate operation in-memory.
----@param buffer ByteBuffer The buffer to use for the operation. Can be empty if the `job` is `save`.
+---@param buffer ByteBuffer The buffer to use for the operation. If the `job` is `save`, this parameter is ignored.
 ---@param job SavestateJob The job to set.
 ---@param callback SavestateCallback The callback to call when the operation is complete.
 ---@param ignore_warnings boolean | nil Whether warnings, such as those about ROM compatibility, shouldn't be shown. Defaults to `false`.
@@ -1539,9 +1542,21 @@ function hotkey.prompt(caption) end
 ---A fully-qualified action path in the format `"Category[] > Name"`.
 ---An action path is a subset of the action filter that contains no wildcards and is used to uniquely identify an action.
 
----@class ActionParams
----@field path ActionPath The action's path.
----@field on_press fun()? The callback to be invoked when the action is pressed. Can be null.
+---@alias ActionArgumentMap { [string]: string }
+---Represents a collection of action parameter keys to their values.
+
+---@class ActionParam
+---@field key string The key of the parameter.
+---@field name string The display name of the parameter.
+---@field validator fun(value: string): string? A validator function that takes in a parameter value and optionally returns an error message if the validation failed.
+---@field get_initial_value fun(): string? A function that returns the initial value of the parameter. Can be null.
+---@field get_hints fun(value: string): string[]? A function that returns hints for the parameter based on the current input. Can be null.
+---Represents an action parameter.
+
+---@class ActionAddParams
+---@field path ActionPath The action's path. If the path's final segment is prefixed with `#`, it won't be visible in the menu.
+---@field params ActionParam[]? The action parameters.
+---@field on_press fun(params: ActionArgumentMap)? The callback to be invoked when the action is pressed. If this action has parameters, they will be supplied as an argument map.
 ---@field on_release fun()? The callback to be invoked when the action is released. Can be null.
 ---@field get_display_name (fun(): string)? The function used to determine the function's display name. If null, the display name will be derived from the path.
 ---@field get_enabled (fun(): boolean)? The function used to determine whether the action is enabled. If null, the action will be considered enabled.
@@ -1550,7 +1565,7 @@ function hotkey.prompt(caption) end
 ---Adds an action to the action registry.
 ---If an action with the same path already exists, the operation will fail.
 ---If adding the action causes another action to gain a child (e.g. there's an action `A > B`, and we're adding `A > B > C > D`), the operation will fail. To add the action, delete the original action (`A > B`) first.
----@param params ActionParams The action parameters.
+---@param params ActionAddParams The action parameters.
 ---@return boolean # Whether the operation succeeded.
 function action.add(params) end
 
@@ -1605,6 +1620,11 @@ function action.get_active(path) end
 ---@return boolean # The action's activatability.
 function action.get_activatability(path) end
 
+---Gets the parameters associated with an action.
+---@param path ActionPath A path.
+---@return ActionParam[] # The action's parameters.
+function action.get_params(path) end
+
 ---Gets all action paths that match the specified filter.
 ---@param filter ActionFilter A filter.
 ---@return ActionPath[] # A collection of action paths that match the filter.
@@ -1614,7 +1634,9 @@ function action.get_actions_matching_filter(filter) end
 ---@param path ActionPath A path.
 ---@param up boolean? If true, the action is considered to be released, otherwise it is considered to be pressed down.
 ---@param release_on_repress boolean? If true, if the action is already pressed down and `up` is false, the action will first be released before being pressed down again. If false, the action will only be pressed down. Defaults to true.
-function action.invoke(path, up, release_on_repress) end
+---@param params ActionArgumentMap? The action parameters.
+---@return boolean # Whether the operation succeeded.
+function action.invoke(path, up, release_on_repress, params) end
 
 ---Locks or unlocks action invocations from hotkeys.
 ---@param lock boolean Whether to lock or unlock action invocations from hotkeys.

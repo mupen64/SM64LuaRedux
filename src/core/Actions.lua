@@ -38,7 +38,7 @@ ACTION_RESET_PRESET = ACTION_PRESET .. 'Reset to Default'
 ACTION_DELETE_ALL_PRESETS = ACTION_PRESET .. 'Delete All'
 ACTION_TOGGLE_NAVBAR = ROOT .. 'Navigation Bar'
 
----@class ActionParamsWithDefaultHotkey : ActionParams
+---@class ActionParamsWithDefaultHotkey : ActionAddParams
 ---@field hotkey Hotkey?
 
 ---Wraps callbacks of action parameters to show notifications.
@@ -133,7 +133,7 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_DECREMENT_ANGLE,
     hotkey = { ctrl = true, key = Mupen.VKeycodes.VK_OEM_MINUS },
     on_press = function()
-        if ugui.internal.active_control then
+        if is_keyboard_captured then
             return
         end
 
@@ -153,7 +153,7 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_INCREMENT_ANGLE,
     hotkey = { ctrl = true, key = Mupen.VKeycodes.VK_OEM_PLUS },
     on_press = function()
-        if ugui.internal.active_control then
+        if is_keyboard_captured then
             return
         end
 
@@ -238,12 +238,16 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_GOAL_ANGLE,
-    on_press = function()
-        local result = tonumber(input.prompt(action.get_display_name(ACTION_SET_GOAL_ANGLE), tostring(Settings.tas.goal_angle)))
-        if result == nil then
-            return
-        end
-        Settings.tas.goal_angle = result
+    params = {
+        {
+            key = 'angle',
+            name = 'Angle',
+            validator = Validators.number,
+        }
+    },
+    on_press = function(params)
+        local angle = tonumber(params.angle) % 65536
+        Settings.tas.goal_angle = angle
     end,
 })
 
@@ -257,12 +261,16 @@ actions[#actions + 1] = wrap_params({
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_MAGNITUDE,
-    on_press = function()
-        local result = tonumber(input.prompt(action.get_display_name(ACTION_SET_MAGNITUDE), tostring(Settings.tas.goal_mag)))
-        if result == nil then
-            return
-        end
-        Settings.tas.goal_mag = result
+    params = {
+        {
+            key = 'magnitude',
+            name = 'Magnitude',
+            validator = Validators.number,
+        }
+    },
+    on_press = function(params)
+        local magnitude = tonumber(params.magnitude)
+        Settings.tas.goal_mag = magnitude % 128
     end,
 })
 

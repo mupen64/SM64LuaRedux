@@ -8,7 +8,6 @@ local UID = UIDProvider.allocate_once('VarWatchSettings', function(enum_next)
     return {
         AngleFormat = enum_next(),
         DecimalPlaces = enum_next(2),
-        SpeedEfficiency = enum_next(),
         SelectedVar = enum_next(4),
         MoveVarUp = enum_next(),
         MoveVarDown = enum_next(),

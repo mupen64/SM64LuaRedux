@@ -59,6 +59,7 @@ dofile(core_path .. 'Styles.lua')
 dofile(core_path .. 'Locales.lua')
 dofile(core_path .. 'Presets.lua')
 dofile(core_path .. 'Dumping.lua')
+Validators = dofile(core_path .. 'Validators.lua')
 dofile(core_path .. 'Actions.lua')
 Addresses = dofile(core_path .. 'Addresses.lua')
 
@@ -122,6 +123,34 @@ local function execute_defer_queue()
         defer_queue[i]()
     end
     defer_queue = {}
+end
+
+is_keyboard_captured = false
+
+--HACK: We want to know if ugui is capturing keyboard input on a control that cares about inputs.
+function get_is_keyboard_captured()
+    if ugui.internal.keyboard_captured_control == nil then
+        return false
+    end
+
+    ---@type SceneEntry?
+    local keyboard_captured_control = nil
+    for i = 1, #ugui.internal.scene, 1 do
+        local entry = ugui.internal.scene[i]
+        if entry.control.uid == ugui.internal.keyboard_captured_control then
+            keyboard_captured_control = entry
+        end
+    end
+
+    if not keyboard_captured_control then
+        return false
+    end
+
+    if keyboard_captured_control.type == "textbox" or keyboard_captured_control.type == "numberbox" then
+        return true
+    end
+
+    return false
 end
 
 local function at_input()
@@ -195,7 +224,7 @@ local function draw_navbar()
                     end,
                 },
             },
-        })
+        }).primary
 
         if result.dismissed then
             reset_preset_menu_open = false
@@ -257,7 +286,7 @@ local function atdrawd2d()
     end
 
     -- HACK: We turn off hotkeys while a control is capturing inputs
-    action.lock_hotkeys(ugui.internal.active_control ~= nil)
+    action.lock_hotkeys(Settings.lock_hotkeys_when_control_active and is_keyboard_captured or false)
 
     VarWatch_update()
 
@@ -300,6 +329,7 @@ local function atdrawd2d()
 
     draw_navbar()
 
+    is_keyboard_captured = get_is_keyboard_captured()
     ugui.end_frame()
 
     execute_defer_queue()
