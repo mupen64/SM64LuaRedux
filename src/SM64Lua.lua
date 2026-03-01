@@ -12,14 +12,11 @@ core_path = folder .. 'core\\'
 lib_path = folder .. 'lib\\'
 processors_path = folder .. 'processors\\'
 
----@module 'BreitbandGraphics'
-BreitbandGraphics = dofile(lib_path .. 'breitbandgraphics.lua')
+---@module 'breitbandgraphics-amalgamated'
+BreitbandGraphics = dofile(lib_path .. 'breitbandgraphics-amalgamated.lua')
 
----@module 'mupen-lua-ugui'
-ugui = dofile(lib_path .. 'mupen-lua-ugui.lua')
-
----@module 'mupen-lua-ugui-ext'
-ugui_ext = dofile(lib_path .. 'mupen-lua-ugui-ext.lua')
+---@module 'ugui-amalgamated'
+ugui = dofile(lib_path .. 'ugui-amalgamated.lua')
 
 ---@module 'linq'
 lualinq = dofile(lib_path .. 'linq.lua')
@@ -91,6 +88,8 @@ local last_rmb_down_position = { x = 0, y = 0 }
 local keys = input.get()
 local last_keys = input.get()
 local defer_queue = {}
+local key_events = {}
+G_KEYS = {}
 
 local UID = UIDProvider.allocate_once('SM64Lua', function(enum_next)
     return {
@@ -264,6 +263,7 @@ local function atdrawd2d()
 
     last_keys = ugui.internal.deep_clone(keys)
     keys = input.get()
+    G_KEYS = ugui.internal.deep_clone(keys)
 
     if keys.rightclick and not last_keys.rightclick then
         last_rmb_down_position = {
@@ -286,7 +286,7 @@ local function atdrawd2d()
         },
         wheel = mouse_wheel,
         is_primary_down = keys.leftclick and focused,
-        held_keys = keys,
+        key_events = key_events,
         window_size = {
             x = Drawing.size.width,
             y = Drawing.size.height - 23,
@@ -318,6 +318,7 @@ local function atdrawd2d()
 
     is_keyboard_captured = get_is_keyboard_captured()
     ugui.end_frame()
+    key_events = {}
 
     execute_defer_queue()
 end
@@ -337,7 +338,7 @@ emu.atstop(function()
     Presets.save()
     Drawing.size_down()
     BreitbandGraphics.free()
-    ugui_ext.free()
+    ugui.free()
 end)
 emu.atwindowmessage(function(hwnd, msg_id, wparam, lparam)
     if msg_id == 522 then                         -- WM_MOUSEWHEEL
@@ -349,4 +350,8 @@ emu.atwindowmessage(function(hwnd, msg_id, wparam, lparam)
             mouse_wheel = -1
         end
     end
+end)
+
+emu.atkey(function(args)
+    key_events[#key_events + 1] = args
 end)
