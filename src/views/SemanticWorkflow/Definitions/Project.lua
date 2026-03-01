@@ -44,9 +44,10 @@ function cls_project:move_sheet(index, sign) end
 ---@param name string The new name of the sheet.
 function cls_project:set_current_name(name) end
 
----Selects the semantic workflow sheet at the provided index and runs it from its savestate to its current preview frame.
+---Selects the semantic workflow sheet at the provided index and runs it to its current preview frame.
 ---@param index number The 1-based index of the sheet to select.
-function cls_project:select(index, load_state) end
+---@param from_base boolean | nil Whether to run the sheet from its defined base, which may be either a savestate or another sheet. Defaults to true.
+function cls_project:select(index, from_base) end
 
 ---Selects and rebases the semantic workflow sheet at the provided index onto the current state of the game.
 ---@param index number The 1-based index of the sheet to select.

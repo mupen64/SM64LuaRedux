@@ -86,14 +86,14 @@ function __impl:set_current_name(name)
     current_sheet_meta.name = name
 end
 
-function __impl:select(index, load_state)
+function __impl:select(index, from_base)
     self.disabled = false
     local previous = self:current()
     if previous ~= nil then previous.busy = false end
     self.meta.selection_index = index
     local current = self:current()
     if current ~= nil then
-        current:run_to_preview(load_state)
+        current:run_to_preview(from_base)
     end
 end
 

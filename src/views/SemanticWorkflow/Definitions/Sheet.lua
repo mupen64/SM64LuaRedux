@@ -38,7 +38,8 @@ function cls_sheet.new(name, create_savestate) end
 function cls_sheet:evaluate_frame() end
 
 ---Runs the game until the preview frame of this sheet.
-function cls_sheet:run_to_preview(load_state) end
+---@param from_base boolean | nil Whether to run the sheet from its defined base, which may be either a savestate or another sheet. Defaults to true.
+function cls_sheet:run_to_preview(from_base) end
 
 ---Saves this sheet's data and associated savestate into `file` and `file`.savestate (if applicable) respectively.
 ---@param file string The file path to save to (absolute or relative).
