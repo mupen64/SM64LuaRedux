@@ -31,6 +31,11 @@ local UID = UIDProvider.allocate_once(__impl.name, function(enum_next)
     }
 end)
 
+---The index into [`SemanticWorkflowProject.meta.sheets`](lua://ProjectMeta.sheets) that determines the sheet for which a base sheet is about to be selected, or nil if no base sheet selection is in progress.
+---@type integer | nil
+local selecting_sheet_base_for = nil
+local function main_gui_enabled() return selecting_sheet_base_for == nil end
+
 local function create_confirm_dialog(prompt, on_confirmed)
     return function()
         local top = 15 - Gui.MEDIUM_CONTROL_HEIGHT
@@ -120,6 +125,7 @@ function __impl.render(draw)
             rectangle = grid_rect(0, top + 1, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
             text = Locales.str('SEMANTIC_WORKFLOW_PROJECT_NEW'),
             tooltip = Locales.str('SEMANTIC_WORKFLOW_PROJECT_NEW_TOOL_TIP'),
+            is_enabled = main_gui_enabled(),
         }) then
         local path = iohelper.filediag('*.swp', 1)
         if string.len(path) > 0 then
@@ -133,6 +139,7 @@ function __impl.render(draw)
             rectangle = grid_rect(1.5, top + 1, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
             text = Locales.str('SEMANTIC_WORKFLOW_PROJECT_OPEN'),
             tooltip = Locales.str('SEMANTIC_WORKFLOW_PROJECT_OPEN_TOOL_TIP'),
+            is_enabled = main_gui_enabled(),
         }) then
         local path = iohelper.filediag('*.swp', 0)
         if string.len(path) > 0 then
@@ -145,6 +152,7 @@ function __impl.render(draw)
             rectangle = grid_rect(3, top + 1, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
             text = Locales.str('SEMANTIC_WORKFLOW_PROJECT_SAVE'),
             tooltip = Locales.str('SEMANTIC_WORKFLOW_PROJECT_SAVE_TOOL_TIP'),
+            is_enabled = main_gui_enabled(),
         }) then
         if SemanticWorkflowProject.project_location == nil then
             local path = iohelper.filediag('*.swp', 0)
@@ -162,7 +170,7 @@ function __impl.render(draw)
             rectangle = grid_rect(4.5, top + 1, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
             text = Locales.str('SEMANTIC_WORKFLOW_PROJECT_PURGE'),
             tooltip = Locales.str('SEMANTIC_WORKFLOW_PROJECT_PURGE_TOOL_TIP'),
-            is_enabled = SemanticWorkflowProject.project_location ~= nil,
+            is_enabled = main_gui_enabled() and SemanticWorkflowProject.project_location ~= nil,
         }) then
         SemanticWorkflowDialog = RenderConfirmPurgeDialog
     end
@@ -252,14 +260,14 @@ function __impl.render(draw)
                 rectangle = grid_rect(x, y, width, Gui.MEDIUM_CONTROL_HEIGHT),
                 text = text,
                 tooltip = tooltip,
-                is_enabled = enabled,
+                is_enabled = main_gui_enabled() and enabled,
             })
             uid = uid + 1
             x = x + width
             return result
         end
 
-        local function draw_utility_toggle_button(text, tooltip, toggled, width)
+        local function draw_utility_toggle_button(text, tooltip, toggled, width, override_enable)
             width = width or 0.5
             local result = ugui.toggle_button({
                 uid = uid,
@@ -267,6 +275,7 @@ function __impl.render(draw)
                 text = text,
                 tooltip = tooltip,
                 is_checked = toggled,
+                is_enabled = override_enable or main_gui_enabled(),
             })
             uid = uid + 1
             x = x + width
@@ -289,7 +298,8 @@ function __impl.render(draw)
             selecting_sheet_base_for == i and '...' or 'bs',
             sheet._base_sheet ~= nil and (Locales.str('SEMANTIC_WORKFLOW_PROJECT_BASE_SHEET_TOOL_TIP') .. sheet._base_sheet.name) or Locales.str('SEMANTIC_WORKFLOW_PROJECT_NO_BASE_SHEET_TOOL_TIP'),
             sheet._base_sheet ~= nil,
-            0.75
+            0.75,
+            selecting_sheet_base_for == i
         )) then
             if selecting_sheet_base_for ~= i then
                 selecting_sheet_base_for = i

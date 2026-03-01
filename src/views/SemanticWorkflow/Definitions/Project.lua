@@ -6,8 +6,11 @@
 
 ---@diagnostic disable:missing-return
 
+---@class ProjectMeta
+---@field public sheets string[] The ordered list of sheet file names (without extension or path) that are part of this project.
+
 ---@class Project Describes the data required to work with and store multiple sheets.
----@field public meta table Metadata about the project that is stored into the semantic workflow project file (*.swp).
+---@field public meta ProjectMeta Metadata about the project that is stored into the semantic workflow project file (*.swp).
 ---@field public all table All semantic workflow sheets as loaded from their respective *.sws files in order.
 ---@field public project_location string The location of the semantic workflow project file (*.swp).
 ---@field public disabled boolean If true, no inputs will be sent to mupen by this project.
