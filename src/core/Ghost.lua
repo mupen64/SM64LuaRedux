@@ -24,8 +24,6 @@ local frame = 0
 local recording_base_frame = nil
 local last_global_timer = nil
 
-local GLOBAL_TIMER_ADDRESS <const> = 0x8032D5D4
-local MARIO_OBJ_ADDRESS <const> = 0x80361158
 local OBJ_POSITION_OFFSET <const> = 0x20
 local OBJ_ANIMATION_OFFSET <const> = 0x38
 local OBJ_ANIMATION_TIMER_OFFSET <const> = 0x40
@@ -100,8 +98,9 @@ function Ghost.update()
 		frame = frame + 1
 	end
 
-	local mario_obj = memory.readdword(MARIO_OBJ_ADDRESS)
-	local global_timer = memory.readdword(GLOBAL_TIMER_ADDRESS)
+	local address_source = Addresses[Settings.address_source_index]
+	local mario_obj = memory.readdword(address_source.mario_object_pointer)
+	local global_timer = memory.readdword(address_source.global_timer)
 
 	if recording_base_frame == nil then
 		recording_base_frame = global_timer
