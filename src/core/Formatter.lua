@@ -45,3 +45,13 @@ Formatter.percent = function(value, inf_threshold)
     end
     return MoreMaths.round(value * 100, Settings.format_decimal_points) .. '%'
 end
+
+---Formats a number as a fraction.
+---@param value number A number in the range 0-1.
+---@param denominator number The denominator of the fraction.
+---@return string The value's string representation as a fraction.
+Formatter.fraction = function(value, denominator)
+    value = ugui.internal.clamp(value, 0, 1)
+    local n = math.floor(value * denominator + 0.5)
+    return string.format('%d/%d', n, denominator)
+end
