@@ -74,7 +74,7 @@ Styles.update_style = function()
     ugui.standard_styler.params.tabcontrol.gap_x = Settings.grid_gap
     ugui.standard_styler.params.tabcontrol.gap_y = Settings.grid_gap
 
-    ugui_ext.apply_nineslice(mod_theme)
+    ugui.apply_nineslice(mod_theme)
 end
 
 Styles.theme = function()
