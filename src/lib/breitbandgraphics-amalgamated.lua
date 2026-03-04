@@ -848,6 +848,8 @@ BreitbandGraphics.draw_text2 = function(params)
     if params.fit then
         -- Try to fit the text into the specified rectangle by reducing the font size
         local text_size = d2d.get_text_size(normalize_text(params.text), params.font_name, params.font_size, math.maxinteger, math.maxinteger)
+
+        if text_size.width > params.rectangle.width then
             font_size = font_size / math.max(0.01, (text_size.width / params.rectangle.width))
         end
         if text_size.height > params.rectangle.height then
