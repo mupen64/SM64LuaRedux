@@ -84,7 +84,7 @@ function Drawing.pop_offset()
 end
 
 ---Draws a setting item list.
----@param items { text: string, func: fun(rect: Rectangle) }[] An array of setting items with their names and control spawning functions.
+---@param items { text: fun(): string, func: fun(rect: Rectangle) }[] An array of setting items with their names and control spawning functions.
 ---@param pos Vector2 The initial position of the settings list in grid coordinates.
 function Drawing.setting_list(items, pos)
     local theme = Styles.theme()
@@ -102,7 +102,7 @@ function Drawing.setting_list(items, pos)
             foreground_color,
             theme.font_size * Drawing.scale * 1.25,
             theme.font_name,
-            type(item.text) == 'function' and item.text() or item.text)
+            item.text())
 
         item.func(grid_rect(pos.x, y + 0.6, 4, 1))
 
