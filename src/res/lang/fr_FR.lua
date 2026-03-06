@@ -33,7 +33,7 @@ return {
     DYAW = 'Relatif',
     ATAN_STRAIN = 'Arctan strain',
     ATAN_STRAIN_REV = 'I',
-    MAG_RESET = 'Effacer',
+    MAG_RESET = 'Vider',
     MAG_HI = 'Élevé',
     SPDKICK = 'Spdkick',
     FRAMEWALK = 'Framewalk',
@@ -55,20 +55,20 @@ return {
     SEMANTIC_WORKFLOW_FRAMELIST_START = 'Début : ',
     SEMANTIC_WORKFLOW_FRAMELIST_NAME = 'Nom',
     SEMANTIC_WORKFLOW_FRAMELIST_SECTION = '#Section',
-    SEMANTIC_WORKFLOW_FRAMELIST_STICK = 'Joystick',
+    SEMANTIC_WORKFLOW_FRAMELIST_STICK = 'manette',
     SEMANTIC_WORKFLOW_FRAMELIST_UNTIL = 'Jusqu\'à',
     SEMANTIC_WORKFLOW_TOOL_COPY_ENTIRE_STATE = 'Copier l\'état entier',
     SEMANTIC_WORKFLOW_CONTROL_MANUAL = 'Manuel',
     SEMANTIC_WORKFLOW_CONTROL_MATCH_YAW = 'Yaw',
     SEMANTIC_WORKFLOW_CONTROL_MATCH_ANGLE = 'Angle',
-    SEMANTIC_WORKFLOW_CONTROL_REVERSE_YAW = 'Inverser',
+    SEMANTIC_WORKFLOW_CONTROL_REVERSE_YAW = 'Basculer',
     SEMANTIC_WORKFLOW_CONTROL_DYAW = 'DYaw',
-    SEMANTIC_WORKFLOW_CONTROL_ATAN_RETIME = 'Recalculer...',
+    SEMANTIC_WORKFLOW_CONTROL_ATAN_RETIME = 'calculer...',
     SEMANTIC_WORKFLOW_CONTROL_ATAN_SELECT_START = 'Sélectionner début...',
     SEMANTIC_WORKFLOW_CONTROL_ATAN_SELECT_END = 'Sélectionner fin...',
     SEMANTIC_WORKFLOW_CONTROL_ATAN = 'Activer',
-    SEMANTIC_WORKFLOW_CONTROL_ATAN_REVERSE = 'Inverser',
-    SEMANTIC_WORKFLOW_CONTROL_HIGH_MAG = 'Mag. élevée',
+    SEMANTIC_WORKFLOW_CONTROL_ATAN_REVERSE = 'Basculer',
+    SEMANTIC_WORKFLOW_CONTROL_HIGH_MAG = 'Mag.Haut',
     SEMANTIC_WORKFLOW_CONTROL_SPDKICK = 'Spdk',
     SEMANTIC_WORKFLOW_PROJECT_FILE_VERSION = 'Version fichier : ',
     SEMANTIC_WORKFLOW_PROJECT_NO_SHEETS_AVAILABLE = 'Aucune feuille de flux sémantique disponible.\nCréez-en une pour continuer.',
@@ -105,18 +105,18 @@ Cette action est irréversible.
     SEMANTIC_WORKFLOW_PROJECT_MOVE_SHEET_DOWN_TOOL_TIP = 'Descendre',
     SEMANTIC_WORKFLOW_INPUTS_EXPAND_SECTION = 'Développer',
     SEMANTIC_WORKFLOW_INPUTS_COLLAPSE_SECTION = 'Réduire',
-    SEMANTIC_WORKFLOW_INPUTS_INSERT_SECTION = '+Section',
+    SEMANTIC_WORKFLOW_INPUTS_INSERT_SECTION = '+Partie',
     SEMANTIC_WORKFLOW_INPUTS_INSERT_SECTION_TOOL_TIP = 'Insérer une section après la sélection',
-    SEMANTIC_WORKFLOW_INPUTS_DELETE_SECTION = '-Section',
+    SEMANTIC_WORKFLOW_INPUTS_DELETE_SECTION = '-Partie',
     SEMANTIC_WORKFLOW_INPUTS_DELETE_SECTION_TOOL_TIP = 'Supprimer la section sélectionnée',
     SEMANTIC_WORKFLOW_INPUTS_TIMEOUT = 'Délai :',
     SEMANTIC_WORKFLOW_INPUTS_TIMEOUT_TOOL_TIP = 'Terminer la section après N frames maximum',
     SEMANTIC_WORKFLOW_INPUTS_END_ACTION = 'Action de fin :',
     SEMANTIC_WORKFLOW_INPUTS_END_ACTION_TOOL_TIP = 'Terminer la section quand Mario entre dans cette action',
     SEMANTIC_WORKFLOW_INPUTS_END_ACTION_TYPE_TO_SEARCH_TOOL_TIP = 'Taper pour filtrer les actions',
-    SEMANTIC_WORKFLOW_INPUTS_INSERT_INPUT = '+Saisir',
+    SEMANTIC_WORKFLOW_INPUTS_INSERT_INPUT = '+Taper',
     SEMANTIC_WORKFLOW_INPUTS_INSERT_INPUT_TOOL_TIP = 'Insérer une frame après la sélection',
-    SEMANTIC_WORKFLOW_INPUTS_DELETE_INPUT = '-Saisir',
+    SEMANTIC_WORKFLOW_INPUTS_DELETE_INPUT = '-Taper',
     SEMANTIC_WORKFLOW_INPUTS_DELETE_INPUT_TOOL_TIP = 'Supprimer la frame sélectionnée',
     SEMANTIC_WORKFLOW_PREFERENCES_EDIT_ENTIRE_STATE = 'Modifier l\'état entier',
     SEMANTIC_WORKFLOW_PREFERENCES_FAST_FORWARD = 'Avance rapide',
@@ -151,7 +151,7 @@ Cette action est irréversible.
     SETTINGS_VARWATCH_SPD_EFFICIENCY_PERCENTAGE = 'Pourcentage',
     SETTINGS_VARWATCH_SPD_EFFICIENCY_FRACTION = 'Fraction',
     SETTINGS_VARWATCH_SPD_EFFICIENCY_TOOLTIP = 'Le style de formatage pour l\'efficacité de vitesse.\n    Pourcentage : affiche en pourcentage (0‑100 %)\n    Fraction : affiche comme fraction mathématique (par ex. 1/4)',
-    SETTINGS_MEMORY_FILE_SELECT = 'Fichier de la carte...',
+    SETTINGS_MEMORY_FILE_SELECT = 'Carte mémoire…',
     SETTINGS_MEMORY_FILE_SELECT_TOOLTIP = 'Choisissez un fichier .map pour charger les adresses',
     SETTINGS_MEMORY_DETECT_NOW = 'Détecter maintenant',
     SETTINGS_MEMORY_DETECT_NOW_TOOLTIP = 'Détecte automatiquement la région du jeu en cours d\'exécution',
@@ -160,8 +160,8 @@ Cette action est irréversible.
     SETTINGS_MEMORY_REGION_TOOLTIP = 'La région du jeu actuelle',
     SETTINGS_HOTKEYS_NOTHING = '(rien)',
     SETTINGS_HOTKEYS_CONFIRMATION = 'Appuyer sur Entrée pour confirmer',
-    SETTINGS_HOTKEYS_CLEAR = 'Effacer',
-    SETTINGS_HOTKEYS_RESET = 'Effacer',
+    SETTINGS_HOTKEYS_CLEAR = 'Vider',
+    SETTINGS_HOTKEYS_RESET = 'Vider',
     SETTINGS_HOTKEYS_ASSIGN = 'Assigner',
     SETTINGS_HOTKEYS_ACTIVATION = 'Activation des raccourcis',
     SETTINGS_HOTKEYS_ACTIVATION_ALWAYS = 'Toujours',
@@ -187,7 +187,7 @@ Cette action est irréversible.
     -- Timer Tab
     TIMER_START = 'Démarrer',
     TIMER_STOP = 'Arrêter',
-    TIMER_RESET = 'Effacer',
+    TIMER_RESET = 'Vider',
     TIMER_MANUAL = 'Manuel',
     TIMER_AUTO = 'Auto',
     -- Varwatch display strings
@@ -241,33 +241,22 @@ Cliquez sur la flèche "suivant" en haut pour en savoir plus sur la façon de co
                     HEADING = 'Premiers pas',
                     TEXT =
                     [[
-L'entité principale avec laquelle vous travaillerez est la "Feuille".
-Une Feuille décrit une séquence d'entrées qui, à partir d'un point spécifique, tentera d'effectuer une certaine suite d'actions constituant un segment d'un run complet.
-Les feuilles sont subdivisées en sections, chaque section se terminant soit lorsqu'un certain nombre de frames est passé, soit lorsqu'une autre condition est remplie.
+La "Feuille" est l'unité de travail : elle contient une séquence d'entrées découpée en sections, chacune finissant après un nombre de frames ou une condition.
 
-Cette page vous permet de gérer plusieurs feuilles liées dans un "Projet de flux sémantique".
-Les projets de flux sémantique sont en réalité juste un ensemble de feuilles sauvegardées dans un répertoire à côté du fichier de projet (*.swp).
-Vous pouvez créer, sauvegarder et charger des projets en utilisant les boutons correspondants en haut.
+Un projet de flux sémantique n'est que l'ensemble des feuilles dans un dossier (*.swp) ; créez, ouvrez et sauvegardez-en avec les boutons en haut.
 
-Le bouton "Nouveau" demandera un emplacement pour le nouveau projet. Il est recommandé de créer un nouveau dossier vide pour le projet, car avoir plusieurs projets dans le même répertoire peut les faire interférer involontairement.
-Le bouton "Sauvegarder" enregistrera toujours par-dessus le fichier de projet actuellement chargé sans confirmation, sauf si vous n'avez encore ouvert ou créé aucun projet.
+« Nouveau » demande un emplacement (préférez un dossier vide pour éviter les conflits) et « Sauver » écrase toujours le fichier courant.
 ]],
                 },
                 {
                     HEADING = 'Enregistrement',
                     TEXT =
                     [[
-Une fois que vous êtes satisfait de votre travail, vous voudrez probablement l'enregistrer dans un fichier .m64.
-Pour ce faire, ouvrez un fichier .m64 dans mupen comme d'habitude et laissez-le jouer jusqu'à un état qui correspond au savestate de la première feuille que vous voulez lire de manière sémantique.
-Ensuite, passez en mode lecture/écriture afin que les frames puissent être enregistrées.
-Vous pouvez également y parvenir en commençant simplement un nouvel enregistrement à partir du savestate de la première feuille.
+Quand tout est prêt, enregistrez‑le dans un .m64 : ouvrez un film dans mupen et avancez jusqu'au savestate de la première feuille, puis passez en mode lecture/écriture (ou commencez un nouvel enregistrement au même état).
 
-Ensuite, cliquez sur les flèches pointant vers la droite ("Jouer sans charger .st") pour chaque feuille dans l'ordre.
-(Assurez-vous de les laisser jouer jusqu'à la fin avant d'appuyer sur la suivante)
-Ceci, bien sûr, suppose que les feuilles sont correctement "assemblées", c'est-à-dire que chaque feuille que vous cliquez commence là où la précédente se termine (c'est-à-dire où se trouve son image d'aperçu).
+Jouez chaque feuille à tour de rôle avec les flèches « Jouer sans charger .st », en les laissant terminer ; cela ne fonctionnera que si les feuilles sont « assemblées » (chacune commence à l’aperçu de la précédente).
 
-Ne jouez pas de films .m64 pendant que vous créez des feuilles, car cela produira des entrées imprévisibles.
-Lors de la lecture d'un fichier .m64, assurez-vous qu'aucune feuille n'est sélectionnée dans la liste des feuilles du projet.
+Évitez de lire d’autres .m64 pendant que vous éditez ou d’avoir une feuille sélectionnée lors de la lecture, cela fausserait les entrées.
 ]],
                 },
                 {
@@ -311,19 +300,13 @@ Cependant, comme c'est la nature des bogues, cela peut parfois ne pas être fait
                     HEADING = 'Aperçu',
                     TEXT =
                     [[
-Cliquez sur la colonne "#Section" dans la liste de sections pour sélectionner l'image d'aperçu (en surbrillance en rouge).
-Vous pouvez développer et réduire les sections qui ont plus d'une frame d'entrée initiale.
-Cliquez la colonne du milieu dans la liste des sections pour sélectionner la "frame active" (en surbrillance en vert), qui est utilisée pour l'édition (plus d'informations sur la page d'aide suivante).
+Cliquez sur « #Section » pour choisir l’aperçu (rouge) et sur la colonne centrale pour fixer la frame active (verte) utilisée lors de l’édition.
+Les sections avec plusieurs frames peuvent s’ouvrir/fermer.
+Modifier des entrées rejoue automatiquement le jeu jusqu’à l’aperçu.
 
-Chaque fois que vous apportez des modifications à des entrées (par ex. changer des boutons), le jeu sera rejoué jusqu'à l'image d'aperçu depuis le début de la feuille avec les nouvelles entrées.
+Les boutons +Section / -Section ajoutent ou suppriment une section, +Input / -Input une frame dans la section courante (utile pour démarrer une nouvelle action).
 
-Les boutons "+Section" et "-Section" ajoutent et suppriment respectivement une section à la section actuellement sélectionnée.
-Une feuille doit toujours avoir au moins une section.
-
-Les boutons "+Input" et "-Input" ajoutent et suppriment respectivement une frame à la frame sélectionnée dans la section sélectionnée.
-Ceci est utile pour initier une nouvelle action comme un long jump, par exemple après avoir atterri d'un rollout précédent.
-
-Les contrôles en bas se comportent de la même manière que les vues « TAS » standard auxquelles vous êtes peut-être habitué, juste dans une disposition plus condensée.
+Les contrôles du bas fonctionnent comme dans l’onglet TAS standard, mais plus compacts.
 ]],
                 },
                 {
