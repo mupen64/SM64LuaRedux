@@ -102,7 +102,7 @@ function Drawing.setting_list(items, pos)
             foreground_color,
             theme.font_size * Drawing.scale * 1.25,
             theme.font_name,
-            item.text)
+            type(item.text) == 'function' and item.text() or item.text)
 
         item.func(grid_rect(pos.x, y + 0.6, 4, 1))
 

@@ -13,71 +13,72 @@ local UID = UIDProvider.allocate_once('VisualSettings', function(enum_next)
     }
 end)
 
+local items = {
+    {
+        text = function() return Locales.str('SETTINGS_VISUALS_STYLE') end,
+        func = function(rect)
+            local new_active_style_index = ugui.combobox({
+                uid = UID.ActiveStyle,
+                rectangle = rect,
+                items = Styles.theme_names(),
+                selected_index = Settings.active_style_index,
+            })
+
+            if new_active_style_index ~= Settings.active_style_index then
+                Settings.active_style_index = new_active_style_index
+                Styles.update_style()
+            end
+        end,
+    },
+    {
+        text = function() return Locales.str('SETTINGS_VISUALS_LOCALE') end,
+        func = function(rect)
+            local new_locale_index = ugui.combobox({
+                uid = UID.Locale,
+                rectangle = rect,
+                items = Locales.names(),
+                selected_index = Settings.locale_index,
+            })
+            Settings.locale_index = new_locale_index
+        end,
+    },
+    {
+        text = function() return Locales.str('SETTINGS_VISUALS_NOTIFICATIONS') end,
+        func = function(rect)
+            local notification_styles = {
+                Locales.str('SETTINGS_VISUALS_NOTIFICATIONS_BUBBLE'),
+                Locales.str('SETTINGS_VISUALS_NOTIFICATIONS_CONSOLE'),
+            }
+
+            local index = ugui.carrousel_button({
+                uid = UID.NotificationStyle,
+                rectangle = rect,
+                items = notification_styles,
+                selected_index = Settings.notification_style,
+                tooltip =
+                'The style used for notifications.\n    Bubble: Show notifications over the game.\n    Console: Show notifications in the Lua console.',
+            })
+
+            Settings.notification_style = index
+        end,
+    },
+    {
+        text = function() return Locales.str('SETTINGS_VISUALS_FF_FPS') end,
+        func = function(rect)
+            Settings.ff_fps = math.max(1, math.abs(ugui.numberbox({
+                uid = UID.RepaintThrottle,
+                rectangle = rect,
+                tooltip = Locales.str('SETTINGS_VISUALS_FF_FPS_TOOLTIP'),
+                value = Settings.ff_fps,
+                places = 2,
+            })))
+        end,
+    },
+}
+
 return {
     name = function() return Locales.str('SETTINGS_VISUALS_TAB_NAME') end,
     draw = function()
-        local items = {
-            {
-                text = Locales.str('SETTINGS_VISUALS_STYLE'),
-                func = function(rect)
-                    local new_active_style_index = ugui.combobox({
-                        uid = UID.ActiveStyle,
-                        rectangle = rect,
-                        items = Styles.theme_names(),
-                        selected_index = Settings.active_style_index,
-                    })
-
-                    if new_active_style_index ~= Settings.active_style_index then
-                        Settings.active_style_index = new_active_style_index
-                        Styles.update_style()
-                    end
-                end,
-            },
-            {
-                text = Locales.str('SETTINGS_VISUALS_LOCALE'),
-                func = function(rect)
-                    local new_locale_index = ugui.combobox({
-                        uid = UID.Locale,
-                        rectangle = rect,
-                        items = Locales.names(),
-                        selected_index = Settings.locale_index,
-                    })
-                    Settings.locale_index = new_locale_index
-                end,
-            },
-            {
-                text = Locales.str('SETTINGS_VISUALS_NOTIFICATIONS'),
-                func = function(rect)
-                    local notification_styles = {
-                        Locales.str('SETTINGS_VISUALS_NOTIFICATIONS_BUBBLE'),
-                        Locales.str('SETTINGS_VISUALS_NOTIFICATIONS_CONSOLE'),
-                    }
-
-                    local index = ugui.carrousel_button({
-                        uid = UID.NotificationStyle,
-                        rectangle = rect,
-                        items = notification_styles,
-                        selected_index = Settings.notification_style,
-                        tooltip =
-                        'The style used for notifications.\n    Bubble: Show notifications over the game.\n    Console: Show notifications in the Lua console.',
-                    })
-
-                    Settings.notification_style = index
-                end,
-            },
-            {
-                text = Locales.str('SETTINGS_VISUALS_FF_FPS'),
-                func = function(rect)
-                    Settings.ff_fps = math.max(1, math.abs(ugui.numberbox({
-                        uid = UID.RepaintThrottle,
-                        rectangle = rect,
-                        tooltip = Locales.str('SETTINGS_VISUALS_FF_FPS_TOOLTIP'),
-                        value = Settings.ff_fps,
-                        places = 2,
-                    })))
-                end,
-            },
-        }
         Drawing.setting_list(items, { x = 0, y = 0.1 })
     end,
 }
