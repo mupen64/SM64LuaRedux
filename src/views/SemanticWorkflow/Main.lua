@@ -106,7 +106,7 @@ function CurrentSemanticWorkflowOverride()
 end
 
 return {
-    name = Locales.str('SEMANTIC_WORKFLOW_TAB_NAME'),
+    name = function() return Locales.str('SEMANTIC_WORKFLOW_TAB_NAME') end,
     draw = function()
         -- if we're showing any dialog, stop rendering anything else
         if SemanticWorkflowDialog ~= nil then
