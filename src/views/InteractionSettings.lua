@@ -11,34 +11,33 @@ local UID = UIDProvider.allocate_once('InteractionSettings', function(enum_next)
     }
 end)
 
-local items = {
-    {
-        text = Locales.str('SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT'),
-        func = function(rect)
-            Settings.enable_manual_on_joystick_interact = ugui.toggle_button({
-                uid = UID.EnableManualOnJoystickInteract,
-                rectangle = rect,
-                is_checked = Settings.enable_manual_on_joystick_interact,
-                text = Locales.str('GENERIC_ON'),
-            })
-        end,
-    },
-    {
-        text = Locales.str('SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE'),
-        func = function(rect)
-            Settings.lock_hotkeys_when_control_active = ugui.toggle_button({
-                uid = UID.LockHotkeysWhenControlActive,
-                rectangle = rect,
-                is_checked = Settings.lock_hotkeys_when_control_active,
-                text = Locales.str('GENERIC_ON'),
-            })
-        end,
-    },
-}
-
 return {
-    name = Locales.str('SETTINGS_INTERACTION_TAB_NAME'),
+    name = function() return Locales.str('SETTINGS_INTERACTION_TAB_NAME') end,
     draw = function()
+        local items = {
+            {
+                text = Locales.str('SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT'),
+                func = function(rect)
+                    Settings.enable_manual_on_joystick_interact = ugui.toggle_button({
+                        uid = UID.EnableManualOnJoystickInteract,
+                        rectangle = rect,
+                        is_checked = Settings.enable_manual_on_joystick_interact,
+                        text = Locales.str('GENERIC_ON'),
+                    })
+                end,
+            },
+            {
+                text = Locales.str('SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE'),
+                func = function(rect)
+                    Settings.lock_hotkeys_when_control_active = ugui.toggle_button({
+                        uid = UID.LockHotkeysWhenControlActive,
+                        rectangle = rect,
+                        is_checked = Settings.lock_hotkeys_when_control_active,
+                        text = Locales.str('GENERIC_ON'),
+                    })
+                end,
+            },
+        }
         Drawing.setting_list(items, { x = 0, y = 0.1 })
     end,
 }
