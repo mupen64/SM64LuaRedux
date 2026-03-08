@@ -6,7 +6,7 @@
 
 return {
         {
-                name = Locales.str('ADDRESS_USA'),
+                name = function() return Locales.str('ADDRESS_USA') end,
                 camera_fov = 0x8033C5A4,
                 camera_angle = 0x8033C714,
                 camera_transition_type = 0x8033BAB1,
@@ -51,7 +51,7 @@ return {
                 pattern_value = 2410020892,
         },
         {
-                name = Locales.str('ADDRESS_JAPAN'),
+                name = function() return Locales.str('ADDRESS_JAPAN') end,
                 camera_fov = 0x8033B234,
                 camera_angle = 0x8033B3A4,
                 camera_transition_type = 0x8033A741,
@@ -96,7 +96,7 @@ return {
                 pattern_value = 1174429700,
         },
         {
-                name = Locales.str('ADDRESS_SHINDOU'),
+                name = function() return Locales.str('ADDRESS_SHINDOU') end,
                 camera_fov = 0x8031EEB4,
                 camera_angle = 0x8031EE6C,
                 camera_transition_type = 0x8031E301,
@@ -141,7 +141,7 @@ return {
                 pattern_value = 2401566724,
         },
         {
-                name = Locales.str('ADDRESS_PAL'),
+                name = function() return Locales.str('ADDRESS_PAL') end,
                 camera_fov = 0x8030A924,
                 camera_angle = 0x8030A8DC,
                 camera_transition_type = 0x80309D71,

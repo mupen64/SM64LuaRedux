@@ -23,7 +23,7 @@ return {
         local data = ugui.tabcontrol({
             uid = UID.Tabs,
             rectangle = grid_rect(0, 0, 8, 15),
-            items = lualinq.select_key(views, 'name'),
+            items = lualinq.select(views, function(v) return v.name() end),
             selected_index = Settings.settings_tab_index,
         })
         Settings.settings_tab_index = data.selected_index

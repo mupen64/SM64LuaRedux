@@ -14,7 +14,7 @@ local UID = UIDProvider.allocate_once('MemorySettings', function(enum_next)
 end)
 
 return {
-    name = Locales.str('SETTINGS_MEMORY_TAB_NAME'),
+    name = function() return Locales.str('SETTINGS_MEMORY_TAB_NAME') end,
     draw = function()
         if ugui.button({
                 uid = UID.LoadMapFile,
@@ -34,7 +34,7 @@ return {
         Settings.address_source_index = ugui.combobox({
             uid = UID.Region,
             rectangle = grid_rect(4, 0, 4, 1),
-            items = lualinq.select_key(Addresses, 'name'),
+            items = lualinq.select(Addresses, function(addr) return addr.name() end),
             selected_index = Settings.address_source_index,
             tooltip = 'The current game region',
         })
