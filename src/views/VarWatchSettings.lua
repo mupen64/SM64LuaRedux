@@ -23,7 +23,7 @@ local items = {
                     uid = UID.AngleFormat,
                     rectangle = rect,
                     text = Settings.format_angles_degrees and Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT_DEGREE') or Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT_SHORT'),
-                    tooltip = 'The formatting style for angle variables.\n    Short: Formats angles like signed shorts (0-65535)\n    Degree: Formats angles in degrees (0-360)',
+                    tooltip = Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT_TOOLTIP'),
                 }) then
                 Settings.format_angles_degrees = not Settings.format_angles_degrees
             end
@@ -37,7 +37,7 @@ local items = {
                 rectangle = rect,
                 value = Settings.format_decimal_points,
                 places = 1,
-                tooltip = 'The maximum number of decimal places displayed in numbers.',
+                tooltip = Locales.str('SETTINGS_VARWATCH_DECIMAL_POINTS_TOOLTIP'),
             }))
         end,
     },

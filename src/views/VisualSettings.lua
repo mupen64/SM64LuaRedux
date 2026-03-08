@@ -55,8 +55,7 @@ local items = {
                 rectangle = rect,
                 items = notification_styles,
                 selected_index = Settings.notification_style,
-                tooltip =
-                'The style used for notifications.\n    Bubble: Show notifications over the game.\n    Console: Show notifications in the Lua console.',
+                tooltip = Locales.str('SETTINGS_VISUALS_NOTIFICATIONS_TOOLTIP'),
             })
 
             Settings.notification_style = index
