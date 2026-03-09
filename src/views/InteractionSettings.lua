@@ -13,7 +13,7 @@ end)
 
 local items = {
     {
-        text = Locales.str('SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT'),
+        text = function() return Locales.str('SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT') end,
         func = function(rect)
             Settings.enable_manual_on_joystick_interact = ugui.toggle_button({
                 uid = UID.EnableManualOnJoystickInteract,
@@ -24,7 +24,7 @@ local items = {
         end,
     },
     {
-        text = Locales.str('SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE'),
+        text = function() return Locales.str('SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE') end,
         func = function(rect)
             Settings.lock_hotkeys_when_control_active = ugui.toggle_button({
                 uid = UID.LockHotkeysWhenControlActive,
@@ -37,7 +37,7 @@ local items = {
 }
 
 return {
-    name = Locales.str('SETTINGS_INTERACTION_TAB_NAME'),
+    name = function() return Locales.str('SETTINGS_INTERACTION_TAB_NAME') end,
     draw = function()
         Drawing.setting_list(items, { x = 0, y = 0.1 })
     end,
