@@ -13,8 +13,8 @@
 --
 
 local ugui = {
-    _VERSION = 'v3.0.3',
-    _URL = 'https://github.com/Aurumaker72/mupen-lua-ugui',
+    _VERSION = 'v3.1.0',
+    _URL = 'https://github.com/mupen64/ugui',
     _DESCRIPTION = 'Flexible immediate-mode GUI library for Mupen Lua',
     _LICENSE = 'GPL-3',
     DEBUG = false,
@@ -54,8 +54,13 @@ end
 
 ---@class UguiKeyEventArgs
 ---@field keycode UguiVKeycodes? The virtual keycode, if the event is a key event.
+---@field ctrl boolean Whether the Ctrl key is held down.
+---@field alt boolean Whether the Alt key is held down.
+---@field shift boolean Whether the Shift key is held down.
+---@field meta boolean Whether the Meta key is held down.
 ---@field pressed boolean? Whether the key was pressed or released, if the event is a key event.
 ---@field text string? The typed character, if the event is a char event and the key corresponds to a character.
+---@field repeat boolean Whether the event is a repeat event (i.e. the key is being held down and this event is firing multiple times).
 
 ---@class Environment
 ---@field public mouse_position { x: number, y: number } The mouse position.
@@ -690,17 +695,6 @@ ugui.internal = {
     ---Cache of nineslice drawings. Only used after calling `ugui.apply_nineslice`.
     nineslice_draw_cache = {},
 
-    ---Asserts that the specified condition is true, printing the stacktrace if it's false.
-    ---@param condition boolean
-    ---@param message string
-    assert = function(condition, message)
-        if condition then
-            return
-        end
-        print(debug.traceback())
-        assert(condition, message)
-    end,
-
     ---Sorts controls stably in the scene by their Z-index.
     sort_scene = function()
         ugui.internal.stable_sort(ugui.internal.scene, function(a, b)
@@ -728,114 +722,6 @@ ugui.internal = {
         end
     end,
 
-    ---Deeply clones a table.
-    ---@param obj table The table to clone.
-    ---@param seen table? Internal. Pass nil as a caller.
-    ---@return table A cloned instance of the table.
-    deep_clone = function(obj, seen)
-        if type(obj) ~= 'table' then return obj end
-        if seen and seen[obj] then return seen[obj] end
-        local s = seen or {}
-        local res = setmetatable({}, getmetatable(obj))
-        s[obj] = res
-        for k, v in pairs(obj) do
-            res[ugui.internal.deep_clone(k, s)] = ugui.internal.deep_clone(
-                v, s)
-        end
-        return res
-    end,
-
-    ---Merges two tables deeply, mutating the second table with the first table's values, giving precedence to the first table's values.
-    ---@param a table The override table, whose values take precedence.
-    ---@param b table The source and target table, mutated in-place.
-    ---@return function A function that rolls back all changes made to b.
-    deep_merge = function(a, b)
-        local rollback_ops = {}
-
-        local function merge(t1, t2)
-            for key, value in pairs(t1) do
-                if type(value) == 'table' and type(t2[key]) == 'table' then
-                    merge(value, t2[key])
-                else
-                    local prev = t2[key]
-                    t2[key] = value
-                    local t2_ref = t2
-                    local k = key
-                    rollback_ops[#rollback_ops + 1] = function()
-                        t2_ref[k] = prev
-                    end
-                end
-            end
-        end
-
-        merge(a, b)
-
-        return function()
-            for i = #rollback_ops, 1, -1 do
-                rollback_ops[i]()
-            end
-        end
-    end,
-
-    ---Performs an in-place stable sort on the specified table.
-    ---@generic T
-    ---@param t T[]
-    ---@param cmp? fun(a: T, b: T):boolean
-    stable_sort = function(t, cmp)
-        local function merge(left, right)
-            local result = {}
-            local i, j = 1, 1
-
-            while i <= #left and j <= #right do
-                -- If left < right, or they are "equal" (cmp false both ways),
-                -- take from the left to preserve stability
-                if cmp(left[i], right[j]) or (not cmp(right[j], left[i])) then
-                    table.insert(result, left[i])
-                    i = i + 1
-                else
-                    table.insert(result, right[j])
-                    j = j + 1
-                end
-            end
-
-            while i <= #left do
-                table.insert(result, left[i])
-                i = i + 1
-            end
-            while j <= #right do
-                table.insert(result, right[j])
-                j = j + 1
-            end
-
-            return result
-        end
-
-        local function mergesort(arr)
-            if #arr <= 1 then return arr end
-            local mid = math.floor(#arr / 2)
-            local left, right = {}, {}
-            for i = 1, mid do table.insert(left, arr[i]) end
-            for i = mid + 1, #arr do table.insert(right, arr[i]) end
-            return merge(mergesort(left), mergesort(right))
-        end
-
-        local sorted = mergesort(t)
-        for i = 1, #t do
-            t[i] = sorted[i]
-        end
-    end,
-
-    ---Removes a range of characters from a string.
-    ---@param string string The string to remove characters from.
-    ---@param start_index integer The index of the first character to remove.
-    ---@param end_index integer The index of the last character to remove.
-    ---@return string # A new string with the characters removed.
-    remove_range = function(string, start_index, end_index)
-        if start_index > end_index then
-            start_index, end_index = end_index, start_index
-        end
-        return string.sub(string, 1, start_index - 1) .. string.sub(string, end_index)
-    end,
 
     ---@return boolean # Whether LMB was just pressed.
     is_mouse_just_down = function()
@@ -877,68 +763,6 @@ ugui.internal = {
             return false
         end
         return true
-    end,
-
-    ---Removes the character at the specified index from a string.
-    ---@param string string The string to remove the character from.
-    ---@param index integer The index of the character to remove.
-    ---@return string # A new string with the character removed.
-    remove_at = function(string, index)
-        if index == 0 then
-            return string
-        end
-        return string:sub(1, index - 1) .. string:sub(index + 1, string:len())
-    end,
-
-    ---Inserts a string into another string at the specified index.
-    ---@param string string The original string to insert the other string into.
-    ---@param string2 string The other string.
-    ---@param index integer The index into the first string to begin inserting the second string at.
-    ---@return string # A new string with the other string inserted.
-    insert_at = function(string, string2, index)
-        return string:sub(1, index) .. string2 .. string:sub(index + string2:len(), string:len())
-    end,
-
-    ---Gets the digit at a specific index in a number with a specific padded length.
-    ---@param value integer The number.
-    ---@param length integer The number's padded length (number of digits).
-    ---@param index integer The index to get digit from.
-    ---@return integer # The digit at the specified index.
-    get_digit = function(value, length, index)
-        return math.floor(value / math.pow(10, length - index)) % 10
-    end,
-
-    ---Sets the digit at a specific index in a number with a specific padded length.
-    ---@param value integer The number.
-    ---@param length integer The number's padded length (number of digits).
-    ---@param digit_value integer The new digit value.
-    ---@param index integer The index to get digit from.
-    ---@return integer # The new number.
-    set_digit = function(value, length, digit_value, index)
-        local old_digit_value = ugui.internal.get_digit(value, length, index)
-        local new_value = value + (digit_value - old_digit_value) * math.pow(10, length - index)
-        local max = math.pow(10, length)
-        return (new_value + max) % max
-    end,
-
-    ---Remaps a value from one range to another.
-    ---@param value number The value.
-    ---@param from1 number The lower bound of the first range.
-    ---@param to1 number The upper bound of the first range.
-    ---@param from2 number The lower bound of the second range.
-    ---@param to2 number The upper bound of the second range.
-    ---@return number # The new remapped value.
-    remap = function(value, from1, to1, from2, to2)
-        return (value - from1) / (to1 - from1) * (to2 - from2) + from2
-    end,
-
-    ---Limits a value to a range.
-    ---@param value number The value.
-    ---@param min number The lower bound.
-    ---@param max number The upper bound.
-    ---@return number # The new limited value.
-    clamp = function(value, min, max)
-        return math.max(math.min(value, max), min)
     end,
 
     ---Gets the character index for the specified relative x position in a textbox.
@@ -1199,6 +1023,198 @@ ugui.internal = {
         ugui.internal.clicked_control = clicked_control and clicked_control.uid or nil
     end,
 }
+
+-- ------------------------------------------------------------
+--   src\ugui\helpers.lua
+-- ------------------------------------------------------------
+
+--
+-- Copyright (c) 2026, Mupen64 maintainers.
+--
+-- SPDX-License-Identifier: GPL-3.0-or-later
+--
+
+---Asserts that the specified condition is true, printing the stacktrace if it's false.
+---@param condition boolean
+---@param message string
+ugui.internal.assert = function(condition, message)
+    if condition then
+        return
+    end
+    print(debug.traceback())
+    assert(condition, message)
+end
+
+---Deeply clones a table.
+---@param obj table The table to clone.
+---@param seen table? Internal. Pass nil as a caller.
+---@return table A cloned instance of the table.
+ugui.internal.deep_clone = function(obj, seen)
+    if type(obj) ~= 'table' then return obj end
+    if seen and seen[obj] then return seen[obj] end
+    local s = seen or {}
+    local res = setmetatable({}, getmetatable(obj))
+    s[obj] = res
+    for k, v in pairs(obj) do
+        res[ugui.internal.deep_clone(k, s)] = ugui.internal.deep_clone(
+            v, s)
+    end
+    return res
+end
+
+---Merges two tables deeply, mutating the second table with the first table's values, giving precedence to the first table's values.
+---@param a table The override table, whose values take precedence.
+---@param b table The source and target table, mutated in-place.
+---@return function A function that rolls back all changes made to b.
+ugui.internal.deep_merge = function(a, b)
+    local rollback_ops = {}
+
+    local function merge(t1, t2)
+        for key, value in pairs(t1) do
+            if type(value) == 'table' and type(t2[key]) == 'table' then
+                merge(value, t2[key])
+            else
+                local prev = t2[key]
+                t2[key] = value
+                local t2_ref = t2
+                local k = key
+                rollback_ops[#rollback_ops + 1] = function()
+                    t2_ref[k] = prev
+                end
+            end
+        end
+    end
+
+    merge(a, b)
+
+    return function()
+        for i = #rollback_ops, 1, -1 do
+            rollback_ops[i]()
+        end
+    end
+end
+
+---Performs an in-place stable sort on the specified table.
+---@generic T
+---@param t T[]
+---@param cmp? fun(a: T, b: T):boolean
+ugui.internal.stable_sort = function(t, cmp)
+    local function merge(left, right)
+        local result = {}
+        local i, j = 1, 1
+
+        while i <= #left and j <= #right do
+            -- If left < right, or they are "equal" (cmp false both ways),
+            -- take from the left to preserve stability
+            if cmp(left[i], right[j]) or (not cmp(right[j], left[i])) then
+                table.insert(result, left[i])
+                i = i + 1
+            else
+                table.insert(result, right[j])
+                j = j + 1
+            end
+        end
+
+        while i <= #left do
+            table.insert(result, left[i])
+            i = i + 1
+        end
+        while j <= #right do
+            table.insert(result, right[j])
+            j = j + 1
+        end
+
+        return result
+    end
+
+    local function mergesort(arr)
+        if #arr <= 1 then return arr end
+        local mid = math.floor(#arr / 2)
+        local left, right = {}, {}
+        for i = 1, mid do table.insert(left, arr[i]) end
+        for i = mid + 1, #arr do table.insert(right, arr[i]) end
+        return merge(mergesort(left), mergesort(right))
+    end
+
+    local sorted = mergesort(t)
+    for i = 1, #t do
+        t[i] = sorted[i]
+    end
+end
+
+---Removes a range of characters from a string.
+---@param string string The string to remove characters from.
+---@param start_index integer The index of the first character to remove.
+---@param end_index integer The index of the last character to remove.
+---@return string # A new string with the characters removed.
+ugui.internal.remove_range = function(string, start_index, end_index)
+    if start_index > end_index then
+        start_index, end_index = end_index, start_index
+    end
+    return string.sub(string, 1, start_index - 1) .. string.sub(string, end_index)
+end
+
+---Removes the character at the specified index from a string.
+---@param string string The string to remove the character from.
+---@param index integer The index of the character to remove.
+---@return string # A new string with the character removed.
+ugui.internal.remove_at = function(string, index)
+    if index == 0 then
+        return string
+    end
+    return string:sub(1, index - 1) .. string:sub(index + 1, string:len())
+end
+
+---Inserts a string into another string at the specified index.
+---@param string string The original string to insert the other string into.
+---@param string2 string The other string.
+---@param index integer The index into the first string to begin inserting the second string at.
+---@return string # A new string with the other string inserted.
+ugui.internal.insert_at = function(string, string2, index)
+    return string:sub(1, index) .. string2 .. string:sub(index + string2:len(), string:len())
+end
+
+---Gets the digit at a specific index in a number with a specific padded length.
+---@param value integer The number.
+---@param length integer The number's padded length (number of digits).
+---@param index integer The index to get digit from.
+---@return integer # The digit at the specified index.
+ugui.internal.get_digit = function(value, length, index)
+    return math.floor(value / math.pow(10, length - index)) % 10
+end
+
+---Sets the digit at a specific index in a number with a specific padded length.
+---@param value integer The number.
+---@param length integer The number's padded length (number of digits).
+---@param digit_value integer The new digit value.
+---@param index integer The index to get digit from.
+---@return integer # The new number.
+ugui.internal.set_digit = function(value, length, digit_value, index)
+    local old_digit_value = ugui.internal.get_digit(value, length, index)
+    local new_value = value + (digit_value - old_digit_value) * math.pow(10, length - index)
+    local max = math.pow(10, length)
+    return (new_value + max) % max
+end
+
+---Remaps a value from one range to another.
+---@param value number The value.
+---@param from1 number The lower bound of the first range.
+---@param to1 number The upper bound of the first range.
+---@param from2 number The lower bound of the second range.
+---@param to2 number The upper bound of the second range.
+---@return number # The new remapped value.
+ugui.internal.remap = function(value, from1, to1, from2, to2)
+    return (value - from1) / (to1 - from1) * (to2 - from2) + from2
+end
+
+---Limits a value to a range.
+---@param value number The value.
+---@param min number The lower bound.
+---@param max number The upper bound.
+---@return number # The new limited value.
+ugui.internal.clamp = function(value, min, max)
+    return math.max(math.min(value, max), min)
+end
 
 -- ------------------------------------------------------------
 --   src\ugui\styler.lua
@@ -2109,6 +2125,7 @@ ugui.standard_styler = {
         local string_to_selection_end_width
         local selection_start_x
         local selection_end_x
+        local caret_height<const> = ugui.standard_styler.params.font_size * 1.5
 
         if should_visualize_selection then
             string_to_selection_start = text:sub(data.scroll_offset, data.selection_start - 1)
@@ -2126,7 +2143,7 @@ ugui.standard_styler = {
                     x = control.rectangle.x + ugui.standard_styler.params.textbox.padding.x + string_to_selection_start_width,
                     y = control.rectangle.y,
                     width = string_to_selection_end_width - string_to_selection_start_width,
-                    height = control.rectangle.height,
+                    height = caret_height,
                 },
                 ugui.standard_styler.params.textbox.selection)
         end
@@ -2178,7 +2195,7 @@ ugui.standard_styler = {
                 y = control.rectangle.y + 3,
             }, {
                 x = caret_x,
-                y = control.rectangle.y + control.rectangle.height - 3,
+                y = control.rectangle.y + caret_height - 3,
             }, {
                 r = 0,
                 g = 0,
@@ -2327,7 +2344,7 @@ ugui.standard_styler = {
     end,
 
     ---Gets the desired bounds of a listbox's content.
-    ---@param control table A table abiding by the mupen-lua-ugui control contract
+    ---@param control table A table abiding by the ugui control contract
     ---@return _ table A rectangle specifying the desired bounds of the content as `{x = 0, y = 0, width: number, height: number}`.
     get_desired_listbox_content_bounds = function(control)
         -- Since horizontal content bounds measuring is expensive, we only do this if explicitly enabled.
@@ -2528,38 +2545,47 @@ ugui.registry.scrollbar = {
         ugui.internal.assert(type(control.ratio) == 'number', 'expected ratio to be number')
     end,
     ---@param control ScrollBar
+    setup = function(control, data)
+        data.drag_offset = nil
+    end,
+    ---@param control ScrollBar
     ---@return ControlReturnValue
     logic = function(control, data)
         data.value = control.value
 
         local is_horizontal = control.rectangle.width > control.rectangle.height
 
+        local thumb_size = is_horizontal
+            and control.rectangle.width * control.ratio
+            or control.rectangle.height * control.ratio
+
         if ugui.internal.mouse_captured_control == control.uid then
-            local relative_mouse = {
-                x = ugui.internal.environment.mouse_position.x - control.rectangle.x,
-                y = ugui.internal.environment.mouse_position.y - control.rectangle.y,
-            }
-            local relative_mouse_down = {
-                x = ugui.internal.mouse_down_position.x - control.rectangle.x,
-                y = ugui.internal.mouse_down_position.y - control.rectangle.y,
-            }
-            local current
-            local start
-            if is_horizontal then
-                current = relative_mouse.x / control.rectangle.width
-                start = relative_mouse_down.x / control.rectangle.width
-            else
-                current = relative_mouse.y / control.rectangle.height
-                start = relative_mouse_down.y / control.rectangle.height
+            local mouse_pos = ugui.internal.environment.mouse_position
+            local mouse_down = ugui.internal.mouse_down_position
+
+            if data.drag_offset == nil then
+                if is_horizontal then
+                    local thumb_start = ugui.internal.remap(data.value, 0, 1, 0, control.rectangle.width - thumb_size)
+                    data.drag_offset = mouse_down.x - (control.rectangle.x + thumb_start)
+                else
+                    local thumb_start = ugui.internal.remap(data.value, 0, 1, 0, control.rectangle.height - thumb_size)
+                    data.drag_offset = mouse_down.y - (control.rectangle.y + thumb_start)
+                end
             end
-            data.value = ugui.internal.clamp(start + (current - start), 0, 1)
+
+            local current_pos = is_horizontal and (mouse_pos.x - control.rectangle.x - data.drag_offset) or (mouse_pos.y - control.rectangle.y - data.drag_offset)
+            local track_length = (is_horizontal and control.rectangle.width or control.rectangle.height) - thumb_size
+
+            data.value = ugui.internal.clamp(current_pos / track_length, 0, 1)
+        else
+            data.drag_offset = nil
         end
 
         data.signal_change = ugui.internal.process_signal_changes(data.signal_change, control.value ~= data.value)
 
         return {
             primary = data.value,
-            meta = { signal_change = data.signal_change },
+            meta = {signal_change = data.signal_change},
         }
     end,
     ---@param control ScrollBar
@@ -2921,6 +2947,9 @@ ugui.registry.textbox = {
         if data.scroll_offset == nil then
             data.scroll_offset = 0
         end
+        if data.last_changed_anchor == nil then
+            data.last_changed_anchor = 'caret'
+        end
     end,
     ---@param control TextBox
     ---@return ControlReturnValue
@@ -2934,11 +2963,13 @@ ugui.registry.textbox = {
             data.caret_index = index_at_mouse
             data.selection_start = index_at_mouse
             data.selection_end = index_at_mouse
+            data.last_changed_anchor = 'caret'
         end
 
         -- If we're dragging the control, extend the existing selection.
         if ugui.internal.mouse_captured_control == control.uid then
             data.selection_end = index_at_mouse
+            data.last_changed_anchor = 'selection_end'
         end
 
         -- If we're capturing the keyboard, we process all the key presses.
@@ -2956,26 +2987,32 @@ ugui.registry.textbox = {
                             data.caret_index = lower_selection
                             data.selection_start = lower_selection
                             data.selection_end = lower_selection
+                            data.last_changed_anchor = 'caret'
                         else
                             local delete_index = data.caret_index - 1
                             data.text = ugui.internal.remove_at(data.text, delete_index)
                             data.caret_index = delete_index
+                            data.last_changed_anchor = 'caret'
                         end
                     elseif e.keycode == ugui.keycodes.VK_LEFT then
                         if has_selection then
                             data.selection_start = lower_selection
                             data.selection_end = lower_selection
                             data.caret_index = lower_selection
+                            data.last_changed_anchor = 'caret'
                         else
                             data.caret_index = data.caret_index - 1
+                            data.last_changed_anchor = 'caret'
                         end
                     elseif e.keycode == ugui.keycodes.VK_RIGHT then
                         if has_selection then
                             data.selection_start = higher_selection
                             data.selection_end = higher_selection
                             data.caret_index = higher_selection
+                            data.last_changed_anchor = 'caret'
                         else
                             data.caret_index = data.caret_index + 1
+                            data.last_changed_anchor = 'caret'
                         end
                     end
                 end
@@ -2990,17 +3027,22 @@ ugui.registry.textbox = {
                         data.caret_index = lower_selection
                         data.selection_start = lower_selection
                         data.selection_end = lower_selection
+
+                        data.last_changed_anchor = 'caret'
                     end
                     data.text = ugui.internal.insert_at(data.text, e.text, data.caret_index - 1)
                     data.caret_index = data.caret_index + 1
+                    data.last_changed_anchor = 'caret'
                 end
             end
         end
 
+        -- Clamp indices to valid ranges.
         data.scroll_offset = ugui.internal.clamp(data.scroll_offset, 0, #data.text + 1)
         data.caret_index = ugui.internal.clamp(data.caret_index, 1, #data.text + 1)
+        data.selection_start = ugui.internal.clamp(data.selection_start, 1, #data.text + 1)
+        data.selection_end = ugui.internal.clamp(data.selection_end, 1, #data.text + 1)
 
-        -- FIXME: This doesnt belong here
         local padding_x = ugui.standard_styler.params.textbox.padding.x
         local visible_width = control.rectangle.width - padding_x
 
@@ -3020,19 +3062,25 @@ ugui.registry.textbox = {
             ).width
         end
 
-        local range_start = math.min(data.caret_index, data.selection_start, data.selection_end)
-        local range_end = math.max(data.caret_index, data.selection_start, data.selection_end)
-
-        local caret_x = width_from_offset(data.scroll_offset, range_end)
-        if caret_x > visible_width then
-            repeat
-                data.scroll_offset = data.scroll_offset + 1
-                caret_x = width_from_offset(data.scroll_offset, range_end)
-            until caret_x <= visible_width or data.scroll_offset >= range_end
+        local scroll_target = data.caret_index
+        if data.last_changed_anchor == 'selection_start' then
+            scroll_target = data.selection_start
+        elseif data.last_changed_anchor == 'selection_end' then
+            scroll_target = data.selection_end
         end
 
-        if range_start < data.scroll_offset then
-            data.scroll_offset = range_start
+        -- If the chosen target is off the right edge, advance scroll_offset until it fits.
+        local target_x = width_from_offset(data.scroll_offset, scroll_target)
+        if target_x > visible_width then
+            repeat
+                data.scroll_offset = data.scroll_offset + 1
+                target_x = width_from_offset(data.scroll_offset, scroll_target)
+            until target_x <= visible_width or data.scroll_offset >= scroll_target
+        end
+
+        -- If the chosen target is off the left edge, snap scroll_offset to it.
+        if scroll_target < data.scroll_offset then
+            data.scroll_offset = scroll_target
         end
 
         data.signal_change = ugui.internal.process_signal_changes(data.signal_change, control.text ~= data.text)
