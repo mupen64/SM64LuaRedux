@@ -188,6 +188,7 @@ local locales = {}
 
 local files = {
     'en_US',
+    'fr_FR',
 }
 
 for i = 1, #files, 1 do

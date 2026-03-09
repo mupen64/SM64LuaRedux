@@ -15,7 +15,7 @@ end)
 
 local items = {
     {
-        text = Locales.str('SETTINGS_VISUALS_STYLE'),
+        text = function() return Locales.str('SETTINGS_VISUALS_STYLE') end,
         func = function(rect)
             local new_active_style_index = ugui.combobox({
                 uid = UID.ActiveStyle,
@@ -31,7 +31,7 @@ local items = {
         end,
     },
     {
-        text = Locales.str('SETTINGS_VISUALS_LOCALE'),
+        text = function() return Locales.str('SETTINGS_VISUALS_LOCALE') end,
         func = function(rect)
             local new_locale_index = ugui.combobox({
                 uid = UID.Locale,
@@ -43,7 +43,7 @@ local items = {
         end,
     },
     {
-        text = Locales.str('SETTINGS_VISUALS_NOTIFICATIONS'),
+        text = function() return Locales.str('SETTINGS_VISUALS_NOTIFICATIONS') end,
         func = function(rect)
             local notification_styles = {
                 Locales.str('SETTINGS_VISUALS_NOTIFICATIONS_BUBBLE'),
@@ -55,15 +55,14 @@ local items = {
                 rectangle = rect,
                 items = notification_styles,
                 selected_index = Settings.notification_style,
-                tooltip =
-                'The style used for notifications.\n    Bubble: Show notifications over the game.\n    Console: Show notifications in the Lua console.',
+                tooltip = Locales.str('SETTINGS_VISUALS_NOTIFICATIONS_TOOLTIP'),
             })
 
             Settings.notification_style = index
         end,
     },
     {
-        text = Locales.str('SETTINGS_VISUALS_FF_FPS'),
+        text = function() return Locales.str('SETTINGS_VISUALS_FF_FPS') end,
         func = function(rect)
             Settings.ff_fps = math.max(1, math.abs(ugui.numberbox({
                 uid = UID.RepaintThrottle,
@@ -77,7 +76,7 @@ local items = {
 }
 
 return {
-    name = Locales.str('SETTINGS_VISUALS_TAB_NAME'),
+    name = function() return Locales.str('SETTINGS_VISUALS_TAB_NAME') end,
     draw = function()
         Drawing.setting_list(items, { x = 0, y = 0.1 })
     end,

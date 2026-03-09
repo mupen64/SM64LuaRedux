@@ -38,6 +38,7 @@ function __impl.new()
         save = __impl.save,
         add_sheet = __impl.add_sheet,
         remove_sheet = __impl.remove_sheet,
+        move_sheet = __impl.move_sheet,
         select = __impl.select,
         rebase = __impl.rebase,
     }

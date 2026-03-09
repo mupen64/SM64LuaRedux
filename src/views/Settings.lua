@@ -18,12 +18,12 @@ local UID = UIDProvider.allocate_once('Settings', function(enum_next)
 end)
 
 return {
-    name = Locales.str('SETTINGS_TAB_NAME'),
+    name = function() return Locales.str('SETTINGS_TAB_NAME') end,
     draw = function()
         local data = ugui.tabcontrol({
             uid = UID.Tabs,
             rectangle = grid_rect(0, 0, 8, 15),
-            items = lualinq.select_key(views, 'name'),
+            items = lualinq.select(views, function(v) return v.name() end),
             selected_index = Settings.settings_tab_index,
         })
         Settings.settings_tab_index = data.selected_index
