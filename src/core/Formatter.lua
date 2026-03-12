@@ -51,6 +51,9 @@ end
 ---@param denominator number The denominator of the fraction.
 ---@return string The value's string representation as a fraction.
 Formatter.fraction = function(value, denominator)
+    if value > 1 then
+        return string.format('>%d/%d', denominator, denominator)
+    end
     value = ugui.internal.clamp(value, 0, 1)
     local n = math.floor(value * denominator + 0.5)
     return string.format('%d/%d', n, denominator)
