@@ -41,6 +41,7 @@ return {
     -- Semantic Workflow Tab
     YES = 'Yes',
     NO = 'No',
+    SEMANTIC_WORKFLOW_DUPLICATE_SHEET = 'CP',
     SEMANTIC_WORKFLOW_HELP_HEADER_TITLE = 'Semantic Workflow Help',
     SEMANTIC_WORKFLOW_HELP_SHOW_TOOL_TIP = 'Show Help',
     SEMANTIC_WORKFLOW_HELP_EXIT_TOOL_TIP = 'Exit',
