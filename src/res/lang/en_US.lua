@@ -41,7 +41,6 @@ return {
     -- Semantic Workflow Tab
     YES = 'Yes',
     NO = 'No',
-    SEMANTIC_WORKFLOW_DUPLICATE_SHEET = 'CP',
     SEMANTIC_WORKFLOW_HELP_HEADER_TITLE = 'Semantic Workflow Help',
     SEMANTIC_WORKFLOW_HELP_SHOW_TOOL_TIP = 'Show Help',
     SEMANTIC_WORKFLOW_HELP_EXIT_TOOL_TIP = 'Exit',
@@ -85,6 +84,7 @@ Are you sure you want to purge unused sheets from the project directory?
 Unrelated files (not ending with .sws or .sws.savestate) will not be touched.
 This action cannot be undone.
 ]],
+    SEMANTIC_WORKFLOW_DUPLICATE_SHEET = 'Allows you to duplicate a sheet',
     SEMANTIC_WORKFLOW_PROJECT_CONFIRM_SHEET_DELETION_1 = '[Confirm deletion]\n\nAre you sure you want to delete \"',
     SEMANTIC_WORKFLOW_PROJECT_CONFIRM_SHEET_DELETION_2 = '\"?\nThis action cannot be undone.',
     SEMANTIC_WORKFLOW_PROJECT_DISABLE_TOOL_TIP = 'Unselect sheet',

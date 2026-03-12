@@ -42,7 +42,6 @@ return {
     SEMANTIC_WORKFLOW_PROJECT_TAB_NAME = 'Projet',
     SEMANTIC_WORKFLOW_INPUTS_TAB_NAME = 'Saisies',
     SEMANTIC_WORKFLOW_PREFERENCES_TAB_NAME = 'Préférences',
-    SEMANTIC_WORKFLOW_DUPLICATE_SHEET = 'CP',
     YES = 'Oui',
     NO = 'Non',
     SEMANTIC_WORKFLOW_HELP_HEADER_TITLE = 'Aide Flux Sémantique',
@@ -89,6 +88,7 @@ return {
 Les fichiers non liés (ne se terminant pas par .sws ou .sws.savestate) ne seront pas touchés.
 Cette action est irréversible.
 ]],
+    SEMANTIC_WORKFLOW_DUPLICATE_SHEET = 'Permet de dupliquer une feuille.',
     SEMANTIC_WORKFLOW_PROJECT_CONFIRM_SHEET_DELETION_1 = '[Confirmer la suppression]\n\nÊtes-vous sûr de vouloir supprimer "',
     SEMANTIC_WORKFLOW_PROJECT_CONFIRM_SHEET_DELETION_2 = '" ?\nCette action est irréversible.',
     SEMANTIC_WORKFLOW_PROJECT_DISABLE_TOOL_TIP = 'Désélectionner la feuille',
