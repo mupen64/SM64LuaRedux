@@ -41,6 +41,7 @@ function __impl.new()
         move_sheet = __impl.move_sheet,
         select = __impl.select,
         rebase = __impl.rebase,
+        duplicate_sheet = __impl.duplicate_sheet,
     }
 end
 
@@ -67,6 +68,17 @@ end
 function __impl:remove_sheet(index)
     self.all[table.remove(self.meta.sheets, index).name] = nil
     self:select(#self.meta.sheets > 0 and (index % #self.meta.sheets) or 0)
+end
+
+function __impl:duplicate_sheet(index)
+    local sheet = self.all[self.meta.sheets[index].name]
+    if not sheet then return end
+    self.meta.created_sheet_count = self.meta.created_sheet_count + 1
+    local new_name = sheet.name .. ' (Copy ' .. self.meta.created_sheet_count .. ')'
+    local new_sheet = Sheet.new(new_name, false)
+    new_sheet.sections = ugui.internal.deep_clone(sheet.sections)
+    self.all[new_name] = new_sheet
+    self.meta.sheets[#self.meta.sheets + 1] = new_sheet_meta(new_name)
 end
 
 function __impl:move_sheet(index, sign)
