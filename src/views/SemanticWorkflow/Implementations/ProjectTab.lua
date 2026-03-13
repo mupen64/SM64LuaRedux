@@ -254,7 +254,7 @@ function __impl.render(draw)
 
         local x = 3
         local function draw_utility_button(text, tooltip, enabled, width)
-            width = width or 0.5
+            width = width or 0.6
             local result = ugui.button({
                 uid = uid,
                 rectangle = grid_rect(x, y, width, Gui.MEDIUM_CONTROL_HEIGHT),
@@ -268,7 +268,7 @@ function __impl.render(draw)
         end
 
         local function draw_utility_toggle_button(text, tooltip, toggled, width, override_enable)
-            width = width or 0.5
+            width = width or 0.6
             local result = ugui.toggle_button({
                 uid = uid,
                 rectangle = grid_rect(x, y, width, Gui.MEDIUM_CONTROL_HEIGHT),
@@ -282,23 +282,24 @@ function __impl.render(draw)
             return result ~= toggled
         end
 
-        if (draw_utility_button('^', Locales.str('SEMANTIC_WORKFLOW_PROJECT_MOVE_SHEET_UP_TOOL_TIP'), i > 1)) then
+        if (draw_utility_button('[icon:arrow_up]', Locales.str('SEMANTIC_WORKFLOW_PROJECT_MOVE_SHEET_UP_TOOL_TIP'), i > 1)) then
             SemanticWorkflowProject:move_sheet(i, -1)
         end
 
-        if (draw_utility_button('v', Locales.str('SEMANTIC_WORKFLOW_PROJECT_MOVE_SHEET_DOWN_TOOL_TIP'), i < #SemanticWorkflowProject.meta.sheets)) then
+        if (draw_utility_button('[icon:arrow_down]', Locales.str('SEMANTIC_WORKFLOW_PROJECT_MOVE_SHEET_DOWN_TOOL_TIP'), i < #SemanticWorkflowProject.meta.sheets)) then
             SemanticWorkflowProject:move_sheet(i, 1)
         end
 
-        if (draw_utility_button('-', Locales.str('SEMANTIC_WORKFLOW_PROJECT_DELETE_SHEET_TOOL_TIP'))) then
+        if (draw_utility_button('[icon:remove]', Locales.str('SEMANTIC_WORKFLOW_PROJECT_DELETE_SHEET_TOOL_TIP'))) then
             SemanticWorkflowDialog = render_confirm_deletion_prompt(i)
         end
 
+
         if (draw_utility_toggle_button(
-            selecting_sheet_base_for == i and '...' or 'bs',
+            selecting_sheet_base_for == i and '...' or '[icon:base_sheet]',
             sheet._base_sheet ~= nil and (Locales.str('SEMANTIC_WORKFLOW_PROJECT_BASE_SHEET_TOOL_TIP') .. sheet._base_sheet.name) or Locales.str('SEMANTIC_WORKFLOW_PROJECT_NO_BASE_SHEET_TOOL_TIP'),
             sheet._base_sheet ~= nil,
-            0.75,
+            0.6,
             selecting_sheet_base_for == i
         )) then
             if selecting_sheet_base_for ~= i then
@@ -319,7 +320,7 @@ function __impl.render(draw)
             end
         end
 
-        if (draw_utility_button('>', Locales.str('SEMANTIC_WORKFLOW_PROJECT_PLAY_WITHOUT_ST_TOOL_TIP'))) then
+        if (draw_utility_button('[icon:without_save]', Locales.str('SEMANTIC_WORKFLOW_PROJECT_PLAY_WITHOUT_ST_TOOL_TIP'))) then
             SemanticWorkflowProject:select(i, false)
         end
         ::continue::
