@@ -58,8 +58,7 @@ function __impl:current()
 end
 
 function __impl:add_sheet()
-    self.meta.created_sheet_count = self.meta.created_sheet_count + 1
-    local new_sheet = Sheet.new('Sheet ' .. self.meta.created_sheet_count, true)
+    local new_sheet = Sheet.new(UniqueName('Sheet', lualinq.select(self.meta.sheets, function(x) return x.name end)), true)
     self.all[new_sheet.name] = new_sheet
     self.meta.sheets[#self.meta.sheets + 1] = new_sheet_meta(new_sheet.name)
 end
