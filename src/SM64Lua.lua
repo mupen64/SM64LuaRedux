@@ -89,6 +89,10 @@ local keys = input.get()
 local last_keys = input.get()
 local defer_queue = {}
 local key_events = {}
+
+local update_next = false
+local first_vi = true
+
 G_KEYS = {}
 
 local UID = UIDProvider.allocate_once('SM64Lua', function(enum_next)
@@ -158,7 +162,6 @@ local function at_input()
         end
     end
 
-    Memory.update_previous()
     Joypad.update()
 
     -- frame stage 2: let domain code loose on everything, then perform transformations or inspections (e.g.: swimming, rng override, ghost)
@@ -174,8 +177,26 @@ local function at_input()
     Dumping.update()
 end
 
+
 local function at_vi()
-    Memory.update()
+    if first_vi then
+        Memory.update()
+        first_vi = false
+        return
+    end
+
+    local address_source = Addresses[Settings.address_source_index]
+    local gt = memory.readdword(address_source.global_timer)
+
+    if update_next then
+        Memory.update_previous()
+        Memory.update()
+        update_next = false
+    end
+
+    if gt ~= Memory.current.mario_global_timer then
+        update_next = true
+    end
 end
 
 local function draw_navbar()
@@ -326,8 +347,8 @@ end
 local function at_loadstate()
     -- Previous state is now messed up, since it's not the actual previous frame but some other game state
     -- What do we do at this point, leave it like this and let the engine calculate wrong diffs, or copy current state to previous one?
-    Memory.update_previous()
     Memory.update()
+    Memory.update_previous()
 end
 
 emu.atloadstate(at_loadstate)
