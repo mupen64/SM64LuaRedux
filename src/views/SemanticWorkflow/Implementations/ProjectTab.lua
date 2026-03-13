@@ -155,7 +155,7 @@ function __impl.render(draw)
             is_enabled = main_gui_enabled(),
         }) then
         if SemanticWorkflowProject.project_location == nil then
-            local path = iohelper.filediag('*.swp', 0)
+            local path = iohelper.filediag("*.swp", 1)
             if string.len(path) == 0 then
                 goto skipSave
             end
