@@ -78,19 +78,16 @@ SemanticWorkflowDialog = nil
 
 local ugui_icon_draw = ugui.standard_styler.draw_icon
 
+local custom_icons = { 'door_opening', 'arrow_up', 'arrow_down', 'remove', 'duplicate', 'base_sheet', 'without_save' }
+
 ugui.standard_styler.draw_icon = function(rectangle, color, visual_state, key)
-    if key == 'door_opening' then
-        rectangle = {
-            x = rectangle.x - rectangle.width * 0.5,
-            y = rectangle.y - rectangle.height * 0.5,
-            width = rectangle.width * 2,
-            height = rectangle.height * 2,
-        }
-        BreitbandGraphics.draw_image(rectangle, nil, views_path .. 'SemanticWorkflow/Resources/door_opening.png', color,
-            'linear')
-    else
-        ugui_icon_draw(rectangle, color, visual_state, key)
+    for _, icon in ipairs(custom_icons) do
+        if key == icon then
+            BreitbandGraphics.draw_image(rectangle, nil, views_path .. 'SemanticWorkflow/Resources/' .. key .. '.png', color, 'linear')
+            return
+        end
     end
+    ugui_icon_draw(rectangle, color, visual_state, key)
 end
 
 local Tabs = dofile(views_path .. 'SemanticWorkflow/Tabs.lua')
