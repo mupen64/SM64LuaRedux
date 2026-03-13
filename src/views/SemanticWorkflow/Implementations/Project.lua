@@ -77,8 +77,19 @@ function __impl:duplicate_sheet(index)
     local new_name = sheet.name .. ' (Copy ' .. self.meta.created_sheet_count .. ')'
     local new_sheet = Sheet.new(new_name, false)
     new_sheet.sections = ugui.internal.deep_clone(sheet.sections)
+    new_sheet.preview_frame = ugui.internal.deep_clone(sheet.preview_frame)
+    new_sheet.active_frame = ugui.internal.deep_clone(sheet.active_frame)
+    if sheet._base_sheet ~= nil then
+        new_sheet:set_base_sheet(sheet._base_sheet)
+    else
+        new_sheet._savestate = sheet._savestate
+    end
     self.all[new_name] = new_sheet
-    self.meta.sheets[#self.meta.sheets + 1] = new_sheet_meta(new_name)
+    local sheet_meta = new_sheet_meta(new_name)
+    if sheet._base_sheet ~= nil then
+        sheet_meta.base_sheet = sheet._base_sheet.name
+    end
+    self.meta.sheets[#self.meta.sheets + 1] = sheet_meta
 end
 
 function __impl:move_sheet(index, sign)

@@ -40,6 +40,10 @@ function cls_project:remove_sheet(index) end
 ---@param sign number +1 to move the sheet down, or -1 to move the sheet up
 function cls_project:move_sheet(index, sign) end
 
+---Duplicates the sheet at the provided index and adds it to the end of the sheet list.
+---@param index number The 1-based index of the sheet to duplicate - must be within the range of [1; #meta.sheets].
+function cls_project:duplicate_sheet(index) end
+
 ---Sets the name of the currently selected sheet, such that it is still properly referenced by the project instance.
 ---@param name string The new name of the sheet.
 function cls_project:set_current_name(name) end
