@@ -6,6 +6,8 @@
 
 dofile(views_path .. 'SemanticWorkflow/Version.lua')
 
+--#region helpers
+
 function CloneInto(destination, source)
     local changes = {}
     for k, v in pairs(source) do
@@ -29,6 +31,39 @@ function WriteAll(file, content)
     f:close()
     return content
 end
+
+---Produces a new name from a base string by appending a number to avoid name collisions (always higher than the highest potential collision).
+---@param base string The desired name in case of no collision.
+---@param collision_candidates string[] Names that cannot be used.
+---@return string name A new name that does not collide with collision_candidates.
+function UniqueName(base, collision_candidates)
+    local collision_set = {}
+    local max_number = 0
+
+    -- Populate the collision set and highest number, if available
+    for _, name in ipairs(collision_candidates) do
+        collision_set[name] = true
+
+        -- Check for a number suffix
+        local suffix = name:match(base .. " (%d+)$")
+        if suffix then
+            local num = tonumber(suffix)
+            if num and num > max_number then
+                max_number = num
+            end
+        end
+    end
+
+    -- Check if the base name is available
+    if not collision_set[base] then
+        return base
+    end
+
+    -- Create a new unique name by appending one higher than the max
+    return base .. " " .. (max_number + 1)
+end
+
+--#endregion
 
 local UID = dofile(views_path .. 'SemanticWorkflow/SharedUIDs.lua')
 
