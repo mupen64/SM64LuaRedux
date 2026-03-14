@@ -140,6 +140,7 @@ function get_is_keyboard_captured()
 end
 
 local function at_input()
+    print('atinput')
     -- TODO: Move this to Memory.lua
     if first_input then
         if Settings.autodetect_address then
@@ -158,7 +159,6 @@ local function at_input()
         end
     end
 
-    Memory.update_previous()
     Joypad.update()
 
     -- frame stage 2: let domain code loose on everything, then perform transformations or inspections (e.g.: swimming, rng override, ghost)
@@ -175,7 +175,15 @@ local function at_input()
 end
 
 local function at_vi()
-    Memory.update()
+    print('atvi')
+    local address_source = Addresses[Settings.address_source_index]
+    local valid_count = memory.readdword(address_source.game_vblank_queue + 4 * 2)
+    local first = memory.readdword(address_source.game_vblank_queue + 4 * 3)
+    local msg_count = memory.readdword(address_source.game_vblank_queue + 4 * 4)
+    if valid_count == 0 and first == 0 and msg_count == 1 then
+        Memory.update_previous()
+        Memory.update()
+    end
 end
 
 local function draw_navbar()
