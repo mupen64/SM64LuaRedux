@@ -78,7 +78,7 @@ SemanticWorkflowDialog = nil
 
 local ugui_icon_draw = ugui.standard_styler.draw_icon
 
-local custom_icons = { 'door_opening', 'arrow_up', 'arrow_down', 'remove', 'duplicate', 'base_sheet', 'without_save' }
+local custom_icons = { 'navigate_back', 'arrow_up', 'arrow_down', 'remove', 'base_sheet', 'without_save' }
 
 ugui.standard_styler.draw_icon = function(rectangle, color, visual_state, key)
     for _, icon in ipairs(custom_icons) do
