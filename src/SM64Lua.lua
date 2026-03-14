@@ -180,7 +180,7 @@ local function at_vi()
     local valid_count = memory.readdword(address_source.game_vblank_queue + 4 * 2)
     local first = memory.readdword(address_source.game_vblank_queue + 4 * 3)
     local msg_count = memory.readdword(address_source.game_vblank_queue + 4 * 4)
-    if valid_count == 0 and first == 0 and msg_count == 1 then
+    if valid_count == 1 and first == 0 and msg_count == 1 then
         Memory.update_previous()
         Memory.update()
     end
