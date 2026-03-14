@@ -9,7 +9,7 @@ styles_path = folder .. 'res\\styles\\'
 locales_path = folder .. 'res\\lang\\'
 views_path = folder .. 'views\\'
 core_path = folder .. 'core\\'
-lib_path = folder .. 'lib\\'
+lib_path = folder .. '..\\lib\\'
 processors_path = folder .. 'processors\\'
 
 ---@module 'breitbandgraphics-amalgamated'
