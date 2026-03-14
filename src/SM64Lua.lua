@@ -141,7 +141,6 @@ function get_is_keyboard_captured()
 end
 
 local function at_input()
-    print('atinput')
     -- TODO: Move this to Memory.lua
     if first_input then
         if Settings.autodetect_address then
@@ -176,19 +175,12 @@ local function at_input()
 end
 
 local function at_vi()
-    print("atvi")
     local address_source = Addresses[Settings.address_source_index]
     local valid_count = memory.readdword(address_source.game_vblank_queue + 4 * 2)
     local first = memory.readdword(address_source.game_vblank_queue + 4 * 3)
     local msg_count = memory.readdword(address_source.game_vblank_queue + 4 * 4)
-    print('    valid_count', valid_count)
-    print('    first', first)
-    print('    msg_count', msg_count)
-    print('    imm(action)', memory.readdword(address_source.mario_action))
-
     if valid_count == 0 and first == 0 and msg_count == 1 then
         if next_vi_signal then
-            print('    update!')
             Memory.update_previous()
             Memory.update()
             next_vi_signal = false
