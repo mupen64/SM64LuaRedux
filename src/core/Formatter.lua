@@ -54,7 +54,14 @@ Formatter.fraction = function(value, denominator)
     if value > 1 then
         return string.format('>%d/%d', denominator, denominator)
     end
-    value = ugui.internal.clamp(value, 0, 1)
+    if value < 0 then
+        return string.format('<%d/%d', 0, denominator)
+    end
+
     local n = math.floor(value * denominator + 0.5)
-    return string.format('%d/%d', n, denominator)
+    if n > denominator then
+        n = denominator
+    end
+
+    return string.format("%d/%d", n, denominator)
 end
