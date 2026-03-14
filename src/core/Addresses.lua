@@ -93,6 +93,7 @@ return {
                 mario_animation = 0x38,
                 mario_gfx_angle = 0xD6,
                 mario_hat_state = 0x80339E07,
+                game_vblank_queue = 0x8033B010,
                 pattern = 0x00B22B24,
                 pattern_value = 1174429700,
         },
