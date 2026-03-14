@@ -332,8 +332,8 @@ end
 local function at_loadstate()
     -- Previous state is now messed up, since it's not the actual previous frame but some other game state
     -- What do we do at this point, leave it like this and let the engine calculate wrong diffs, or copy current state to previous one?
-    Memory.update_previous()
     Memory.update()
+    Memory.update_previous()
 end
 
 emu.atloadstate(at_loadstate)
