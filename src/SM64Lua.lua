@@ -140,7 +140,6 @@ function get_is_keyboard_captured()
 end
 
 local function at_input()
-    print('atinput')
     -- TODO: Move this to Memory.lua
     if first_input then
         if Settings.autodetect_address then
@@ -175,7 +174,6 @@ local function at_input()
 end
 
 local function at_vi()
-    print('atvi')
     local address_source = Addresses[Settings.address_source_index]
     local valid_count = memory.readdword(address_source.game_vblank_queue + 4 * 2)
     local first = memory.readdword(address_source.game_vblank_queue + 4 * 3)
