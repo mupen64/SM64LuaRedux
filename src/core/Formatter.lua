@@ -45,3 +45,23 @@ Formatter.percent = function(value, inf_threshold)
     end
     return MoreMaths.round(value * 100, Settings.format_decimal_points) .. '%'
 end
+
+---Formats a number as a fraction.
+---@param value number A number in the range 0-1.
+---@param denominator number The denominator of the fraction.
+---@return string The value's string representation as a fraction.
+Formatter.fraction = function(value, denominator)
+    if value > 1 then
+        return string.format('>%d/%d', denominator, denominator)
+    end
+    if value < 0 then
+        return string.format('<%d/%d', 0, denominator)
+    end
+
+    local n = math.floor(value * denominator + 0.5)
+    if n > denominator then
+        n = denominator
+    end
+
+    return string.format("%d/%d", n, denominator)
+end

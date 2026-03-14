@@ -6,8 +6,12 @@
 
 ---@diagnostic disable:missing-return
 
+---@class SheetMeta
+---@field public name string The file name in the project directory (without extension).
+---@field public base_sheet string | nil The name of the base sheet, if applicable.
+
 ---@class ProjectMeta
----@field public sheets string[] The ordered list of sheet file names (without extension or path) that are part of this project.
+---@field public sheets SheetMeta[] The ordered list of sheet metadata objects that are part of this project.
 
 ---@class Project Describes the data required to work with and store multiple sheets.
 ---@field public meta ProjectMeta Metadata about the project that is stored into the semantic workflow project file (*.swp).
