@@ -961,7 +961,7 @@ local function atan_controls(draw, sheet, new_values, top)
         if ugui.button({
             uid = UID.AtanButtons + index * 2,
             rectangle = grid_rect(x, top + 1.5, width / 2, 0.5),
-            text = '[icon:delete]',
+            text = '-',
         }) then
             table[field] = math.max(low_bound, table[field] - increment)
         end
@@ -969,7 +969,7 @@ local function atan_controls(draw, sheet, new_values, top)
         if ugui.button({
             uid = UID.AtanButtons + index * 2 + 1,
             rectangle = grid_rect(x + width / 2, top + 1.5, width / 2, 0.5),
-            text = '[icon:add]',
+            text = '+',
         }) then
             table[field] = math.min(high_bound, table[field] + increment)
         end
