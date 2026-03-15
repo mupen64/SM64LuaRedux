@@ -18,7 +18,7 @@ local UID = UIDProvider.allocate_once('Settings', function(enum_next)
 end)
 
 return {
-    name = function() return Locales.str('SETTINGS_TAB_NAME') end,
+    name = function() return '[icon:settings]' end,
     draw = function()
         local data = ugui.tabcontrol({
             uid = UID.Tabs,

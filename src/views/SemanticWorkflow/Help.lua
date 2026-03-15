@@ -61,7 +61,7 @@ return {
                     {
                         uid = UID.HelpBack,
                         rectangle = grid_rect(6, top, 0.5, 1),
-                        text = '<',
+                        text = '[icon:previous_page]',
                         is_enabled = page > 1,
                         tooltip = Locales.str('SEMANTIC_WORKFLOW_HELP_PREV_PAGE'),
                     }
@@ -73,7 +73,7 @@ return {
                     {
                         uid = UID.HelpNext,
                         rectangle = grid_rect(6.5, top, 0.5, 1),
-                        text = '>',
+                        text = '[icon:next_page]',
                         is_enabled = page < #pages,
                         tooltip = Locales.str('SEMANTIC_WORKFLOW_HELP_NEXT_PAGE'),
                     }
