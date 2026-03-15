@@ -8,7 +8,7 @@
 return {
     name = 'Français (FR)',
     -- General
-    GENERIC_ON = 'Activé',
+    GENERIC_ON =  'On',
     GENERIC_OFF = 'Désactivé',
     GENERIC_START = 'Démarrer',
     GENERIC_STOP = 'Arrêter',
