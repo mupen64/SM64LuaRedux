@@ -90,7 +90,6 @@ Notifications = dofile(views_path .. 'Notifications.lua')
 
 ugui_environment = {}
 local mouse_wheel = 0
-local last_paint_time = os.clock()
 
 -- Flag keeping track of whether atinput has fired for one time
 local first_input = true
@@ -273,13 +272,7 @@ local function draw_navbar()
 end
 
 local function atdrawd2d()
-    local DESIRED_TIME_BETWEEN_PAINTS <const> = 1 / Settings.ff_fps
-
-    if emu.get_ff() and (os.clock() - last_paint_time < DESIRED_TIME_BETWEEN_PAINTS) then
-        return
-    end
-
-    last_paint_time = os.clock()
+    d2d.set_target_fps(emu.get_ff() and Settings.ff_fps or nil)
 
     if d2d and d2d.clear then
         d2d.clear(0, 0, 0, 0)
