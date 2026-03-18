@@ -3160,7 +3160,6 @@ ugui.registry.textbox = {
         end
 
         -- Clamp indices to valid ranges.
-        data.scroll_offset = ugui.internal.clamp(data.scroll_offset, 0, #data.text + 1)
         data.caret_index = ugui.internal.clamp(data.caret_index, 1, #data.text + 1)
         data.selection_start = ugui.internal.clamp(data.selection_start, 1, #data.text + 1)
         data.selection_end = ugui.internal.clamp(data.selection_end, 1, #data.text + 1)
@@ -3204,6 +3203,8 @@ ugui.registry.textbox = {
         if scroll_target < data.scroll_offset then
             data.scroll_offset = scroll_target
         end
+
+        data.scroll_offset = 1 -- This is too unstable, so it's disabled for now.
 
         data.signal_change = ugui.internal.process_signal_changes(data.signal_change, control.text ~= data.text)
 
