@@ -1142,4 +1142,3 @@ function __impl.render(draw)
     draw_funcs[selected_view_index](draw, edited_section, edited_input)
     controls_for_insert_and_remove()
 end
->>>>>>> 152cbcd (feat(iconography): update UI elements with new icon resources and replace text with icon references)
