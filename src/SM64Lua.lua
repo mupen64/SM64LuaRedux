@@ -9,22 +9,31 @@ styles_path = folder .. 'res\\styles\\'
 locales_path = folder .. 'res\\lang\\'
 views_path = folder .. 'views\\'
 core_path = folder .. 'core\\'
-lib_path = folder .. 'lib\\'
+lib_path = folder .. '..\\lib\\'
 processors_path = folder .. 'processors\\'
 
----@module 'BreitbandGraphics'
-BreitbandGraphics = dofile(lib_path .. 'breitbandgraphics.lua')
+---@module 'breitbandgraphics-amalgamated'
+BreitbandGraphics = dofile(lib_path .. 'breitbandgraphics-amalgamated.lua')
 
----@module 'mupen-lua-ugui'
-ugui = dofile(lib_path .. 'mupen-lua-ugui.lua')
-
----@module 'mupen-lua-ugui-ext'
-ugui_ext = dofile(lib_path .. 'mupen-lua-ugui-ext.lua')
+---@module 'ugui-amalgamated'
+ugui = dofile(lib_path .. 'ugui-amalgamated.lua')
 
 ---@module 'linq'
 lualinq = dofile(lib_path .. 'linq.lua')
 
 json = dofile(lib_path .. 'json.lua')
+
+ugui.STATIC_ENV = {
+    clipboard = {
+        get = function()
+            return clipboard.get('text')
+        end,
+        set = function(text)
+            clipboard.set('text', text)
+        end,
+    },
+}
+
 dofile(styles_path .. 'base_style.lua')
 dofile(core_path .. 'UIDProvider.lua')
 dofile(core_path .. 'Helpers.lua')
@@ -81,7 +90,6 @@ Notifications = dofile(views_path .. 'Notifications.lua')
 
 ugui_environment = {}
 local mouse_wheel = 0
-local last_paint_time = os.clock()
 
 -- Flag keeping track of whether atinput has fired for one time
 local first_input = true
@@ -91,6 +99,9 @@ local last_rmb_down_position = { x = 0, y = 0 }
 local keys = input.get()
 local last_keys = input.get()
 local defer_queue = {}
+local key_events = {}
+local next_vi_signal = false
+G_KEYS = {}
 
 local UID = UIDProvider.allocate_once('SM64Lua', function(enum_next)
     return {
@@ -159,7 +170,6 @@ local function at_input()
         end
     end
 
-    Memory.update_previous()
     Joypad.update()
 
     -- frame stage 2: let domain code loose on everything, then perform transformations or inspections (e.g.: swimming, rng override, ghost)
@@ -176,7 +186,19 @@ local function at_input()
 end
 
 local function at_vi()
-    Memory.update()
+    local address_source = Addresses[Settings.address_source_index]
+    local valid_count = memory.readdword(address_source.game_vblank_queue + 4 * 2)
+    local first = memory.readdword(address_source.game_vblank_queue + 4 * 3)
+    local msg_count = memory.readdword(address_source.game_vblank_queue + 4 * 4)
+    if valid_count == 0 and first == 0 and msg_count == 1 then
+        if next_vi_signal then
+            Memory.update_previous()
+            Memory.update()
+            next_vi_signal = false
+            return
+        end
+        next_vi_signal = true
+    end
 end
 
 local function draw_navbar()
@@ -187,7 +209,7 @@ local function draw_navbar()
         uid = UID.TabIndex,
         rectangle = grid_rect(0, 16, 5.5, 1),
         is_enabled = not Settings.hotkeys_assigning,
-        items = lualinq.select_key(views, 'name'),
+        items = lualinq.select(views, function(v) return v.name() end),
         selected_index = Settings.tab_index,
     })
 
@@ -250,13 +272,7 @@ local function draw_navbar()
 end
 
 local function atdrawd2d()
-    local DESIRED_TIME_BETWEEN_PAINTS <const> = 1 / Settings.ff_fps
-
-    if emu.get_ff() and (os.clock() - last_paint_time < DESIRED_TIME_BETWEEN_PAINTS) then
-        return
-    end
-
-    last_paint_time = os.clock()
+    d2d.set_target_fps(emu.get_ff() and Settings.ff_fps or nil)
 
     if d2d and d2d.clear then
         d2d.clear(0, 0, 0, 0)
@@ -264,6 +280,7 @@ local function atdrawd2d()
 
     last_keys = ugui.internal.deep_clone(keys)
     keys = input.get()
+    G_KEYS = ugui.internal.deep_clone(keys)
 
     if keys.rightclick and not last_keys.rightclick then
         last_rmb_down_position = {
@@ -286,7 +303,7 @@ local function atdrawd2d()
         },
         wheel = mouse_wheel,
         is_primary_down = keys.leftclick and focused,
-        held_keys = keys,
+        key_events = key_events,
         window_size = {
             x = Drawing.size.width,
             y = Drawing.size.height - 23,
@@ -318,6 +335,7 @@ local function atdrawd2d()
 
     is_keyboard_captured = get_is_keyboard_captured()
     ugui.end_frame()
+    key_events = {}
 
     execute_defer_queue()
 end
@@ -325,8 +343,8 @@ end
 local function at_loadstate()
     -- Previous state is now messed up, since it's not the actual previous frame but some other game state
     -- What do we do at this point, leave it like this and let the engine calculate wrong diffs, or copy current state to previous one?
-    Memory.update_previous()
     Memory.update()
+    Memory.update_previous()
 end
 
 emu.atloadstate(at_loadstate)
@@ -337,7 +355,7 @@ emu.atstop(function()
     Presets.save()
     Drawing.size_down()
     BreitbandGraphics.free()
-    ugui_ext.free()
+    ugui.free()
 end)
 emu.atwindowmessage(function(hwnd, msg_id, wparam, lparam)
     if msg_id == 522 then                         -- WM_MOUSEWHEEL
@@ -349,4 +367,8 @@ emu.atwindowmessage(function(hwnd, msg_id, wparam, lparam)
             mouse_wheel = -1
         end
     end
+end)
+
+emu.atkey(function(args)
+    key_events[#key_events + 1] = args
 end)

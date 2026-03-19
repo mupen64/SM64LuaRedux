@@ -6,7 +6,7 @@
 
 return {
         {
-                name = Locales.str('ADDRESS_USA'),
+                name = function() return Locales.str('ADDRESS_USA') end,
                 camera_fov = 0x8033C5A4,
                 camera_angle = 0x8033C714,
                 camera_transition_type = 0x8033BAB1,
@@ -47,11 +47,12 @@ return {
                 mario_animation = 0x38,
                 mario_gfx_angle = 0xD6,
                 mario_hat_state = 0x8033B177,
+                game_vblank_queue = 0x8033B010,
                 pattern = 0x00B22B24,
                 pattern_value = 2410020892,
         },
         {
-                name = Locales.str('ADDRESS_JAPAN'),
+                name = function() return Locales.str('ADDRESS_JAPAN') end,
                 camera_fov = 0x8033B234,
                 camera_angle = 0x8033B3A4,
                 camera_transition_type = 0x8033A741,
@@ -92,11 +93,12 @@ return {
                 mario_animation = 0x38,
                 mario_gfx_angle = 0xD6,
                 mario_hat_state = 0x80339E07,
+                game_vblank_queue = 0x80339CA0,
                 pattern = 0x00B22B24,
                 pattern_value = 1174429700,
         },
         {
-                name = Locales.str('ADDRESS_SHINDOU'),
+                name = function() return Locales.str('ADDRESS_SHINDOU') end,
                 camera_fov = 0x8031EEB4,
                 camera_angle = 0x8031EE6C,
                 camera_transition_type = 0x8031E301,
@@ -137,11 +139,12 @@ return {
                 mario_animation = 0x38,
                 mario_gfx_angle = 0xD6,
                 mario_hat_state = 0x8031D9C7,
+                game_vblank_queue = 0x8031D5F0,
                 pattern = 0x00AF0000,
                 pattern_value = 2401566724,
         },
         {
-                name = Locales.str('ADDRESS_PAL'),
+                name = function() return Locales.str('ADDRESS_PAL') end,
                 camera_fov = 0x8030A924,
                 camera_angle = 0x8030A8DC,
                 camera_transition_type = 0x80309D71,
@@ -182,6 +185,7 @@ return {
                 mario_animation = 0x38,
                 mario_gfx_angle = 0xD6,
                 mario_hat_state = 0x80309437,
+                game_vblank_queue = 0x803092E8,
                 pattern = 0x00AF0000,
                 pattern_value = 202101932,
         },

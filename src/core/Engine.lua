@@ -321,15 +321,6 @@ function Engine.GetQFs(Mariospeed)
 	-- return math.floor(4 * (math.sqrt(math.abs(math.abs(MoreMaths.hexToFloat(string.format("%x", Memory.previous.mario_x))) - math.abs(MoreMaths.hexToFloat(string.format("%x", Memory.current.mario_x)))) ^ 2 + math.abs(math.abs(MoreMaths.hexToFloat(string.format("%x", Memory.previous.mario_z))) - math.abs(MoreMaths.hexToFloat(string.format("%x", Memory.current.mario_z)))) ^ 2)) / math.abs(Mariospeed))
 end
 
----Toggles between the appropriate values required for performing speedkicks.
-function Engine.toggle_speedkick()
-	if Settings.tas.goal_mag ~= 48 then
-		Settings.tas.goal_mag = 48
-	else
-		Settings.tas.goal_mag = 127
-	end
-	Settings.tas.high_magnitude = true
-end
 
 function Engine.GetSpeedEfficiency()
 	local div = math.abs(math.sqrt(

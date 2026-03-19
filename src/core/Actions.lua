@@ -288,7 +288,12 @@ actions[#actions + 1] = wrap_params({
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_SPDKICK,
     on_press = function()
-        Engine.toggle_speedkick()
+        if Settings.tas.goal_mag ~= 48 then
+            Settings.tas.goal_mag = 48
+		else
+		    Settings.tas.goal_mag = 127
+        end
+        Settings.tas.high_magnitude = true
     end,
 })
 

@@ -29,7 +29,7 @@ local UID = UIDProvider.allocate_once('TAS', function(enum_next)
 end)
 
 return {
-    name = Locales.str('TAS_TAB_NAME'),
+    name = function() return Locales.str('TAS_TAB_NAME') end,
     draw = function()
         local theme = Styles.theme()
         local foreground_color = Drawing.foreground_color()
