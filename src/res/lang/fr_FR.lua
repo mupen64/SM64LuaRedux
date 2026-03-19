@@ -8,7 +8,7 @@
 return {
     name = 'Français (FR)',
     -- General
-    GENERIC_ON =  '[icon:on_off]',
+    GENERIC_ON =  'On',
     GENERIC_OFF = 'Désactivé',
     GENERIC_START = 'Démarrer',
     GENERIC_STOP = 'Arrêter',
