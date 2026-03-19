@@ -290,7 +290,7 @@ function __impl.render(draw)
             SemanticWorkflowProject:move_sheet(i, 1)
         end
 
-        if (draw_utility_button('[icon:remove]', Locales.str('SEMANTIC_WORKFLOW_PROJECT_DELETE_SHEET_TOOL_TIP'))) then
+        if (draw_utility_button('[icon:delete]', Locales.str('SEMANTIC_WORKFLOW_PROJECT_DELETE_SHEET_TOOL_TIP'))) then
             SemanticWorkflowDialog = render_confirm_deletion_prompt(i)
         end
 
