@@ -22,7 +22,7 @@ return {
                     {
                         uid = UID.ToggleHelp,
                         rectangle = button_position,
-                        text = '[icon:door_opening]',
+                        text = '[icon:navigate_back]',
                         tooltip = Locales.str('SEMANTIC_WORKFLOW_HELP_EXIT_TOOL_TIP'),
                     }
                 ) then
