@@ -8,7 +8,7 @@
 return {
     name = 'English (US)',
     -- General
-    GENERIC_ON = 'On',
+    GENERIC_ON =  'On',
     GENERIC_OFF = 'Off',
     GENERIC_START = 'Start',
     GENERIC_STOP = 'Stop',
