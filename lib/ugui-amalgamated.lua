@@ -13,7 +13,7 @@
 --
 
 local ugui = {
-    _VERSION = 'v3.1.0',
+    _VERSION = 'v3.1.1',
     _URL = 'https://github.com/mupen64/ugui',
     _DESCRIPTION = 'Flexible immediate-mode GUI library for Mupen Lua',
     _LICENSE = 'GPL-3',
@@ -304,6 +304,7 @@ ugui.keycodes = {
 ---@field clipboard UguiClipboard? The clipboard access provider.
 ---The script's environment that provides access to external facilities.
 
+---@type UguiStaticEnvironment
 ugui.STATIC_ENV = {
     clipboard = {
         get = function() end,
@@ -3584,7 +3585,7 @@ ugui.tabcontrol = function(control)
     for i = 1, num_items, 1 do
         local item = control.items[i]
 
-        local width = ugui.standard_styler.compute_rich_text(item, control.plaintext).size.x + 10
+        local width = ugui.standard_styler.compute_rich_text(item, control.plaintext, ugui.standard_styler.params.font_name, ugui.standard_styler.params.font_size).size.x + 10
 
         -- if it would overflow, we wrap onto a new line
         if x + width > control.rectangle.width then
