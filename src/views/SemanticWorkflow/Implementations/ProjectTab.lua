@@ -294,6 +294,10 @@ function __impl.render(draw)
             SemanticWorkflowDialog = render_confirm_deletion_prompt(i)
         end
 
+        if (draw_utility_button('cp', Locales.str('SEMANTIC_WORKFLOW_DUPLICATE_SHEET'), Locales.str('SEMANTIC_WORKFLOW_DUPLICATE_SHEET'))) then
+            SemanticWorkflowProject:duplicate_sheet(i)
+        end
+
         if (draw_utility_toggle_button(
             selecting_sheet_base_for == i and '...' or 'bs',
             sheet._base_sheet ~= nil and (Locales.str('SEMANTIC_WORKFLOW_PROJECT_BASE_SHEET_TOOL_TIP') .. sheet._base_sheet.name) or Locales.str('SEMANTIC_WORKFLOW_PROJECT_NO_BASE_SHEET_TOOL_TIP'),

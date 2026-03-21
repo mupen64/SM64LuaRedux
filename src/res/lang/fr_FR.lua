@@ -88,6 +88,7 @@ return {
 Les fichiers non liés (ne se terminant pas par .sws ou .sws.savestate) ne seront pas touchés.
 Cette action est irréversible.
 ]],
+    SEMANTIC_WORKFLOW_DUPLICATE_SHEET = 'Dupliquer',
     SEMANTIC_WORKFLOW_PROJECT_CONFIRM_SHEET_DELETION_1 = '[Confirmer la suppression]\n\nÊtes-vous sûr de vouloir supprimer "',
     SEMANTIC_WORKFLOW_PROJECT_CONFIRM_SHEET_DELETION_2 = '" ?\nCette action est irréversible.',
     SEMANTIC_WORKFLOW_PROJECT_DISABLE_TOOL_TIP = 'Désélectionner la feuille',
