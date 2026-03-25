@@ -21,7 +21,7 @@ action = {}
 clipboard = {}
 
 Mupen = {
-    _VERSION = '1.3.0-13',
+    _VERSION = '1.3.0-19',
     _URL = 'https://github.com/mupen64/mupen64-rr-lua',
     _DESCRIPTION = 'Mupen64 Lua Scripting API',
     _LICENSE = 'GPL-2',
@@ -335,6 +335,15 @@ Mupen = {
 ---acceptable to pass into some functions that use that function.
 ---@alias tostringusable string|number
 
+---@class KeyEventArgs
+---@field keycode VKeycode? The virtual keycode, if the event is a key event.
+---@field ctrl boolean Whether the Ctrl key is held down.
+---@field alt boolean Whether the Alt key is held down.
+---@field shift boolean Whether the Shift key is held down.
+---@field meta boolean Whether the Meta key is held down.
+---@field pressed boolean? Whether the key was pressed or released, if the event is a key event.
+---@field text string? The typed character, if the event is a char event and the key corresponds to a character.
+---@field repeat boolean Whether the event is a repeat event (i.e. the key is being held down and this event is firing multiple times).
 
 -- Global Functions
 --#region
@@ -485,6 +494,14 @@ function emu.atseekcompleted(f, unregister) end
 ---@param unregister boolean? If true, then unregister the function `f`.
 ---@return nil
 function emu.atwarpmodifystatuschanged(f, unregister) end
+
+---Calls the function `f` when a keyboard event happens.
+---Keyboard presses that trigger hotkeys take priority over this event.
+---If `unregister` is set to true, the function `f` will no longer be called when this event occurs, but it will error if you never registered the function.
+---@param f fun(args: KeyEventArgs): nil The function to be called when a keyboard event happens.
+---@param unregister boolean? If true, then unregister the function `f`.
+---@return nil
+function emu.atkey(f, unregister) end
 
 ---Returns the number of VIs since the last movie was played.
 ---This should match the statusbar.
@@ -977,6 +994,14 @@ function wgui.resetclip() end
 --#region
 
 ---@alias brush integer
+
+---Gets the target frequency of the `emu.atdrawd2d` and `emu.atupdatescreen` callbacks in FPS.
+---@return number? # The target FPS, or nil.
+function d2d.get_target_fps() end
+
+---Sets the target frequency of the `emu.atdrawd2d` and `emu.atupdatescreen` callbacks in FPS.
+---@param fps number? The target FPS. If nil, the target FPS will be the monitor's refresh rate.
+function d2d.set_target_fps(fps) end
 
 ---Creates a brush from a color and returns it. D2D colors range from 0 to 1.
 ---@param r number
@@ -1484,7 +1509,7 @@ function savestate.do_memory(buffer, job, callback, ignore_warnings) end
 ---Opens a file dialouge and returns the file path of the file chosen.
 ---@nodiscard
 ---@param filter string This string acts as a filter for what files can be chosen. For example `*.*` selects all files, where `*.txt` selects only text files.
----@param type integer Unknown.
+---@param type integer 0 for an open file dialog. 1 for a save file dialog.
 ---@return string
 function iohelper.filediag(filter, type) end
 
@@ -1494,7 +1519,7 @@ function iohelper.filediag(filter, type) end
 -- avi functions
 --#region
 
----Begins an avi recording using the previously saved encoding settings.
+---Begins an avi recording using the previously saved capture settings.
 ---It is saved to `filename`.
 ---@param filename string
 ---@return nil

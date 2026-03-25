@@ -6,8 +6,15 @@
 
 ---@diagnostic disable:missing-return
 
+---@class SheetMeta
+---@field public name string The file name in the project directory (without extension).
+---@field public base_sheet string | nil The name of the base sheet, if applicable.
+
+---@class ProjectMeta
+---@field public sheets SheetMeta[] The ordered list of sheet metadata objects that are part of this project.
+
 ---@class Project Describes the data required to work with and store multiple sheets.
----@field public meta table Metadata about the project that is stored into the semantic workflow project file (*.swp).
+---@field public meta ProjectMeta Metadata about the project that is stored into the semantic workflow project file (*.swp).
 ---@field public all table All semantic workflow sheets as loaded from their respective *.sws files in order.
 ---@field public project_location string The location of the semantic workflow project file (*.swp).
 ---@field public disabled boolean If true, no inputs will be sent to mupen by this project.
@@ -41,9 +48,10 @@ function cls_project:move_sheet(index, sign) end
 ---@param name string The new name of the sheet.
 function cls_project:set_current_name(name) end
 
----Selects the semantic workflow sheet at the provided index and runs it from its savestate to its current preview frame.
+---Selects the semantic workflow sheet at the provided index and runs it to its current preview frame.
 ---@param index number The 1-based index of the sheet to select.
-function cls_project:select(index, load_state) end
+---@param from_base boolean | nil Whether to run the sheet from its defined base, which may be either a savestate or another sheet. Defaults to true.
+function cls_project:select(index, from_base) end
 
 ---Selects and rebases the semantic workflow sheet at the provided index onto the current state of the game.
 ---@param index number The 1-based index of the sheet to select.
