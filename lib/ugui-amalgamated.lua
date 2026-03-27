@@ -2002,7 +2002,8 @@ ugui.standard_styler = {
             return
         end
         local rectangle = {x = position.x, y = position.y, width = 0, height = 0}
-        local size = ugui.standard_styler.compute_rich_text(text, control.plaintext).size
+        local size = ugui.standard_styler.compute_rich_text(text, control.plaintext,
+        ugui.standard_styler.params.font_name,ugui.standard_styler.params.font_size).size
 
         rectangle.width = size.x
         rectangle.height = math.max(size.y, ugui.standard_styler.params.menu_item.height)
