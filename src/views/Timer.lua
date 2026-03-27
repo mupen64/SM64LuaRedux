@@ -30,7 +30,7 @@ local UID = UIDProvider.allocate_once('Timer', function(enum_next)
 end)
 
 return {
-    name = function() return '[icon:timer]' end,
+    name = function() return Locales.str('TIMER_TAB_NAME') end,
     draw = function()
         local theme = Styles.theme()
 
