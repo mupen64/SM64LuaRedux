@@ -31,7 +31,7 @@ local UID = UIDProvider.allocate_once('Tools', function(enum_next)
 end)
 
 return {
-    name = function() return Locales.str('TOOLS_TAB_NAME') end,
+    name = function() return '[icon:tools]' end,
     draw = function()
         local theme = Styles.theme()
         local foreground_color = Drawing.foreground_color()

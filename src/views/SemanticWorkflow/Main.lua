@@ -78,6 +78,9 @@ SemanticWorkflowDialog = nil
 
 local ugui_icon_draw = ugui.standard_styler.draw_icon
 
+local custom_icons = { 'navigate_back', 'arrow_up', 'arrow_down', 'base_sheet', 'without_save', 'delete',
+    'next_page', 'previous_page', 'add', 'timer', 'tools', 'settings', 'on_off' }
+
 ugui.standard_styler.draw_icon = function(rectangle, color, visual_state, key)
     if key == 'door_opening' then
         rectangle = {

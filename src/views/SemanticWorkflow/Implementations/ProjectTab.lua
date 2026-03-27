@@ -282,20 +282,20 @@ function __impl.render(draw)
             return result ~= toggled
         end
 
-        if (draw_utility_button('^', Locales.str('SEMANTIC_WORKFLOW_PROJECT_MOVE_SHEET_UP_TOOL_TIP'), i > 1)) then
+        if (draw_utility_button('[icon:arrow_up]', Locales.str('SEMANTIC_WORKFLOW_PROJECT_MOVE_SHEET_UP_TOOL_TIP'), i > 1)) then
             SemanticWorkflowProject:move_sheet(i, -1)
         end
 
-        if (draw_utility_button('v', Locales.str('SEMANTIC_WORKFLOW_PROJECT_MOVE_SHEET_DOWN_TOOL_TIP'), i < #SemanticWorkflowProject.meta.sheets)) then
+        if (draw_utility_button('[icon:arrow_down]', Locales.str('SEMANTIC_WORKFLOW_PROJECT_MOVE_SHEET_DOWN_TOOL_TIP'), i < #SemanticWorkflowProject.meta.sheets)) then
             SemanticWorkflowProject:move_sheet(i, 1)
         end
 
-        if (draw_utility_button('-', Locales.str('SEMANTIC_WORKFLOW_PROJECT_DELETE_SHEET_TOOL_TIP'))) then
+        if (draw_utility_button('[icon:delete]', Locales.str('SEMANTIC_WORKFLOW_PROJECT_DELETE_SHEET_TOOL_TIP'))) then
             SemanticWorkflowDialog = render_confirm_deletion_prompt(i)
         end
 
         if (draw_utility_toggle_button(
-            selecting_sheet_base_for == i and '...' or 'bs',
+            selecting_sheet_base_for == i and '...' or '[icon:base_sheet]',
             sheet._base_sheet ~= nil and (Locales.str('SEMANTIC_WORKFLOW_PROJECT_BASE_SHEET_TOOL_TIP') .. sheet._base_sheet.name) or Locales.str('SEMANTIC_WORKFLOW_PROJECT_NO_BASE_SHEET_TOOL_TIP'),
             sheet._base_sheet ~= nil,
             0.75,
@@ -319,7 +319,7 @@ function __impl.render(draw)
             end
         end
 
-        if (draw_utility_button('>', Locales.str('SEMANTIC_WORKFLOW_PROJECT_PLAY_WITHOUT_ST_TOOL_TIP'))) then
+        if (draw_utility_button('[icon:without_save]', Locales.str('SEMANTIC_WORKFLOW_PROJECT_PLAY_WITHOUT_ST_TOOL_TIP'))) then
             SemanticWorkflowProject:select(i, false)
         end
         ::continue::
