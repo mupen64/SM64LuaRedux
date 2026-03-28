@@ -11,7 +11,7 @@ function get_base_style()
         font_name = 'MS Sans Serif',
         font_size = 12,
 
-        icon_size = 10,
+        icon_size = 12,
 
         button = {
             text = {
