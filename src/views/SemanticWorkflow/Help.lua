@@ -24,6 +24,7 @@ return {
                         rectangle = button_position,
                         text = '[icon:navigate_back]',
                         tooltip = Locales.str('SEMANTIC_WORKFLOW_HELP_EXIT_TOOL_TIP'),
+                        styler_mixin = { icon_size = 12 },
                     }
                 ) then
                 SemanticWorkflowDialog = nil
@@ -64,6 +65,7 @@ return {
                         text = '[icon:previous_page]',
                         is_enabled = page > 1,
                         tooltip = Locales.str('SEMANTIC_WORKFLOW_HELP_PREV_PAGE'),
+                        styler_mixin = { icon_size = 12 },
                     }
                 ) then
                 page = page - 1
@@ -76,6 +78,7 @@ return {
                         text = '[icon:next_page]',
                         is_enabled = page < #pages,
                         tooltip = Locales.str('SEMANTIC_WORKFLOW_HELP_NEXT_PAGE'),
+                        styler_mixin = { icon_size = 12 },
                     }
                 ) then
                 page = page + 1
