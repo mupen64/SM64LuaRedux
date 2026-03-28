@@ -8,13 +8,13 @@
 ---@diagnostic disable-next-line: assign-type-mismatch
 local __impl = __impl
 
-__impl.name = 'Preferences'
+__impl.name = function() return Locales.str 'SEMANTIC_WORKFLOW_PREFERENCES_TAB_NAME' end
 __impl.help_key = 'PREFERENCES_TAB'
 
 ---@type Gui
 local Gui = dofile(views_path .. 'SemanticWorkflow/Definitions/Gui.lua')
 
-local UID = UIDProvider.allocate_once(__impl.name, function(enum_next)
+local UID = UIDProvider.allocate_once('PreferencesTab', function(enum_next)
     return {
         ToggleEditEntireState = enum_next(),
         ToggleFastForward = enum_next(),

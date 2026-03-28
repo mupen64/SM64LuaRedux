@@ -8,7 +8,7 @@
 ---@diagnostic disable-next-line: assign-type-mismatch
 local __impl = __impl
 
-__impl.name = 'Project'
+__impl.name = function() return Locales.str 'SEMANTIC_WORKFLOW_PROJECT_TAB_NAME' end
 __impl.help_key = 'PROJECT_TAB'
 
 ---@type Project
@@ -17,7 +17,7 @@ local Project = dofile(views_path .. 'SemanticWorkflow/Definitions/Project.lua')
 ---@type Gui
 local Gui = dofile(views_path .. 'SemanticWorkflow/Definitions/Gui.lua')
 
-local UID = UIDProvider.allocate_once(__impl.name, function(enum_next)
+local UID = UIDProvider.allocate_once('ProjectTab', function(enum_next)
     return {
         NewProject = enum_next(),
         OpenProject = enum_next(),
