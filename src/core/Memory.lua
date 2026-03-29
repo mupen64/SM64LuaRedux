@@ -64,8 +64,6 @@ function Memory.initialize()
 end
 
 ---Updates the current game state from the emulator.
----This function should only be called in a VI callback, as that's the point at which the game state has finalized an stabilized in a frame.
----Calling this function from any emulator callback which doesn't guarantee synchronization with a specific core state (e.g. `atdrawd2d`) is not allowed.
 function Memory.update()
 	local address_source = Addresses[Settings.address_source_index]
 	Memory.current.camera_fov = memory.readfloat(address_source.camera_fov)
@@ -111,7 +109,6 @@ function Memory.update()
 end
 
 ---Copies the current game state to the previous game state.
----This function should only be called from `atinput`, as that's the only callback which guarantees that game logic has ran between its invocations.
 function Memory.update_previous()
 	Memory.previous = ugui.internal.deep_clone(Memory.current)
 end

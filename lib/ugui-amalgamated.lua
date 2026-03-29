@@ -13,11 +13,12 @@
 --
 
 local ugui = {
-    _VERSION = 'v3.1.0',
+    _VERSION = 'v3.1.2',
     _URL = 'https://github.com/mupen64/ugui',
     _DESCRIPTION = 'Flexible immediate-mode GUI library for Mupen Lua',
     _LICENSE = 'GPL-3',
     DEBUG = false,
+    STATIC_ENV = {},
 }
 
 if not BreitbandGraphics then
@@ -26,7 +27,7 @@ if not BreitbandGraphics then
 end
 
 -- ------------------------------------------------------------
---   src\ugui\types.lua
+--   src\ugui\environment\clipboard.lua
 -- ------------------------------------------------------------
 
 --
@@ -35,182 +36,27 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
----@alias UID number
----Unique identifier for a control. Must be unique within a frame.
+---@alias UguiClipboardGetDelegate fun(): string?
+---A delegate function that gets the clipboard value, or `nil` if the clipboard is empty.
 
----@alias RichText string
----Text which can contain other inline elements, such as icons.
----
----Examples:
----
----    [icon:arrow_left] Go Back
----    Move up [icon:arrow_up]
----    Down [icon:arrow_down:#FFFF00]
----    [icon:arrow_right:textbox.selection] Go Forward
----    Hello World!
+---@alias UguiClipboardSetDelegate fun(value: string)
+---A delegate function that sets the clipboard value.
 
----@alias RichTextSegment { type: ["text"|"icon"], value: string, color: string? }
----Represents a computed segment from a rich text string.
+---@class UguiClipboard
+---@field get UguiClipboardGetDelegate
+---@field set UguiClipboardSetDelegate
+---A class that provides clipboard access.
 
----@class UguiKeyEventArgs
----@field keycode UguiVKeycodes? The virtual keycode, if the event is a key event.
----@field ctrl boolean Whether the Ctrl key is held down.
----@field alt boolean Whether the Alt key is held down.
----@field shift boolean Whether the Shift key is held down.
----@field meta boolean Whether the Meta key is held down.
----@field pressed boolean? Whether the key was pressed or released, if the event is a key event.
----@field text string? The typed character, if the event is a char event and the key corresponds to a character.
----@field repeat boolean Whether the event is a repeat event (i.e. the key is being held down and this event is firing multiple times).
+-- ------------------------------------------------------------
+--   src\ugui\environment\keycode.lua
+-- ------------------------------------------------------------
 
----@class Environment
----@field public mouse_position { x: number, y: number } The mouse position.
----@field public wheel number The mouse wheel delta.
----@field public is_primary_down boolean? Whether the primary mouse button is being pressed.
----@field public key_events UguiKeyEventArgs[] The key events that happened since the last frame.
----@field public window_size { x: number, y: number }? The rendering bounds. If nil, no rendering bounds are considered and certain controls, such as menus, might overflow off-screen.
+--
+-- Copyright (c) 2026, Mupen64 maintainers.
+--
+-- SPDX-License-Identifier: GPL-3.0-or-later
+--
 
----@class Control
----@field public uid UID The unique identifier of the control.
----@field public styler_mixin any? An optional styler mixin table which can override specific styler parameters for this control.
----@field public rectangle Rectangle The rectangle in which the control is drawn.
----@field public is_enabled boolean? Whether the control is enabled. If nil or true, the control is enabled.
----@field public tooltip string? The control's tooltip. If nil, no tooltip will be shown.
----@field public plaintext boolean? Whether the control's text content is drawn as plain text without rich rendering.
----@field public z_index integer? The control's Z-index. If nil, `0` is assumed.
----The base class for all controls.
-
----@class Button : Control
----@field public text RichText The text displayed on the button.
----A button which can be clicked.
-
----@class ToggleButton : Button
----@field public is_checked boolean? Whether the button is checked. If nil, the ToggleButton is considered unchecked.
----A button which can be toggled on and off.
-
----@class CarrouselButton : Control
----@field public items string[] The items contained in the carrousel button.
----@field public selected_index integer The index of the currently selected item into the items array.
----A button which can be toggled on and off.
----TODO: Make wraparound optional
-
----@class TextBox : Control
----@field public text string The text contained in the textbox.
----A textbox which can be edited.
-
----@class Joystick : Control
----@field public position Vector2 The joystick's position with the range 0-128 on both axes.
----@field public mag number? The joystick's magnitude circle radius with the range `0-128`. If nil, no magnitude circle will be drawn.
----@field public x_snap integer? The snap distance to 0 on the X axis. If nil, no snap will be applied.
----@field public y_snap integer? The snap distance to 0 on the Y axis. If nil, no snap will be applied.
----A joystick which can be interacted with.
-
----@class Trackbar : Control
----@field public value number The current value in the range 0-1.
----A trackbar which can have its value adjusted.
-
----@class ComboBox : Control
----@field public items RichText[] The items contained in the control.
----@field public selected_index integer? The index of the currently selected item into the items array. If nil, no item is selected.
----A combobox which allows the user to choose from a list of items.
-
----@class ListBox : Control
----@field public items RichText[] The items contained in the control.
----@field public selected_index integer? The index of the currently selected item into the items array.
----@field public horizontal_scroll boolean? Whether horizontal scrolling will be enabled when items go beyond the width of the control. Will impact performance greatly, use with care.
----A listbox which allows the user to choose from a list of items.
----If the items don't fit in the control's bounds vertically, vertical scrolling will be enabled.
----If the items don't fit in the control's bounds horizontally, horizontal scrolling will be enabled if horizontal_scroll is true.
----The `rectangle` field might be mutated to accommodate the scrollbars.
-
----@class ScrollBar : Control
----@field public value number The scroll proportion in the range 0-1.
----@field public ratio number The overflow ratio, which is calculated by dividing the desired content dimensions by the relevant attached control's (e.g.: a listbox's) dimensions.
----A scrollbar which allows scrolling horizontally or vertically, depending on the control's dimensions.
-
----@class MenuItem
----@field public items MenuItem[]? The item's child items. If nil or empty, the item has no child items and is clickable.
----@field public enabled boolean? Whether the item is enabled. If nil or true, the item is enabled.
----@field public checked boolean? Whether the item is checked. If true, the item is checked.
----@field public text RichText The item's text.
----Represents an item inside of a Menu.
-
----@class MenuResult
----@field public item MenuItem? The item that was clicked, or nil if none was.
----@field public dismissed boolean Whether the menu was dismissed by clicking outside of it.
-
----@class Menu : Control
----@field public items MenuItem[] The items contained in the menu.
----A menu, which allows the user to choose from a list of items.
-
----@class ToolTip
----@field public text RichText The tooltip's text.
----A tooltip, which can be used to show additional information about a control.
-
----@class Spinner : Control
----@field public value number The spinner's numerical value.
----@field public increment number? The increment applied when the + or - buttons are clicked (negated when - is clicked). If nil, 1 is assumed.
----@field public minimum_value number? The minimum value.
----@field public maximum_value number? The maximum value.
----@field public is_horizontal boolean? Whether the increment buttons are stacked horizontally.
----A spinner, consisting of a textbox and buttons for incrementing or decrementing a number.
-
----@class TabControl : Control
----@field public items RichText[] The tab headers.
----@field public selected_index integer The index of the currently selected tab.
----A tab control, which allows the user to choose from a list of tabs.
-
----@class TabControlResult
----@field public selected_index integer The index of the selected tab.
----@field public rectangle Rectangle The visual bounds the selected tab can place its contents in.
-
----@class NumberBox : Control
----@field public value integer The value.
----@field public places integer The amount of digits the value is padded to.
----@field public show_negative boolean? Whether a button for viewing and toggling the value's sign is shown. If nil, false is assumed.
----A numberbox, which allows modifying a number by typing or by adjusting its individual digits.
-
----@class Meta
----@field public signal_change SignalChangeState The change state of the control's primary signal.
----Additional information about a placed control.
-
----@alias ControlType "button" | "toggle_button" | "carrousel_button" | "textbox" | "joystick" | "trackbar" | "listbox" | "scrollbar" | "combobox" | "menu" | "numberbox"
-
----@alias ControlReturnValue { primary: any, meta: Meta }
-
----@class ControlRegistryEntry
----@field public validate fun(control: Control) Verifies that a control instance matches the desired type.
----@field public setup fun(control: Control, data: any)? Sets up the initial control data to be used in `logic` and `draw`.
----@field public added fun(control: Control, data: any)? Notifies about a control being added to a scene.
----@field public logic fun(control: Control, data: any): ControlReturnValue Executes control logic.
----@field public draw fun(control: Control) Draws the control.
----Represents an entry in the control registry.
-
-
----@enum VisualState
--- The possible states of a control, which are used by the styler for drawing.
-ugui.visual_states = {
-    --- The control doesn't accept user interactions.
-    disabled = 0,
-    --- The control isn't being interacted with.
-    normal = 1,
-    --- The mouse is over the control.
-    hovered = 2,
-    --- The control is currently capturing inputs.
-    active = 3,
-}
-
----@enum SignalChangeState
---- The change in the primary signal ("return value") of a control.
-ugui.signal_change_states = {
-    --- The signal isn't changing.
-    none = 0,
-    --- The signal has just started changing.
-    started = 1,
-    --- The signal is currently changing.
-    ongoing = 2,
-    --- The signal has just stopped changing.
-    ended = 3,
-}
 
 ---@enum UguiVKeycodes
 -- A complete enum of Virtual-Key codes.
@@ -434,14 +280,54 @@ ugui.keycodes = {
     VK_OEM_CLEAR = 0xFE, -- Clear key
 }
 
----@alias SceneEntry { control: Control, type: ControlType }
+---@class UguiKeyEventArgs
+---@field keycode UguiVKeycodes? The virtual keycode, if the event is a key event.
+---@field ctrl boolean Whether the Ctrl key is held down.
+---@field alt boolean Whether the Alt key is held down.
+---@field shift boolean Whether the Shift key is held down.
+---@field meta boolean Whether the Meta key is held down.
+---@field pressed boolean? Whether the key was pressed or released, if the event is a key event.
+---@field text string? The typed character, if the event is a char event and the key corresponds to a character.
+---@field repeat boolean Whether the event is a repeat event (i.e. the key is being held down and this event is firing multiple times).
 
----@class TextBoxNavigationKeyProcessingResult
----@field public handled boolean Whether the key press was handled.
----@field public text string? The new textbox text.
----@field public selection_start integer? The new textbox selection start index.
----@field public selection_end integer? The new textbox selection end index.
----@field public caret_index integer? The new textbox caret index.
+-- ------------------------------------------------------------
+--   src\ugui\environment\static_env.lua
+-- ------------------------------------------------------------
+
+--
+-- Copyright (c) 2026, Mupen64 maintainers.
+--
+-- SPDX-License-Identifier: GPL-3.0-or-later
+--
+
+---@class UguiStaticEnvironment
+---@field clipboard UguiClipboard? The clipboard access provider.
+---The script's environment that provides access to external facilities.
+
+---@type UguiStaticEnvironment
+ugui.STATIC_ENV = {
+    clipboard = {
+        get = function() end,
+        set = function(text) end,
+    },
+}
+
+-- ------------------------------------------------------------
+--   src\ugui\environment\env.lua
+-- ------------------------------------------------------------
+
+--
+-- Copyright (c) 2026, Mupen64 maintainers.
+--
+-- SPDX-License-Identifier: GPL-3.0-or-later
+--
+
+---@class Environment
+---@field public mouse_position { x: number, y: number } The mouse position.
+---@field public wheel number The mouse wheel delta.
+---@field public is_primary_down boolean? Whether the primary mouse button is being pressed.
+---@field public key_events UguiKeyEventArgs[] The key events that happened since the last frame.
+---@field public window_size { x: number, y: number }? The rendering bounds. If nil, no rendering bounds are considered and certain controls, such as menus, might overflow off-screen.
 
 -- ------------------------------------------------------------
 --   src\ugui\core.lua
@@ -452,6 +338,69 @@ ugui.keycodes = {
 --
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
+
+---@class ControlRegistryEntry
+---@field public validate fun(control: Control) Verifies that a control instance matches the desired type.
+---@field public setup fun(control: Control, data: any)? Sets up the initial control data to be used in `logic` and `draw`.
+---@field public added fun(control: Control, data: any)? Notifies about a control being added to a scene.
+---@field public logic fun(control: Control, data: any): ControlReturnValue Executes control logic.
+---@field public draw fun(control: Control) Draws the control.
+---Represents an entry in the control registry.
+
+---@alias UID number
+---Unique identifier for a control. Must be unique within a frame.
+
+---@alias RichText string
+---Text which can contain other inline elements, such as icons.
+---
+---Examples:
+---
+---    [icon:arrow_left] Go Back
+---    Move up [icon:arrow_up]
+---    Down [icon:arrow_down:#FFFF00]
+---    [icon:arrow_right:textbox.selection] Go Forward
+---    Hello World!
+
+---@alias RichTextSegment { type: ["text"|"icon"], value: string, color: string? }
+---Represents a computed segment from a rich text string.
+
+---@class ToolTip
+---@field public text RichText The tooltip's text.
+---A tooltip, which can be used to show additional information about a control.
+
+---@class Meta
+---@field public signal_change SignalChangeState The change state of the control's primary signal.
+---Additional information about a placed control.
+
+---@alias ControlReturnValue { primary: any, meta: Meta }
+
+---@alias ControlType "label" | "button" | "toggle_button" | "carrousel_button" | "textbox" | "joystick" | "trackbar" | "listbox" | "scrollbar" | "combobox" | "menu" | "numberbox"
+
+---@enum VisualState
+-- The possible states of a control, which are used by the styler for drawing.
+ugui.visual_states = {
+    --- The control doesn't accept user interactions.
+    disabled = 0,
+    --- The control isn't being interacted with.
+    normal = 1,
+    --- The mouse is over the control.
+    hovered = 2,
+    --- The control is currently capturing inputs.
+    active = 3,
+}
+
+---@enum SignalChangeState
+--- The change in the primary signal ("return value") of a control.
+ugui.signal_change_states = {
+    --- The signal isn't changing.
+    none = 0,
+    --- The signal has just started changing.
+    started = 1,
+    --- The signal is currently changing.
+    ongoing = 2,
+    --- The signal has just stopped changing.
+    ended = 3,
+}
 
 ---@type { [string]: ControlRegistryEntry }
 ugui.registry = {}
@@ -492,12 +441,34 @@ ugui.begin_frame = function(environment)
     if not ugui.internal.environment then
         ugui.internal.environment = environment
     end
+
     if not environment.window_size then
         -- Assume unbounded window size if user is too lazy to provide one
-        environment.window_size = { x = math.maxinteger, y = math.maxinteger }
+        environment.window_size = {x = math.maxinteger, y = math.maxinteger}
     end
-    ugui.internal.previous_environment = ugui.internal.deep_clone(ugui.internal
-        .environment)
+
+    -- Replace paste operations with synthetic type events.
+    local clipboard_text
+    for i, e in ipairs(environment.key_events) do
+        if e.pressed and e.keycode == ugui.keycodes.VK_V and e.ctrl then
+            if not clipboard_text then
+                clipboard_text = ugui.STATIC_ENV.clipboard.get()
+            end
+
+            if clipboard_text then
+                environment.key_events[i] = {
+                    ctrl = false,
+                    shift = false,
+                    alt = false,
+                    meta = false,
+                    text = clipboard_text,
+                    ['repeat'] = false,
+                }
+            end
+        end
+    end
+
+    ugui.internal.previous_environment = ugui.internal.deep_clone(ugui.internal.environment)
     ugui.internal.environment = ugui.internal.deep_clone(environment)
 
     if ugui.internal.is_mouse_just_down() then
@@ -640,6 +611,8 @@ end
 --
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
+
+---@alias SceneEntry { control: Control, type: ControlType }
 
 ugui.internal = {
     ---@type SceneEntry[]
@@ -1171,7 +1144,8 @@ end
 ---@param index integer The index into the first string to begin inserting the second string at.
 ---@return string # A new string with the other string inserted.
 ugui.internal.insert_at = function(string, string2, index)
-    return string:sub(1, index) .. string2 .. string:sub(index + string2:len(), string:len())
+    index = math.max(1, math.min(index, #string + 1))
+    return string:sub(1, index - 1) .. string2 .. string:sub(index)
 end
 
 ---Gets the digit at a specific index in a number with a specific padded length.
@@ -1192,6 +1166,29 @@ end
 ugui.internal.set_digit = function(value, length, digit_value, index)
     local old_digit_value = ugui.internal.get_digit(value, length, index)
     local new_value = value + (digit_value - old_digit_value) * math.pow(10, length - index)
+    local max = math.pow(10, length)
+    return (new_value + max) % max
+end
+
+---Sets a range of digits in a padded number.
+---@param value integer The number.
+---@param length integer The number's padded length.
+---@param digits string The digits to insert.
+---@param index integer The starting index (1 = leftmost).
+---@return integer
+ugui.internal.set_digit_range = function(value, length, digits, index)
+    local count = #digits
+    local digits_value = tonumber(digits)
+
+    local insert_pow = math.pow(10, length - index - count + 1)
+    local range_pow = math.pow(10, count)
+
+    -- extract existing digits in that range
+    local old_range = math.floor(value / insert_pow) % range_pow
+
+    -- replace them
+    local new_value = value + (digits_value - old_range) * insert_pow
+
     local max = math.pow(10, length)
     return (new_value + max) % max
 end
@@ -1529,15 +1526,16 @@ ugui.standard_styler = {
     ---Computes the segment data of rich text.
     ---@param text RichText The rich text.
     ---@param plaintext boolean? Whether the text is drawn without rich formatting. If nil, false is assumed.
+    ---@param font_name string The font name to use for the text.
+    ---@param font_size number The font size to use for the text.
     ---@return { segment_data: { segment: RichTextSegment, rectangle: Rectangle }[], size: Vector2  } # The computed rich text segment data.
-    compute_rich_text = function(text, plaintext)
+    compute_rich_text = function(text, plaintext, font_name, font_size)
         if not text then
             return {segment_data = {}, size = {x = 0, y = 0}}
         end
 
         if plaintext then
-            local size = BreitbandGraphics.get_text_size(text, ugui.standard_styler.params.font_size,
-                ugui.standard_styler.params.font_name)
+            local size = BreitbandGraphics.get_text_size(text, font_size, font_name)
             return {
                 segment_data = {
                     segment = {
@@ -1577,8 +1575,8 @@ ugui.standard_styler = {
                 }
                 x = x + ugui.standard_styler.params.icon_size
             elseif segment.type == 'text' then
-                local size = BreitbandGraphics.get_text_size(segment.value, ugui.standard_styler.params.font_size,
-                    ugui.standard_styler.params.font_name)
+                local size = BreitbandGraphics.get_text_size(segment.value, font_size,
+                    font_name)
                 segment_data[#segment_data + 1] = {
                     segment = segment,
                     rectangle = {
@@ -1626,9 +1624,13 @@ ugui.standard_styler = {
     ---@param color Color The rich text's color. If a rich text segment contains a color, it is used instead.
     ---@param visual_state VisualState The visual state for rich icons.
     ---@param plaintext boolean? Whether the text is drawn without rich formatting. If nil, false is assumed.
-    draw_rich_text = function(rectangle, align_x, align_y, text, color, visual_state, plaintext)
+    ---@param font_name string? The font name to use for the text. If nil, the default is assumed.
+    ---@param font_size number? The font size to use for the text. If nil, the default is assumed.
+    draw_rich_text = function(rectangle, align_x, align_y, text, color, visual_state, plaintext, font_name, font_size)
         align_x = align_x or BreitbandGraphics.alignment.center
         align_y = align_y or BreitbandGraphics.alignment.center
+        font_name = font_name or ugui.standard_styler.params.font_name
+        font_size = font_size or ugui.standard_styler.params.font_size
 
         if plaintext then
             BreitbandGraphics.draw_text2({
@@ -1637,8 +1639,8 @@ ugui.standard_styler = {
                 color = color,
                 align_x = align_x,
                 align_y = align_y,
-                font_name = ugui.standard_styler.params.font_name,
-                font_size = ugui.standard_styler.params.font_size,
+                font_name = font_name,
+                font_size = font_size,
                 clip = true,
                 aliased = not ugui.standard_styler.params.cleartype,
             })
@@ -1646,7 +1648,7 @@ ugui.standard_styler = {
         end
 
         -- 1. Compute rich text segment data
-        local computed = ugui.standard_styler.compute_rich_text(text, plaintext)
+        local computed = ugui.standard_styler.compute_rich_text(text, plaintext, font_name, font_size)
         local segment_data = computed.segment_data
         local total_width = computed.size.x
 
@@ -1699,8 +1701,8 @@ ugui.standard_styler = {
                     color = color,
                     align_x = BreitbandGraphics.alignment.start,
                     align_y = BreitbandGraphics.alignment.start,
-                    font_name = ugui.standard_styler.params.font_name,
-                    font_size = ugui.standard_styler.params.font_size,
+                    font_name = font_name,
+                    font_size = font_size,
                     clip = true,
                     aliased = not ugui.standard_styler.params.cleartype,
                 })
@@ -2000,8 +2002,8 @@ ugui.standard_styler = {
             return
         end
         local rectangle = {x = position.x, y = position.y, width = 0, height = 0}
-        local size = ugui.standard_styler.compute_rich_text(text, control.plaintext).size
-
+        local size = ugui.standard_styler.compute_rich_text(text, control.plaintext,
+        ugui.standard_styler.params.font_name, ugui.standard_styler.params.font_size).size
         rectangle.width = size.x
         rectangle.height = math.max(size.y, ugui.standard_styler.params.menu_item.height)
         rectangle.y = rectangle.y + rectangle.height
@@ -2370,6 +2372,81 @@ ugui.standard_styler = {
 }
 
 -- ------------------------------------------------------------
+--   src\ugui\controls\control.lua
+-- ------------------------------------------------------------
+
+--
+-- Copyright (c) 2026, Mupen64 maintainers.
+--
+-- SPDX-License-Identifier: GPL-3.0-or-later
+--
+
+---@class Control
+---@field public uid UID The unique identifier of the control.
+---@field public styler_mixin any? An optional styler mixin table which can override specific styler parameters for this control.
+---@field public rectangle Rectangle The rectangle in which the control is drawn.
+---@field public is_enabled boolean? Whether the control is enabled. If nil or true, the control is enabled.
+---@field public tooltip string? The control's tooltip. If nil, no tooltip will be shown.
+---@field public plaintext boolean? Whether the control's text content is drawn as plain text without rich rendering.
+---@field public z_index integer? The control's Z-index. If nil, `0` is assumed.
+---The base class for all controls.
+
+-- ------------------------------------------------------------
+--   src\ugui\controls\label.lua
+-- ------------------------------------------------------------
+
+--
+-- Copyright (c) 2026, Mupen64 maintainers.
+--
+-- SPDX-License-Identifier: GPL-3.0-or-later
+--
+
+---@class Label : Control
+---@field public text RichText The text.
+---@field public color Color The color of the text.
+---@field public font_size number? The font size of the text. If `nil`, the default font size is used.
+---@field public font_name string? The font family of the text. If `nil`, the default font family is used.
+---@field public align_x Alignment? The text's horizontal alignment inside the control rectangle. If `nil`, `alignment.center` is assumed.
+---@field public align_y Alignment? The text's vertical alignment inside the control rectangle. If `nil`, `alignment.center` is assumed.
+---A label that contains text.
+
+---@type ControlRegistryEntry
+ugui.registry.label = {
+    ---@param control Label
+    validate = function(control)
+        ugui.internal.assert(type(control.text) == 'string', 'expected text to be string')
+        ugui.internal.assert(type(control.color) == 'table', 'expected color to be table')
+        ugui.internal.assert(type(control.font_size) == 'number' or control.font_size == nil, 'expected font_size to be number or nil')
+        ugui.internal.assert(type(control.font_name) == 'string' or control.font_name == nil, 'expected font_name to be string or nil')
+        ugui.internal.assert(type(control.align_x) == 'number' or control.align_x == nil, 'expected align_x to be number or nil')
+        ugui.internal.assert(type(control.align_y) == 'number' or control.align_y == nil, 'expected align_y to be number or nil')
+    end,
+    ---@param control Label
+    ---@return ControlReturnValue
+    logic = function(control, data)
+        return {
+            primary = nil,
+            meta = {
+                signal_change = ugui.signal_change_states.none,
+            },
+        }
+    end,
+    ---@param control Label
+    draw = function(control)
+        local visual_state = ugui.get_visual_state(control)
+        ugui.standard_styler.draw_rich_text(control.rectangle, control.align_x, control.align_y, control.text, control.color, visual_state, control.plaintext, control.font_name, control.font_size)
+    end,
+}
+
+---Places a Label.
+---@param control Label The control table.
+---@return nil, Meta # Nothing.
+ugui.label = function(control)
+    local result = ugui.control(control, 'label')
+    return result.primary, result.meta
+end
+
+-- ------------------------------------------------------------
 --   src\ugui\controls\button.lua
 -- ------------------------------------------------------------
 
@@ -2378,6 +2455,10 @@ ugui.standard_styler = {
 --
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
+
+---@class Button : Control
+---@field public text RichText The text displayed on the button.
+---A button which can be clicked.
 
 ---@type ControlRegistryEntry
 ugui.registry.button = {
@@ -2422,6 +2503,10 @@ end
 --
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
+
+---@class ToggleButton : Button
+---@field public is_checked boolean? Whether the button is checked. If nil, the ToggleButton is considered unchecked.
+---A button which can be toggled on and off.
 
 ---@type ControlRegistryEntry
 ugui.registry.toggle_button = {
@@ -2473,6 +2558,12 @@ end
 --
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
+
+---@class CarrouselButton : Control
+---@field public items string[] The items contained in the carrousel button.
+---@field public selected_index integer The index of the currently selected item into the items array.
+---A button which can be toggled on and off.
+---TODO: Make wraparound optional
 
 ---@type ControlRegistryEntry
 ugui.registry.carrousel_button = {
@@ -2536,6 +2627,11 @@ end
 --
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
+
+---@class ScrollBar : Control
+---@field public value number The scroll proportion in the range 0-1.
+---@field public ratio number The overflow ratio, which is calculated by dividing the desired content dimensions by the relevant attached control's (e.g.: a listbox's) dimensions.
+---A scrollbar which allows scrolling horizontally or vertically, depending on the control's dimensions.
 
 ---@type ControlRegistryEntry
 ugui.registry.scrollbar = {
@@ -2639,6 +2735,15 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
+---@class ListBox : Control
+---@field public items RichText[] The items contained in the control.
+---@field public selected_index integer? The index of the currently selected item into the items array.
+---@field public horizontal_scroll boolean? Whether horizontal scrolling will be enabled when items go beyond the width of the control. Will impact performance greatly, use with care.
+---A listbox which allows the user to choose from a list of items.
+---If the items don't fit in the control's bounds vertically, vertical scrolling will be enabled.
+---If the items don't fit in the control's bounds horizontally, horizontal scrolling will be enabled if horizontal_scroll is true.
+---The `rectangle` field might be mutated to accommodate the scrollbars.
+
 ---@type ControlRegistryEntry
 ugui.registry.listbox = {
     ---@param control ListBox
@@ -2696,6 +2801,10 @@ ugui.registry.listbox = {
                     end
                     if e.keycode == ugui.keycodes.VK_DOWN and data.selected_index ~= nil then
                         data.selected_index = ugui.internal.clamp(data.selected_index + 1, 1, #control.items)
+                    end
+                    if e.keycode == ugui.keycodes.VK_C and e.ctrl and data.selected_index ~= nil then
+                        local item = control.items[data.selected_index]
+                        ugui.STATIC_ENV.clipboard.set(item)
                     end
                     if not y_overflow then
                         if e.keycode == ugui.keycodes.VK_HOME or e.keycode == ugui.keycodes.VK_PRIOR then
@@ -2820,6 +2929,11 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
+---@class ComboBox : Control
+---@field public items RichText[] The items contained in the control.
+---@field public selected_index integer? The index of the currently selected item into the items array. If nil, no item is selected.
+---A combobox which allows the user to choose from a list of items.
+
 ---@type ControlRegistryEntry
 ugui.registry.combobox = {
     ---@param control ComboBox
@@ -2927,6 +3041,10 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
+---@class TextBox : Control
+---@field public text string The text contained in the textbox.
+---A textbox which can be edited.
+
 ---@type ControlRegistryEntry
 ugui.registry.textbox = {
     ---@param control TextBox
@@ -3015,6 +3133,11 @@ ugui.registry.textbox = {
                             data.last_changed_anchor = 'caret'
                         end
                     end
+
+                    if e.keycode == ugui.keycodes.VK_C and e.ctrl and has_selection then
+                        local selected_text = data.text:sub(lower_selection, higher_selection - 1)
+                        ugui.STATIC_ENV.clipboard.set(selected_text)
+                    end
                 end
 
                 if e.text then
@@ -3030,15 +3153,14 @@ ugui.registry.textbox = {
 
                         data.last_changed_anchor = 'caret'
                     end
-                    data.text = ugui.internal.insert_at(data.text, e.text, data.caret_index - 1)
-                    data.caret_index = data.caret_index + 1
+                    data.text = ugui.internal.insert_at(data.text, e.text, data.caret_index)
+                    data.caret_index = data.caret_index + #e.text
                     data.last_changed_anchor = 'caret'
                 end
             end
         end
 
         -- Clamp indices to valid ranges.
-        data.scroll_offset = ugui.internal.clamp(data.scroll_offset, 0, #data.text + 1)
         data.caret_index = ugui.internal.clamp(data.caret_index, 1, #data.text + 1)
         data.selection_start = ugui.internal.clamp(data.selection_start, 1, #data.text + 1)
         data.selection_end = ugui.internal.clamp(data.selection_end, 1, #data.text + 1)
@@ -3083,6 +3205,8 @@ ugui.registry.textbox = {
             data.scroll_offset = scroll_target
         end
 
+        data.scroll_offset = 1 -- This is too unstable, so it's disabled for now.
+
         data.signal_change = ugui.internal.process_signal_changes(data.signal_change, control.text ~= data.text)
 
         return {
@@ -3113,6 +3237,13 @@ end
 --
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
+
+---@class Joystick : Control
+---@field public position Vector2 The joystick's position with the range 0-128 on both axes.
+---@field public mag number? The joystick's magnitude circle radius with the range `0-128`. If nil, no magnitude circle will be drawn.
+---@field public x_snap integer? The snap distance to 0 on the X axis. If nil, no snap will be applied.
+---@field public y_snap integer? The snap distance to 0 on the Y axis. If nil, no snap will be applied.
+---A joystick which can be interacted with.
 
 ---@type ControlRegistryEntry
 ugui.registry.joystick = {
@@ -3185,6 +3316,10 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
+---@class Trackbar : Control
+---@field public value number The current value in the range 0-1.
+---A trackbar which can have its value adjusted.
+
 ---@type ControlRegistryEntry
 ugui.registry.trackbar = {
     ---@param control Trackbar
@@ -3238,6 +3373,21 @@ end
 --
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
+
+---@class MenuItem
+---@field public items MenuItem[]? The item's child items. If nil or empty, the item has no child items and is clickable.
+---@field public enabled boolean? Whether the item is enabled. If nil or true, the item is enabled.
+---@field public checked boolean? Whether the item is checked. If true, the item is checked.
+---@field public text RichText The item's text.
+---Represents an item inside of a Menu.
+
+---@class MenuResult
+---@field public item MenuItem? The item that was clicked, or nil if none was.
+---@field public dismissed boolean Whether the menu was dismissed by clicking outside of it.
+
+---@class Menu : Control
+---@field public items MenuItem[] The items contained in the menu.
+---A menu, which allows the user to choose from a list of items.
 
 ---@type ControlRegistryEntry
 ugui.registry.menu = {
@@ -3397,6 +3547,15 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
+---@class TabControl : Control
+---@field public items RichText[] The tab headers.
+---@field public selected_index integer The index of the currently selected tab.
+---A tab control, which allows the user to choose from a list of tabs.
+
+---@class TabControlResult
+---@field public selected_index integer The index of the selected tab.
+---@field public rectangle Rectangle The visual bounds the selected tab can place its contents in.
+
 ---Places a TabControl.
 ---@param control TabControl The control table.
 ---@return TabControlResult, Meta # The result.
@@ -3426,7 +3585,7 @@ ugui.tabcontrol = function(control)
     for i = 1, num_items, 1 do
         local item = control.items[i]
 
-        local width = ugui.standard_styler.compute_rich_text(item, control.plaintext).size.x + 10
+        local width = ugui.standard_styler.compute_rich_text(item, control.plaintext, ugui.standard_styler.params.font_name, ugui.standard_styler.params.font_size).size.x + 10
 
         -- if it would overflow, we wrap onto a new line
         if x + width > control.rectangle.width then
@@ -3477,6 +3636,12 @@ end
 --
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
+
+---@class NumberBox : Control
+---@field public value integer The value.
+---@field public places integer The amount of digits the value is padded to.
+---@field public show_negative boolean? Whether a button for viewing and toggling the value's sign is shown. If nil, false is assumed.
+---A numberbox, which allows modifying a number by typing or by adjusting its individual digits.
 
 ---@type ControlRegistryEntry
 ugui.registry.numberbox = {
@@ -3551,15 +3716,31 @@ ugui.registry.numberbox = {
                     if e.keycode == ugui.keycodes.VK_DOWN then
                         increment_digit(data.caret_index, -1)
                     end
-                end
-                if e.text then
-                    local num = tonumber(e.text)
-
-                    if num then
-                        data.value = ugui.internal.set_digit(data.value, control.places, num, data.caret_index)
-                        data.caret_index = data.caret_index + 1
+                    if e.keycode == ugui.keycodes.VK_C and e.ctrl then
+                        local digit = ugui.internal.get_digit(data.value, control.places, data.caret_index)
+                        ugui.STATIC_ENV.clipboard.set(tostring(digit))
                     end
                 end
+                if e.text then
+                    -- accept only digit characters for insertion/paste
+                    local digits = e.text:match('^%d+$')
+                    if not digits then
+                        goto continue
+                    end
+
+                    -- clamp/truncate so caret_index + #digits - 1 does not exceed control.places
+                    local max_digits = control.places - data.caret_index + 1
+                    if max_digits <= 0 then
+                        goto continue
+                    end
+                    if #digits > max_digits then
+                        digits = digits:sub(1, max_digits)
+                    end
+
+                    data.value = ugui.internal.set_digit_range(data.value, control.places, digits, data.caret_index)
+                    data.caret_index = data.caret_index + #digits
+                end
+                ::continue::
             end
 
             if ugui.internal.is_mouse_wheel_up() then
@@ -3683,6 +3864,14 @@ end
 --
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
+
+---@class Spinner : Control
+---@field public value number The spinner's numerical value.
+---@field public increment number? The increment applied when the + or - buttons are clicked (negated when - is clicked). If nil, 1 is assumed.
+---@field public minimum_value number? The minimum value.
+---@field public maximum_value number? The maximum value.
+---@field public is_horizontal boolean? Whether the increment buttons are stacked horizontally.
+---A spinner, consisting of a textbox and buttons for incrementing or decrementing a number.
 
 ---Places a Spinner.
 ---@param control Spinner The control table.
