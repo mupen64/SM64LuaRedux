@@ -72,13 +72,8 @@ end
 function __impl:duplicate_sheet(index)
     local sheet = self.all[self.meta.sheets[index].name]
     if not sheet then return end
-    local base_name = sheet.name:gsub(' %(Copy[^%)]*%)$', '')
-    local new_name = base_name .. ' (Copy)'
-    local copy_index = 2
-    while self.all[new_name] ~= nil do
-        new_name = base_name .. ' (Copy ' .. copy_index .. ')'
-        copy_index = copy_index + 1
-    end
+    local base_name = sheet.name:gsub(' %d+$', '')
+    local new_name = UniqueName(base_name, lualinq.select(self.meta.sheets, function(x) return x.name end))
     local new_sheet = Sheet.new(new_name, false)
     new_sheet.sections = ugui.internal.deep_clone(sheet.sections)
     new_sheet.preview_frame = ugui.internal.deep_clone(sheet.preview_frame)
