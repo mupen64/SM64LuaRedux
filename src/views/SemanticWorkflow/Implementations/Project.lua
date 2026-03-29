@@ -72,8 +72,13 @@ end
 function __impl:duplicate_sheet(index)
     local sheet = self.all[self.meta.sheets[index].name]
     if not sheet then return end
-    self.meta.created_sheet_count = self.meta.created_sheet_count + 1
-    local new_name = sheet.name .. ' (Copy ' .. self.meta.created_sheet_count .. ')'
+    local base_name = sheet.name:gsub(' %(Copy[^%)]*%)$', '')
+    local new_name = base_name .. ' (Copy)'
+    local copy_index = 2
+    while self.all[new_name] ~= nil do
+        new_name = base_name .. ' (Copy ' .. copy_index .. ')'
+        copy_index = copy_index + 1
+    end
     local new_sheet = Sheet.new(new_name, false)
     new_sheet.sections = ugui.internal.deep_clone(sheet.sections)
     new_sheet.preview_frame = ugui.internal.deep_clone(sheet.preview_frame)
