@@ -8,7 +8,7 @@
 ---@diagnostic disable-next-line: assign-type-mismatch
 local __impl = __impl
 
-__impl.name = 'Preference'
+__impl.name = 'Preferences'
 __impl.help_key = 'PREFERENCES_TAB'
 
 ---@type Gui
