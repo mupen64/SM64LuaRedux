@@ -130,8 +130,6 @@ local function draw_headers(sheet, draw, view_index, button_draw_data)
     -- Reject invalid file system characters
     sheet.name = sheet.name:gsub("[<>:\"/\\|?*]", "")
 
-    SemanticWorkflowProject:set_current_name(sheet.name)
-
     draw:text(grid_rect(COL0, ROW1, COL1 - COL0, 1), 'start', Locales.str('SEMANTIC_WORKFLOW_FRAMELIST_SECTION'))
     draw:text(grid_rect(COL1, ROW1, COL6 - COL1, 1), 'start', Locales.str(VIEW_MODE_HEADERS[view_index]))
 

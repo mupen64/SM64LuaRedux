@@ -134,8 +134,8 @@ end
 ---
 ---@return SectionInputs|nil override The inputs to apply for the current frame.
 function CurrentSemanticWorkflowOverride()
-    local current_sheet = SemanticWorkflowProject:current()
-    return current_sheet and not SemanticWorkflowProject.disabled and current_sheet:evaluate_frame() or nil
+    local current_sheet = SemanticWorkflowProject.current
+    return current_sheet and current_sheet:evaluate_frame() or nil
 end
 
 return {
@@ -151,7 +151,7 @@ return {
 
         -- TODO: redesign which tabs to show when and how
         --       (particularly, 'Preferences' has no reason to be hidden when no project is loaded)
-        local project_loaded = SemanticWorkflowProject:current() ~= nil
+        local project_loaded = SemanticWorkflowProject.current ~= nil
         if not project_loaded then
             -- show only the project page if no project was loaded
             selected_tab_index = 1
