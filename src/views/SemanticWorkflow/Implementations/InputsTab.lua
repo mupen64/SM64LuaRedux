@@ -8,7 +8,7 @@
 ---@diagnostic disable-next-line: assign-type-mismatch
 local __impl = __impl
 
-__impl.name = function() return Locales.str 'SEMANTIC_WORKFLOW_INPUTS_TAB_NAME' end
+__impl.name = function() return Locales.str('SEMANTIC_WORKFLOW_INPUTS_TAB_NAME') end
 __impl.help_key = 'INPUTS_TAB'
 
 ---@type FrameListGui
