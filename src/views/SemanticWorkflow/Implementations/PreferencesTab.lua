@@ -8,7 +8,7 @@
 ---@diagnostic disable-next-line: assign-type-mismatch
 local __impl = __impl
 
-__impl.name = function() return Locales.str 'SEMANTIC_WORKFLOW_PREFERENCES_TAB_NAME' end
+__impl.name = function() return Locales.str('SEMANTIC_WORKFLOW_PREFERENCES_TAB_NAME') end
 __impl.help_key = 'PREFERENCES_TAB'
 
 ---@type Gui
