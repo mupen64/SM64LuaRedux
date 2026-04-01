@@ -67,6 +67,9 @@ end
 
 local UID = dofile(views_path .. 'SemanticWorkflow/SharedUIDs.lua')
 
+---@type Validation
+Validation = dofile(views_path .. 'SemanticWorkflow/Definitions/Validation.lua')
+
 ---@type Project
 local Project = dofile(views_path .. 'SemanticWorkflow/Definitions/Project.lua')
 

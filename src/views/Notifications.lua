@@ -9,7 +9,7 @@ local notifications = {}
 -- For now, we only show one notification at a time, as opacity and slide animations are pretty distracting.
 
 return {
-    show = function(text)
+    show = function(text, duration)
         if Settings.notification_style == NOTIFICATION_STYLE_CONSOLE then
             print(text)
             return
@@ -21,7 +21,8 @@ return {
 
         notifications[#notifications + 1] = {
             text = text,
-            time = os.clock(),
+            time = nil,
+            duration = duration or 1,
         }
     end,
     draw = function()
@@ -36,6 +37,9 @@ return {
 
         for i = 1, #notifications, 1 do
             local notification = notifications[i]
+            if notification.time == nil then
+                notification.time = os.clock()
+            end
 
             local size = BreitbandGraphics.get_text_size(notification.text, theme.font_size * Drawing.scale * text_scale,
                 theme.font_name)
@@ -72,7 +76,7 @@ return {
         for i = #notifications, 1, -1 do
             local notification = notifications_copy[i]
 
-            if os.clock() - notification.time > 1 then
+            if notification.time ~= nil and os.clock() - notification.time > notification.duration then
                 table.remove(notifications, i)
             end
         end

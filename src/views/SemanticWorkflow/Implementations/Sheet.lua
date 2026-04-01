@@ -146,13 +146,20 @@ function __impl:save(file)
 end
 
 function __impl:load(file, load_state)
-    local contents = json.decode(ReadAll(file));
-    if contents ~= nil then
-        if load_state then
-            self._savestate = ReadAll(file .. '.savestate')
-        end
-        CloneInto(self, contents)
+    local parse_ok, contents = pcall(json.decode, ReadAll(file))
+    if not parse_ok then
+        Notifications.show('Failed to load sheet "' .. self.name .. '": invalid JSON', 5)
+        return
     end
+    local ok, err = Validation.validate_sheet(contents)
+    if not ok then
+        Notifications.show('Failed to load sheet "' .. self.name .. '": ' .. err, 5)
+        return
+    end
+    if load_state then
+        self._savestate = ReadAll(file .. '.savestate')
+    end
+    CloneInto(self, contents)
 end
 
 function __impl:rebase()

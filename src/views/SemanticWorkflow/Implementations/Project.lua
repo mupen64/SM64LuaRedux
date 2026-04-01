@@ -130,8 +130,18 @@ function __impl:project_folder()
 end
 
 function __impl:load(file)
+    local parse_ok, decoded = pcall(json.decode, ReadAll(file))
+    if not parse_ok then
+        Notifications.show('Failed to load project: invalid JSON', 5)
+        return
+    end
+    local ok, err = Validation.validate_project(decoded)
+    if not ok then
+        Notifications.show('Failed to load project: ' .. err, 5)
+        return
+    end
     self.project_location = file
-    CloneInto(self.meta, json.decode(ReadAll(file)))
+    CloneInto(self.meta, decoded)
     self.all = {}
     local project_folder = self:project_folder()
     for _, sheet_meta in ipairs(self.meta.sheets) do
