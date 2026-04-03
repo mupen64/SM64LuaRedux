@@ -47,7 +47,8 @@ function cls_sheet:save(file) end
 
 ---Loads this sheet's data and associated savestate from `file` and `file`.savestate (if applicable) respectively.
 ---@param file string The file path to load from (absolute or relative).
-function cls_sheet:load(file) end
+---@param load_state boolean Whether the sheet has an associated savestate to load.
+function cls_sheet:load(file, load_state) end
 
 ---Sets the savestate this sheet runs from with the game's current state. Calling this function will disassociate this sheet from its base sheet if defined.
 function cls_sheet:rebase() end
