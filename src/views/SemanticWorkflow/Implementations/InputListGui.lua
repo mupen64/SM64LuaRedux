@@ -4,7 +4,7 @@
 -- SPDX-License-Identifier: GPL-2.0-or-later
 --
 
----@type FrameListGui
+---@type InputListGui
 ---@diagnostic disable-next-line: assign-type-mismatch
 local __impl = __impl
 
@@ -59,7 +59,7 @@ local BUTTON_COLORS <const> = {
     { background = '#37373764', button = '#323232FF' }, -- 4 DPad Buttons
 }
 
-local VIEW_MODE_HEADERS <const> = { 'SEMANTIC_WORKFLOW_FRAMELIST_STICK', 'SEMANTIC_WORKFLOW_FRAMELIST_UNTIL' }
+local VIEW_MODE_HEADERS <const> = { 'SEMANTIC_WORKFLOW_INPUTLIST_STICK', 'SEMANTIC_WORKFLOW_INPUTLIST_UNTIL' }
 
 --#endregion
 
@@ -67,7 +67,7 @@ local VIEW_MODE_HEADERS <const> = { 'SEMANTIC_WORKFLOW_FRAMELIST_STICK', 'SEMANT
 
 local scroll_offset = 0
 
-local UID = UIDProvider.allocate_once('FrameListGui', function(enum_next)
+local UID = UIDProvider.allocate_once('InputListGui', function(enum_next)
     local base = enum_next(MAX_DISPLAYED_SECTIONS * NUM_UIDS_PER_ROW)
     return {
         SheetName = enum_next(),
@@ -80,7 +80,7 @@ end)
 
 ---@alias IterateInputsCallback fun(section: Section, input: SectionInputs, section_index: integer, total_inputs_counted: integer, input_index: integer): boolean?
 
----@function Iterates all sections as an input row, including their follow-up frames for non-collapsed sections.
+---@function Iterates all sections as an input row, including their follow-up inputs for non-collapsed sections.
 ---@param sheet Sheet The sheet over whose sections to iterate.
 ---@param callback IterateInputsCallback? an optional function that, when it returns true, terminates the enumeration.
 local function iterate_input_rows(sheet, callback)
@@ -117,7 +117,7 @@ local function draw_headers(sheet, draw, view_index, button_draw_data)
     local background_color = interpolate_vectors_to_int(draw.background_color, { r = 127, g = 127, b = 127 }, 0.25)
     BreitbandGraphics.fill_rectangle(grid_rect(0, ROW0, COL_1, ROW2 - ROW0, 0), background_color)
 
-    draw:text(grid_rect(3, ROW0, 1, 0.5), 'start', Locales.str('SEMANTIC_WORKFLOW_FRAMELIST_NAME'))
+    draw:text(grid_rect(3, ROW0, 1, 0.5), 'start', Locales.str('SEMANTIC_WORKFLOW_INPUTLIST_NAME'))
     sheet.name = ugui.textbox({
         uid = UID.SheetName,
         is_enabled = true,
@@ -130,7 +130,7 @@ local function draw_headers(sheet, draw, view_index, button_draw_data)
     -- Reject invalid file system characters
     sheet.name = sheet.name:gsub("[<>:\"/\\|?*]", "")
 
-    draw:text(grid_rect(COL0, ROW1, COL1 - COL0, 1), 'start', Locales.str('SEMANTIC_WORKFLOW_FRAMELIST_SECTION'))
+    draw:text(grid_rect(COL0, ROW1, COL1 - COL0, 1), 'start', Locales.str('SEMANTIC_WORKFLOW_INPUTLIST_SECTION'))
     draw:text(grid_rect(COL1, ROW1, COL6 - COL1, 1), 'start', Locales.str(VIEW_MODE_HEADERS[view_index]))
 
     if not button_draw_data then return end
@@ -294,11 +294,11 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
         draw:text(frame_box, 'end', section_index .. ':')
 
         if ugui.internal.is_mouse_just_down() and BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, frame_box) then
-            sheet.preview_frame = { section_index = section_index, frame_index = input_sub_index }
+            sheet.preview_input = { section_index = section_index, input_index = input_sub_index }
             sheet:run_to_preview()
         end
 
-        local active_frame_box = span(COL1, COL6)
+        local active_input_box = span(COL1, COL6)
         if view_index == 1 then
             -- mini joysticks and yaw numbers
             local joystick_box = span(COL1, COL2)
@@ -341,15 +341,15 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
             end
         elseif view_index == 2 then
             -- end action
-            draw:text(active_frame_box, 'start', Locales.action(section.end_action))
+            draw:text(active_input_box, 'start', Locales.action(section.end_action))
         end
 
-        if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, active_frame_box) then
+        if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, active_input_box) then
             if ugui.internal.is_mouse_just_down() then
                 if __impl.special_select_handler then
-                    __impl.special_select_handler({ section_index = section_index, frame_index = input_sub_index })
+                    __impl.special_select_handler({ section_index = section_index, input_index = input_sub_index })
                 else
-                    sheet.active_frame = { section_index = section_index, frame_index = input_sub_index }
+                    sheet.active_input = { section_index = section_index, input_index = input_sub_index }
                 end
             end
         end
@@ -371,11 +371,11 @@ local function draw_sections_gui(sheet, draw, view_index, section_rect, button_d
             BreitbandGraphics.draw_ellipse(rect, input.joy[v.input] and '#000000FF' or '#00000050', 1)
         end
 
-        if section_index == sheet.preview_frame.section_index and sheet.preview_frame.frame_index == input_sub_index then
+        if section_index == sheet.preview_input.section_index and sheet.preview_input.input_index == input_sub_index then
             BreitbandGraphics.draw_rectangle(section_rect, '#FF0000FF', 1)
         end
 
-        if section_index == sheet.active_frame.section_index and sheet.active_frame.frame_index == input_sub_index then
+        if section_index == sheet.active_input.section_index and sheet.active_input.input_index == input_sub_index then
             BreitbandGraphics.draw_rectangle(section_rect, '#64FF64FF', 1)
         end
 

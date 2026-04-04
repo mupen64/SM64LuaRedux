@@ -6,10 +6,10 @@
 
 ---@class Section Describes a single section of a sheet.
 ---@field inputs SectionInputs[] The sequence of SectionInputs that make up this section.
----@field collapsed boolean Whether the inputs list should be hidden in the FrameListGui.
+---@field collapsed boolean Whether the inputs list should be hidden in the InputListGui.
 local cls_section = {}
 
----Constructs a new section with a single initial input frame.
+---Constructs a new section with a single initial input.
 function cls_section.new() end
 
 __impl = cls_section

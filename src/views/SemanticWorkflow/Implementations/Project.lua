@@ -69,8 +69,8 @@ function __impl:duplicate_sheet(sheet)
     local new_name = UniqueName(base_name, lualinq.select(self.all, function(x) return x.name end))
     local new_sheet = Sheet.new(new_name, false)
     new_sheet.sections = ugui.internal.deep_clone(sheet.sections)
-    new_sheet.preview_frame = ugui.internal.deep_clone(sheet.preview_frame)
-    new_sheet.active_frame = ugui.internal.deep_clone(sheet.active_frame)
+    new_sheet.preview_input = ugui.internal.deep_clone(sheet.preview_input)
+    new_sheet.active_input = ugui.internal.deep_clone(sheet.active_input)
     if sheet._base_sheet ~= nil then
         new_sheet:set_base_sheet(sheet._base_sheet)
     else
