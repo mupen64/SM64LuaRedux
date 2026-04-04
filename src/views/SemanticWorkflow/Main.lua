@@ -160,7 +160,7 @@ return {
         selected_tab_index = ugui.tabcontrol({
             uid = UID.SelectTab,
             rectangle = grid_rect(0, 0, 6, 1),
-            items = project_loaded and lualinq.select(Tabs, function(e) return e.name end) or { Tabs[1].name },
+            items = project_loaded and lualinq.select(Tabs, function(e) return e.name() end) or { Tabs[1].name() },
             selected_index = selected_tab_index,
         }).selected_index
 

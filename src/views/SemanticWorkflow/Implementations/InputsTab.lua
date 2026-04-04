@@ -8,7 +8,7 @@
 ---@diagnostic disable-next-line: assign-type-mismatch
 local __impl = __impl
 
-__impl.name = 'Inputs'
+__impl.name = function() return Locales.str('SEMANTIC_WORKFLOW_INPUTS_TAB_NAME') end
 __impl.help_key = 'INPUTS_TAB'
 
 ---@type FrameListGui
@@ -36,7 +36,7 @@ local selected_view_index = 1
 local previous_preview_frame
 local atan_start = 0
 
-local UID = UIDProvider.allocate_once(__impl.name, function(enum_next)
+local UID = UIDProvider.allocate_once('InputsTab', function(enum_next)
     return {
         ViewCarrousel = enum_next(),
         InsertInput = enum_next(),
