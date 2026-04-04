@@ -153,18 +153,18 @@ end
 
 --#endregion
 
---#region Section controls
+--#region Timeout and end condition controls
 
 local end_action_search_text = nil
 
-local function controls_for_end_action(section, draw, column, top)
+local function controls_for_end_action(input, draw, column, top)
     draw:text(grid_rect(column, top, 4, LABEL_HEIGHT), 'start', Locales.str('SEMANTIC_WORKFLOW_INPUTS_END_ACTION'))
     if end_action_search_text == nil then
         -- end action "dropdown" is not visible
         if ugui.button({
                 uid = UID.EndAction,
                 rectangle = grid_rect(column, top + LABEL_HEIGHT, 4, Gui.MEDIUM_CONTROL_HEIGHT),
-                text = Locales.action(section.end_action),
+                text = Locales.action(input.end_action),
                 tooltip = Locales.str('SEMANTIC_WORKFLOW_INPUTS_END_ACTION_TOOL_TIP'),
             }) then
             end_action_search_text = ''
@@ -190,8 +190,7 @@ local function controls_for_end_action(section, draw, column, top)
                         text = action_name,
                     }) then
                     end_action_search_text = nil
-                    section.end_action = action
-                    any_changes = true
+                    input.end_action = action
                 end
 
                 i = i + 1
@@ -201,7 +200,7 @@ local function controls_for_end_action(section, draw, column, top)
     end
 end
 
-local function section_controls_for_selected(draw, edited_section, edited_input)
+local function section_controls_for_selected(draw, edited_input)
     local sheet = SemanticWorkflowProject:asserted_current()
 
     local top = TOP
@@ -209,22 +208,22 @@ local function section_controls_for_selected(draw, edited_section, edited_input)
 
     local any_changes = false
 
-    if edited_section == nil then return end
+    if edited_input == nil then return end
 
     top = top + 1
 
     draw:text(grid_rect(col_timeout, top, 2, LABEL_HEIGHT), 'start', Locales.str('SEMANTIC_WORKFLOW_INPUTS_TIMEOUT'))
-    local old_timeout = edited_section.timeout
-    edited_section.timeout = ugui.numberbox({
+    local old_timeout = edited_input.timeout
+    edited_input.timeout = ugui.numberbox({
         uid = UID.Timeout,
         rectangle = grid_rect(col_timeout, top + LABEL_HEIGHT, 2, Gui.MEDIUM_CONTROL_HEIGHT),
-        value = edited_section.timeout,
+        value = edited_input.timeout,
         places = 4,
         tooltip = Locales.str('SEMANTIC_WORKFLOW_INPUTS_TIMEOUT_TOOL_TIP'),
     })
-    any_changes = any_changes or old_timeout ~= edited_section.timeout
+    any_changes = any_changes or old_timeout ~= edited_input.timeout
 
-    controls_for_end_action(edited_section, draw, 0, top)
+    controls_for_end_action(edited_input, draw, 0, top)
 
     if any_changes then
         sheet:run_to_preview()
@@ -501,7 +500,7 @@ local function upper_controls(new_values, top)
     })
 end
 
-local function joystick_controls_for_selected(draw, edited_section, edited_input)
+local function joystick_controls_for_selected(draw, edited_input)
     local top = TOP
 
     local sheet = SemanticWorkflowProject:asserted_current()
@@ -558,6 +557,6 @@ function __impl.render(draw)
         selected_index = selected_view_index,
     })
 
-    draw_funcs[selected_view_index](draw, edited_section, edited_input)
+    draw_funcs[selected_view_index](draw, edited_input)
     controls_for_insert_and_remove()
 end
