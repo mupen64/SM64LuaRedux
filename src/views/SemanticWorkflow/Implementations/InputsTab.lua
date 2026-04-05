@@ -64,6 +64,7 @@ local UID = UIDProvider.allocate_once('InputsTab', function(enum_next)
         AtanReverse = enum_next(),
         AtanRetime = enum_next(),
         AtanButtons = enum_next(8),
+        AtanFieldLabels = enum_next(8),
         SpeedKick = enum_next(),
         ResetMag = enum_next(),
         Swim = enum_next(),
@@ -365,16 +366,16 @@ local function atan_controls(draw, sheet, new_values, top)
     local function atan_field(index, text, table, field, increment, low_bound, high_bound)
         local width = 1.6
         local x = index * width
-        BreitbandGraphics.draw_text(
-            grid_rect(x, top + 1, width, 0.5),
-            'center',
-            'center',
-            { aliased = not theme.cleartype, fit = true },
-            foreground_color,
-            theme.font_size * Drawing.scale,
-            'Consolas',
-            text .. tostring(table[field])
-            )
+        ugui.label({
+            uid = UID.AtanFieldLabels + index,
+            rectangle = grid_rect(x, top + 1, width, 0.5),
+            text = text .. tostring(table[field]),
+            color = foreground_color,
+            font_size = theme.font_size * Drawing.scale,
+            font_name = 'Consolas',
+            align_x = BreitbandGraphics.alignment.center,
+            align_y = BreitbandGraphics.alignment.center,
+        })
 
         if ugui.button({
             uid = UID.AtanButtons + index * 2,

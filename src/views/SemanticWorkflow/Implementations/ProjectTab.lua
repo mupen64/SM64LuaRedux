@@ -28,6 +28,8 @@ local UID = UIDProvider.allocate_once('ProjectTab', function(enum_next)
         AddSheet = enum_next(),
         ConfirmationYes = enum_next(),
         ConfirmationNo = enum_next(),
+        ConfirmationText = enum_next(),
+        NoSheetsLabel = enum_next(),
     }
 end)
 
@@ -42,14 +44,15 @@ local function create_confirm_dialog(prompt, on_confirmed)
 
         local theme = Styles.theme()
 
-        BreitbandGraphics.draw_text2({
+        ugui.label({
+            uid = UID.ConfirmationText,
             rectangle = grid_rect(0, top - 8, 8, 8),
             text = prompt,
-            align_x = BreitbandGraphics.alignment.center,
-            align_y = BreitbandGraphics.alignment['end'],
             color = theme.button.text[1],
             font_size = theme.font_size * 1.2 * Drawing.scale,
             font_name = theme.font_name,
+            align_x = BreitbandGraphics.alignment.center,
+            align_y = BreitbandGraphics.alignment['end'],
         })
 
         if ugui.button({
@@ -100,14 +103,15 @@ local RenderConfirmPurgeDialog = create_confirm_dialog(
 function __impl.render(draw)
     local theme = Styles.theme()
     if #SemanticWorkflowProject.all == 0 then
-        BreitbandGraphics.draw_text2({
+        ugui.label({
+            uid = UID.NoSheetsLabel,
             rectangle = grid_rect(0, 0, 8, 16),
             text = Locales.str('SEMANTIC_WORKFLOW_PROJECT_NO_SHEETS_AVAILABLE'),
-            align_x = BreitbandGraphics.alignment.center,
-            align_y = BreitbandGraphics.alignment.center,
             color = theme.button.text[1],
             font_size = theme.font_size * 1.2 * Drawing.scale,
             font_name = theme.font_name,
+            align_x = BreitbandGraphics.alignment.center,
+            align_y = BreitbandGraphics.alignment.center,
         })
     end
 

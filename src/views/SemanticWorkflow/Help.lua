@@ -30,32 +30,35 @@ return {
                 SemanticWorkflowDialog = nil
             end
 
-            BreitbandGraphics.draw_text2({
+            ugui.label({
+                uid = UID.HelpTitle,
                 rectangle = grid_rect(0, 0.1, 8, 1),
                 text = title,
-                align_x = BreitbandGraphics.alignment.start,
-                align_y = BreitbandGraphics.alignment.start,
                 color = foreground_color,
                 font_size = theme.font_size * 1.2 * Drawing.scale,
                 font_name = theme.font_name,
-            })
-            BreitbandGraphics.draw_text2({
-                rectangle = grid_rect(0, 0.666, 8, 1),
-                text = pages[page]['HEADING'],
                 align_x = BreitbandGraphics.alignment.start,
                 align_y = BreitbandGraphics.alignment.start,
+            })
+            ugui.label({
+                uid = UID.HelpPageHeading,
+                rectangle = grid_rect(0, 0.666, 8, 1),
+                text = pages[page]['HEADING'],
                 color = foreground_color,
                 font_size = theme.font_size * 2 * Drawing.scale,
                 font_name = theme.font_name,
-            })
-            BreitbandGraphics.draw_text2({
-                rectangle = grid_rect(0, 1.8, 8, 1),
-                text = pages[page]['TEXT'],
                 align_x = BreitbandGraphics.alignment.start,
                 align_y = BreitbandGraphics.alignment.start,
+            })
+            ugui.label({
+                uid = UID.HelpPageText,
+                rectangle = grid_rect(0, 1.8, 8, 1),
+                text = pages[page]['TEXT'],
                 color = foreground_color,
                 font_size = theme.font_size * Drawing.scale,
                 font_name = theme.font_name,
+                align_x = BreitbandGraphics.alignment.start,
+                align_y = BreitbandGraphics.alignment.start,
             })
 
             if ugui.button(

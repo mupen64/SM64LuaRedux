@@ -11,6 +11,12 @@ Drawing = {
     offset_stack = {},
 }
 
+local UID = UIDProvider.allocate_once('Drawing', function(enum_next)
+    return {
+        SettingListLabelBase = enum_next(64),
+    }
+end)
+
 function Drawing.size_up()
     Drawing.initial_size = wgui.info()
     Drawing.scale = (Drawing.initial_size.height - 23) / 600
@@ -94,15 +100,16 @@ function Drawing.setting_list(items, pos)
     for i = 1, #items, 1 do
         local item = items[i]
 
-        BreitbandGraphics.draw_text(
-            grid_rect(pos.x, y, 8, 0.5),
-            'start',
-            'center',
-            { aliased = not theme.cleartype },
-            foreground_color,
-            theme.font_size * Drawing.scale * 1.25,
-            theme.font_name,
-            item.text())
+        ugui.label({
+            uid = UID.SettingListLabelBase + i,
+            rectangle = grid_rect(pos.x, y, 8, 0.5),
+            text = item.text(),
+            color = foreground_color,
+            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_name = theme.font_name,
+            align_x = BreitbandGraphics.alignment['start'],
+            align_y = BreitbandGraphics.alignment.center,
+        })
 
         item.func(grid_rect(pos.x, y + 0.6, 4, 1))
 

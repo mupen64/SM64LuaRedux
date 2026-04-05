@@ -26,6 +26,7 @@ local UID = UIDProvider.allocate_once('Timer', function(enum_next)
         CU = enum_next(),
         CD = enum_next(),
         ProcessedValues = enum_next(4),
+        TimerText = enum_next(),
     }
 end)
 
@@ -73,12 +74,16 @@ return {
             },
         })
 
-        BreitbandGraphics.draw_text(grid_rect(0, 5, 8, 1), 'center', 'center',
-            { aliased = not theme.cleartype },
-            BreitbandGraphics.invert_color(theme.background_color),
-            theme.font_size * Drawing.scale * 2,
-            'Consolas',
-            Timer.get_frame_text())
+        ugui.label({
+            uid = UID.TimerText,
+            rectangle = grid_rect(0, 5, 8, 1),
+            text = Timer.get_frame_text(),
+            color = BreitbandGraphics.invert_color(theme.background_color),
+            font_size = theme.font_size * Drawing.scale * 2,
+            font_name = 'Consolas',
+            align_x = BreitbandGraphics.alignment.center,
+            align_y = BreitbandGraphics.alignment.center,
+        })
 
         ugui.toggle_button({
             uid = UID.A,

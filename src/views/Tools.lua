@@ -27,6 +27,12 @@ local UID = UIDProvider.allocate_once('Tools', function(enum_next)
         TrackMovedDistanceZ = enum_next(),
         FrameWalk = enum_next(),
         Swim = enum_next(),
+        RngLabel = enum_next(),
+        DumpingLabel = enum_next(),
+        GhostLabel = enum_next(),
+        TrackersLabel = enum_next(),
+        OverlaysLabel = enum_next(),
+        AutomationLabel = enum_next(),
     }
 end)
 
@@ -36,15 +42,14 @@ return {
         local theme = Styles.theme()
         local foreground_color = Drawing.foreground_color()
 
-        BreitbandGraphics.draw_text(
-            grid_rect(0, RNG_ROW - 1, 8, 1),
-            'start',
-            'center',
-            { aliased = not theme.cleartype },
-            foreground_color,
-            theme.font_size * Drawing.scale * 1.25,
-            theme.font_name,
-            Locales.str('TOOLS_RNG'))
+        ugui.label({
+            uid = UID.RngLabel,
+            rectangle = grid_rect(0, RNG_ROW - 1, 8, 1),
+            text = Locales.str('TOOLS_RNG'),
+            color = foreground_color,
+            align_x = BreitbandGraphics.alignment['start'],
+            align_y = BreitbandGraphics.alignment.center,
+        })
 
         Settings.override_rng = ugui.toggle_button({
             uid = UID.RngLock,
@@ -68,15 +73,14 @@ return {
             maximum_value = math.maxinteger,
         }))
 
-        BreitbandGraphics.draw_text(
-            grid_rect(0, DUMPING_ROW - 1, 8, 1),
-            'start',
-            'center',
-            { aliased = not theme.cleartype },
-            foreground_color,
-            theme.font_size * Drawing.scale * 1.25,
-            theme.font_name,
-            Locales.str('TOOLS_DUMPING'))
+        ugui.label({
+            uid = UID.DumpingLabel,
+            rectangle = grid_rect(0, DUMPING_ROW - 1, 8, 1),
+            text = Locales.str('TOOLS_DUMPING'),
+            color = foreground_color,
+            align_x = BreitbandGraphics.alignment['start'],
+            align_y = BreitbandGraphics.alignment.center,
+        })
 
         local previous_dump_enabled = Settings.dump_enabled
         local now_dump_enabled = ugui.toggle_button({
@@ -95,15 +99,14 @@ return {
         end
 
 
-        BreitbandGraphics.draw_text(
-            grid_rect(0, GHOST_ROW - 1, 8, 1),
-            'start',
-            'center',
-            { aliased = not theme.cleartype },
-            foreground_color,
-            theme.font_size * Drawing.scale * 1.25,
-            theme.font_name,
-            Locales.str('TOOLS_GHOST'))
+        ugui.label({
+            uid = UID.GhostLabel,
+            rectangle = grid_rect(0, GHOST_ROW - 1, 8, 1),
+            text = Locales.str('TOOLS_GHOST'),
+            color = foreground_color,
+            align_x = BreitbandGraphics.alignment['start'],
+            align_y = BreitbandGraphics.alignment.center,
+        })
 
         if ugui.button({
                 uid = UID.RecordGhost,
@@ -125,15 +128,14 @@ return {
             end
         end
 
-        BreitbandGraphics.draw_text(
-            grid_rect(0, TRACKERS_ROW - 1, 8, 1),
-            'start',
-            'center',
-            { aliased = not theme.cleartype },
-            foreground_color,
-            theme.font_size * Drawing.scale * 1.25,
-            theme.font_name,
-            Locales.str('TOOLS_TRACKERS'))
+        ugui.label({
+            uid = UID.TrackersLabel,
+            rectangle = grid_rect(0, TRACKERS_ROW - 1, 8, 1),
+            text = Locales.str('TOOLS_TRACKERS'),
+            color = foreground_color,
+            align_x = BreitbandGraphics.alignment['start'],
+            align_y = BreitbandGraphics.alignment.center,
+        })
 
         local track_moved_distance, meta = ugui.toggle_button({
             uid = UID.TrackMovedDistance,
@@ -171,15 +173,14 @@ return {
             is_checked = Settings.moved_distance_z,
         })
 
-        BreitbandGraphics.draw_text(
-            grid_rect(0, OVERLAYS_ROW - 1, 8, 1),
-            'start',
-            'center',
-            { aliased = not theme.cleartype },
-            foreground_color,
-            theme.font_size * Drawing.scale * 1.25,
-            theme.font_name,
-            Locales.str('TOOLS_OVERLAYS'))
+        ugui.label({
+            uid = UID.OverlaysLabel,
+            rectangle = grid_rect(0, OVERLAYS_ROW - 1, 8, 1),
+            text = Locales.str('TOOLS_OVERLAYS'),
+            color = foreground_color,
+            align_x = BreitbandGraphics.alignment['start'],
+            align_y = BreitbandGraphics.alignment.center,
+        })
 
         Settings.worldviz_enabled = ugui.toggle_button({
             uid = UID.WorldVisualizer,
@@ -194,15 +195,14 @@ return {
             is_checked = Settings.mini_visualizer,
         })
 
-        BreitbandGraphics.draw_text(
-            grid_rect(0, AUTOMATION_ROW - 1, 8, 1),
-            'start',
-            'center',
-            { aliased = not theme.cleartype },
-            foreground_color,
-            theme.font_size * Drawing.scale * 1.25,
-            theme.font_name,
-            Locales.str('TOOLS_AUTOMATION'))
+        ugui.label({
+            uid = UID.AutomationLabel,
+            rectangle = grid_rect(0, AUTOMATION_ROW - 1, 8, 1),
+            text = Locales.str('TOOLS_AUTOMATION'),
+            color = foreground_color,
+            align_x = BreitbandGraphics.alignment['start'],
+            align_y = BreitbandGraphics.alignment.center,
+        })
 
         local _, meta = ugui.toggle_button({
             uid = UID.AutoFirsties,
