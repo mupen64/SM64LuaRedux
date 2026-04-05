@@ -11,17 +11,6 @@ local __impl = __impl
 ---@type Sheet
 local Sheet = dofile(views_path .. 'SemanticWorkflow/Definitions/Sheet.lua')
 
-local function index_of(table, element)
-    local index = 1
-    for _, v in pairs(table) do
-        if v == element then
-            return index
-        end
-        index = index + 1
-    end
-    return nil
-end
-
 function __impl.new()
     return {
         current = nil,
@@ -56,7 +45,7 @@ function __impl:add_sheet()
 end
 
 function __impl:remove_sheet(sheet)
-    local index = index_of(self.all, sheet)
+    local index = IndexOf(self.all, sheet)
     table.remove(self.all, index)
     if #self.all > 0 then
         self:select(self.all[#self.all > 0 and (index % #self.all) or 0])
@@ -80,7 +69,7 @@ function __impl:duplicate_sheet(sheet)
 end
 
 function __impl:move_sheet(sheet, sign)
-    local index = index_of(self.all, sheet)
+    local index = IndexOf(self.all, sheet)
     if index + sign > 0 and index + sign <= #self.all then
         self.all[index + sign], self.all[index] = self.all[index], self.all[index + sign]
     end
@@ -134,7 +123,7 @@ function __impl:save()
     ---@type ProjectMeta
     local project_meta = {
         version = SEMANTIC_WORKFLOW_FILE_VERSION,
-        selection_index = index_of(self.all, self.current),
+        selection_index = IndexOf(self.all, self.current),
         sheets = lualinq.select(self.all, function(x) return {
             name = x.name,
             base_sheet = x._base_sheet and x._base_sheet.name or nil,

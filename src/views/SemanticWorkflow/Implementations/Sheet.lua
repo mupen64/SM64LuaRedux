@@ -20,7 +20,7 @@ function __impl.new(name, create_savestate)
         version = SEMANTIC_WORKFLOW_FILE_VERSION,
         preview_input = { section_index = 1, input_index = 1 },
         active_input = { section_index = 1, input_index = 1 },
-        sections = { Section.new() },
+        sections = { Section.new('Start') }, -- TODO: consider localizing this name
         name = name,
         busy = false,
         _savestate = nil,
