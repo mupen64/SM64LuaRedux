@@ -27,6 +27,7 @@ function __impl.new()
         current = nil,
         all = {},
         project_location = nil,
+        version = SEMANTIC_WORKFLOW_FILE_VERSION,
 
         asserted_current = __impl.asserted_current,
         project_folder = __impl.project_folder,
