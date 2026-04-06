@@ -47,6 +47,9 @@ local COL_JOYSTICK_5 <const> = 3.35
 local COL_JOYSTICK_END <const> = 3.5
 local COL_BUTTONS_END <const> = 8.0
 
+local COL_SECTION_NAME_END = 6
+local COL_SECTION_LENGTH_END = 7.5
+
 local ROW0 <const> = 1.00
 local ROW1 <const> = 1.50
 local ROW2 <const> = 2.25
@@ -335,8 +338,15 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
 
             section.name = ugui.textbox({
                 uid = uid_base + 4,
-                rectangle = span(COL_ARRANGEMENT_END, COL_BUTTONS_END),
+                rectangle = span(COL_ARRANGEMENT_END, COL_SECTION_NAME_END),
                 text = section.name or '',
+            })
+
+            ugui.label({
+                uid = uid_base + 5,
+                rectangle = span(COL_SECTION_NAME_END, COL_SECTION_LENGTH_END),
+                text = (SemanticWorkflowProject.current.measured_section_lengths[section] or '?') .. 'f',
+                color = ugui.standard_styler.params.textbox.text[1],
             })
         else
             -- input

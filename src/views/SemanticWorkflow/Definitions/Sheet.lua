@@ -13,9 +13,11 @@
 ---@field public sections Section[] The sections to execute in order.
 ---@field public name string A name for the sheet for convenience.
 ---@field public busy boolean Whether the sheet is waiting for the game to run until its preview input.
+---@field public measured_section_lengths { [Section]: integer } The last measured length in frames for each section that has run at least once.
 ---@field private _section_index integer The nth section that is currently being played.
 ---@field private _input_index integer The nth SectionInputs of the current section being played
 ---@field private _frame_counter integer The nth frame of the current input that is currently being played.
+---@field private _section_frame_counter integer The counter used to determine measured_section_lengths.
 ---@field private _base_sheet Sheet | nil The sheet that should be run before this sheet, if defined. Otherwise, [_savestate](lua://cls_sheet._savestate) must be defined.
 ---@field private _savestate ByteBuffer | nil The savestate this sheet runs from, if defined. Otherwise [_base_sheet](lua://cls_sheet._base_sheet) must be defined.
 ---@field private _on_preview_input_reached function | nil A one-time callback to invoke when this sheet has run to its preview frame. Used to chain sheets that are based on top of one another.

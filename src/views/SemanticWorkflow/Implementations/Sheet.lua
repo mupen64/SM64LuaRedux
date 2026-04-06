@@ -23,6 +23,7 @@ function __impl.new(name, create_savestate)
         sections = { Section.new('Start') }, -- TODO: consider localizing this name
         name = name,
         busy = false,
+        measured_section_lengths = {},
         _savestate = nil,
         _base_sheet = nil,
         _invalidated = true,
@@ -30,6 +31,7 @@ function __impl.new(name, create_savestate)
         _section_index = 1,
         _input_index = 1,
         _frame_counter = 0,
+        _section_frame_counter = 0,
         evaluate_frame = __impl.evaluate_frame,
         run_to_preview = __impl.run_to_preview,
         rebase = __impl.rebase,
@@ -62,6 +64,8 @@ function __impl:evaluate_frame()
         self._input_index = self._input_index + 1
         self._frame_counter = 0
         if #section.inputs < self._input_index then
+            self.measured_section_lengths[section] = self._section_frame_counter
+            self._section_frame_counter = 0
             self._section_index = self._section_index + 1
             self._input_index = 1
         end
@@ -87,6 +91,7 @@ function __impl:evaluate_frame()
     end
 
     self._frame_counter = self._frame_counter + 1
+    self._section_frame_counter = self._section_frame_counter + 1
     section = self.sections[self._section_index]
     return section and section.inputs[math.min(self._input_index, #section.inputs)] or nil
 end
@@ -99,6 +104,7 @@ local function run_to_preview_internal(sheet, from_base)
     sheet._section_index = 1
     sheet._input_index = 1
     sheet._frame_counter = 0
+    sheet._section_frame_counter = 0
 
     if from_base == nil or from_base then
         if sheet._base_sheet ~= nil then
