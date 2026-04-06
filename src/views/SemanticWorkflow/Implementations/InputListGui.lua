@@ -47,6 +47,7 @@ local COL_JOYSTICK_5 <const> = 3.35
 local COL_JOYSTICK_END <const> = 3.5
 local COL_BUTTONS_END <const> = 8.0
 
+local COL_MERGE_SECTION_UP_END = 1.6
 local COL_SECTION_NAME_END = 6
 local COL_SECTION_LENGTH_END = 7.5
 
@@ -336,14 +337,29 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
                 queue_table_remove(sheet.sections, section)
             end
 
-            section.name = ugui.textbox({
+            local index = IndexOf(sheet.sections, section)
+            if ugui.button({
                 uid = uid_base + 4,
-                rectangle = span(COL_ARRANGEMENT_END, COL_SECTION_NAME_END),
+                rectangle = span(COL_ARRANGEMENT_END, COL_MERGE_SECTION_UP_END),
+                text = '[icon:merge_up]',
+                tooltip = Locales.str('SEMANTIC_WORKFLOW_INPUTS_MERGE_SECTION_UP_TOOL_TIP'),
+                enabled = index > 1
+            }) then
+                local merge_into = sheet.sections[index - 1]
+                for _, i in pairs(section.inputs) do
+                    merge_into.inputs[#merge_into.inputs+1] = i
+                end
+                queue_table_remove(sheet.sections, section)
+            end
+
+            section.name = ugui.textbox({
+                uid = uid_base + 5,
+                rectangle = span(COL_MERGE_SECTION_UP_END, COL_SECTION_NAME_END),
                 text = section.name or '',
             })
 
             ugui.label({
-                uid = uid_base + 5,
+                uid = uid_base + 6,
                 rectangle = span(COL_SECTION_NAME_END, COL_SECTION_LENGTH_END),
                 text = (SemanticWorkflowProject.current.measured_section_lengths[section] or '?') .. 'f',
                 color = ugui.standard_styler.params.textbox.text[1],

@@ -90,7 +90,7 @@ SemanticWorkflowDialog = nil
 local ugui_icon_draw = ugui.standard_styler.draw_icon
 
 local custom_icons = { 'navigate_back', 'arrow_up', 'arrow_down', 'base_sheet', 'without_save', 'delete',
-    'next_page', 'previous_page', 'duplicate', 'action', 'clone_up', 'clone_down'}
+    'next_page', 'previous_page', 'duplicate', 'action', 'clone_up', 'clone_down', 'merge_up'}
 
 ugui.standard_styler.draw_icon = function(rectangle, color, visual_state, key)
     local postfix = Drawing.IsLightMode() and '' or '_light'

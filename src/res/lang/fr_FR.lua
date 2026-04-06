@@ -107,6 +107,7 @@ Cette action est irréversible.
     SEMANTIC_WORKFLOW_INPUTS_PREPEND_SECTION_TOOL_TIP = 'Insérer la section (avant)',
     SEMANTIC_WORKFLOW_INPUTS_APPEND_SECTION_TOOL_TIP = 'Insérer la section (après)',
     SEMANTIC_WORKFLOW_INPUTS_DELETE_SECTION_TOOL_TIP = 'Supprimer la section',
+    SEMANTIC_WORKFLOW_INPUTS_MERGE_SECTION_UP_TOOL_TIP = 'Fusionner avec la section précédente',
     SEMANTIC_WORKFLOW_INPUTS_PREPEND_INPUT_TOOL_TIP = 'Insérer l’entrée (avant)',
     SEMANTIC_WORKFLOW_INPUTS_APPEND_INPUT_TOOL_TIP = 'Insérer l’entrée (après)',
     SEMANTIC_WORKFLOW_INPUTS_DELETE_INPUT_TOOL_TIP = 'Supprimer l’entrée',
