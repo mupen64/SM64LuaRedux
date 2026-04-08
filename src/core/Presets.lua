@@ -21,6 +21,9 @@ Presets.persistent.presets[1] = ugui.internal.deep_clone(DEFAULT_PRESET)
 function Presets.apply(i)
     Presets.persistent.current_index = ugui.internal.clamp(i, 1, #Presets.persistent.presets)
     Settings = Presets.persistent.presets[Presets.persistent.current_index]
+    if Settings.autodetect_address then
+        Settings.address_source_index = Memory.find_matching_address_source_index()
+    end
     Styles.update_style()
 end
 
