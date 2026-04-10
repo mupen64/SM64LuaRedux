@@ -162,6 +162,35 @@ function __impl:load(file, load_state)
             self._savestate = ReadAll(file .. '.savestate')
         end
         CloneInto(self, contents)
+
+        -- convert sheets pre 2.0.0
+        if contents.version:match("^%s*[vV]?(%d+)") == '1' then
+            self._frame_counter = self._frame_counter or 0
+            self._section_frame_counter = self._section_frame_counter or 0
+            self._input_index = self._input_index or 1
+            self.active_input = contents.active_frame and {
+                input_index = contents.active_frame.frame_index,
+                section_index = contents.active_frame.section_index
+            } or self.active_input
+            self.preview_input = contents.preview_frame and {
+                input_index = contents.preview_frame.frame_index,
+                section_index = contents.preview_frame.section_index
+            } or self.preview_input
+
+            for _, section in pairs(self.sections) do
+                ---@diagnostic disable: undefined-field
+                if section.end_action or section.timeout then
+                    for _, input in pairs(section.inputs) do
+                        input.timeout = input.timeout or 1
+                        input.end_action = section.end_action
+                    end
+                    if section.timeout then
+                    section.inputs[#section.inputs].timeout = section.timeout - #section.inputs + 1
+                    end
+                end
+            ---@diagnostic enable: undefined-field
+            end
+        end
     end
 end
 
