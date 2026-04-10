@@ -47,6 +47,8 @@ return {
             rectangle = grid_rect(0, RNG_ROW - 1, 8, 1),
             text = Locales.str('TOOLS_RNG'),
             color = foreground_color,
+            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_name = theme.font_name,
             align_x = BreitbandGraphics.alignment['start'],
             align_y = BreitbandGraphics.alignment.center,
         })
@@ -78,6 +80,8 @@ return {
             rectangle = grid_rect(0, DUMPING_ROW - 1, 8, 1),
             text = Locales.str('TOOLS_DUMPING'),
             color = foreground_color,
+            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_name = theme.font_name,
             align_x = BreitbandGraphics.alignment['start'],
             align_y = BreitbandGraphics.alignment.center,
         })
@@ -104,6 +108,8 @@ return {
             rectangle = grid_rect(0, GHOST_ROW - 1, 8, 1),
             text = Locales.str('TOOLS_GHOST'),
             color = foreground_color,
+            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_name = theme.font_name,
             align_x = BreitbandGraphics.alignment['start'],
             align_y = BreitbandGraphics.alignment.center,
         })
@@ -133,6 +139,8 @@ return {
             rectangle = grid_rect(0, TRACKERS_ROW - 1, 8, 1),
             text = Locales.str('TOOLS_TRACKERS'),
             color = foreground_color,
+            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_name = theme.font_name,
             align_x = BreitbandGraphics.alignment['start'],
             align_y = BreitbandGraphics.alignment.center,
         })
@@ -178,6 +186,8 @@ return {
             rectangle = grid_rect(0, OVERLAYS_ROW - 1, 8, 1),
             text = Locales.str('TOOLS_OVERLAYS'),
             color = foreground_color,
+            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_name = theme.font_name,
             align_x = BreitbandGraphics.alignment['start'],
             align_y = BreitbandGraphics.alignment.center,
         })
@@ -200,6 +210,8 @@ return {
             rectangle = grid_rect(0, AUTOMATION_ROW - 1, 8, 1),
             text = Locales.str('TOOLS_AUTOMATION'),
             color = foreground_color,
+            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_name = theme.font_name,
             align_x = BreitbandGraphics.alignment['start'],
             align_y = BreitbandGraphics.alignment.center,
         })
