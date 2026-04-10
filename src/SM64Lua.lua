@@ -266,7 +266,7 @@ local function draw_navbar()
     })
 
     if preset_index ~= Presets.persistent.current_index then
-        Presets.apply(preset_index)
+        Presets.change_index(preset_index)
         Actions.notify_all_changed()
     end
 end
