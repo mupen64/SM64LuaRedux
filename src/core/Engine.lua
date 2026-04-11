@@ -423,33 +423,42 @@ Engine.scaleInputsForMagnitude = function(result, goal_mag, use_high_mag)
 	if y0 ~= y0 then y0 = 0 end
 
 	-- search neighbourhood for input with greatest component in goal direction
+	-- prefer non-deadzone positions (mag > 0) over deadzone positions
 	local closest_x, closest_y = x0, y0
 	local err = -1
+	local best_nonzero_err = -math.huge
+	local best_nonzero_x, best_nonzero_y = nil, nil
 	local goal_angle = effectiveAngle(start_x, start_y)
 	for i = -32, 32 do
 		for j = -32, 32 do
 			local x, y = clamp(-127, x0 + i, 127), clamp(-127, y0 + j, 127)
-			--print(string.format("%d,%d", x, y))
 			local mag = Engine.get_magnitude_for_stick(x, y)
 			if (mag <= goal_mag) and (mag * mag >= err) then
 				local angle = effectiveAngle(x, y)
-				--print(string.format("%d:%d: %f (%f)", x,y,angle,goal_angle))
-				--local this_err = math.cos(angle - goal_angle)*mag
 				local this_err = math.cos(angle - goal_angle)
 				if (use_high_mag) then this_err = this_err * mag * mag end
-				--print(string.format("%d,%d: %f, %d; %f, %f; %f, %s", x, y, mag, goal_mag, angle, goal_angle, this_err, tostring(err)))
 				if this_err > err then
 					err = this_err
 					closest_x, closest_y = x, y
 				end
+				if (math.abs(x) >= 8 or math.abs(y) >= 8) and this_err > best_nonzero_err then
+					best_nonzero_err = this_err
+					best_nonzero_x, best_nonzero_y = x, y
+				end
 			end
 		end
+	end
+	-- if a non-deadzone position was found, prefer it over a deadzone position
+	if best_nonzero_x ~= nil then
+		closest_x, closest_y = best_nonzero_x, best_nonzero_y
 	end
 
 	closest_x = clamp(-127, closest_x, 127)
 	closest_y = clamp(-127, closest_y, 127)
-	if math.abs(closest_x) < 8 then closest_x = 0 end
-	if math.abs(closest_y) < 8 then closest_y = 0 end
+	if not best_nonzero_x then
+		if math.abs(closest_x) < 8 then closest_x = 0 end
+		if math.abs(closest_y) < 8 then closest_y = 0 end
+	end
 
 	result.X, result.Y = closest_x, closest_y
 end
