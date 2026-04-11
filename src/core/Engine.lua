@@ -455,8 +455,48 @@ Engine.scaleInputsForMagnitude = function(result, goal_mag, use_high_mag)
 
 	closest_x = clamp(-127, closest_x, 127)
 	closest_y = clamp(-127, closest_y, 127)
-	if math.abs(closest_x) < 8 then closest_x = 0 end
-	if math.abs(closest_y) < 8 then closest_y = 0 end
+
+	local zeroed_x = math.abs(closest_x) < 8
+	local zeroed_y = math.abs(closest_y) < 8
+	if zeroed_x then closest_x = 0 end
+	if zeroed_y then closest_y = 0 end
+
+	-- When a component lands in the deadzone, try values just at the boundary (±8)
+	-- to find a better angle match without exceeding goal magnitude
+	if zeroed_x or zeroed_y then
+		local best_err = math.cos(effectiveAngle(closest_x, closest_y) - goal_angle)
+		if use_high_mag then
+			best_err = best_err * Engine.get_magnitude_for_stick(closest_x, closest_y) ^ 2
+		end
+		local candidates = {}
+		if zeroed_x then
+			table.insert(candidates, { -8, closest_y })
+			table.insert(candidates, {  8, closest_y })
+		end
+		if zeroed_y then
+			table.insert(candidates, { closest_x, -8 })
+			table.insert(candidates, { closest_x,  8 })
+		end
+		if zeroed_x and zeroed_y then
+			table.insert(candidates, { -8, -8 })
+			table.insert(candidates, { -8,  8 })
+			table.insert(candidates, {  8, -8 })
+			table.insert(candidates, {  8,  8 })
+		end
+		for _, c in ipairs(candidates) do
+			local x = clamp(-127, c[1], 127)
+			local y = clamp(-127, c[2], 127)
+			local mag = Engine.get_magnitude_for_stick(x, y)
+			if mag <= goal_mag then
+				local e = math.cos(effectiveAngle(x, y) - goal_angle)
+				if use_high_mag then e = e * mag * mag end
+				if e > best_err then
+					best_err = e
+					closest_x, closest_y = x, y
+				end
+			end
+		end
+	end
 
 	result.X, result.Y = closest_x, closest_y
 end
