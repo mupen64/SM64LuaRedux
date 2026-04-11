@@ -6,6 +6,12 @@
 
 local notifications = {}
 
+local UID = UIDProvider.allocate_once('Notifications', function(enum_next)
+    return {
+        NotificationBase = enum_next(8),
+    }
+end)
+
 -- For now, we only show one notification at a time, as opacity and slide animations are pretty distracting.
 
 return {
@@ -52,20 +58,16 @@ return {
                 { x = x, y = y, width = size.width, height = size.height },
                 theme.background_color)
 
-            BreitbandGraphics.draw_text(
-                {
-                    x = x,
-                    y = y,
-                    width = size.width + 1,
-                    height = size.height + 1,
-                },
-                'start',
-                'start',
-                { aliased = not theme.cleartype },
-                foreground_color,
-                theme.font_size * Drawing.scale * text_scale,
-                theme.font_name,
-                notification.text)
+            ugui.label({
+                uid = UID.NotificationBase + i,
+                rectangle = { x = x, y = y, width = size.width + 1, height = size.height + 1 },
+                text = notification.text,
+                color = foreground_color,
+                font_size = theme.font_size * Drawing.scale * text_scale,
+                font_name = theme.font_name,
+                align_x = BreitbandGraphics.alignment['start'],
+                align_y = BreitbandGraphics.alignment['start'],
+            })
         end
 
         local notifications_copy = ugui.internal.deep_clone(notifications)

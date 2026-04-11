@@ -14,6 +14,9 @@ local UID = UIDProvider.allocate_once('MiniVisualizer', function(enum_next)
         Z = enum_next(),
         S = enum_next(),
         R = enum_next(),
+        Action = enum_next(),
+        JoystickX = enum_next(),
+        JoystickY = enum_next(),
     }
 end)
 
@@ -65,31 +68,35 @@ MiniVisualizer.draw = function()
         is_checked = Joypad.input.R,
     })
     local foreground_color = ugui.standard_styler.params.button.text[ugui.visual_states.normal]
-    BreitbandGraphics.draw_text(
-        grid_rect_abs(3, 15, 5, 1),
-        'center',
-        'center',
-        { aliased = not Styles.theme().cleartype },
-        foreground_color,
-        Styles.theme().font_size * Drawing.scale,
-        'Consolas',
-        VarWatch_compute_value('action'))
-    BreitbandGraphics.draw_text(
-        grid_rect_abs(3, 14, 2.5, 1),
-        'center',
-        'center',
-        { aliased = not Styles.theme().cleartype },
-        foreground_color,
-        Styles.theme().font_size * Drawing.scale * 1.25,
-        'Consolas',
-        'X: ' .. Joypad.input.X)
-    BreitbandGraphics.draw_text(
-        grid_rect_abs(5.5, 14, 2.5, 1),
-        'center',
-        'center',
-        { aliased = not Styles.theme().cleartype },
-        foreground_color,
-        Styles.theme().font_size * Drawing.scale * 1.25,
-        'Consolas',
-        'Y: ' .. Joypad.input.Y)
+    local theme = Styles.theme()
+    ugui.label({
+        uid = UID.Action,
+        rectangle = grid_rect_abs(3, 15, 5, 1),
+        text = VarWatch_compute_value('action'),
+        color = foreground_color,
+        font_size = theme.font_size * Drawing.scale,
+        font_name = 'Consolas',
+        align_x = BreitbandGraphics.alignment.center,
+        align_y = BreitbandGraphics.alignment.center,
+    })
+    ugui.label({
+        uid = UID.JoystickX,
+        rectangle = grid_rect_abs(3, 14, 2.5, 1),
+        text = 'X: ' .. Joypad.input.X,
+        color = foreground_color,
+        font_size = theme.font_size * Drawing.scale * 1.25,
+        font_name = 'Consolas',
+        align_x = BreitbandGraphics.alignment.center,
+        align_y = BreitbandGraphics.alignment.center,
+    })
+    ugui.label({
+        uid = UID.JoystickY,
+        rectangle = grid_rect_abs(5.5, 14, 2.5, 1),
+        text = 'Y: ' .. Joypad.input.Y,
+        color = foreground_color,
+        font_size = theme.font_size * Drawing.scale * 1.25,
+        font_name = 'Consolas',
+        align_x = BreitbandGraphics.alignment.center,
+        align_y = BreitbandGraphics.alignment.center,
+    })
 end

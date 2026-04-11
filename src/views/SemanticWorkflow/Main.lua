@@ -95,34 +95,41 @@ local Tabs = dofile(views_path .. 'SemanticWorkflow/Tabs.lua')
 local selected_tab_index = 1
 
 local function draw_factory(theme)
+    local uid_counter = 0
+    local function next_uid()
+        local uid = UID.DrawTextBase + uid_counter
+        uid_counter = uid_counter + 1
+        return uid
+    end
+
     return {
         foreground_color = Drawing.foreground_color(),
         background_color = theme.background_color,
         font_size = theme.font_size * Drawing.scale * 0.75,
 
         text = function(self, rect, horizontal_alignment, text)
-            BreitbandGraphics.draw_text2({
+            ugui.label({
+                uid = next_uid(),
                 rectangle = rect,
                 text = text,
-                align_x = BreitbandGraphics.alignment[horizontal_alignment],
-                align_y = BreitbandGraphics.alignment.center,
-                aliased = theme.pixelated_text,
                 color = self.foreground_color,
                 font_size = self.font_size,
                 font_name = 'Consolas',
+                align_x = BreitbandGraphics.alignment[horizontal_alignment],
+                align_y = BreitbandGraphics.alignment.center,
             })
         end,
 
         small_text = function(self, rect, horizontal_alignment, text)
-            BreitbandGraphics.draw_text2({
+            ugui.label({
+                uid = next_uid(),
                 rectangle = rect,
                 text = text,
-                align_x = BreitbandGraphics.alignment[horizontal_alignment],
-                align_y = BreitbandGraphics.alignment.center,
-                aliased = theme.pixelated_text,
                 color = self.foreground_color,
                 font_size = self.font_size * 0.75,
                 font_name = 'Consolas',
+                align_x = BreitbandGraphics.alignment[horizontal_alignment],
+                align_y = BreitbandGraphics.alignment.center,
             })
         end,
     }

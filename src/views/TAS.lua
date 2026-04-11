@@ -21,10 +21,14 @@ local UID = UIDProvider.allocate_once('TAS', function(enum_next)
         AtanStrain = enum_next(),
         AtanStrainReverse = enum_next(),
         AtanButtons = enum_next(20),
+        AtanFieldLabels = enum_next(8),
         MovementModeDisabled = enum_next(),
         MovementModeMatchYaw = enum_next(),
         MovementModeReverseYaw = enum_next(),
         MovementModeMatchAngle = enum_next(),
+        StickX = enum_next(),
+        StickY = enum_next(),
+        StickMag = enum_next(),
     }
 end)
 
@@ -166,15 +170,16 @@ return {
             local function atan_field(index, text, up_callback, down_callback)
                 local width = 1.6
                 local x = index * width
-                BreitbandGraphics.draw_text(
-                    grid_rect(x, 3, width, 0.5),
-                    'center',
-                    'center',
-                    { aliased = not theme.cleartype, fit = true },
-                    foreground_color,
-                    theme.font_size * Drawing.scale,
-                    'Consolas',
-                    text)
+                ugui.label({
+                    uid = UID.AtanFieldLabels + index,
+                    rectangle = grid_rect(x, 3, width, 0.5),
+                    text = text,
+                    color = foreground_color,
+                    font_size = theme.font_size * Drawing.scale,
+                    font_name = 'Consolas',
+                    align_x = BreitbandGraphics.alignment.center,
+                    align_y = BreitbandGraphics.alignment.center,
+                })
 
                 if ugui.button({
                         uid = UID.AtanButtons + index * 2,
@@ -247,35 +252,38 @@ return {
         -- Shift elements down to make place for atan panel if atan strain is enabled.
         local YORG = Settings.tas.atan_strain and 4 or 3
 
-        BreitbandGraphics.draw_text(
-            grid_rect(4, YORG, 2, 1),
-            'center',
-            'center',
-            { aliased = not theme.cleartype },
-            foreground_color,
-            theme.font_size * Drawing.scale * 1.25,
-            'Consolas',
-            'X: ' .. stick_x)
+        ugui.label({
+            uid = UID.StickX,
+            rectangle = grid_rect(4, YORG, 2, 1),
+            text = 'X: ' .. stick_x,
+            color = foreground_color,
+            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_name = 'Consolas',
+            align_x = BreitbandGraphics.alignment.center,
+            align_y = BreitbandGraphics.alignment.center,
+        })
 
-        BreitbandGraphics.draw_text(
-            grid_rect(6, YORG, 2, 1),
-            'center',
-            'center',
-            { aliased = not theme.cleartype },
-            foreground_color,
-            theme.font_size * Drawing.scale * 1.25,
-            'Consolas',
-            'Y: ' .. stick_y)
+        ugui.label({
+            uid = UID.StickY,
+            rectangle = grid_rect(6, YORG, 2, 1),
+            text = 'Y: ' .. stick_y,
+            color = foreground_color,
+            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_name = 'Consolas',
+            align_x = BreitbandGraphics.alignment.center,
+            align_y = BreitbandGraphics.alignment.center,
+        })
 
-        BreitbandGraphics.draw_text(
-            grid_rect(4, YORG + 1, 4, 1),
-            'center',
-            'center',
-            { aliased = not theme.cleartype, fit = true },
-            foreground_color,
-            theme.font_size * Drawing.scale * 1.25,
-            'Consolas',
-            'Mag: ' .. Formatter.u(Engine.get_magnitude_for_stick(stick_x, stick_y), 0))
+        ugui.label({
+            uid = UID.StickMag,
+            rectangle = grid_rect(4, YORG + 1, 4, 1),
+            text = 'Mag: ' .. Formatter.u(Engine.get_magnitude_for_stick(stick_x, stick_y), 0),
+            color = foreground_color,
+            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_name = 'Consolas',
+            align_x = BreitbandGraphics.alignment.center,
+            align_y = BreitbandGraphics.alignment.center,
+        })
 
         Settings.tas.goal_mag = math.abs(ugui.numberbox({
             uid = UID.GoalMag,
