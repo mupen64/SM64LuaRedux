@@ -455,10 +455,8 @@ Engine.scaleInputsForMagnitude = function(result, goal_mag, use_high_mag)
 
 	closest_x = clamp(-127, closest_x, 127)
 	closest_y = clamp(-127, closest_y, 127)
-	if not best_nonzero_x then
-		if math.abs(closest_x) < 8 then closest_x = 0 end
-		if math.abs(closest_y) < 8 then closest_y = 0 end
-	end
+	if math.abs(closest_x) < 8 then closest_x = 0 end
+	if math.abs(closest_y) < 8 then closest_y = 0 end
 
 	result.X, result.Y = closest_x, closest_y
 end
