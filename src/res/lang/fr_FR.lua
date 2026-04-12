@@ -20,6 +20,7 @@ return {
     SETTINGS_TAB_NAME = 'Paramètres',
     TOOLS_TAB_NAME = 'Outils',
     TIMER_TAB_NAME = 'Chronomètre',
+    VISUALIZER_TAB_NAME = 'Visualiseur',
     PRESET = 'Préréglage ',
     -- Preset Context Menu
     PRESET_CONTEXT_MENU_DELETE_ALL = 'Tout supprimer',
