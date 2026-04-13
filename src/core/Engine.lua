@@ -88,7 +88,11 @@ end
 ---@param y number  Raw joystick Y (-128..127)
 ---@return number   Effective magnitude (0 = fully in deadzone)
 function Engine.get_magnitude_for_stick(x, y)
-	return math.sqrt(math.max(0, math.abs(x) - 6) ^ 2 + math.max(0, math.abs(y) - 6) ^ 2)
+	-- SM64 deadzone: |val| <= 7 is zeroed, |val| >= 8 has 6 subtracted.
+	-- math.max(0, |x| - 6) would give 1 for x=7, but the game actually zeros it.
+	local ex = math.abs(x) >= 8 and math.abs(x) - 6 or 0
+	local ey = math.abs(y) >= 8 and math.abs(y) - 6 or 0
+	return math.sqrt(ex * ex + ey * ey)
 end
 
 -- Returns the angle after optionally truncating to the nearest multiple of 16.
@@ -594,6 +598,23 @@ Engine.inputsForAngle = function(goal, curr_input)
 		minang = 1
 		if math.abs(Angles.ANGLE[1].angle + Memory.current.camera_angle - (goal - 65536)) > math.abs(Angles.ANGLE[Angles.COUNT].angle + Memory.current.camera_angle - goal) then
 			minang = Angles.COUNT
+		end
+	end
+
+	if Engine.get_magnitude_for_stick(Angles.ANGLE[minang].X, Angles.ANGLE[minang].Y) == 0 then
+		for offset = 1, Angles.COUNT do
+			local lo = minang - offset
+			local hi = minang + offset
+			if lo < 1 then lo = lo + Angles.COUNT end
+			if hi > Angles.COUNT then hi = hi - Angles.COUNT end
+			if Engine.get_magnitude_for_stick(Angles.ANGLE[hi].X, Angles.ANGLE[hi].Y) > 0 then
+				minang = hi
+				break
+			end
+			if Engine.get_magnitude_for_stick(Angles.ANGLE[lo].X, Angles.ANGLE[lo].Y) > 0 then
+				minang = lo
+				break
+			end
 		end
 	end
 
