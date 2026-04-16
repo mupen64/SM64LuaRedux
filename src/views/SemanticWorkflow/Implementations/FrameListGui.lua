@@ -138,7 +138,7 @@ local function draw_headers(sheet, draw, view_index, button_draw_data)
     local rect = grid_rect(0, ROW1, 0.333, 1)
     for i, v in ipairs(BUTTONS) do
         rect.x = button_draw_data[i].x
-        draw:text(rect, 'center', v.text)
+        draw:text(ugui.internal.deep_clone(rect), 'center', v.text)
     end
 end
 
