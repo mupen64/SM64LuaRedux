@@ -93,9 +93,10 @@ local custom_icons = { 'navigate_back', 'arrow_up', 'arrow_down', 'base_sheet', 
     'next_page', 'previous_page', 'duplicate', 'action', 'clone_up', 'clone_down'}
 
 ugui.standard_styler.draw_icon = function(rectangle, color, visual_state, key)
+    local postfix = Drawing.IsLightMode() and '' or '_light'
     for _, icon in ipairs(custom_icons) do
         if key == icon then
-            BreitbandGraphics.draw_image(rectangle, nil, views_path .. 'SemanticWorkflow/Resources/' .. key .. '.png', color, 'linear')
+            BreitbandGraphics.draw_image(rectangle, nil, views_path .. 'SemanticWorkflow/Resources/' .. key .. postfix .. '.png', color, 'linear')
             return
         end
     end
