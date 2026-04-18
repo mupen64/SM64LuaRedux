@@ -97,14 +97,27 @@ function __impl:evaluate_frame()
 end
 
 ---@param sheet Sheet
----@param from_base boolean | nil
-local function run_to_preview_internal(sheet, from_base)
-    sheet.busy = true
-
+local function reset_counters(sheet)
     sheet._section_index = 1
     sheet._input_index = 1
     sheet._frame_counter = 0
     sheet._section_frame_counter = 0
+
+    -- reset loop counters
+    for _, section in pairs(sheet.sections) do
+        for _, input in pairs(section.inputs) do
+            if input.loop then
+                input.loop.runtime_counter = 0
+            end
+        end
+    end
+end
+
+---@param sheet Sheet
+---@param from_base boolean | nil
+local function run_to_preview_internal(sheet, from_base)
+    sheet.busy = true
+    reset_counters(sheet)
 
     if from_base == nil or from_base then
         if sheet._base_sheet ~= nil then
