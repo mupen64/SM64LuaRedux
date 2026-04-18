@@ -90,7 +90,7 @@ local UID = UIDProvider.allocate_once('InputListGui', function(enum_next)
     }
 end)
 
----@alias IterateInputsCallback fun(section: Section, input: SectionInputs|nil, section_index: integer, total_inputs_counted: integer, input_index: integer): boolean?
+---@alias IterateInputsCallback fun(section: Section, input: SectionInputs|nil, section_index: integer, input_index: integer, row_count: integer): boolean?
 
 ---@function Iterates all sections as an input row, including their follow-up inputs for non-collapsed sections.
 ---@param sheet Sheet The sheet over whose sections to iterate.
@@ -101,7 +101,7 @@ local function iterate_input_rows(sheet, callback)
     for section_index = 1, #sheet.sections, 1 do
         local section = sheet.sections[section_index]
         for input_index = 0, #section.inputs, 1 do
-            if callback and callback(section, input_index > 0 and section.inputs[input_index] or nil, total_sections_counted, total_rows_counted, input_index) then
+            if callback and callback(section, input_index > 0 and section.inputs[input_index] or nil, total_sections_counted, input_index, total_rows_counted) then
                 return total_rows_counted
             end
 
@@ -231,8 +231,8 @@ local function handle_scroll_and_buttons(section_rect, button_draw_data, num_row
 
     if not button_draw_data then return end
 
-    iterate_input_rows(SemanticWorkflowProject:asserted_current(), function(section, input, section_index, input_index)
-        if input and input_index == hovering_index and in_range and section ~= nil then
+    iterate_input_rows(SemanticWorkflowProject:asserted_current(), function(section, input, section_index, input_index, row_count)
+        if input and row_count == hovering_index and in_range and section ~= nil then
             for button_index, v in ipairs(BUTTONS) do
                 local in_range_x = mouse_x >= button_draw_data[button_index].x and
                     mouse_x < button_draw_data[button_index + 1].x
@@ -275,21 +275,21 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
         end
     end
 
-    iterate_input_rows(sheet, function(section, input, section_index, total_inputs, input_sub_index)
-        if total_inputs <= scroll_offset then return false end
+    iterate_input_rows(sheet, function(section, input, section_index, input_index, row_count)
+        if row_count <= scroll_offset then return false end
 
         --TODO: color code section success
-        local shade = total_inputs % 2 == 0 and 123 or 80
+        local shade = row_count % 2 == 0 and 123 or 80
         local blue_multiplier = section_index % 2 == 1 and 2 or 1
 
-        if total_inputs > MAX_DISPLAYED_SECTIONS + scroll_offset then
+        if row_count > MAX_DISPLAYED_SECTIONS + scroll_offset then
             local extra_sections = #sheet.sections - section_index
             BreitbandGraphics.fill_rectangle(span(0, COL_BUTTONS_END), '#8A948A42')
             draw:text(span(COL_ARRANGEMENT_END, COL_BUTTONS_END), 'start', '+ ' .. extra_sections .. ' sections')
             return true
         end
 
-        local uid_base = UID.Row(total_inputs - scroll_offset)
+        local uid_base = UID.Row(row_count - scroll_offset)
         if not input then
             -- section header
             BreitbandGraphics.fill_rectangle(span(0, COL_BUTTONS_END), Drawing.IsLightMode() and '#BABABA' or '#5F5F5F')
@@ -376,7 +376,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
                 text = '[icon:next_page]',
                 tooltip = Locales.str('SEMANTIC_WORKFLOW_INPUTS_RUN_TO_INPUT_TOOL_TIP'),
             }) then
-                sheet.preview_input = { section_index = section_index, input_index = input_sub_index }
+                sheet.preview_input = { section_index = section_index, input_index = input_index }
                 sheet:run_to_preview()
             end
 
@@ -464,9 +464,9 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
             if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, active_input_box) then
                 if ugui.internal.is_mouse_just_down() then
                     if __impl.special_select_handler then
-                        __impl.special_select_handler({ section_index = section_index, input_index = input_sub_index })
+                        __impl.special_select_handler({ section_index = section_index, input_index = input_index })
                     else
-                        sheet.active_input = { section_index = section_index, input_index = input_sub_index }
+                        sheet.active_input = { section_index = section_index, input_index = input_index }
                     end
                 end
             end
@@ -488,11 +488,11 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
                 BreitbandGraphics.draw_ellipse(rect, input.joy[v.input] and '#000000FF' or '#00000050', 1)
             end
 
-            if section_index == sheet.preview_input.section_index and sheet.preview_input.input_index == input_sub_index then
+            if section_index == sheet.preview_input.section_index and sheet.preview_input.input_index == input_index then
                 BreitbandGraphics.draw_rectangle(section_rect, '#FF0000FF', 1)
             end
 
-            if section_index == sheet.active_input.section_index and sheet.active_input.input_index == input_sub_index then
+            if section_index == sheet.active_input.section_index and sheet.active_input.input_index == input_index then
                 BreitbandGraphics.draw_rectangle(section_rect, '#64FF64FF', 1)
             end
         end
