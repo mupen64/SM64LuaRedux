@@ -61,13 +61,19 @@ function __impl:evaluate_frame()
     if (input.timeout and self._frame_counter >= input.timeout)
         or current_action == input.end_action
     then
-        self._input_index = self._input_index + 1
         self._frame_counter = 0
-        if #section.inputs < self._input_index then
-            self.measured_section_lengths[section] = self._section_frame_counter
-            self._section_frame_counter = 0
-            self._section_index = self._section_index + 1
-            self._input_index = 1
+        if input.loop == nil or input.loop.runtime_counter == input.loop.count then
+            self._input_index = self._input_index + 1
+            if #section.inputs < self._input_index then
+                self.measured_section_lengths[section] = self._section_frame_counter
+                self._section_frame_counter = 0
+                self._section_index = self._section_index + 1
+                self._input_index = 1
+            end
+        else
+            print(input.loop.runtime_counter)
+            input.loop.runtime_counter = input.loop.runtime_counter + 1
+            self._input_index = IndexOf(section.inputs, input.loop.jump_target) or 1 -- TODO: this feels uncleaaaan
         end
     end
     if self._section_index > self.preview_input.section_index
@@ -97,14 +103,27 @@ function __impl:evaluate_frame()
 end
 
 ---@param sheet Sheet
----@param from_base boolean | nil
-local function run_to_preview_internal(sheet, from_base)
-    sheet.busy = true
-
+local function reset_counters(sheet)
     sheet._section_index = 1
     sheet._input_index = 1
     sheet._frame_counter = 0
     sheet._section_frame_counter = 0
+
+    -- reset loop counters
+    for _, section in pairs(sheet.sections) do
+        for _, input in pairs(section.inputs) do
+            if input.loop then
+                input.loop.runtime_counter = 0
+            end
+        end
+    end
+end
+
+---@param sheet Sheet
+---@param from_base boolean | nil
+local function run_to_preview_internal(sheet, from_base)
+    sheet.busy = true
+    reset_counters(sheet)
 
     if from_base == nil or from_base then
         if sheet._base_sheet ~= nil then
