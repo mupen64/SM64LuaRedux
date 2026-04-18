@@ -61,13 +61,19 @@ function __impl:evaluate_frame()
     if (input.timeout and self._frame_counter >= input.timeout)
         or current_action == input.end_action
     then
-        self._input_index = self._input_index + 1
         self._frame_counter = 0
-        if #section.inputs < self._input_index then
-            self.measured_section_lengths[section] = self._section_frame_counter
-            self._section_frame_counter = 0
-            self._section_index = self._section_index + 1
-            self._input_index = 1
+        if input.loop == nil or input.loop.runtime_counter == input.loop.count then
+            self._input_index = self._input_index + 1
+            if #section.inputs < self._input_index then
+                self.measured_section_lengths[section] = self._section_frame_counter
+                self._section_frame_counter = 0
+                self._section_index = self._section_index + 1
+                self._input_index = 1
+            end
+        else
+            print(input.loop.runtime_counter)
+            input.loop.runtime_counter = input.loop.runtime_counter + 1
+            self._input_index = IndexOf(section.inputs, input.loop.jump_target) or 1 -- TODO: this feels uncleaaaan
         end
     end
     if self._section_index > self.preview_input.section_index

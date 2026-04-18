@@ -65,6 +65,9 @@ local UID = UIDProvider.allocate_once('InputsTab', function(enum_next)
         EndAction = enum_next(),
         EndActionTextbox = enum_next(),
         AvailableActions = enum_next(MAX_ACTION_GUESSES),
+        LoopToggle = enum_next(),
+        LoopSelectTarget = enum_next(),
+        LoopCount = enum_next(),
     }
 end)
 
@@ -120,6 +123,50 @@ local function controls_for_end_action(input, draw, column, top)
     end
 end
 
+---@param input SectionInputs
+local function controls_for_loop(input, draw, column, top)
+    local has_loop = ugui.toggle_button({
+        uid = UID.LoopToggle,
+        rectangle = grid_rect(column, top, Gui.MEDIUM_CONTROL_HEIGHT, Gui.MEDIUM_CONTROL_HEIGHT),
+        text = "[icon:loop]",
+        is_checked = input.loop and true or false
+    })
+    if not has_loop then
+        input.loop = nil
+    elseif input.loop == nil then
+        input.loop = {
+            count = 1,
+            jump_target = input,
+            runtime_counter = 0,
+        }
+    end
+
+    if input.loop then
+        input.loop.count = ugui.numberbox({
+            uid = UID.LoopCount,
+            rectangle = grid_rect(column + 1, top, 2, Gui.MEDIUM_CONTROL_HEIGHT),
+            places = 2,
+            value = input.loop.count,
+        })
+
+        if ugui.button({
+            uid = UID.LoopSelectTarget,
+            rectangle = grid_rect(column + 3, top, 3, Gui.MEDIUM_CONTROL_HEIGHT),
+            text = Locales.str("SEMANTIC_WORKFLOW_INPUTS_LOOP_TARGET"),
+        }) then
+            -- TODO: avoid crisis when retiming atan at the same time
+            InputListGui.special_select_handler = function(selection)
+                local input_list = SemanticWorkflowProject.current.sections[selection.section_index].inputs
+                local own_index = IndexOf(input_list, input)
+                if own_index >= selection.input_index then
+                    input.loop.jump_target = input_list[selection.input_index]
+                    InputListGui.special_select_handler = nil
+                end
+            end
+        end
+    end
+end
+
 local function section_controls_for_selected(draw, edited_input)
     local sheet = SemanticWorkflowProject:asserted_current()
 
@@ -144,6 +191,10 @@ local function section_controls_for_selected(draw, edited_input)
     any_changes = any_changes or old_timeout ~= edited_input.timeout
 
     controls_for_end_action(edited_input, draw, 0, top)
+
+    if end_action_search_text == nil then
+        controls_for_loop(edited_input, draw, 0, top + 1)
+    end
 
     if any_changes then
         sheet:run_to_preview()
