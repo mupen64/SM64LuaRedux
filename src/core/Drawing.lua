@@ -118,7 +118,9 @@ function Drawing.setting_list(items, pos)
 end
 
 function Drawing.foreground_color()
-    return BreitbandGraphics.invert_color(Styles.theme().background_color)
+    local background_color = Styles.theme().background_color
+    local luminance = 0.299 * background_color.r + 0.587 * background_color.g + 0.114 * background_color.b
+    return luminance > 186 and BreitbandGraphics.hex_to_color('#000000') or BreitbandGraphics.hex_to_color('#FFFFFF')
 end
 
 function grid_rect(x, y, x_span, y_span, gap)
