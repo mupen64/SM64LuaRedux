@@ -332,7 +332,8 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
                 uid = uid_base + 3,
                 rectangle = span(COL_ARRANGEMENT_4, COL_ARRANGEMENT_END),
                 text = '[icon:delete]',
-                tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_SECTION_TOOL_TIP")
+                tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_SECTION_TOOL_TIP"),
+                is_enabled = #sheet.sections > 1
             }) then
                 queue_table_remove(sheet.sections, section)
             end
@@ -343,7 +344,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
                 rectangle = span(COL_ARRANGEMENT_END, COL_MERGE_SECTION_UP_END),
                 text = '[icon:merge_up]',
                 tooltip = Locales.str('SEMANTIC_WORKFLOW_INPUTS_MERGE_SECTION_UP_TOOL_TIP'),
-                enabled = index > 1
+                is_enabled = index > 1
             }) then
                 local merge_into = sheet.sections[index - 1]
                 for _, i in pairs(section.inputs) do
