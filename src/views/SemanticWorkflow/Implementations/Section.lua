@@ -8,13 +8,12 @@
 ---@diagnostic disable-next-line:assign-type-mismatch
 local __impl = __impl
 
-function __impl.new(end_action, timeout)
+function __impl.new(name)
     local tmp = {}
     CloneInto(tmp, Joypad.input)
     return {
-        end_action = end_action,
-        timeout = timeout,
-        inputs = { { tas_state = NewTASState(), joy = tmp } },
+        inputs = { { tas_state = NewTASState(), joy = tmp, timeout = 1, end_action = 0 } },
         collapsed = false,
+        name = name
     }
 end

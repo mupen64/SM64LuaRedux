@@ -11,11 +11,8 @@ local __impl = __impl
 __impl.name = function() return Locales.str('SEMANTIC_WORKFLOW_INPUTS_TAB_NAME') end
 __impl.help_key = 'INPUTS_TAB'
 
----@type FrameListGui
-local FrameListGui = dofile(views_path .. 'SemanticWorkflow/Definitions/FrameListGui.lua')
-
----@type Section
-local Section = dofile(views_path .. 'SemanticWorkflow/Definitions/Section.lua')
+---@type InputListGui
+local InputListGui = dofile(views_path .. 'SemanticWorkflow/Definitions/InputListGui.lua')
 
 ---@type Gui
 local Gui = dofile(views_path .. 'SemanticWorkflow/Definitions/Gui.lua')
@@ -31,18 +28,12 @@ local MAX_ACTION_GUESSES <const> = 5
 
 --#region Logic
 
-local selected_view_index = 1
-
-local previous_preview_frame
+local previous_preview_input
 local atan_start = 0
 
 local UID = UIDProvider.allocate_once('InputsTab', function(enum_next)
     return {
         ViewCarrousel = enum_next(),
-        InsertInput = enum_next(),
-        DeleteInput = enum_next(),
-        InsertSection = enum_next(),
-        DeleteSection = enum_next(),
 
         -- Joystick Controls
         Joypad = enum_next(),
@@ -63,14 +54,13 @@ local UID = UIDProvider.allocate_once('InputsTab', function(enum_next)
         Atan = enum_next(),
         AtanReverse = enum_next(),
         AtanRetime = enum_next(),
-        AtanButtons = enum_next(8),
-        AtanFieldLabels = enum_next(8),
+        AtanButtons = enum_next(10),
+        AtanFieldLabels = enum_next(5),
         SpeedKick = enum_next(),
         ResetMag = enum_next(),
         Swim = enum_next(),
 
         -- Section Controls
-        Kind = enum_next(),
         Timeout = enum_next(2),
         EndAction = enum_next(),
         EndActionTextbox = enum_next(),
@@ -83,88 +73,18 @@ local function any_entries(table)
     return false
 end
 
---#region Insert and remove
-
-local function controls_for_insert_and_remove()
-    local sheet = SemanticWorkflowProject:asserted_current()
-    local edited_section = sheet.sections[sheet.active_frame.section_index]
-    local edited_input = edited_section and edited_section.inputs[sheet.active_frame.frame_index] or nil
-    local any_changes = false
-
-    local top = TOP
-    if ugui.button({
-            uid = UID.InsertInput,
-            rectangle = grid_rect(0, top, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
-            text = Locales.str('SEMANTIC_WORKFLOW_INPUTS_INSERT_INPUT'),
-            tooltip = Locales.str('SEMANTIC_WORKFLOW_INPUTS_INSERT_INPUT_TOOL_TIP'),
-        }) then
-        table.insert(edited_section.inputs, sheet.active_frame.frame_index, ugui.internal.deep_clone(edited_input))
-        edited_section.collapsed = false
-        any_changes = true
-    end
-
-    if ugui.button({
-            uid = UID.DeleteInput,
-            rectangle = grid_rect(1.5, top, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
-            text = Locales.str('SEMANTIC_WORKFLOW_INPUTS_DELETE_INPUT'),
-            tooltip = Locales.str('SEMANTIC_WORKFLOW_INPUTS_DELETE_INPUT_TOOL_TIP'),
-            is_enabled = #edited_section.inputs > 1,
-        }) then
-        table.remove(edited_section.inputs, sheet.active_frame.frame_index)
-        any_changes = true
-    end
-
-    if ugui.button({
-            uid = UID.InsertSection,
-            rectangle = grid_rect(3, top, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
-            text = Locales.str('SEMANTIC_WORKFLOW_INPUTS_INSERT_SECTION'),
-            tooltip = Locales.str('SEMANTIC_WORKFLOW_INPUTS_INSERT_SECTION_TOOL_TIP'),
-        }) then
-        local new_section = Section.new(0x0C400201, Settings.semantic_workflow.default_section_timeout) -- end action is "idle"
-        table.insert(sheet.sections, sheet.active_frame.section_index + 1, new_section)
-        any_changes = true
-    end
-
-    if ugui.button({
-            uid = UID.DeleteSection,
-            rectangle = grid_rect(4.5, top, 1.5, Gui.MEDIUM_CONTROL_HEIGHT),
-            text = Locales.str('SEMANTIC_WORKFLOW_INPUTS_DELETE_SECTION'),
-            tooltip = Locales.str('SEMANTIC_WORKFLOW_INPUTS_DELETE_SECTION_TOOL_TIP'),
-            is_enabled = #sheet.sections > 1,
-        }) then
-        table.remove(sheet.sections, sheet.active_frame.section_index)
-        any_changes = true
-    end
-
-    -- ensure a valid selection in all cases
-    sheet.active_frame.section_index = math.min(
-        sheet.active_frame.section_index,
-        #sheet.sections
-    )
-    sheet.active_frame.frame_index = math.min(
-        sheet.active_frame.frame_index,
-        #sheet.sections[sheet.active_frame.section_index].inputs
-    )
-
-    if any_changes then
-        sheet:run_to_preview()
-    end
-end
-
---#endregion
-
---#region Section controls
+--#region Timeout and end condition controls
 
 local end_action_search_text = nil
 
-local function controls_for_end_action(section, draw, column, top)
+local function controls_for_end_action(input, draw, column, top)
     draw:text(grid_rect(column, top, 4, LABEL_HEIGHT), 'start', Locales.str('SEMANTIC_WORKFLOW_INPUTS_END_ACTION'))
     if end_action_search_text == nil then
         -- end action "dropdown" is not visible
         if ugui.button({
                 uid = UID.EndAction,
                 rectangle = grid_rect(column, top + LABEL_HEIGHT, 4, Gui.MEDIUM_CONTROL_HEIGHT),
-                text = Locales.action(section.end_action),
+                text = Locales.action(input.end_action),
                 tooltip = Locales.str('SEMANTIC_WORKFLOW_INPUTS_END_ACTION_TOOL_TIP'),
             }) then
             end_action_search_text = ''
@@ -190,8 +110,7 @@ local function controls_for_end_action(section, draw, column, top)
                         text = action_name,
                     }) then
                     end_action_search_text = nil
-                    section.end_action = action
-                    any_changes = true
+                    input.end_action = action
                 end
 
                 i = i + 1
@@ -201,7 +120,7 @@ local function controls_for_end_action(section, draw, column, top)
     end
 end
 
-local function section_controls_for_selected(draw, edited_section, edited_input)
+local function section_controls_for_selected(draw, edited_input)
     local sheet = SemanticWorkflowProject:asserted_current()
 
     local top = TOP
@@ -209,22 +128,22 @@ local function section_controls_for_selected(draw, edited_section, edited_input)
 
     local any_changes = false
 
-    if edited_section == nil then return end
+    if edited_input == nil then return end
 
     top = top + 1
 
     draw:text(grid_rect(col_timeout, top, 2, LABEL_HEIGHT), 'start', Locales.str('SEMANTIC_WORKFLOW_INPUTS_TIMEOUT'))
-    local old_timeout = edited_section.timeout
-    edited_section.timeout = ugui.numberbox({
+    local old_timeout = edited_input.timeout
+    edited_input.timeout = ugui.numberbox({
         uid = UID.Timeout,
         rectangle = grid_rect(col_timeout, top + LABEL_HEIGHT, 2, Gui.MEDIUM_CONTROL_HEIGHT),
-        value = edited_section.timeout,
+        value = edited_input.timeout,
         places = 4,
         tooltip = Locales.str('SEMANTIC_WORKFLOW_INPUTS_TIMEOUT_TOOL_TIP'),
     })
-    any_changes = any_changes or old_timeout ~= edited_section.timeout
+    any_changes = any_changes or old_timeout ~= edited_input.timeout
 
-    controls_for_end_action(edited_section, draw, 0, top)
+    controls_for_end_action(edited_input, draw, 0, top)
 
     if any_changes then
         sheet:run_to_preview()
@@ -317,47 +236,49 @@ end
 
 local function noop() end
 
-local function select_atan_end(selection_frame)
+local function select_atan_end(selection_input)
     local sheet = SemanticWorkflowProject:asserted_current()
-    sheet.preview_frame = selection_frame
+    sheet.preview_input = selection_input
     sheet:run_to_preview()
-    FrameListGui.special_select_handler = noop
+    InputListGui.special_select_handler = noop
 end
 
-local function select_atan_start(selection_frame)
-    print(selection_frame)
+local function select_atan_start(selection_input)
+    print(selection_input)
     local sheet = SemanticWorkflowProject:asserted_current()
-    previous_preview_frame = sheet.preview_frame
-    sheet.preview_frame = selection_frame
+    previous_preview_input = sheet.preview_input
+    sheet.preview_input = selection_input
     sheet:run_to_preview()
-    FrameListGui.special_select_handler = select_atan_end
+    InputListGui.special_select_handler = select_atan_end
 end
 
 local function atan_controls(draw, sheet, new_values, top)
+    local any_changes = false
+
     if not sheet.busy then
-        if FrameListGui.special_select_handler == select_atan_end then
+        if InputListGui.special_select_handler == select_atan_end then
             atan_start = Memory.current.mario_global_timer - 1
-        elseif FrameListGui.special_select_handler == noop then
+        elseif InputListGui.special_select_handler == noop then
             local atan_end = Memory.current.mario_global_timer
             new_values.atan_start = atan_start
             new_values.atan_n = atan_end - atan_start
-            sheet.preview_frame = previous_preview_frame
-            FrameListGui.special_select_handler = nil
+            sheet.preview_input = previous_preview_input
+            InputListGui.special_select_handler = nil
             any_changes = true
         end
     end
 
     local atan_retime_state =
-        FrameListGui.special_select_handler == select_atan_start and 'SEMANTIC_WORKFLOW_CONTROL_ATAN_SELECT_START'
-        or FrameListGui.special_select_handler == select_atan_end and 'SEMANTIC_WORKFLOW_CONTROL_ATAN_SELECT_END'
+        InputListGui.special_select_handler == select_atan_start and 'SEMANTIC_WORKFLOW_CONTROL_ATAN_SELECT_START'
+        or InputListGui.special_select_handler == select_atan_end and 'SEMANTIC_WORKFLOW_CONTROL_ATAN_SELECT_END'
         or 'SEMANTIC_WORKFLOW_CONTROL_ATAN_RETIME'
     if ugui.button({
             uid = UID.AtanRetime,
             rectangle = grid_rect(0, top, 2.5, Gui.LARGE_CONTROL_HEIGHT),
             text = Locales.str(atan_retime_state),
-            is_enabled = FrameListGui.special_select_handler == nil,
+            is_enabled = InputListGui.special_select_handler == nil,
         }) then
-        FrameListGui.special_select_handler = select_atan_start
+        InputListGui.special_select_handler = select_atan_start
     end
 
     local theme = Styles.theme()
@@ -501,7 +422,7 @@ local function upper_controls(new_values, top)
     })
 end
 
-local function joystick_controls_for_selected(draw, edited_section, edited_input)
+local function joystick_controls_for_selected(draw, edited_input)
     local top = TOP
 
     local sheet = SemanticWorkflowProject:asserted_current()
@@ -543,21 +464,14 @@ end
 
 function __impl.render(draw)
     local sheet = SemanticWorkflowProject:asserted_current()
-    local edited_section = sheet.sections[sheet.active_frame.section_index]
-    local edited_input = edited_section and edited_section.inputs[sheet.active_frame.frame_index] or nil
 
-    FrameListGui.view_index = selected_view_index
-    FrameListGui.render(draw)
+    InputListGui.render(draw)
 
     local draw_funcs = { joystick_controls_for_selected, section_controls_for_selected }
-    selected_view_index = ugui.carrousel_button({
-        uid = UID.ViewCarrousel,
-        rectangle = grid_rect(6, TOP, 2, Gui.MEDIUM_CONTROL_HEIGHT),
-        value = selected_view_index,
-        items = { 'Joystick', 'Section' },
-        selected_index = selected_view_index,
-    })
 
-    draw_funcs[selected_view_index](draw, edited_section, edited_input)
-    controls_for_insert_and_remove()
+    local edited_section = sheet.sections[sheet.active_input.section_index]
+    local edited_input = edited_section and edited_section.inputs[sheet.active_input.input_index] or nil
+    if edited_input then
+        draw_funcs[InputListGui.view_index](draw, edited_input)
+    end
 end

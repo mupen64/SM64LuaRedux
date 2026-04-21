@@ -11,22 +11,12 @@ local __impl = __impl
 ---@type Sheet
 local Sheet = dofile(views_path .. 'SemanticWorkflow/Definitions/Sheet.lua')
 
-local function index_of(table, element)
-    local index = 1
-    for _, v in pairs(table) do
-        if v == element then
-            return index
-        end
-        index = index + 1
-    end
-    return nil
-end
-
 function __impl.new()
     return {
         current = nil,
         all = {},
         project_location = nil,
+        version = SEMANTIC_WORKFLOW_FILE_VERSION,
 
         asserted_current = __impl.asserted_current,
         project_folder = __impl.project_folder,
@@ -55,7 +45,7 @@ function __impl:add_sheet()
 end
 
 function __impl:remove_sheet(sheet)
-    local index = index_of(self.all, sheet)
+    local index = IndexOf(self.all, sheet)
     table.remove(self.all, index)
     if #self.all > 0 then
         self:select(self.all[#self.all > 0 and (index % #self.all) or 0])
@@ -68,8 +58,8 @@ function __impl:duplicate_sheet(sheet)
     local new_name = UniqueName(base_name, lualinq.select(self.all, function(x) return x.name end))
     local new_sheet = Sheet.new(new_name, false)
     new_sheet.sections = ugui.internal.deep_clone(sheet.sections)
-    new_sheet.preview_frame = ugui.internal.deep_clone(sheet.preview_frame)
-    new_sheet.active_frame = ugui.internal.deep_clone(sheet.active_frame)
+    new_sheet.preview_input = ugui.internal.deep_clone(sheet.preview_input)
+    new_sheet.active_input = ugui.internal.deep_clone(sheet.active_input)
     if sheet._base_sheet ~= nil then
         new_sheet:set_base_sheet(sheet._base_sheet)
     else
@@ -79,7 +69,7 @@ function __impl:duplicate_sheet(sheet)
 end
 
 function __impl:move_sheet(sheet, sign)
-    local index = index_of(self.all, sheet)
+    local index = IndexOf(self.all, sheet)
     if index + sign > 0 and index + sign <= #self.all then
         self.all[index + sign], self.all[index] = self.all[index], self.all[index + sign]
     end
@@ -133,7 +123,7 @@ function __impl:save()
     ---@type ProjectMeta
     local project_meta = {
         version = SEMANTIC_WORKFLOW_FILE_VERSION,
-        selection_index = index_of(self.all, self.current),
+        selection_index = IndexOf(self.all, self.current),
         sheets = lualinq.select(self.all, function(x) return {
             name = x.name,
             base_sheet = x._base_sheet and x._base_sheet.name or nil,
