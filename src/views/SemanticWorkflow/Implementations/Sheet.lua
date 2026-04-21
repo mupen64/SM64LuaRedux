@@ -13,6 +13,10 @@ local __impl = __impl
 ---@type Section
 local Section = dofile(views_path .. 'SemanticWorkflow/Definitions/Section.lua')
 
+local function playback_speed_mode()
+    return Settings.semantic_workflow.fast_foward and Mupen.CoreSpeedMode.UltraFastForward or Mupen.CoreSpeedMode.Normal
+end
+
 function __impl.new(name, create_savestate)
     local global_timer = Memory.current.mario_global_timer
 
@@ -78,7 +82,7 @@ function __impl:evaluate_frame()
         if self._on_preview_input_reached == nil then
             -- we've reached the end, pause emulation
             emu.pause(false)
-            emu.set_ff(false)
+            emu.set_speed_mode(Mupen.CoreSpeedMode.Normal)
         else
             -- continue with the next sheet
             local invocation = self._on_preview_input_reached
@@ -124,12 +128,12 @@ local function run_to_preview_internal(sheet, from_base)
         -- Run the sheet from its savestate, which is either its dedicated savestate or the valid "cache" for where its base sheet ends up
         savestate.do_memory(sheet._savestate, 'load', function()
             emu.pause(true)
-            emu.set_ff(Settings.semantic_workflow.fast_foward)
+        emu.set_speed_mode(playback_speed_mode())
         end)
     else
         -- Run the sheet without loading a savestate because the user decided to ignore the dedicated savestate
         emu.pause(true)
-        emu.set_ff(Settings.semantic_workflow.fast_foward)
+        emu.set_speed_mode(playback_speed_mode())
     end
 end
 
