@@ -403,7 +403,8 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
                 uid = uid_base + 13,
                 rectangle = span(COL_ARRANGEMENT_4, COL_ARRANGEMENT_END),
                 text = '[icon:delete]',
-                tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_INPUT_TOOL_TIP")
+                tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_INPUT_TOOL_TIP"),
+                is_enabled = #section.inputs > 1
             }) then
                 queue_table_remove(section.inputs, input)
             end
