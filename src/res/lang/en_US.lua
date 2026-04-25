@@ -116,6 +116,8 @@ This action cannot be undone.
     SEMANTIC_WORKFLOW_INPUTS_END_ACTION = 'End action:',
     SEMANTIC_WORKFLOW_INPUTS_END_ACTION_TOOL_TIP = 'End section when Mario enters this action',
     SEMANTIC_WORKFLOW_INPUTS_END_ACTION_TYPE_TO_SEARCH_TOOL_TIP = 'Type to filter actions',
+    SEMANTIC_WORKFLOW_INPUTS_LOOP_TARGET = 'Target',
+    SEMANTIC_WORKFLOW_INPUTS_LOOP_TARGET_TOOL_TIP = 'Click an input to set it as the loop jump target',
     SEMANTIC_WORKFLOW_PREFERENCES_TAB_NAME = 'Preferences',
     SEMANTIC_WORKFLOW_PREFERENCES_EDIT_ENTIRE_STATE = 'Edit entire state',
     SEMANTIC_WORKFLOW_PREFERENCES_FAST_FORWARD = 'Fast Forward',
