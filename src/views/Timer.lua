@@ -89,98 +89,98 @@ return {
             uid = UID.A,
             rectangle = grid_rect(4, 6, 2),
             text = 'A',
-            is_checked = Joypad.input.A,
+            is_checked = Joypad.input.A == true,
         })
 
         ugui.toggle_button({
             uid = UID.B,
             rectangle = grid_rect(2, 6, 2),
             text = 'B',
-            is_checked = Joypad.input.B,
+            is_checked = Joypad.input.B == true,
         })
 
         ugui.toggle_button({
             uid = UID.Z,
             rectangle = grid_rect(3, 8, 1),
             text = 'Z',
-            is_checked = Joypad.input.Z,
+            is_checked = Joypad.input.Z == true,
         })
 
         ugui.toggle_button({
             uid = UID.S,
             rectangle = grid_rect(4, 8, 1),
             text = 'S',
-            is_checked = Joypad.input.start,
+            is_checked = Joypad.input.start == true,
         })
 
         ugui.toggle_button({
             uid = UID.L,
             rectangle = grid_rect(1, 7),
             text = 'L',
-            is_checked = Joypad.input.L,
+            is_checked = Joypad.input.L == true,
         })
 
         ugui.toggle_button({
             uid = UID.R,
             rectangle = grid_rect(6, 7),
             text = 'R',
-            is_checked = Joypad.input.R,
+            is_checked = Joypad.input.R == true,
         })
 
         ugui.toggle_button({
             uid = UID.DL,
             rectangle = grid_rect(0, 7),
             text = 'D<',
-            is_checked = Joypad.input.left,
+            is_checked = Joypad.input.left == true,
         })
 
         ugui.toggle_button({
             uid = UID.DR,
             rectangle = grid_rect(2, 7),
             text = 'D>',
-            is_checked = Joypad.input.right,
+            is_checked = Joypad.input.right == true,
         })
 
         ugui.toggle_button({
             uid = UID.DU,
             rectangle = grid_rect(1, 6),
             text = 'D^',
-            is_checked = Joypad.input.up,
+            is_checked = Joypad.input.up == true,
         })
 
         ugui.toggle_button({
             uid = UID.DD,
             rectangle = grid_rect(1, 8),
             text = 'Dv',
-            is_checked = Joypad.input.down,
+            is_checked = Joypad.input.down == true,
         })
 
         ugui.toggle_button({
             uid = UID.CL,
             rectangle = grid_rect(5, 7),
             text = 'C<',
-            is_checked = Joypad.input.Cleft,
+            is_checked = Joypad.input.Cleft == true,
         })
 
         ugui.toggle_button({
             uid = UID.CR,
             rectangle = grid_rect(7, 7),
             text = 'C>',
-            is_checked = Joypad.input.Cright,
+            is_checked = Joypad.input.Cright == true,
         })
 
         ugui.toggle_button({
             uid = UID.CU,
             rectangle = grid_rect(6, 6),
             text = 'C^',
-            is_checked = Joypad.input.Cup,
+            is_checked = Joypad.input.Cup == true,
         })
 
         ugui.toggle_button({
             uid = UID.CD,
             rectangle = grid_rect(6, 8),
             text = 'Cv',
-            is_checked = Joypad.input.Cdown,
+            is_checked = Joypad.input.Cdown == true,
         })
 
         ugui.listbox({
