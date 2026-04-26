@@ -71,7 +71,6 @@ function __impl:evaluate_frame()
                 self._input_index = 1
             end
         else
-            print(input.loop.runtime_counter)
             input.loop.runtime_counter = input.loop.runtime_counter + 1
             self._input_index = IndexOf(section.inputs, input.loop.jump_target) or 1 -- TODO: this feels uncleaaaan
         end
