@@ -20,6 +20,7 @@ return {
     SETTINGS_TAB_NAME = 'Settings',
     TOOLS_TAB_NAME = 'Tools',
     TIMER_TAB_NAME = 'Timer',
+    VISUALIZER_TAB_NAME = 'Visualizer',
     PRESET = 'Preset ',
     -- Preset Context Menu
     PRESET_CONTEXT_MENU_DELETE_ALL = 'Delete All',

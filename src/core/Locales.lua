@@ -21,6 +21,7 @@ Locales = {}
 ---@field public SETTINGS_TAB_NAME string
 ---@field public TOOLS_TAB_NAME string
 ---@field public TIMER_TAB_NAME string
+---@field public VISUALIZER_TAB_NAME string
 ---@field public PRESET string
 ---@field public PRESET_CONTEXT_MENU_DELETE_ALL string
 ---@field public DISABLED string
