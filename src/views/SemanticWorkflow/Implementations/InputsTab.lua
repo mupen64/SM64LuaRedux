@@ -138,9 +138,14 @@ local function controls_for_loop(input, draw, column, top)
     if not has_loop then
         input.loop = nil
     elseif input.loop == nil then
+        local own_index = nil
+        for _, section in ipairs(SemanticWorkflowProject:asserted_current().sections) do
+            own_index = IndexOf(section.inputs, input)
+            if own_index then break end
+        end
         input.loop = {
             count = 1,
-            jump_target = input,
+            jump_target = own_index or 1,
             runtime_counter = 0,
         }
     end
@@ -163,12 +168,21 @@ local function controls_for_loop(input, draw, column, top)
             tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_LOOP_TARGET_TOOL_TIP"),
         }) then
             InputListGui.special_select_handler = function(selection)
-                local input_list = SemanticWorkflowProject.current.sections[selection.section_index].inputs
-                local own_index = IndexOf(input_list, input)
+                local sheet = SemanticWorkflowProject:asserted_current()
+                local current_section_index = nil
+                local own_index = nil
+                for s_idx, section in ipairs(sheet.sections) do
+                    own_index = IndexOf(section.inputs, input)
+                    if own_index then
+                        current_section_index = s_idx
+                        break
+                    end
+                end
+                if current_section_index ~= selection.section_index then return end
                 if own_index >= selection.input_index then
-                    input.loop.jump_target = input_list[selection.input_index]
+                    input.loop.jump_target = selection.input_index
                     InputListGui.special_select_handler = nil
-                    SemanticWorkflowProject:asserted_current():run_to_preview()
+                    sheet:run_to_preview()
                 end
             end
         end

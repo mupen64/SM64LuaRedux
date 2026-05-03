@@ -66,7 +66,8 @@ function __impl:evaluate_frame()
         or current_action == input.end_action
     then
         self._frame_counter = 0
-        if input.loop == nil or input.loop.runtime_counter >= input.loop.count then
+        local loop = input.loop
+        if loop == nil then
             self._input_index = self._input_index + 1
             if #section.inputs < self._input_index then
                 self.measured_section_lengths[section] = self._section_frame_counter
@@ -75,8 +76,23 @@ function __impl:evaluate_frame()
                 self._input_index = 1
             end
         else
-            input.loop.runtime_counter = input.loop.runtime_counter + 1
-            self._input_index = IndexOf(section.inputs, input.loop.jump_target) or 1
+            local target_index = loop.jump_target
+            local runtime_counter = loop.runtime_counter or 0
+            if target_index == nil or target_index < 1 or target_index > #section.inputs
+                or target_index > self._input_index
+                or (loop.count ~= 0 and runtime_counter >= loop.count)
+            then
+                self._input_index = self._input_index + 1
+                if #section.inputs < self._input_index then
+                    self.measured_section_lengths[section] = self._section_frame_counter
+                    self._section_frame_counter = 0
+                    self._section_index = self._section_index + 1
+                    self._input_index = 1
+                end
+            else
+                loop.runtime_counter = runtime_counter + 1
+                self._input_index = target_index
+            end
         end
     end
     if self._section_index > self.preview_input.section_index
@@ -190,6 +206,15 @@ function __impl:load(file, load_state)
             self._savestate = ReadAll(file .. '.savestate')
         end
         CloneInto(self, contents)
+
+        -- ensure loop runtime_counters are initialized after load
+        for _, section in pairs(self.sections) do
+            for _, input in pairs(section.inputs) do
+                if input.loop and input.loop.runtime_counter == nil then
+                    input.loop.runtime_counter = 0
+                end
+            end
+        end
 
         -- convert sheets pre 2.0.0
         if contents.version:match("^%s*[vV]?(%d+)") == '1' then

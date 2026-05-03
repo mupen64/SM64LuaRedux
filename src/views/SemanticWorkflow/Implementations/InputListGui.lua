@@ -276,10 +276,10 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
     end
 
     local loop_targets = {}
-    for _, section in ipairs(sheet.sections) do
+    for s_idx, section in ipairs(sheet.sections) do
         for _, inp in ipairs(section.inputs) do
             if inp.loop and inp.loop.jump_target then
-                loop_targets[inp.loop.jump_target] = true
+                loop_targets[s_idx .. ":" .. inp.loop.jump_target] = true
             end
         end
     end
@@ -499,7 +499,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
                 BreitbandGraphics.draw_ellipse(rect, input.joy[v.input] and '#000000FF' or '#00000050', 1)
             end
 
-            if loop_targets[input] then
+            if loop_targets[section_index .. ":" .. input_index] then
                 BreitbandGraphics.draw_rectangle(section_rect, '#FF8000FF', 2)
             end
 

@@ -5,7 +5,7 @@
 --
 
 ---@class Loop Runtime information for a section loop.
----@field jump_target SectionInputs The input to jump to. Can be the same input as the looping input, but not any later input in a section.
+---@field jump_target integer The 1-based index of the input to jump to within the same section. Can be the current input's index (self-loop), but must not be larger than the looping input's index.
 ---@field count integer The number of repetitions. May be zero.
 ---@field runtime_counter integer The current repetition during a sheet's run.
 local cls_loop = {}
