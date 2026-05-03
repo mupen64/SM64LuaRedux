@@ -262,24 +262,41 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
     end
 
     local deferred_calls = { }
-    local function queue_table_insert(target, reference_item, new_item, offset)
-        deferred_calls[#deferred_calls+1] = function()
-            table.insert(target, IndexOf(target, reference_item) + offset, new_item)
-            -- any_changes = true -- TODO: is this even worth it?
-        end
-    end
-    local function queue_table_remove(target, item)
-        deferred_calls[#deferred_calls+1] = function()
-            table.remove(target, IndexOf(target, item))
-            -- any_changes = true -- TODO: is this even worth it?
+    local function adjust_loop_targets_on_insert(section, insert_index)
+        for _, inp in ipairs(section.inputs) do
+            if inp.loop and inp.loop.jump_target >= insert_index then
+                inp.loop.jump_target = inp.loop.jump_target + 1
+            end
         end
     end
 
-    local loop_targets = {}
-    for s_idx, section in ipairs(sheet.sections) do
+    local function adjust_loop_targets_on_delete(section, delete_index)
         for _, inp in ipairs(section.inputs) do
-            if inp.loop and inp.loop.jump_target then
-                loop_targets[s_idx .. ":" .. inp.loop.jump_target] = true
+            if inp.loop then
+                if inp.loop.jump_target > delete_index then
+                    inp.loop.jump_target = inp.loop.jump_target - 1
+                elseif inp.loop.jump_target == delete_index then
+                    inp.loop = nil
+                end
+            end
+        end
+    end
+
+    local function queue_table_insert(target, reference_item, new_item, offset, owning_section)
+        deferred_calls[#deferred_calls+1] = function()
+            local insert_index = IndexOf(target, reference_item) + offset
+            table.insert(target, insert_index, new_item)
+            if owning_section then
+                adjust_loop_targets_on_insert(owning_section, insert_index)
+            end
+        end
+    end
+    local function queue_table_remove(target, item, owning_section)
+        deferred_calls[#deferred_calls+1] = function()
+            local delete_index = IndexOf(target, item)
+            table.remove(target, delete_index)
+            if owning_section then
+                adjust_loop_targets_on_delete(owning_section, delete_index)
             end
         end
     end
@@ -397,7 +414,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
                 text = '[icon:clone_up]',
                 tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_PREPEND_INPUT_TOOL_TIP")
             }) then
-                queue_table_insert(section.inputs, input, ugui.internal.deep_clone(input), 0)
+                queue_table_insert(section.inputs, input, ugui.internal.deep_clone(input), 0, section)
             end
 
             if ugui.button({
@@ -406,7 +423,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
                 text = '[icon:clone_down]',
                 tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_APPEND_INPUT_TOOL_TIP")
             }) then
-                queue_table_insert(section.inputs, input, ugui.internal.deep_clone(input), 1)
+                queue_table_insert(section.inputs, input, ugui.internal.deep_clone(input), 1, section)
             end
 
             if ugui.button({
@@ -416,7 +433,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
                 tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_INPUT_TOOL_TIP"),
                 is_enabled = #section.inputs > 1
             }) then
-                queue_table_remove(section.inputs, input)
+                queue_table_remove(section.inputs, input, section)
             end
 
             local termination_tool_tip =
@@ -499,7 +516,11 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
                 BreitbandGraphics.draw_ellipse(rect, input.joy[v.input] and '#000000FF' or '#00000050', 1)
             end
 
-            if loop_targets[section_index .. ":" .. input_index] then
+            local active = sheet.active_input
+            if active and active.section_index == section_index
+                and section.inputs[active.input_index]
+                and section.inputs[active.input_index].loop
+                and section.inputs[active.input_index].loop.jump_target == input_index then
                 BreitbandGraphics.draw_rectangle(section_rect, '#FF8000FF', 2)
             end
 
