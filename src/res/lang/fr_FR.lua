@@ -118,6 +118,8 @@ Cette action est irréversible.
     SEMANTIC_WORKFLOW_INPUTS_END_ACTION = 'Action de fin :',
     SEMANTIC_WORKFLOW_INPUTS_END_ACTION_TOOL_TIP = 'Terminer la section quand Mario entre dans cette action',
     SEMANTIC_WORKFLOW_INPUTS_END_ACTION_TYPE_TO_SEARCH_TOOL_TIP = 'Taper pour filtrer les actions',
+    SEMANTIC_WORKFLOW_INPUTS_LOOP_TARGET = 'Cible',
+    SEMANTIC_WORKFLOW_INPUTS_LOOP_TARGET_TOOL_TIP = 'Cliquer un input pour le définir comme cible du saut de loop',
     SEMANTIC_WORKFLOW_PREFERENCES_EDIT_ENTIRE_STATE = 'Modifier l\'état entier',
     SEMANTIC_WORKFLOW_PREFERENCES_FAST_FORWARD = 'Avance rapide',
     SEMANTIC_WORKFLOW_PREFERENCES_DEFAULT_SECTION_TIMEOUT = 'Délai de section par défaut :',
