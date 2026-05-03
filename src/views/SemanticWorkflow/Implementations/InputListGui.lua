@@ -275,6 +275,15 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
         end
     end
 
+    local loop_targets = {}
+    for _, section in ipairs(sheet.sections) do
+        for _, inp in ipairs(section.inputs) do
+            if inp.loop and inp.loop.jump_target then
+                loop_targets[inp.loop.jump_target] = true
+            end
+        end
+    end
+
     iterate_input_rows(sheet, function(section, input, section_index, input_index, row_count)
         if row_count <= scroll_offset then return false end
 
@@ -488,6 +497,14 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
                     BreitbandGraphics.fill_ellipse(rect, BUTTON_COLORS[button_draw_data[button_index].color_index].button)
                 end
                 BreitbandGraphics.draw_ellipse(rect, input.joy[v.input] and '#000000FF' or '#00000050', 1)
+            end
+
+            if loop_targets[input] then
+                BreitbandGraphics.draw_rectangle(section_rect, '#FF8000FF', 2)
+            end
+
+            if input.loop then
+                BreitbandGraphics.draw_rectangle(section_rect, '#0064FFFF', 2)
             end
 
             if section_index == sheet.preview_input.section_index and sheet.preview_input.input_index == input_index then
