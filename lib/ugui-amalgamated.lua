@@ -328,6 +328,7 @@ ugui.STATIC_ENV = {
 ---@field public is_primary_down boolean? Whether the primary mouse button is being pressed.
 ---@field public key_events UguiKeyEventArgs[] The key events that happened since the last frame.
 ---@field public window_size { x: number, y: number }? The rendering bounds. If nil, no rendering bounds are considered and certain controls, such as menus, might overflow off-screen.
+---@field public shift boolean? Whether the shift key is being held down during this frame.
 
 -- ------------------------------------------------------------
 --   src\ugui\core.lua
@@ -345,7 +346,11 @@ ugui.STATIC_ENV = {
 ---@field public added fun(control: Control, data: any)? Notifies about a control being added to a scene.
 ---@field public logic fun(control: Control, data: any): ControlReturnValue Executes control logic.
 ---@field public draw fun(control: Control) Draws the control.
+---@field public hittestable fun(control: Control): boolean? A function returning whether a control instance of this type should participate in hit-testing. If `nil`, the instance-level `hittestable` field is used. If both are `nil`, the control is hittestable.
 ---Represents an entry in the control registry.
+
+---@class Control
+---@field public hittestable boolean? Whether this control instance participates in hit-testing. Overrides the registry-level `hittestable` function if specified. Defaults to `true` if neither this nor the registry function is set.
 
 ---@alias UID number
 ---Unique identifier for a control. Must be unique within a frame.
@@ -437,6 +442,9 @@ ugui.begin_frame = function(environment)
     end
 
     ugui.internal.frame_in_progress = true
+    local current_time = os.clock()
+    ugui.internal.delta_time = current_time - ugui.internal.last_frame_time
+    ugui.internal.last_frame_time = current_time
 
     if not ugui.internal.environment then
         ugui.internal.environment = environment
@@ -664,6 +672,9 @@ ugui.internal = {
     ---Whether a frame is currently in progress.
     frame_in_progress = false,
 
+    last_frame_time = 0,
+    delta_time = 0,
+
     ---@type table<string, integer>
     ---Cache of nineslice drawings. Only used after calling `ugui.apply_nineslice`.
     nineslice_draw_cache = {},
@@ -889,6 +900,22 @@ ugui.internal = {
         return segments
     end,
 
+    ---Computes the effective value of a control property, respecting instance-level
+    ---overrides, registry-level defaults, and a fallback default.
+    ---@param control Control
+    ---@param registry_entry ControlRegistryEntry
+    ---@param prop_name string
+    ---@param get_default fun(): any
+    ---@return any
+    compute_prop = function(control, registry_entry, prop_name, get_default)
+        if control[prop_name] ~= nil then
+            return control[prop_name]
+        elseif registry_entry[prop_name] ~= nil then
+            return registry_entry[prop_name](control)
+        end
+        return get_default()
+    end,
+
     ---Does core input processing work, such as control capture/hover/click state management.
     do_input_processing = function()
         local function is_point_inside_rectangle(point, rectangle)
@@ -926,9 +953,12 @@ ugui.internal = {
         for i = #ugui.internal.scene, 1, -1 do
             local entry = ugui.internal.scene[i]
             local control = entry.control
+            local registry_entry = ugui.registry[entry.type]
+
+            local effective_hittestable = ugui.internal.compute_prop(control, registry_entry, 'hittestable', function() return true end)
 
             -- Determine the clicked control if we haven't already
-            if clicked_control == nil then
+            if clicked_control == nil and effective_hittestable then
                 if ugui.internal.is_mouse_just_down() then
                     if is_point_inside_rectangle(ugui.internal.mouse_down_position, control.rectangle) then
                         clicked_control = control
@@ -939,7 +969,7 @@ ugui.internal = {
             end
 
             -- Determine the hovered control if we haven't already
-            if ugui.internal.hovered_control == nil then
+            if ugui.internal.hovered_control == nil and effective_hittestable then
                 if is_point_inside_rectangle(ugui.internal.environment.mouse_position, control.rectangle) then
                     ugui.internal.hovered_control = control.uid
 
@@ -2412,6 +2442,9 @@ ugui.standard_styler = {
 
 ---@type ControlRegistryEntry
 ugui.registry.label = {
+    hittestable = function(control)
+        return false
+    end,
     ---@param control Label
     validate = function(control)
         ugui.internal.assert(type(control.text) == 'string', 'expected text to be string')
@@ -2737,7 +2770,7 @@ end
 
 ---@class ListBox : Control
 ---@field public items RichText[] The items contained in the control.
----@field public selected_index integer? The index of the currently selected item into the items array.
+---@field public selected_index integer? The index of the currently selected item into the items array. If `nil`, no item is selected.
 ---@field public horizontal_scroll boolean? Whether horizontal scrolling will be enabled when items go beyond the width of the control. Will impact performance greatly, use with care.
 ---A listbox which allows the user to choose from a list of items.
 ---If the items don't fit in the control's bounds vertically, vertical scrolling will be enabled.
@@ -2780,73 +2813,120 @@ ugui.registry.listbox = {
             control.rectangle.width = control.rectangle.width - ugui.standard_styler.params.scrollbar.thickness
         end
 
+        local one_item_scroll_y<const> = 1 / #control.items
+        local items_per_page<const> = math.floor(control.rectangle.height / ugui.standard_styler.params.listbox_item.height)
+
+        -- FIXME: This is pretty weird... we should have a mechanism at the ugui core level for this
+        local can_mouse_scroll = false
+        if ugui.internal.mouse_captured_control == nil then
+            can_mouse_scroll = ugui.internal.hovered_control == control.uid
+        end
         if ugui.internal.mouse_captured_control == control.uid then
-            -- Mouse-based selection
-            local relative_y = ugui.internal.environment.mouse_position.y - control.rectangle.y
-            local new_index = math.ceil((relative_y + (data.scroll_y *
+            can_mouse_scroll = true
+        end
+
+        local function index_from_y(y)
+            return math.ceil((y + (data.scroll_y *
                     ((ugui.standard_styler.params.listbox_item.height * #control.items) - control.rectangle.height))) /
                 ugui.standard_styler.params.listbox_item.height)
-            if new_index <= #control.items then
-                data.selected_index = ugui.internal.clamp(new_index, 1, #control.items)
+        end
+
+        local function scroll_selected_index_into_view()
+            if data.selected_index == nil then
+                return
+            end
+
+            local item_height = ugui.standard_styler.params.listbox_item.height
+            local scroll_range = (item_height * #control.items) - control.rectangle.height
+
+            if scroll_range <= 0 then
+                return
+            end
+
+            local scroll_offset_px = data.scroll_y * scroll_range
+            local first_visible = math.floor(scroll_offset_px / item_height) + 1
+            local last_visible = math.floor((scroll_offset_px + control.rectangle.height) / item_height)
+
+            if data.selected_index < first_visible then
+                data.scroll_y = (data.selected_index - 1) * item_height / scroll_range
+            elseif data.selected_index > last_visible then
+                data.scroll_y = (data.selected_index * item_height - control.rectangle.height) / scroll_range
             end
         end
 
-        -- Keyboard-based selection. FIXME: Why is this based on the mouse being inside it???
-        -- FIXME: We want the separate concept of "keyboard focus" to be introduced
-        if ugui.internal.mouse_captured_control == control.uid or BreitbandGraphics.is_point_inside_rectangle(ugui.internal.environment.mouse_position, control.rectangle) then
-            for _, e in ipairs(ugui.internal.environment.key_events) do
-                if e.keycode and e.pressed then
-                    if e.keycode == ugui.keycodes.VK_UP and data.selected_index ~= nil then
-                        data.selected_index = ugui.internal.clamp(data.selected_index - 1, 1, #control.items)
-                    end
-                    if e.keycode == ugui.keycodes.VK_DOWN and data.selected_index ~= nil then
-                        data.selected_index = ugui.internal.clamp(data.selected_index + 1, 1, #control.items)
-                    end
-                    if e.keycode == ugui.keycodes.VK_C and e.ctrl and data.selected_index ~= nil then
-                        local item = control.items[data.selected_index]
-                        ugui.STATIC_ENV.clipboard.set(item)
-                    end
-                    if not y_overflow then
-                        if e.keycode == ugui.keycodes.VK_HOME or e.keycode == ugui.keycodes.VK_PRIOR then
-                            data.selected_index = 1
-                        end
-                        if e.keycode == ugui.keycodes.VK_END or e.keycode == ugui.keycodes.VK_NEXT then
-                            data.selected_index = #control.items
-                        end
-                    end
-                end
+        if ugui.internal.mouse_captured_control == control.uid then
+            local relative_y = ugui.internal.environment.mouse_position.y - control.rectangle.y
+            local new_index = index_from_y(relative_y)
+            data.selected_index = new_index
+
+            local overshoot = nil
+            if relative_y > control.rectangle.height then
+                overshoot = relative_y - control.rectangle.height
+            end
+            if relative_y < 0 then
+                overshoot = relative_y
+            end
+            if overshoot ~= nil then
+                overshoot = ugui.internal.clamp(overshoot, -50, 50)
+                data.scroll_y = data.scroll_y + one_item_scroll_y * ugui.internal.delta_time * overshoot * 2
             end
         end
 
-        if y_overflow and (ugui.internal.mouse_captured_control == control.uid or BreitbandGraphics.is_point_inside_rectangle(ugui.internal.environment.mouse_position, control.rectangle)) then
-            local inc = 0
+        if can_mouse_scroll then
             if ugui.internal.is_mouse_wheel_up() then
-                inc = -1 / #control.items
+                data.scroll_y = data.scroll_y - one_item_scroll_y
             end
             if ugui.internal.is_mouse_wheel_down() then
-                inc = 1 / #control.items
+                data.scroll_y = data.scroll_y + one_item_scroll_y
             end
+        end
 
+        if ugui.internal.keyboard_captured_control == control.uid then
             for _, e in ipairs(ugui.internal.environment.key_events) do
-                if e.keycode and e.pressed then
-                    if e.keycode == ugui.keycodes.VK_PRIOR then
-                        inc = -math.floor(control.rectangle.height / ugui.standard_styler.params.listbox_item.height) /
-                            #control.items
-                    end
-                    if e.keycode == ugui.keycodes.VK_NEXT then
-                        inc = math.floor(control.rectangle.height / ugui.standard_styler.params.listbox_item.height) /
-                            #control.items
-                    end
-                    if e.keycode == ugui.keycodes.VK_HOME then
-                        inc = -1
-                    end
-                    if e.keycode == ugui.keycodes.VK_END then
-                        inc = 1
-                    end
+                if not e.keycode or not e.pressed then
+                    goto continue
                 end
-            end
 
-            data.scroll_y = ugui.internal.clamp(data.scroll_y + inc, 0, 1)
+                if e.keycode == ugui.keycodes.VK_UP and data.selected_index ~= nil then
+                    data.selected_index = ugui.internal.clamp(data.selected_index - 1, 1, #control.items)
+                    scroll_selected_index_into_view()
+                end
+                if e.keycode == ugui.keycodes.VK_DOWN and data.selected_index ~= nil then
+                    data.selected_index = ugui.internal.clamp(data.selected_index + 1, 1, #control.items)
+                    scroll_selected_index_into_view()
+                end
+                if e.keycode == ugui.keycodes.VK_C and e.ctrl and data.selected_index ~= nil then
+                    local item = control.items[data.selected_index]
+                    ugui.STATIC_ENV.clipboard.set(item)
+                end
+                if e.keycode == ugui.keycodes.VK_PRIOR and data.selected_index ~= nil then
+                    data.selected_index = data.selected_index - items_per_page
+                    scroll_selected_index_into_view()
+                end
+                if e.keycode == ugui.keycodes.VK_NEXT and data.selected_index ~= nil then
+                    data.selected_index = data.selected_index + items_per_page
+                    scroll_selected_index_into_view()
+                end
+                if e.keycode == ugui.keycodes.VK_HOME then
+                    data.selected_index = 1
+                    scroll_selected_index_into_view()
+                end
+                if e.keycode == ugui.keycodes.VK_END then
+                    data.selected_index = #control.items
+                    scroll_selected_index_into_view()
+                end
+
+                ::continue::
+            end
+        end
+
+
+        data.scroll_y = ugui.internal.clamp(data.scroll_y, 0, 1)
+        if not y_overflow then
+            data.scroll_y = 0
+        end
+        if data.selected_index ~= nil then
+            data.selected_index = ugui.internal.clamp(data.selected_index, 1, #control.items)
         end
 
         control.rectangle = prev_rect
@@ -2923,7 +3003,6 @@ end
 --   src\ugui\controls\combobox.lua
 -- ------------------------------------------------------------
 
---
 -- Copyright (c) 2026, Mupen64 maintainers.
 --
 -- SPDX-License-Identifier: GPL-3.0-or-later
@@ -2932,6 +3011,7 @@ end
 ---@class ComboBox : Control
 ---@field public items RichText[] The items contained in the control.
 ---@field public selected_index integer? The index of the currently selected item into the items array. If nil, no item is selected.
+---@field public editable boolean? Whether the user can type in the combobox to filter the items.
 ---A combobox which allows the user to choose from a list of items.
 
 ---@type ControlRegistryEntry
@@ -2943,12 +3023,10 @@ ugui.registry.combobox = {
     end,
     ---@param control ComboBox
     setup = function(control, data)
-        if data.open == nil then
-            data.open = false
-        end
-        if data.hovered_index == nil then
-            data.hovered_index = control.selected_index
-        end
+        data.open = false
+        data.hovered_index = control.selected_index
+        data.searching = false
+        data.search_text = ''
     end,
     ---@param control ComboBox
     ---@return ControlReturnValue
@@ -2959,7 +3037,8 @@ ugui.registry.combobox = {
             data.open = false
         end
 
-        if ugui.internal.clicked_control == control.uid then
+        -- Only toggle on click if NOT editable (editable mode handles this via the button)
+        if not control.editable and ugui.internal.clicked_control == control.uid then
             data.open = not data.open
         end
 
@@ -2980,7 +3059,7 @@ ugui.registry.combobox = {
 
         return {
             primary = data.selected_index,
-            meta = { signal_change = data.signal_change },
+            meta = {signal_change = data.signal_change},
         }
     end,
     ---@param control ComboBox
@@ -2997,35 +3076,116 @@ ugui.combobox = function(control)
     local result = ugui.control(control, 'combobox')
     local data = ugui.internal.control_data[control.uid]
 
-    if data.open then
-        local content_bounds = ugui.standard_styler.get_desired_listbox_content_bounds(control)
+    local textbox_uid<const> = control.uid + 1
+    local button_uid<const> = control.uid + 2
+    local listbox_uid<const> = control.uid + 3
 
-        local width = control.rectangle.width
-        if control.rectangle.x + width > ugui.internal.environment.window_size.x then
-            width = ugui.internal.environment.window_size.x - control.rectangle.x
-        end
+    local button_size<const> = 30
 
-        local height = content_bounds.height
-        if control.rectangle.y + height > ugui.internal.environment.window_size.y then
-            height = ugui.internal.environment.window_size.y - control.rectangle.y -
-                ugui.standard_styler.params.listbox_item.height * 2
-        end
-
-        local list_rect = {
-            x = control.rectangle.x,
-            y = control.rectangle.y + control.rectangle.height,
-            width = width,
-            height = height,
-        }
-
-        data.selected_index = ugui.listbox({
-            uid = control.uid + 1,
-            rectangle = list_rect,
-            items = control.items,
-            selected_index = data.selected_index,
-            plaintext = control.plaintext,
-            z_index = math.maxinteger,
+    if control.editable then
+        local current_text = (data.searching and data.search_text or control.items[data.selected_index]) or ''
+        local search_text = ugui.textbox({
+            uid = textbox_uid,
+            rectangle = {
+                x = control.rectangle.x,
+                y = control.rectangle.y,
+                width = control.rectangle.width - button_size,
+                height = control.rectangle.height,
+            },
+            is_enabled = control.is_enabled,
+            text = current_text,
         })
+
+        if search_text ~= current_text then
+            data.searching = true
+            data.open = true
+            data.search_text = search_text
+        end
+
+        if ugui.button({
+                uid = button_uid,
+                rectangle = {
+                    x = control.rectangle.x + control.rectangle.width - button_size,
+                    y = control.rectangle.y,
+                    width = button_size,
+                    height = control.rectangle.height,
+                },
+                is_enabled = control.is_enabled,
+                text = data.open and '[icon:arrow_up]' or '[icon:arrow_down]',
+            }) then
+            data.open = not data.open
+        end
+    end
+
+    if data.open then
+        local items_to_show = control.items
+        local filtered_to_original = nil
+
+        if control.editable and data.searching then
+            ---@type RichText[]
+            local filtered_items = {}
+
+            ---@type integer[]
+            filtered_to_original = {}
+
+            for i, item in ipairs(control.items) do
+                if item:lower():find(data.search_text:lower(), 1, true) then
+                    table.insert(filtered_items, item)
+                    local filtered_index = #filtered_items
+                    filtered_to_original[filtered_index] = i
+                end
+            end
+
+            if #filtered_items == 1 then
+                data.selected_index = filtered_to_original[1]
+                data.open = false
+            end
+
+            if #filtered_items == 0 then
+                data.open = false
+            end
+
+            items_to_show = filtered_items
+            control.items = filtered_items
+        end
+
+        if data.open then
+            local content_bounds = ugui.standard_styler.get_desired_listbox_content_bounds(control)
+
+            local width = control.rectangle.width
+            if control.rectangle.x + width > ugui.internal.environment.window_size.x then
+                width = ugui.internal.environment.window_size.x - control.rectangle.x
+            end
+
+            local height = content_bounds.height
+            if control.rectangle.y + height > ugui.internal.environment.window_size.y then
+                height = ugui.internal.environment.window_size.y - control.rectangle.y -
+                    ugui.standard_styler.params.listbox_item.height * 2
+            end
+
+            local list_rect = {
+                x = control.rectangle.x,
+                y = control.rectangle.y + control.rectangle.height,
+                width = width,
+                height = height,
+            }
+
+            local listbox_result, meta_listbox = ugui.listbox({
+                uid = listbox_uid,
+                rectangle = list_rect,
+                items = items_to_show,
+                selected_index = data.selected_index,
+                plaintext = control.plaintext,
+                z_index = math.maxinteger,
+            })
+
+            if meta_listbox.signal_change == ugui.signal_change_states.started then
+                data.selected_index = filtered_to_original and filtered_to_original[listbox_result] or listbox_result
+                data.searching = false
+                data.search_text = ''
+                data.open = false
+            end
+        end
     end
 
     return data.selected_index, result.meta
@@ -3044,6 +3204,47 @@ end
 ---@class TextBox : Control
 ---@field public text string The text contained in the textbox.
 ---A textbox which can be edited.
+
+
+---Gets the index of the surrounding words in the specified text.
+---@param text string The text to search.
+---@param from integer The index to start searching from.
+---@return integer, integer The index of the surrounding words.
+local function surrounding_word_index(text, from)
+    local lo = 1
+    local hi = #text + 1
+
+    local function classify(c)
+        if c:match('%s') ~= nil then
+            return 'space'
+        end
+        if c:match('[%w_]') ~= nil then
+            return 'char'
+        end
+        return 'punct'
+    end
+
+    local initial_class = classify(text:sub(from, from))
+    local initial_class_lo = classify(text:sub(from - 1, from - 1))
+
+    for i = from - 1, 1, -1 do
+        local class = classify(text:sub(i, i))
+        if class ~= initial_class_lo then
+            lo = i + 1
+            break
+        end
+    end
+
+    for i = from, #text, 1 do
+        local class = classify(text:sub(i, i))
+        if class ~= initial_class then
+            hi = i
+            break
+        end
+    end
+
+    return lo, hi
+end
 
 ---@type ControlRegistryEntry
 ugui.registry.textbox = {
@@ -3076,12 +3277,20 @@ ugui.registry.textbox = {
 
         local index_at_mouse = ugui.internal.get_caret_index(data.text, data.scroll_offset, ugui.internal.environment.mouse_position.x - control.rectangle.x)
 
-        -- If the control was just clicked, start a new selection.
+        -- If the control was just clicked, start a new selection or create/extend one with shift held.
         if ugui.internal.clicked_control == control.uid then
-            data.caret_index = index_at_mouse
-            data.selection_start = index_at_mouse
-            data.selection_end = index_at_mouse
-            data.last_changed_anchor = 'caret'
+            if ugui.internal.environment.shift then
+                local anchor = (data.caret_index == data.selection_end) and data.selection_start or data.selection_end
+                data.selection_start = anchor
+                data.selection_end = index_at_mouse
+                data.caret_index = index_at_mouse
+                data.last_changed_anchor = 'selection_end'
+            else
+                data.caret_index = index_at_mouse
+                data.selection_start = index_at_mouse
+                data.selection_end = index_at_mouse
+                data.last_changed_anchor = 'caret'
+            end
         end
 
         -- If we're dragging the control, extend the existing selection.
@@ -3099,44 +3308,97 @@ ugui.registry.textbox = {
                     local higher_selection = math.max(data.selection_start, data.selection_end)
 
                     if e.keycode == ugui.keycodes.VK_BACK then
-                        if has_selection then
-                            data.text = ugui.internal.remove_range(data.text, lower_selection, higher_selection)
+                        if e.ctrl then
+                            -- Ctrl+Backspace with a selection is REALLY weird and unintuitive, but this is what EDIT does:
+                            -- 1. collapse selection to lower bound 2. delete backwards word from there (we already have that so we just fall through to it)
+                            if has_selection then
+                                data.caret_index = lower_selection
+                                data.selection_start = lower_selection
+                                data.selection_end = lower_selection
+                                data.last_changed_anchor = 'caret'
+                            end
 
-                            data.caret_index = lower_selection
-                            data.selection_start = lower_selection
-                            data.selection_end = lower_selection
+                            local prev_word, _ = surrounding_word_index(data.text, data.caret_index)
+                            data.text = ugui.internal.remove_range(data.text, prev_word, data.caret_index)
+                            data.caret_index = prev_word
+                            data.selection_start = prev_word
+                            data.selection_end = prev_word
                             data.last_changed_anchor = 'caret'
                         else
-                            local delete_index = data.caret_index - 1
-                            data.text = ugui.internal.remove_at(data.text, delete_index)
-                            data.caret_index = delete_index
-                            data.last_changed_anchor = 'caret'
+                            if has_selection then
+                                data.text = ugui.internal.remove_range(data.text, lower_selection, higher_selection)
+
+                                data.caret_index = lower_selection
+                                data.selection_start = lower_selection
+                                data.selection_end = lower_selection
+                                data.last_changed_anchor = 'caret'
+                            else
+                                local delete_index = data.caret_index - 1
+                                data.text = ugui.internal.remove_at(data.text, delete_index)
+                                data.caret_index = delete_index
+                                data.last_changed_anchor = 'caret'
+                            end
                         end
                     elseif e.keycode == ugui.keycodes.VK_LEFT then
-                        if has_selection then
-                            data.selection_start = lower_selection
-                            data.selection_end = lower_selection
-                            data.caret_index = lower_selection
-                            data.last_changed_anchor = 'caret'
+                        if e.ctrl then
+                            if e.shift then
+                                local prev_word, _ = surrounding_word_index(data.text, data.caret_index)
+                                local anchor = (data.caret_index == data.selection_end) and data.selection_start or data.selection_end
+                                data.caret_index = prev_word
+                                data.selection_start = math.min(anchor, prev_word)
+                                data.selection_end = math.max(anchor, prev_word)
+                            else
+                                local prev_word, _ = surrounding_word_index(data.text, lower_selection)
+                                data.selection_start = prev_word
+                                data.selection_end = prev_word
+                                data.caret_index = prev_word
+                            end
                         else
-                            data.caret_index = data.caret_index - 1
-                            data.last_changed_anchor = 'caret'
+                            if has_selection then
+                                data.selection_start = lower_selection
+                                data.selection_end = lower_selection
+                                data.caret_index = lower_selection
+                                data.last_changed_anchor = 'caret'
+                            else
+                                data.caret_index = data.caret_index - 1
+                                data.last_changed_anchor = 'caret'
+                            end
                         end
                     elseif e.keycode == ugui.keycodes.VK_RIGHT then
-                        if has_selection then
-                            data.selection_start = higher_selection
-                            data.selection_end = higher_selection
-                            data.caret_index = higher_selection
-                            data.last_changed_anchor = 'caret'
+                        if e.ctrl then
+                            if e.shift then
+                                local _, next_word = surrounding_word_index(data.text, data.caret_index)
+                                local anchor = (data.caret_index == data.selection_start) and data.selection_end or data.selection_start
+                                data.caret_index = next_word
+                                data.selection_start = math.min(anchor, next_word)
+                                data.selection_end = math.max(anchor, next_word)
+                            else
+                                local _, next_word = surrounding_word_index(data.text, higher_selection)
+                                data.selection_start = next_word
+                                data.selection_end = next_word
+                                data.caret_index = next_word
+                            end
                         else
-                            data.caret_index = data.caret_index + 1
-                            data.last_changed_anchor = 'caret'
+                            if has_selection then
+                                data.selection_start = higher_selection
+                                data.selection_end = higher_selection
+                                data.caret_index = higher_selection
+                                data.last_changed_anchor = 'caret'
+                            else
+                                data.caret_index = data.caret_index + 1
+                                data.last_changed_anchor = 'caret'
+                            end
                         end
                     end
 
                     if e.keycode == ugui.keycodes.VK_C and e.ctrl and has_selection then
                         local selected_text = data.text:sub(lower_selection, higher_selection - 1)
                         ugui.STATIC_ENV.clipboard.set(selected_text)
+                    end
+
+                    if e.keycode == ugui.keycodes.VK_A and e.ctrl then
+                        data.selection_start = 1
+                        data.selection_end = #data.text + 1
                     end
                 end
 
