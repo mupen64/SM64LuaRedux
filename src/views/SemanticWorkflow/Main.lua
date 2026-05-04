@@ -32,6 +32,17 @@ function WriteAll(file, content)
     return content
 end
 
+function IndexOf(table, element)
+    local index = 1
+    for _, v in pairs(table) do
+        if v == element then
+            return index
+        end
+        index = index + 1
+    end
+    return nil
+end
+
 ---Produces a new name from a base string by appending a number to avoid name collisions (always higher than the highest potential collision).
 ---@param base string The desired name in case of no collision.
 ---@param collision_candidates string[] Names that cannot be used.
@@ -79,12 +90,13 @@ SemanticWorkflowDialog = nil
 local ugui_icon_draw = ugui.standard_styler.draw_icon
 
 local custom_icons = { 'navigate_back', 'arrow_up', 'arrow_down', 'base_sheet', 'without_save', 'delete',
-    'next_page', 'previous_page', 'duplicate'}
+    'next_page', 'previous_page', 'duplicate', 'action', 'clone_up', 'clone_down', 'merge_up'}
 
 ugui.standard_styler.draw_icon = function(rectangle, color, visual_state, key)
+    local postfix = Drawing.IsLightMode() and '' or '_light'
     for _, icon in ipairs(custom_icons) do
         if key == icon then
-            BreitbandGraphics.draw_image(rectangle, nil, views_path .. 'SemanticWorkflow/Resources/' .. key .. '.png', color, 'linear')
+            BreitbandGraphics.draw_image(rectangle, nil, views_path .. 'SemanticWorkflow/Resources/' .. key .. postfix .. '.png', color, 'linear')
             return
         end
     end

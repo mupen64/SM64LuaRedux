@@ -13,22 +13,29 @@ local __impl = __impl
 ---@type Section
 local Section = dofile(views_path .. 'SemanticWorkflow/Definitions/Section.lua')
 
+local function playback_speed_mode()
+    return Settings.semantic_workflow.fast_foward and Mupen.CoreSpeedMode.UltraFastForward or Mupen.CoreSpeedMode.Normal
+end
+
 function __impl.new(name, create_savestate)
     local global_timer = Memory.current.mario_global_timer
 
     local new_instance = {
         version = SEMANTIC_WORKFLOW_FILE_VERSION,
-        preview_frame = { section_index = 1, frame_index = 1 },
-        active_frame = { section_index = 1, frame_index = 1 },
-        sections = { Section.new(0x0C400201, Settings.semantic_workflow.default_section_timeout) }, -- end action is "idle"
+        preview_input = { section_index = 1, input_index = 1 },
+        active_input = { section_index = 1, input_index = 1 },
+        sections = { Section.new('Start') }, -- TODO: consider localizing this name
         name = name,
         busy = false,
+        measured_section_lengths = {},
         _savestate = nil,
         _base_sheet = nil,
         _invalidated = true,
         _rebasing = false,
         _section_index = 1,
-        _frame_counter = 1,
+        _input_index = 1,
+        _frame_counter = 0,
+        _section_frame_counter = 0,
         evaluate_frame = __impl.evaluate_frame,
         run_to_preview = __impl.run_to_preview,
         rebase = __impl.rebase,
@@ -52,24 +59,34 @@ function __impl:evaluate_frame()
     local section = self.sections[self._section_index]
     if section == nil then return nil end
 
+    local input = section.inputs[self._input_index]
+
     local current_action = Memory.current.mario_action
-    if self._frame_counter >= section.timeout or current_action == section.end_action then
-        self._section_index = self._section_index + 1
+    if (input.timeout and self._frame_counter >= input.timeout)
+        or current_action == input.end_action
+    then
+        self._input_index = self._input_index + 1
         self._frame_counter = 0
+        if #section.inputs < self._input_index then
+            self.measured_section_lengths[section] = self._section_frame_counter
+            self._section_frame_counter = 0
+            self._section_index = self._section_index + 1
+            self._input_index = 1
+        end
     end
-    if self._section_index > self.preview_frame.section_index
-        or (self._section_index == self.preview_frame.section_index
-            and self.preview_frame.frame_index
-            and self._frame_counter >= self.preview_frame.frame_index - 1
+    if self._section_index > self.preview_input.section_index
+        or (self._section_index == self.preview_input.section_index
+            and self.preview_input.input_index
+            and self._input_index >= self.preview_input.input_index
         ) then
-        if self._on_preview_frame_reached == nil then
+        if self._on_preview_input_reached == nil then
             -- we've reached the end, pause emulation
             emu.pause(false)
-            emu.set_ff(false)
+            emu.set_speed_mode(Mupen.CoreSpeedMode.Normal)
         else
             -- continue with the next sheet
-            local invocation = self._on_preview_frame_reached
-            self._on_preview_frame_reached = nil
+            local invocation = self._on_preview_input_reached
+            self._on_preview_input_reached = nil
 
             ---@diagnostic disable-next-line: need-check-nil -- trivially not nil here
             invocation()
@@ -78,8 +95,9 @@ function __impl:evaluate_frame()
     end
 
     self._frame_counter = self._frame_counter + 1
+    self._section_frame_counter = self._section_frame_counter + 1
     section = self.sections[self._section_index]
-    return section and section.inputs[math.min(self._frame_counter, #section.inputs)] or nil
+    return section and section.inputs[math.min(self._input_index, #section.inputs)] or nil
 end
 
 ---@param sheet Sheet
@@ -87,15 +105,20 @@ end
 local function run_to_preview_internal(sheet, from_base)
     sheet.busy = true
 
+    sheet._section_index = 1
+    sheet._input_index = 1
+    sheet._frame_counter = 0
+    sheet._section_frame_counter = 0
+
     if from_base == nil or from_base then
         if sheet._base_sheet ~= nil then
             if sheet._savestate == nil or sheet._base_sheet:invalidated() then
                 -- Run the sheet without loading a savestate because it's a continuation of its base sheet
-                sheet._base_sheet._on_preview_frame_reached = function()
+                sheet._base_sheet._on_preview_input_reached = function()
                     sheet._base_sheet._invalidated = false
                     savestate.do_memory('', 'save', function(result, data) sheet._savestate = data end)
                     sheet._section_index = 1
-                    sheet._frame_counter = 1
+                    sheet._frame_counter = 0
                 end
                 run_to_preview_internal(sheet._base_sheet, from_base)
                 return
@@ -105,16 +128,13 @@ local function run_to_preview_internal(sheet, from_base)
         -- Run the sheet from its savestate, which is either its dedicated savestate or the valid "cache" for where its base sheet ends up
         savestate.do_memory(sheet._savestate, 'load', function()
             emu.pause(true)
-            emu.set_ff(Settings.semantic_workflow.fast_foward)
+        emu.set_speed_mode(playback_speed_mode())
         end)
     else
         -- Run the sheet without loading a savestate because the user decided to ignore the dedicated savestate
         emu.pause(true)
-        emu.set_ff(Settings.semantic_workflow.fast_foward)
+        emu.set_speed_mode(playback_speed_mode())
     end
-
-    sheet._section_index = 1
-    sheet._frame_counter = 1
 end
 
 function __impl:invalidated()
@@ -139,8 +159,8 @@ function __impl:save(file)
             version = self.version,
             sections = self.sections,
             name = self.name,
-            active_frame = self.active_frame,
-            preview_frame = self.preview_frame,
+            active_input = self.active_input,
+            preview_input = self.preview_input,
         })
     )
 end
@@ -152,6 +172,35 @@ function __impl:load(file, load_state)
             self._savestate = ReadAll(file .. '.savestate')
         end
         CloneInto(self, contents)
+
+        -- convert sheets pre 2.0.0
+        if contents.version:match("^%s*[vV]?(%d+)") == '1' then
+            self._frame_counter = self._frame_counter or 0
+            self._section_frame_counter = self._section_frame_counter or 0
+            self._input_index = self._input_index or 1
+            self.active_input = contents.active_frame and {
+                input_index = contents.active_frame.frame_index,
+                section_index = contents.active_frame.section_index
+            } or self.active_input
+            self.preview_input = contents.preview_frame and {
+                input_index = contents.preview_frame.frame_index,
+                section_index = contents.preview_frame.section_index
+            } or self.preview_input
+
+            for _, section in pairs(self.sections) do
+                ---@diagnostic disable: undefined-field
+                if section.end_action or section.timeout then
+                    for _, input in pairs(section.inputs) do
+                        input.timeout = input.timeout or 1
+                        input.end_action = section.end_action
+                    end
+                    if section.timeout then
+                    section.inputs[#section.inputs].timeout = section.timeout - #section.inputs + 1
+                    end
+                end
+            ---@diagnostic enable: undefined-field
+            end
+        end
     end
 end
 

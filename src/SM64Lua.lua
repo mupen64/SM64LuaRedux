@@ -112,11 +112,6 @@ local UID = UIDProvider.allocate_once('SM64Lua', function(enum_next)
     }
 end)
 
----Defers a callback to be executed at the end of the current `atdrawd2d` call.
-function defer(fn)
-    table.insert(defer_queue, fn)
-end
-
 local function execute_defer_queue()
     for i = 1, #defer_queue, 1 do
         defer_queue[i]()

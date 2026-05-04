@@ -8,6 +8,7 @@
 
 emu = {}
 memory = {}
+debugger = {}
 wgui = {}
 d2d = {}
 input = {}
@@ -21,7 +22,7 @@ action = {}
 clipboard = {}
 
 Mupen = {
-    _VERSION = '1.3.0-19',
+    _VERSION = '1.3.0-20',
     _URL = 'https://github.com/mupen64/mupen64-rr-lua',
     _DESCRIPTION = 'Mupen64 Lua Scripting API',
     _LICENSE = 'GPL-2',
@@ -29,79 +30,134 @@ Mupen = {
     ---@enum Result
     ---An enum containing results that can be returned by the core.
     result = {
+        -- Generic
+        -- ==========================================
+
         -- The operation completed successfully
         res_ok = 0,
 
         -- The operation was cancelled by the user
         res_cancelled = 1,
 
+        -- VCR
+        -- ==========================================
+
         -- The provided data has an invalid format
         vcr_invalid_format = 2,
+
         -- The provided file is inaccessible or does not exist
         vcr_bad_file = 3,
+
         -- The cheat data couldn't be written to disk
         vcr_cheat_write_failed = 4,
+
         -- The controller configuration is invalid
         vcr_invalid_controllers = 5,
+
         -- The movie's savestate is missing or invalid
         vcr_invalid_savestate = 6,
+
         -- The resulting frame is outside the bounds of the movie
         vcr_invalid_frame = 7,
+
         -- There is no rom which matches this movie
         vcr_no_matching_rom = 8,
+
         -- The VCR engine is idle, but must be active to complete this operation
         vcr_idle = 9,
+
         -- The provided freeze buffer is not from the currently active movie
         vcr_not_from_this_movie = 10,
+
         -- The movie's version is invalid
         vcr_invalid_version = 11,
+
         -- The movie's extended version is invalid
         vcr_invalid_extended_version = 12,
+
         -- The operation requires a playback or recording task
         vcr_needs_playback_or_recording = 13,
-        -- The provided start type is invalid.
-        vcr_invalid_start_type = 14,
+
+        -- The operation requires a playback task
+        vcr_needs_playback = 14,
+
+        -- The provided start type is invalid
+        vcr_invalid_start_type = 15,
+
         -- Another warp modify operation is already running
-        vcr_warp_modify_already_running = 15,
+        vcr_warp_modify_already_running = 16,
+
         -- Warp modifications can only be performed during recording
-        vcr_warp_modify_needs_recording_task = 16,
+        vcr_warp_modify_needs_recording_task = 17,
+
         -- The provided input buffer is empty
-        vcr_warp_modify_empty_input_buffer = 17,
+        vcr_warp_modify_empty_input_buffer = 18,
+
         -- Another seek operation is already running
-        vcr_seek_already_running = 18,
+        vcr_seek_already_running = 19,
+
         -- The seek operation could not be initiated due to a savestate not being loaded successfully
-        vcr_seek_savestate_load_failed = 19,
+        vcr_seek_savestate_load_failed = 20,
+
         -- The seek operation can't be initiated because the seek savestate interval is 0
-        vcr_seek_savestate_interval_zero = 20,
+        vcr_seek_savestate_interval_zero = 21,
+
+        -- The seek string is malformed
+        vcr_seek_string_malformed = 22,
+
+        -- VR
+        -- ==========================================
 
         -- Couldn't find a rom matching the provided movie
-        vr_no_matching_rom = 21,
+        vr_no_matching_rom = 23,
+
         -- An error occured during plugin loading
-        vr_plugin_error = 22,
+        vr_plugin_error = 24,
+
         -- The ROM or alternative rom source is invalid
-        vr_rom_invalid = 23,
+        vr_rom_invalid = 25,
+
         -- The emulator isn't running yet
-        vr_not_running = 24,
+        vr_not_running = 26,
+
         -- Failed to open core streams
-        vr_file_open_failed = 25,
+        vr_file_open_failed = 27,
+
+        -- Savestates
+        -- ==========================================
 
         -- The core isn't launched
-        st_core_not_launched = 26,
+        st_core_not_launched = 28,
+
         -- The savestate file wasn't found
-        st_not_found = 27,
+        st_not_found = 29,
+
         -- The savestate couldn't be written to disk
-        st_file_write_error = 28,
+        st_file_write_error = 30,
+
         -- Couldn't decompress the savestate
-        st_decompression_error = 29,
+        st_decompression_error = 31,
+
         -- The event queue was too long
-        st_event_queue_too_long = 30,
+        st_event_queue_too_long = 32,
+
         -- The CPU registers contained invalid values
-        st_invalid_registers = 31,
+        st_invalid_registers = 33,
+
+        -- Plugins
+        -- ==========================================
 
         -- The plugin library couldn't be loaded
-        pl_load_library_failed = 32,
+        pl_load_library_failed = 34,
+
         -- The plugin doesn't export a GetDllInfo function
-        pl_no_get_dll_info = 33,
+        pl_no_get_dll_info = 35,
+
+        -- Init
+        -- ==========================================
+
+        -- The core params are missing a critical component.
+        in_missing_component = 36,
     },
 
     ---@alias VKeycode integer
@@ -329,6 +385,21 @@ Mupen = {
         VK_OEM_CLEAR = 0xFE, -- Clear key
     },
 
+    ---The speed mode of the core.
+    ---@enum CoreSpeedMode
+    CoreSpeedMode = {
+        -- Normal speed mode. The speed cap is affected by the FPS modifier.
+        Normal = 0,
+
+        -- Fast forward speed mode. The speed cap is not affected by the FPS modifier.
+        FastForward = 1,
+
+        -- Ultra fast forward speed mode. The speed cap is not affected by the FPS modifier.
+        -- Achieves maximum performance by unconditionally skipping invalidation, RSP, and potentially other miscellaneous
+        -- steps.
+        -- May affect video or audio fidelity.
+        UltraFastForward = 2,
+    }
 }
 
 ---The `lua_tostring` c function converts numbers to strings, so numbers are
@@ -344,6 +415,10 @@ Mupen = {
 ---@field pressed boolean? Whether the key was pressed or released, if the event is a key event.
 ---@field text string? The typed character, if the event is a char event and the key corresponds to a character.
 ---@field repeat boolean Whether the event is a repeat event (i.e. the key is being held down and this event is firing multiple times).
+
+---@class CPUState
+---@field opcode integer
+---@field address integer
 
 -- Global Functions
 --#region
@@ -547,13 +622,13 @@ function emu.getpause() end
 ---@return integer speed_limit The current speed limit of the emulator.
 function emu.getspeed() end
 
----Gets whether fast forward is active.
----@return boolean
-function emu.get_ff() end
+---Gets the speed mode.
+---@return CoreSpeedMode
+function emu.get_speed_mode() end
 
----Sets whether fast forward is active.
----@param fast_forward boolean
-function emu.set_ff(fast_forward) end
+---Sets the speed mode.
+---@param mode CoreSpeedMode The speed mode to set.
+function emu.set_speed_mode(mode) end
 
 ---Sets the speed limit of the emulator.
 ---@param speed_limit integer The new speed limit of the emulator.
@@ -765,6 +840,33 @@ function memory.recompile(addr) end
 
 ---Queues up a recompilation of all blocks.
 function memory.recompilenextall() end
+
+--#endregion
+
+
+-- debugger functions
+--#region
+
+---@alias BreakpointId integer
+
+---@alias BreakpointCallback fun(state: CPUState): nil
+
+---Places a breakpoint at the specified address.
+---The emulated processor won't pause when it reaches this address.
+---This function can only be called outside a breakpoint callback.
+---@param address integer The address to place the breakpoint at.
+---@param callback BreakpointCallback The callback function to call when the breakpoint is hit.
+---@return BreakpointId
+function debugger.add_breakpoint(address, callback) end
+
+---Removes a breakpoint.
+---@param id BreakpointId The ID of the breakpoint to remove.
+function debugger.remove_breakpoint(id) end
+
+---Disassembles an instruction based on a CPU state.
+---@param state CPUState The CPU state to disassemble an instruction from.
+---@return string The disassembled instruction.
+function debugger.disassemble(state) end
 
 --#endregion
 
@@ -995,6 +1097,25 @@ function wgui.resetclip() end
 
 ---@alias brush integer
 
+---@class D2DColor
+---@field r number The red component of the color in the range [0, 1].
+---@field g number The green component of the color in the range [0, 1].
+---@field b number The blue component of the color in the range [0, 1].
+---@field a number The alpha component of the color in the range [0, 1].
+
+---@class D2DDrawImageParams
+---@field identifier integer The identifier of the image to draw, as returned by [d2d.load_image](lua://d2d.load_image).
+---@field destx1 integer The x-coordinate of the top-left corner of the destination rectangle.
+---@field desty1 integer The y-coordinate of the top-left corner of the destination rectangle.
+---@field destx2 integer? The x-coordinate of the bottom-right corner of the destination rectangle. If `nil`, `destx1` plus the natural width of the image is assumed.
+---@field desty2 integer? The y-coordinate of the bottom-right corner of the destination rectangle. If `nil`, `desty1` plus the natural height of the image is assumed.
+---@field srcx1 integer? The x-coordinate of the top-left corner of the source rectangle. If `nil`, `0` is assumed.
+---@field srcy1 integer? The y-coordinate of the top-left corner of the source rectangle. If `nil`, `0` is assumed.
+---@field srcx2 integer? The x-coordinate of the bottom-right corner of the source rectangle. If `nil`, `srcx1` plus the natural width of the image is assumed.
+---@field srcy2 integer? The y-coordinate of the bottom-right corner of the source rectangle. If `nil`, `srcy1` plus the natural height of the image is assumed.
+---@field color D2DColor? The color to tint the image with. The RGB components are treated as multipliers, and the alpha component is treated as the opacity. If `nil`, the image is drawn without tinting.
+---@field interpolation integer? The interpolation mode to use. 0: nearest neighbor, 1|nil: linear.
+
 ---Gets the target frequency of the `emu.atdrawd2d` and `emu.atupdatescreen` callbacks in FPS.
 ---@return number? # The target FPS, or nil.
 function d2d.get_target_fps() end
@@ -1150,22 +1271,9 @@ function d2d.load_image(path) end
 ---@return nil
 function d2d.free_image(identifier) end
 
----Draws an image by taking the pixels in the source rectangle of the image, and drawing them to the destination rectangle on the screen.
----@param destx1 integer
----@param desty1 integer
----@param destx2 integer
----@param desty2 integer
----@param srcx1 integer
----@param srcy1 integer
----@param srcx2 integer
----@param srcy2 integer
----@param opacity number
----@param interpolation integer 0: nearest neighbor, 1: linear, -1: don't use.
----@param identifier number
----@return nil
-function d2d.draw_image(destx1, desty1, destx2, desty2, srcx1, srcy1, srcx2,
-                        srcy2, opacity, interpolation, identifier)
-end
+---Draws an image with the specified parameters.
+---@param params D2DDrawImageParams The draw parameters.
+function d2d.draw_image2(params) end
 
 ---Returns the width and height of the image at `identifier`.
 ---@nodiscard
