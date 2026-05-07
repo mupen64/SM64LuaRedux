@@ -91,6 +91,9 @@ Notifications = dofile(views_path .. 'Notifications.lua')
 ugui_environment = {}
 local mouse_wheel = 0
 
+-- Track the last time a frame was painted for manual fast-forward throttling
+local last_paint_time = os.clock()
+
 -- Flag keeping track of whether atinput has fired for one time
 local first_input = true
 
@@ -267,7 +270,16 @@ local function draw_navbar()
 end
 
 local function atdrawd2d()
-    d2d.set_target_fps(emu.get_ff() and Settings.ff_fps or nil)
+    -- TODO: Replace time-based throttling with selective rendering.
+    -- FramePerfection's feedback: render only specific frames (last in semantic
+    -- workflow, bruteforce improvements) rather than skipping arbitrary frames
+    -- by timer. This workaround avoids the freeze on Mupen64 beta 1.4.0.
+    if emu.get_ff() then
+        if os.clock() - last_paint_time < 1 / Settings.ff_fps then
+            return
+        end
+        last_paint_time = os.clock()
+    end
 
     if d2d and d2d.clear then
         d2d.clear(0, 0, 0, 0)
