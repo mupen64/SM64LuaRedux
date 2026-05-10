@@ -750,14 +750,12 @@ end
 --   4. If the chosen input still has a component in the deadzone (zeroed out
 --      by the game), try boundary values (±8) to find a better option.
 --
--- NOTE / BUG AREA:
---   The game's deadzone zeros a component when |val| <= 6.
---   The `effectiveAngle` helper below (and the zeroed_x/zeroed_y checks) use
---   |val| < 8 as the deadzone boundary instead. This inconsistency means
---   inputs with |val| == 7 are treated as deadzone by this code but NOT by
---   the game, and inputs with |val| == 7 that happen to be the best option
---   may be incorrectly discarded or handled. This is likely related to the
---   .99 strain → .00 bug (issue #36).
+-- NOTE on deadzone threshold:
+--   The SM64 decomp (src/game/game_init.c, adjust_analog_stick) shows that the
+--   game zeros a component when |val| < 8 (i.e. |val| <= 7). For |val| >= 8
+--   the game subtracts 6 and uses the remainder. All checks below (get_magnitude_for_stick,
+--   zeroed_x/zeroed_y, and the non-deadzone preference) use the same |val| < 8
+--   boundary, so they are consistent with the engine behaviour.
 
 Engine.scaleInputsForMagnitude = function(result, goal_mag, use_high_mag)
 	-- Full-magnitude inputs: no adjustment needed
