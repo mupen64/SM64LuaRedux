@@ -123,6 +123,30 @@ local function controls_for_end_action(input, draw, column, top)
     end
 end
 
+---@param section Section
+---@param own_index integer
+---@param new_target integer
+---@return boolean
+local function is_loop_target_valid(section, own_index, new_target)
+    for other_index, other_input in ipairs(section.inputs) do
+        if other_index ~= own_index and other_input.loop then
+            local other_target = other_input.loop.jump_target
+            if other_target then
+                local a, b = new_target, own_index
+                local c, d = other_target, other_index
+                -- Nested: one strictly inside the other
+                local nested = (a < c and d < b) or (c < a and b < d)
+                -- Interlaced: overlapping but neither nested nor touching
+                local interlaced = (a < c and c < b and b < d) or (c < a and a < d and d < b)
+                if nested or interlaced then
+                    return false
+                end
+            end
+        end
+    end
+    return true
+end
+
 ---@param input SectionInputs
 ---@return boolean any_changes
 local function controls_for_loop(input, draw, column, top)
@@ -170,16 +194,19 @@ local function controls_for_loop(input, draw, column, top)
             InputListGui.special_select_handler = function(selection)
                 local sheet = SemanticWorkflowProject:asserted_current()
                 local current_section_index = nil
+                local current_section = nil
                 local own_index = nil
                 for s_idx, section in ipairs(sheet.sections) do
                     own_index = IndexOf(section.inputs, input)
                     if own_index then
                         current_section_index = s_idx
+                        current_section = section
                         break
                     end
                 end
                 if current_section_index ~= selection.section_index then return end
                 if own_index >= selection.input_index then
+                    if not is_loop_target_valid(current_section, own_index, selection.input_index) then return end
                     input.loop.jump_target = selection.input_index
                     InputListGui.special_select_handler = nil
                     sheet:run_to_preview()
