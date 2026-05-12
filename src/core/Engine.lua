@@ -830,10 +830,10 @@ Engine.scaleInputsForMagnitude = function(result, goal_mag, use_high_mag)
 					closest_x, closest_y = x, y
 				end
 				-- Track best non-deadzone result separately.
-				-- NOTE: uses |val| >= 8, but game deadzone is |val| <= 6.
-				--       Values with |val| == 7 are counted as "non-zero" here
-				--       but ARE outside the game deadzone, so this is actually
-				--       slightly conservative (safe), not a bug in this check.
+				-- NOTE: uses |val| >= 8, which matches the game deadzone |val| <= 7.
+				--       Values with |val| == 7 are correctly counted as "non-zero" here
+				--       because the game deadzones |val| <= 7, so |val| == 7 IS zeroed.
+				--       This check is therefore accurate, not a bug.
 
 				if (math.abs(x) >= 8 or math.abs(y) >= 8) and this_err > best_nonzero_err then
 					best_nonzero_err = this_err
@@ -852,7 +852,7 @@ Engine.scaleInputsForMagnitude = function(result, goal_mag, use_high_mag)
 	closest_y = clamp(-127, closest_y, 127)
 
 	-- Step 3: Zero out any component that falls in the Lua-side deadzone threshold.
-	-- NOTE: uses |val| < 8. Game uses |val| <= 6. See bug note at top of function.
+	-- NOTE: uses |val| < 8. Game uses |val| <= 7. See deadzone note at top of function.
 	local zeroed_x = math.abs(closest_x) < 8
 	local zeroed_y = math.abs(closest_y) < 8
 	if zeroed_x then closest_x = 0 end
