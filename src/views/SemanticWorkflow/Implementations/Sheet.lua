@@ -1,3 +1,4 @@
+ 
 --
 -- Copyright (c) 2025, Mupen64 maintainers.
 --
@@ -12,28 +13,6 @@ local __impl = __impl
 
 ---@type Section
 local Section = dofile(views_path .. 'SemanticWorkflow/Definitions/Section.lua')
-
----@param section Section
----@param own_index integer
----@param new_target integer
----@return boolean
-local function is_loop_valid(section, own_index, new_target)
-    for other_index, other_input in ipairs(section.inputs) do
-        if other_index ~= own_index and other_input.loop then
-            local other_target = other_input.loop.jump_target
-            if other_target then
-                local a, b = new_target, own_index
-                local c, d = other_target, other_index
-                local nested = (a < c and d < b) or (c < a and b < d)
-                local interlaced = (a < c and c < b and b < d) or (c < a and a < d and d < b)
-                if nested or interlaced then
-                    return false
-                end
-            end
-        end
-    end
-    return true
-end
 
 local function playback_speed_mode()
     return Settings.semantic_workflow.fast_foward and Mupen.CoreSpeedMode.UltraFastForward or Mupen.CoreSpeedMode.Normal
@@ -103,7 +82,6 @@ function __impl:evaluate_frame()
             if target_index == nil or target_index < 1 or target_index > #section.inputs
                 or target_index > self._input_index
                 or (loop.count ~= 0 and runtime_counter >= loop.count)
-                or not is_loop_valid(section, self._input_index, target_index)
             then
                 self._input_index = self._input_index + 1
                 if #section.inputs < self._input_index then
@@ -282,3 +260,4 @@ function __impl:set_base_sheet(sheet)
     self._base_sheet = sheet
     self._savestate = nil
 end
+

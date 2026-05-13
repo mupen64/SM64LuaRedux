@@ -1,3 +1,4 @@
+ 
 --
 -- Copyright (c) 2025, Mupen64 maintainers.
 --
@@ -132,13 +133,9 @@ local function is_loop_target_valid(section, own_index, new_target)
         if other_index ~= own_index and other_input.loop then
             local other_target = other_input.loop.jump_target
             if other_target then
-                local a, b = new_target, own_index
-                local c, d = other_target, other_index
-                -- Nested: one strictly inside the other
-                local nested = (a < c and d < b) or (c < a and b < d)
-                -- Interlaced: overlapping but neither nested nor touching
-                local interlaced = (a < c and c < b and b < d) or (c < a and a < d and d < b)
-                if nested or interlaced then
+                -- Overlap check covers nested, interlaced, and more edge cases
+                local overlaps = (new_target <= other_index) and (other_target <= own_index)
+                if overlaps then
                     return false
                 end
             end
@@ -576,3 +573,4 @@ function __impl.render(draw)
         draw_funcs[InputListGui.view_index](draw, edited_input)
     end
 end
+
