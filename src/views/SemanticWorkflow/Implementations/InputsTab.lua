@@ -152,6 +152,7 @@ local function controls_for_loop(input, draw, column, top)
         uid = UID.LoopToggle,
         rectangle = grid_rect(column, top, Gui.MEDIUM_CONTROL_HEIGHT, Gui.MEDIUM_CONTROL_HEIGHT),
         text = "[icon:loop]",
+        tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_LOOP_ENABLED_TOOL_TIP"),
         is_checked = had_loop,
         styler_mixin = { icon_size = 14 },
     })
@@ -178,6 +179,7 @@ local function controls_for_loop(input, draw, column, top)
             rectangle = grid_rect(column + 1, top, 2, Gui.MEDIUM_CONTROL_HEIGHT),
             places = 2,
             value = input.loop.count,
+            tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_LOOP_COUNT_TOOL_TIP"),
         })
         any_changes = any_changes or old_count ~= input.loop.count
 

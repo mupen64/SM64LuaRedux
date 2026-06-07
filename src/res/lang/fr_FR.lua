@@ -120,6 +120,8 @@ Cette action est irréversible.
     SEMANTIC_WORKFLOW_INPUTS_END_ACTION_TYPE_TO_SEARCH_TOOL_TIP = 'Taper pour filtrer les actions',
     SEMANTIC_WORKFLOW_INPUTS_LOOP_TARGET = 'Cible',
     SEMANTIC_WORKFLOW_INPUTS_LOOP_TARGET_TOOL_TIP = 'Cliquer un input pour le définir comme cible du saut de loop',
+    SEMANTIC_WORKFLOW_INPUTS_LOOP_ENABLED_TOOL_TIP = 'Boucler à partir d’ici',
+    SEMANTIC_WORKFLOW_INPUTS_LOOP_COUNT_TOOL_TIP = 'Nombre d’itérations de la boucle',
     SEMANTIC_WORKFLOW_PREFERENCES_EDIT_ENTIRE_STATE = 'Modifier l\'état entier',
     SEMANTIC_WORKFLOW_PREFERENCES_FAST_FORWARD = 'Avance rapide',
     SEMANTIC_WORKFLOW_PREFERENCES_DEFAULT_SECTION_TIMEOUT = 'Délai de section par défaut :',
