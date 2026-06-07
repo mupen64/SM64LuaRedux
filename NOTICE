@@ -1,0 +1,11 @@
+Third-Party Assets
+==================
+
+The following assets are licensed under the Apache License, Version 2.0:
+
+- src/views/SemanticWorkflow/Resources/loop.png
+- src/views/SemanticWorkflow/Resources/loop_light.png
+
+  Source: Google Material Symbols — "cycle" icon
+  URL: https://fonts.google.com/icons?selected=Material+Symbols+Outlined:cycle
+  License: Apache-2.0

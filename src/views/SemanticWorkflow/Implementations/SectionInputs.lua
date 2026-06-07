@@ -4,19 +4,19 @@
 -- SPDX-License-Identifier: GPL-2.0-or-later
 --
 
----@type Section
+---@type SectionInputs
 ---@diagnostic disable-next-line:assign-type-mismatch
 local __impl = __impl
 
----@type SectionInputs
-local SectionInputs = dofile(views_path .. 'SemanticWorkflow/Definitions/SectionInputs.lua')
-
-function __impl.new(name)
+function __impl.new()
     local tmp = {}
     CloneInto(tmp, Joypad.input)
+    ---@type SectionInputs
     return {
-        inputs = { SectionInputs.new() },
-        collapsed = false,
-        name = name
+        tas_state = NewTASState(),
+        joy = tmp,
+        timeout = 1,
+        end_action = 0,
+        editing = false,
     }
 end

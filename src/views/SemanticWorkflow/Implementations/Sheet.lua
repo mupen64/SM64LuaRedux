@@ -1,3 +1,4 @@
+ 
 --
 -- Copyright (c) 2025, Mupen64 maintainers.
 --
@@ -65,13 +66,34 @@ function __impl:evaluate_frame()
     if (input.timeout and self._frame_counter >= input.timeout)
         or current_action == input.end_action
     then
-        self._input_index = self._input_index + 1
         self._frame_counter = 0
-        if #section.inputs < self._input_index then
-            self.measured_section_lengths[section] = self._section_frame_counter
-            self._section_frame_counter = 0
-            self._section_index = self._section_index + 1
-            self._input_index = 1
+        local loop = input.loop
+        if loop == nil then
+            self._input_index = self._input_index + 1
+            if #section.inputs < self._input_index then
+                self.measured_section_lengths[section] = self._section_frame_counter
+                self._section_frame_counter = 0
+                self._section_index = self._section_index + 1
+                self._input_index = 1
+            end
+        else
+            local target_index = loop.jump_target
+            local runtime_counter = loop.runtime_counter or 0
+            if target_index == nil or target_index < 1 or target_index > #section.inputs
+                or target_index > self._input_index
+                or (loop.count ~= 0 and runtime_counter >= loop.count)
+            then
+                self._input_index = self._input_index + 1
+                if #section.inputs < self._input_index then
+                    self.measured_section_lengths[section] = self._section_frame_counter
+                    self._section_frame_counter = 0
+                    self._section_index = self._section_index + 1
+                    self._input_index = 1
+                end
+            else
+                loop.runtime_counter = runtime_counter + 1
+                self._input_index = target_index
+            end
         end
     end
     if self._section_index > self.preview_input.section_index
@@ -101,14 +123,27 @@ function __impl:evaluate_frame()
 end
 
 ---@param sheet Sheet
----@param from_base boolean | nil
-local function run_to_preview_internal(sheet, from_base)
-    sheet.busy = true
-
+local function reset_counters(sheet)
     sheet._section_index = 1
     sheet._input_index = 1
     sheet._frame_counter = 0
     sheet._section_frame_counter = 0
+
+    -- reset loop counters
+    for _, section in pairs(sheet.sections) do
+        for _, input in pairs(section.inputs) do
+            if input.loop then
+                input.loop.runtime_counter = 0
+            end
+        end
+    end
+end
+
+---@param sheet Sheet
+---@param from_base boolean | nil
+local function run_to_preview_internal(sheet, from_base)
+    sheet.busy = true
+    reset_counters(sheet)
 
     if from_base == nil or from_base then
         if sheet._base_sheet ~= nil then
@@ -173,6 +208,15 @@ function __impl:load(file, load_state)
         end
         CloneInto(self, contents)
 
+        -- ensure loop runtime_counters are initialized after load
+        for _, section in pairs(self.sections) do
+            for _, input in pairs(section.inputs) do
+                if input.loop and input.loop.runtime_counter == nil then
+                    input.loop.runtime_counter = 0
+                end
+            end
+        end
+
         -- convert sheets pre 2.0.0
         if contents.version:match("^%s*[vV]?(%d+)") == '1' then
             self._frame_counter = self._frame_counter or 0
@@ -216,3 +260,4 @@ function __impl:set_base_sheet(sheet)
     self._base_sheet = sheet
     self._savestate = nil
 end
+
