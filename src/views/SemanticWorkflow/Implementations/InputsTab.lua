@@ -1,3 +1,4 @@
+
 --
 -- Copyright (c) 2025, Mupen64 maintainers.
 --
@@ -65,6 +66,9 @@ local UID = UIDProvider.allocate_once('InputsTab', function(enum_next)
         EndAction = enum_next(),
         EndActionTextbox = enum_next(),
         AvailableActions = enum_next(MAX_ACTION_GUESSES),
+        LoopToggle = enum_next(),
+        LoopSelectTarget = enum_next(),
+        LoopCount = enum_next(),
     }
 end)
 
@@ -120,6 +124,98 @@ local function controls_for_end_action(input, draw, column, top)
     end
 end
 
+---@param section Section
+---@param own_index integer
+---@param new_target integer
+---@return boolean
+local function is_loop_target_valid(section, own_index, new_target)
+    for other_index, other_input in ipairs(section.inputs) do
+        if other_index ~= own_index and other_input.loop then
+            local other_target = other_input.loop.jump_target
+            if other_target then
+                local overlaps = (new_target <= other_index) and (other_target <= own_index)
+                if overlaps then
+                     return false
+                end
+            end
+        end
+    end
+    return true
+end
+
+---@param input SectionInputs
+---@return boolean any_changes
+local function controls_for_loop(input, draw, column, top)
+    local any_changes = false
+    local had_loop = input.loop ~= nil
+    local has_loop = ugui.toggle_button({
+        uid = UID.LoopToggle,
+        rectangle = grid_rect(column, top, Gui.MEDIUM_CONTROL_HEIGHT, Gui.MEDIUM_CONTROL_HEIGHT),
+        text = "[icon:loop]",
+        tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_LOOP_ENABLED_TOOL_TIP"),
+        is_checked = had_loop,
+        styler_mixin = { icon_size = 14 },
+    })
+    if not has_loop then
+        input.loop = nil
+    elseif input.loop == nil then
+        local own_index = nil
+        for _, section in ipairs(SemanticWorkflowProject:asserted_current().sections) do
+            own_index = IndexOf(section.inputs, input)
+            if own_index then break end
+        end
+        input.loop = {
+            count = 1,
+            jump_target = own_index or 1,
+            runtime_counter = 0,
+        }
+    end
+    any_changes = any_changes or (had_loop ~= (input.loop ~= nil))
+
+    if input.loop then
+        local old_count = input.loop.count
+        input.loop.count = ugui.numberbox({
+            uid = UID.LoopCount,
+            rectangle = grid_rect(column + 1, top, 2, Gui.MEDIUM_CONTROL_HEIGHT),
+            places = 2,
+            value = input.loop.count,
+            tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_LOOP_COUNT_TOOL_TIP"),
+        })
+        any_changes = any_changes or old_count ~= input.loop.count
+
+        if ugui.button({
+            uid = UID.LoopSelectTarget,
+            rectangle = grid_rect(column + 3, top, 3, Gui.MEDIUM_CONTROL_HEIGHT),
+            text = Locales.str("SEMANTIC_WORKFLOW_INPUTS_LOOP_TARGET"),
+            tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_LOOP_TARGET_TOOL_TIP"),
+        }) then
+            InputListGui.special_select_handler = function(selection)
+                local sheet = SemanticWorkflowProject:asserted_current()
+                local current_section_index = nil
+                local current_section = nil
+                local own_index = nil
+                for s_idx, section in ipairs(sheet.sections) do
+                    own_index = IndexOf(section.inputs, input)
+                    if own_index then
+                        current_section_index = s_idx
+                        current_section = section
+                        break
+                    end
+                end
+                if current_section_index ~= selection.section_index then return end
+                if own_index >= selection.input_index then
+                    if not is_loop_target_valid(current_section, own_index, selection.input_index) then return end
+                    input.loop.jump_target = selection.input_index
+                    InputListGui.special_select_handler = nil
+                    sheet:run_to_preview()
+                end
+            end
+        end
+    end
+
+    return any_changes
+end
+
 local function section_controls_for_selected(draw, edited_input)
     local sheet = SemanticWorkflowProject:asserted_current()
 
@@ -144,6 +240,10 @@ local function section_controls_for_selected(draw, edited_input)
     any_changes = any_changes or old_timeout ~= edited_input.timeout
 
     controls_for_end_action(edited_input, draw, 0, top)
+
+    if end_action_search_text == nil then
+        any_changes = any_changes or controls_for_loop(edited_input, draw, 0, top + 1)
+    end
 
     if any_changes then
         sheet:run_to_preview()
@@ -244,7 +344,6 @@ local function select_atan_end(selection_input)
 end
 
 local function select_atan_start(selection_input)
-    print(selection_input)
     local sheet = SemanticWorkflowProject:asserted_current()
     previous_preview_input = sheet.preview_input
     sheet.preview_input = selection_input
@@ -475,3 +574,4 @@ function __impl.render(draw)
         draw_funcs[InputListGui.view_index](draw, edited_input)
     end
 end
+
