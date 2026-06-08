@@ -346,7 +346,7 @@ ugui.STATIC_ENV = {
 ---@field public added fun(control: Control, data: any)? Notifies about a control being added to a scene.
 ---@field public logic fun(control: Control, data: any): ControlReturnValue Executes control logic.
 ---@field public draw fun(control: Control) Draws the control.
----@field public hittestable fun(control: Control): boolean? A function returning whether a control instance of this type should participate in hit-testing. If `nil`, the instance-level `hittestable` field is used. If both are `nil`, the control is hittestable.
+---@field public hittestable (fun(control: Control): boolean)? A function returning whether a control instance of this type should participate in hit-testing. If `nil`, the instance-level `hittestable` field is used. If both are `nil`, the control is hittestable.
 ---Represents an entry in the control registry.
 
 ---@class Control
