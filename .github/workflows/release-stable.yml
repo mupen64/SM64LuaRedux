@@ -1,0 +1,57 @@
+name: Stable Source Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number (e.g. 1.2.0)"
+        required: true
+        type: string
+
+jobs:
+  stable-release:
+    name: Create Stable Source Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Bundle source code
+        run: |
+          git archive \
+            --format=zip \
+            --output "SM64LuaRedux-${{ inputs.version }}-source.zip" \
+            --prefix "SM64LuaRedux-${{ inputs.version }}/" \
+            HEAD
+
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
+
+      - name: Generate changelog with git-cliff
+        id: changelog
+        run: |
+          git cliff --unreleased --config cliff.toml --output CHANGELOG_DRAFT.md
+          {
+            echo 'body<<EOF'
+            cat CHANGELOG_DRAFT.md
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create draft stable source release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ inputs.version }}
+          name: ${{ inputs.version }}
+          body: ${{ steps.changelog.outputs.body }}
+          prerelease: false
+          draft: true
+          files: SM64LuaRedux-${{ inputs.version }}-source.zip
