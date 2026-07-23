@@ -1,1 +1,0 @@
-*Per-option documentation is available in the Settings tab via tooltips.*
