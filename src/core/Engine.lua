@@ -638,23 +638,6 @@ Engine.inputsForAngle = function(goal, curr_input)
 		end
 	end
 
-	if Engine.get_magnitude_for_stick(Angles.ANGLE[minang].X, Angles.ANGLE[minang].Y) == 0 then
-		for offset = 1, Angles.COUNT do
-			local lo = minang - offset
-			local hi = minang + offset
-			if lo < 1 then lo = lo + Angles.COUNT end
-			if hi > Angles.COUNT then hi = hi - Angles.COUNT end
-			if Engine.get_magnitude_for_stick(Angles.ANGLE[hi].X, Angles.ANGLE[hi].Y) > 0 then
-				minang = hi
-				break
-			end
-			if Engine.get_magnitude_for_stick(Angles.ANGLE[lo].X, Angles.ANGLE[lo].Y) > 0 then
-				minang = lo
-				break
-			end
-		end
-	end
-
 	return {
 		angle = (Angles.ANGLE[minang].angle + Memory.current.camera_angle) % 65536,
 		X = Angles.ANGLE[minang].X,
@@ -713,56 +696,32 @@ local function clamp(min, n, max)
 	if n > max then return max end
 	return n
 end
-local function effectiveAngle(x, y)
-	if math.abs(x) < 8 then
-		x = 0
-	elseif x > 0 then
-		x = x - 6
-	else
-		x = x + 6
-	end
-	if math.abs(y) < 8 then
-		y = 0
-	elseif y > 0 then
-		y = y - 6
-	else
-		y = y + 6
-	end
-	return math.atan2(-y, x)
+-- Applies SM64's deadzone to a raw (x, y): a component with |v| <= 7 becomes 0,
+-- otherwise 6 is subtracted toward zero (matches adjust_analog_stick in the decomp).
+local function eff_vec(x, y)
+	if math.abs(x) < 8 then x = 0 elseif x > 0 then x = x - 6 else x = x + 6 end
+	if math.abs(y) < 8 then y = 0 elseif y > 0 then y = y - 6 else y = y + 6 end
+	return x, y
 end
 
--- Adjusts the joystick X/Y in `result` so that the effective magnitude
--- (after SM64's deadzone) equals goal_mag, while keeping the movement angle
--- as close as possible to the angle already in result.X/Y.
+-- Rewrites result.X/Y so the input, after SM64's deadzone, has magnitude close
+-- to goal_mag AND the same movement direction as the incoming result.X/Y.
 --
--- `use_high_mag`: when true, prefer inputs with higher magnitude even if the
--- angle match is slightly worse (useful for setups where speed matters more
--- than direction precision).
+-- It scores candidates by the squared distance between their effective vector
+-- and the ideal target vector T (length goal_mag, requested direction), so
+-- magnitude and angle are optimised together. Candidates whose raw component
+-- lands in the game's silent-zero band [1,7] are never emitted, and the
+-- effective magnitude is never allowed to exceed goal_mag.
 --
--- Overview of the algorithm:
---   1. Analytically solve for the ideal (x0, y0) that satisfies both
---      get_magnitude_for_stick(x0, y0) == goal_mag  AND
---      atan2(y0, x0) == atan2(start_y, start_x).
---   2. Search a ±32 neighbourhood around (x0, y0) for the integer input that
---      maximises cos(actual_angle - goal_angle), i.e. most aligned to goal.
---      Track separately the best result that is outside the deadzone.
---   3. Prefer the best non-deadzone result over any deadzone result.
---   4. If the chosen input still has a component in the deadzone (zeroed out
---      by the game), try boundary values (±8) to find a better option.
+-- `use_high_mag`: on near-ties, bias toward the higher-magnitude candidate.
 --
--- NOTE on deadzone threshold:
---   The SM64 decomp (src/game/game_init.c, adjust_analog_stick) shows that the
---   game zeros a component when |val| < 8 (i.e. |val| <= 7). For |val| >= 8
---   the game subtracts 6 and uses the remainder. All checks below (get_magnitude_for_stick,
---   zeroed_x/zeroed_y, and the non-deadzone preference) use the same |val| < 8
---   boundary, so they are consistent with the engine behaviour.
-
+-- Deadzone reference (decomp src/game/game_init.c, adjust_analog_stick):
+-- a component with |val| <= 7 is zeroed; for |val| >= 8 the game subtracts 6.
 Engine.scaleInputsForMagnitude = function(result, goal_mag, use_high_mag)
 	-- Full-magnitude inputs: no adjustment needed
 	if goal_mag >= 127 then return end
 
 	local start_x, start_y = result.X, result.Y
-	local current_mag = Engine.get_magnitude_for_stick(start_x, start_y)
 
 	-- Step 1: Analytically compute the starting point (x0, y0) for the search.
 	-- We want: get_magnitude_for_stick(x0, y0) == goal_mag
@@ -802,103 +761,40 @@ Engine.scaleInputsForMagnitude = function(result, goal_mag, use_high_mag)
 	if x0 ~= x0 then x0 = 0 end
 	if y0 ~= y0 then y0 = 0 end
 
-	-- Step 2: Neighbourhood search ±32 around (x0, y0).
-	-- Score each candidate by cos(candidate_angle - goal_angle):
-	--   = 1.0  → perfect angle match
-	--   = 0.0  → 90° off
-	--   = -1.0 → opposite direction
-	-- Separately track the best candidate that is outside the game's deadzone
-	-- (effectiveAngle uses |val| < 8 as the deadzone threshold here).
+	-- Step 2: search a ±32 neighbourhood around the analytic point and keep the
+	-- emission whose EFFECTIVE vector is closest to the ideal target vector T.
+	-- T has length goal_mag and the requested direction, so magnitude AND angle
+	-- are matched jointly instead of trading one for the other. Emissions with a
+	-- component in the silent-zero band [1,7] are never produced, and the
+	-- magnitude is never allowed to exceed goal_mag.
+	local sex, sey = eff_vec(start_x, start_y)
+	local smag = math.sqrt(sex * sex + sey * sey)
+	if smag == 0 then return end -- start already fully in deadzone: nothing to scale
+	local t_ex, t_ey = sex * goal_mag / smag, sey * goal_mag / smag
 
-	local closest_x, closest_y = x0, y0
-	local err = -1
-	local best_nonzero_err = -math.huge
-	local best_nonzero_x, best_nonzero_y = nil, nil
-	local goal_angle = effectiveAngle(start_x, start_y)
-
+	local best_x, best_y = 0, 0
+	local best_score = math.huge
 	for i = -32, 32 do
 		for j = -32, 32 do
-			local x, y = clamp(-127, x0 + i, 127), clamp(-127, y0 + j, 127)
-			local mag = Engine.get_magnitude_for_stick(x, y)
-			-- Only consider inputs that don't exceed the target magnitude
-			if (mag <= goal_mag) and (mag * mag >= err) then
-				local angle = effectiveAngle(x, y)
-				local this_err = math.cos(angle - goal_angle)
-				if (use_high_mag) then this_err = this_err * mag * mag end
-				if this_err > err then
-					err = this_err
-					closest_x, closest_y = x, y
-				end
-				-- Track best non-deadzone result separately.
-				-- NOTE: uses |val| >= 8, which matches the game deadzone |val| <= 7.
-				--       Values with |val| == 7 are correctly counted as "non-zero" here
-				--       because the game deadzones |val| <= 7, so |val| == 7 IS zeroed.
-				--       This check is therefore accurate, not a bug.
-
-				if (math.abs(x) >= 8 or math.abs(y) >= 8) and this_err > best_nonzero_err then
-					best_nonzero_err = this_err
-					best_nonzero_x, best_nonzero_y = x, y
+			local x = clamp(-127, x0 + i, 127)
+			local y = clamp(-127, y0 + j, 127)
+			-- never emit a component the game would silently zero (|v| in [1,7])
+			if not ((math.abs(x) >= 1 and math.abs(x) <= 7) or (math.abs(y) >= 1 and math.abs(y) <= 7)) then
+				local ex, ey = eff_vec(x, y)
+				local mag = math.sqrt(ex * ex + ey * ey)
+				if mag <= goal_mag then
+					local dx, dy = ex - t_ex, ey - t_ey
+					local score = dx * dx + dy * dy
+					-- use_high_mag: tiny bias toward higher magnitude on near-ties
+					if use_high_mag then score = score - mag * 1e-4 end
+					if score < best_score then
+						best_score = score
+						best_x, best_y = x, y
+					end
 				end
 			end
 		end
 	end
 
-	-- Always prefer a non-deadzone result over a deadzone one
-	if best_nonzero_x ~= nil then
-		closest_x, closest_y = best_nonzero_x, best_nonzero_y
-	end
-
-	closest_x = clamp(-127, closest_x, 127)
-	closest_y = clamp(-127, closest_y, 127)
-
-	-- Step 3: Zero out any component that falls in the Lua-side deadzone threshold.
-	-- NOTE: uses |val| < 8. Game uses |val| <= 7. See deadzone note at top of function.
-	local zeroed_x = math.abs(closest_x) < 8
-	local zeroed_y = math.abs(closest_y) < 8
-	if zeroed_x then closest_x = 0 end
-	if zeroed_y then closest_y = 0 end
-
-	-- Step 4: If a component was zeroed, try boundary values ±8 to recover a
-	-- better angle without exceeding goal_mag.
-	-- This handles the case where the ideal point has one axis in the deadzone:
-	-- instead of accepting (0, y) we try (±8, y) which has a small but nonzero
-	-- X contribution and may produce a better angle match.
-	
-	if zeroed_x or zeroed_y then
-		local best_err = math.cos(effectiveAngle(closest_x, closest_y) - goal_angle)
-		if use_high_mag then
-			best_err = best_err * Engine.get_magnitude_for_stick(closest_x, closest_y) ^ 2
-		end
-		local candidates = {}
-		if zeroed_x then
-			table.insert(candidates, { -8, closest_y })
-			table.insert(candidates, {  8, closest_y })
-		end
-		if zeroed_y then
-			table.insert(candidates, { closest_x, -8 })
-			table.insert(candidates, { closest_x,  8 })
-		end
-		if zeroed_x and zeroed_y then
-			-- Both axes in deadzone: try all four corners of the inner boundary
-			table.insert(candidates, { -8, -8 })
-			table.insert(candidates, { -8,  8 })
-			table.insert(candidates, {  8, -8 })
-			table.insert(candidates, {  8,  8 })
-		end
-		for _, c in ipairs(candidates) do
-			local x = clamp(-127, c[1], 127)
-			local y = clamp(-127, c[2], 127)
-			local mag = Engine.get_magnitude_for_stick(x, y)
-			if mag <= goal_mag then
-				local e = math.cos(effectiveAngle(x, y) - goal_angle)
-				if use_high_mag then e = e * mag * mag end
-				if e > best_err then
-					best_err = e
-					closest_x, closest_y = x, y
-				end
-			end
-		end
-	end
-
-	result.X, result.Y = closest_x, closest_y
+	result.X, result.Y = best_x, best_y
 end
