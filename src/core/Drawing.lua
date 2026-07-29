@@ -117,14 +117,27 @@ function Drawing.setting_list(items, pos)
     end
 end
 
-function Drawing.IsLightMode()
-    local background_color = Styles.theme().background_color
-    local luminance = 0.299 * background_color.r + 0.587 * background_color.g + 0.114 * background_color.b
+---@param background_color ColorSource The background color, in any form BreitbandGraphics accepts.
+---@return boolean
+function Drawing.is_light_color(background_color)
+    local color = BreitbandGraphics.float_to_color(BreitbandGraphics.color_to_float(background_color))
+    local luminance = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b
     return luminance > 186
 end
 
+---@param background_color ColorSource The background color, in any form BreitbandGraphics accepts.
+---@return Color
+function Drawing.foreground_color_for(background_color)
+    return Drawing.is_light_color(background_color) and BreitbandGraphics.hex_to_color('#000000') or
+        BreitbandGraphics.hex_to_color('#FFFFFF')
+end
+
+function Drawing.IsLightMode()
+    return Drawing.is_light_color(Styles.theme().background_color)
+end
+
 function Drawing.foreground_color()
-    return Drawing.IsLightMode() and BreitbandGraphics.hex_to_color('#000000') or BreitbandGraphics.hex_to_color('#FFFFFF')
+    return Drawing.foreground_color_for(Styles.theme().background_color)
 end
 
 function grid_rect(x, y, x_span, y_span, gap)

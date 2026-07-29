@@ -72,7 +72,7 @@ MiniVisualizer.draw = function()
     ugui.label({
         uid = UID.Action,
         rectangle = grid_rect_abs(3, 15, 5, 1),
-        text = VarWatch_compute_value('action'),
+        text = VarWatch_compute_value('action').value,
         color = foreground_color,
         font_size = theme.font_size * Drawing.scale,
         font_name = 'Consolas',
