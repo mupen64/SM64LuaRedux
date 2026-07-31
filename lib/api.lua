@@ -22,7 +22,7 @@ action = {}
 clipboard = {}
 
 Mupen = {
-    _VERSION = '1.3.0-20',
+    _VERSION = '1.5.0',
     _URL = 'https://github.com/mupen64/mupen64-rr-lua',
     _DESCRIPTION = 'Mupen64 Lua Scripting API',
     _LICENSE = 'GPL-2',
@@ -416,6 +416,21 @@ Mupen = {
 ---@field text string? The typed character, if the event is a char event and the key corresponds to a character.
 ---@field repeat boolean Whether the event is a repeat event (i.e. the key is being held down and this event is firing multiple times).
 
+---@alias MouseButton 0|1|2
+
+---@class MouseEventArgs
+---@field x integer The x-coordinate of the mouse relative to the main window.
+---@field y integer The y-coordinate of the mouse relative to the main window.
+---@field ctrl boolean Whether the Ctrl key is held down.
+---@field alt boolean Whether the Alt key is held down.
+---@field shift boolean Whether the Shift key is held down.
+---@field meta boolean Whether the Meta key is held down.
+---@field x_wheel integer? The horizontal scroll delta. If `nil`, the event is not related to horizontal scrolling. A positive value means scroll right, negative means scroll left. The magnitude is not specified.
+---@field y_wheel integer? The vertical scroll delta. If `nil`, the event is not related to vertical scrolling. A positive value means scroll down, negative means scroll up. The magnitude is not specified.
+---@field button MouseButton? The mouse button that was pressed or released. If `nil`, the event is not related to a mouse button.
+---@field pressed boolean? Whether the mouse button was pressed or released. Only present if `button ~= nil`.
+---@field double_click boolean? Whether the event is a double-click event. Only present if `button ~= nil`.
+
 ---@class CPUState
 ---@field opcode integer
 ---@field address integer
@@ -578,6 +593,13 @@ function emu.atwarpmodifystatuschanged(f, unregister) end
 ---@return nil
 function emu.atkey(f, unregister) end
 
+---Calls the function `f` when a mouse event happens.
+---If `unregister` is set to true, the function `f` will no longer be called when this event occurs, but it will error if you never registered the function.
+---@param f fun(args: MouseEventArgs): nil The function to be called when a mouse event happens.
+---@param unregister boolean? If true, then unregister the function `f`.
+---@return nil
+function emu.atmouse(f, unregister) end
+
 ---Returns the number of VIs since the last movie was played.
 ---This should match the statusbar.
 ---If no movie has been played, it returns the number of VIs since the emulator was started, not reset.
@@ -723,60 +745,70 @@ function memory.doubletoint(n) end
 function memory.qwordtonumber(n) end
 
 ---Reads a signed byte from memory at `address` and returns it.
+---Errors if the address is out of bounds.
 ---@nodiscard
 ---@param address integer
 ---@return integer
 function memory.readbytesigned(address) end
 
 ---Reads an unsigned byte from memory at `address` and returns it.
+---Errors if the address is out of bounds.
 ---@nodiscard
 ---@param address integer
 ---@return integer
 function memory.readbyte(address) end
 
 ---Reads a signed word (2 bytes) from memory at `address` and returns it.
+---Errors if the address is out of bounds.
 ---@nodiscard
 ---@param address integer
 ---@return integer
 function memory.readwordsigned(address) end
 
 ---Reads an unsigned word (2 bytes) from memory at `address` and returns it.
+---Errors if the address is out of bounds.
 ---@nodiscard
 ---@param address integer
 ---@return integer
 function memory.readword(address) end
 
 ---Reads a signed dword (4 bytes) from memory at `address` and returns it.
+---Errors if the address is out of bounds.
 ---@nodiscard
 ---@param address integer
 ---@return integer
 function memory.readdwordsigned(address) end
 
 ---Reads an unsigned dword (4 bytes) from memory at `address` and returns it.
+---Errors if the address is out of bounds.
 ---@nodiscard
 ---@param address integer
 ---@return integer
 function memory.readdword(address) end
 
 ---Reads a signed qword (8 bytes) from memory at `address` and returns it as a table of the upper and lower 4 bytes.
+---Errors if the address is out of bounds.
 ---@nodiscard
 ---@param address integer
 ---@return qword
 function memory.readqwordsigned(address) end
 
 ---Reads an unsigned qword (8 bytes) from memory at `address` and returns it as a table of the upper and lower 4 bytes.
+---Errors if the address is out of bounds.
 ---@nodiscard
 ---@param address integer
----@return integer
+---@return [integer, integer]
 function memory.readqword(address) end
 
 ---Reads a float (4 bytes) from memory at `address` and returns it.
+---Errors if the address is out of bounds.
 ---@nodiscard
 ---@param address integer
 ---@return number
 function memory.readfloat(address) end
 
 ---Reads a double (8 bytes) from memory at `address` and returns it.
+---Errors if the address is out of bounds.
 ---@nodiscard
 ---@param address integer
 ---@return number
@@ -784,43 +816,50 @@ function memory.readdouble(address) end
 
 ---Reads `size` bytes from memory at `address` and returns them.
 ---The memory is treated as signed if `size` is is negative.
+---Errors if the address is out of bounds.
 ---@nodiscard
 ---@param address integer
 ---@param size 1|2|4|8|-1|-2|-4|-8
----@return nil
+---@return integer|qword
 function memory.readsize(address, size) end
 
 ---Writes an unsigned byte to memory at `address`.
+---Errors if the address is out of bounds.
 ---@param address integer
 ---@param data integer
 ---@return nil
 function memory.writebyte(address, data) end
 
 ---Writes an unsigned word (2 bytes) to memory at `address`.
+---Errors if the address is out of bounds.
 ---@param address integer
 ---@param data integer
 ---@return nil
 function memory.writeword(address, data) end
 
 ---Writes an unsigned dword (4 bytes) to memory at `address`.
+---Errors if the address is out of bounds.
 ---@param address integer
 ---@param data integer
 ---@return nil
 function memory.writedword(address, data) end
 
 ---Writes an unsigned qword consisting of a table with the upper and lower 4 bytes to memory at `address`.
+---Errors if the address is out of bounds.
 ---@param address integer
 ---@param data qword
 ---@return nil
 function memory.writeqword(address, data) end
 
 ---Writes a float to memory at `address`.
+---Errors if the address is out of bounds.
 ---@param address integer
 ---@param data number
 ---@return nil
 function memory.writefloat(address, data) end
 
 ---Writes a double to memory at `address`.
+---Errors if the address is out of bounds.
 ---@param address integer
 ---@param data number
 ---@return nil
@@ -828,6 +867,7 @@ function memory.writedouble(address, data) end
 
 ---Writes `size` bytes to memory at `address`.
 ---The memory is treated as signed if `size` is is negative.
+---Errors if the address is out of bounds.
 ---@param address integer
 ---@param size 1|2|4|8|-1|-2|-4|-8
 ---@param data integer|qword
