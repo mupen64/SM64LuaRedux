@@ -41,31 +41,31 @@ MiniVisualizer.draw = function()
         uid = UID.A,
         rectangle = grid_rect_abs(3, 16, 1, 1),
         text = 'A',
-        is_checked = Joypad.input.A,
+        is_checked = Joypad.input.A == true,
     })
     ugui.toggle_button({
         uid = UID.B,
         rectangle = grid_rect_abs(4, 16, 1, 1),
         text = 'B',
-        is_checked = Joypad.input.B,
+        is_checked = Joypad.input.B == true,
     })
     ugui.toggle_button({
         uid = UID.Z,
         rectangle = grid_rect_abs(5, 16, 1, 1),
         text = 'Z',
-        is_checked = Joypad.input.Z,
+        is_checked = Joypad.input.Z == true,
     })
     ugui.toggle_button({
         uid = UID.S,
         rectangle = grid_rect_abs(6, 16, 1, 1),
         text = 'S',
-        is_checked = Joypad.input.start,
+        is_checked = Joypad.input.start == true,
     })
     ugui.toggle_button({
         uid = UID.R,
         rectangle = grid_rect_abs(7, 16, 1, 1),
         text = 'R',
-        is_checked = Joypad.input.R,
+        is_checked = Joypad.input.R == true,
     })
     local foreground_color = ugui.standard_styler.params.button.text[ugui.visual_states.normal]
     local theme = Styles.theme()
