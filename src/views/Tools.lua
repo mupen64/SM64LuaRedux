@@ -17,6 +17,7 @@ local UID = UIDProvider.allocate_once('Tools', function(enum_next)
         RngUse = enum_next(),
         RngValue = enum_next(4),
         Dump = enum_next(),
+        GhostObjectAddress = enum_next(),
         RecordGhost = enum_next(),
         WorldVisualizer = enum_next(),
         AutoFirsties = enum_next(),
@@ -113,6 +114,12 @@ return {
             align_x = BreitbandGraphics.alignment['start'],
             align_y = BreitbandGraphics.alignment.center,
         })
+
+        Ghost.object_address = tonumber(ugui.textbox({
+            uid = UID.GhostObjectAddress,
+            rectangle = grid_rect(4, GHOST_ROW, 4, 1),
+            text = string.format("%x", Ghost.object_address or 0),
+        }):gsub("[^%x]", ""), 16)
 
         if ugui.button({
                 uid = UID.RecordGhost,

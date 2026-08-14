@@ -4,7 +4,9 @@
 -- SPDX-License-Identifier: GPL-2.0-or-later
 --
 
-Ghost = {}
+Ghost = {
+	object_address = 0
+}
 
 ---@class GhostFrame
 ---@field global_timer integer
@@ -24,14 +26,21 @@ local frame = 0
 local recording_base_frame = nil
 local last_global_timer = nil
 
+local OBJECT_EXTRA_MAGIC <const> = 0x4F424A54
+local non_mario_graphics = nil
+local animation_switches = { }
+local last_recorded_animation = nil
+
 local OBJ_POSITION_OFFSET <const> = 0x20
-local OBJ_ANIMATION_OFFSET <const> = 0x38
+local OBJ_ANIMATION_ID_OFFSET <const> = 0x38
+local OBJ_ANIMATION_OFFSET <const> = 0x3C
 local OBJ_ANIMATION_TIMER_OFFSET <const> = 0x40
 local OBJ_PITCH_OFFSET <const> = 0x1A
 local OBJ_YAW_OFFSET <const> = 0x1C
 local OBJ_ROLL_OFFSET <const> = 0x1E
 
 local function writebytes32(f, x)
+	if x == nil then error("lol", 2) end
 	local b4 = string.char(x % 256)
 	x = (x - x % 256) / 256
 	local b3 = string.char(x % 256)
@@ -82,6 +91,19 @@ local function flush()
 		writebytes32(file, value.roll)
 	end
 
+	if non_mario_graphics then
+		writebytes32(file, OBJECT_EXTRA_MAGIC)
+		writebytes32(file, non_mario_graphics)
+		print("lol")
+		local count = 0
+		for _ in pairs(animation_switches) do count = count + 1 end
+		writebytes32(file, count)
+		for k, v in pairs(animation_switches) do
+			writebytes32(file, k)
+			writebytes32(file, v)
+		end
+	end
+
 	file:close()
 
 	return true
@@ -99,7 +121,7 @@ function Ghost.update()
 	end
 
 	local address_source = Addresses[Settings.address_source_index]
-	local mario_obj = memory.readdword(address_source.mario_object_pointer)
+	local mario_obj = Ghost.object_address or memory.readdword(address_source.mario_object_pointer)
 	local global_timer = memory.readdword(address_source.global_timer)
 
 	if recording_base_frame == nil then
@@ -116,9 +138,15 @@ function Ghost.update()
 			x = memory.readdword(mario_obj + OBJ_POSITION_OFFSET),
 			y = memory.readdword(mario_obj + OBJ_POSITION_OFFSET + 4),
 			z = memory.readdword(mario_obj + OBJ_POSITION_OFFSET + 8),
-			animation_index = memory.readword(mario_obj + OBJ_ANIMATION_OFFSET),
+			animation_index = memory.readword(mario_obj + OBJ_ANIMATION_ID_OFFSET),
 			animation_timer = memory.readword(mario_obj + OBJ_ANIMATION_TIMER_OFFSET) - 1,
 		}
+
+		local animation = memory.readdword(mario_obj + OBJ_ANIMATION_OFFSET)
+		if animation ~= last_recorded_animation then
+			last_recorded_animation = animation
+			animation_switches[#frames - 1] = animation
+		end
 	end
 end
 
@@ -153,6 +181,8 @@ function Ghost.start_recording()
 	end
 
 	is_recording = true
+	non_mario_graphics = Ghost.object_address and memory.readdword(Ghost.object_address + 0x14) or 0
+	last_recorded_animation = nil
 
 	return true
 end
