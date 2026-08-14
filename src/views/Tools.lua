@@ -119,6 +119,7 @@ return {
             uid = UID.GhostObjectAddress,
             rectangle = grid_rect(4, GHOST_ROW, 4, 1),
             text = string.format("%x", Ghost.object_address or 0),
+            tooltip = Locales.str('TOOLS_GHOST_OBJECT_ADDRESS_TOOL_TIP')
         }):gsub("[^%x]", ""), 16)
 
         if ugui.button({

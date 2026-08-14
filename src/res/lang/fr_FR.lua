@@ -178,6 +178,7 @@ Cette action est irréversible.
     TOOLS_DUMPING = 'Export',
     TOOLS_EXPERIMENTS = 'Expériences',
     TOOLS_GHOST = 'Fantôme',
+    TOOLS_GHOST_OBJECT_ADDRESS_TOOL_TIP  = 'Adresse de l’objet à enregistrer (par exemple 8033FF48). Si 0, Mario est enregistré.',
     TOOLS_GHOST_START = 'Démarrer rec.',
     TOOLS_GHOST_STOP = 'Arrêter rec.',
     TOOLS_GHOST_START_RECORDING_FAILED = 'Échec du démarrage de l\'enregistrement fantôme.',

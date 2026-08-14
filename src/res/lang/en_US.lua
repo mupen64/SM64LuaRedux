@@ -179,6 +179,7 @@ This action cannot be undone.
     TOOLS_RNG_USE_INDEX = 'Use Index',
     TOOLS_DUMPING = 'Dumping',
     TOOLS_GHOST = 'Ghost',
+    TOOLS_GHOST_OBJECT_ADDRESS_TOOL_TIP = 'Address of the object to record (e.g. 8033FF48). If 0, Mario is recorded.',
     TOOLS_GHOST_START = 'Start Recording',
     TOOLS_GHOST_STOP = 'Stop Recording',
     TOOLS_GHOST_START_RECORDING_FAILED = 'Failed to start ghost recording.',

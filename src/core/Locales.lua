@@ -141,6 +141,7 @@ Locales = {}
 ---@field public TOOLS_RNG_USE_INDEX string
 ---@field public TOOLS_DUMPING string
 ---@field public TOOLS_GHOST string
+---@field public TOOLS_GHOST_OBJECT_ADDRESS_TOOL_TIP string
 ---@field public TOOLS_GHOST_START string
 ---@field public TOOLS_GHOST_STOP string
 ---@field public TOOLS_GHOST_START_RECORDING_FAILED string
