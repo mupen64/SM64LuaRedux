@@ -40,7 +40,6 @@ local OBJ_YAW_OFFSET <const> = 0x1C
 local OBJ_ROLL_OFFSET <const> = 0x1E
 
 local function writebytes32(f, x)
-	if x == nil then error("lol", 2) end
 	local b4 = string.char(x % 256)
 	x = (x - x % 256) / 256
 	local b3 = string.char(x % 256)
@@ -94,7 +93,6 @@ local function flush()
 	if non_mario_graphics then
 		writebytes32(file, OBJECT_EXTRA_MAGIC)
 		writebytes32(file, non_mario_graphics)
-		print("lol")
 		local count = 0
 		for _ in pairs(animation_switches) do count = count + 1 end
 		writebytes32(file, count)
