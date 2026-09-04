@@ -20,7 +20,7 @@ or...
 
 3. Drag and drop the `src/SM64Lua.lua` file onto Mupen64
 
-The [SM64 Lua Redux Wiki](https://github.com/Mupen64-Rewrite/SM64LuaRedux/wiki) contains information about usage.
+The [SM64 Lua Redux Docs](https://mupen64.com/docs/redux) contains information about usage.
 
 # What's new
 
