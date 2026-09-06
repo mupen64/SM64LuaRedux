@@ -10,7 +10,9 @@ local enumerator = 1
 
 local function enum_next(count)
     local current = enumerator
-    enumerator = enumerator + (count or 1)
+
+    count = count or 1
+    enumerator = enumerator + count * 20
     return current
 end
 

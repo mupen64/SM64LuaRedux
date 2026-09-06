@@ -127,20 +127,13 @@ function get_is_keyboard_captured()
         return false
     end
 
-    ---@type SceneEntry?
-    local keyboard_captured_control = nil
-    for i = 1, #ugui.internal.scene, 1 do
-        local entry = ugui.internal.scene[i]
-        if entry.control.uid == ugui.internal.keyboard_captured_control then
-            keyboard_captured_control = entry
-        end
-    end
+    local node = ugui.internal.find_node(ugui.internal.keyboard_captured_control)
 
-    if not keyboard_captured_control then
+    if not node then
         return false
     end
 
-    if keyboard_captured_control.type == "textbox" or keyboard_captured_control.type == "numberbox" then
+    if node.type == "textbox" or node.type == "numberbox" then
         return true
     end
 

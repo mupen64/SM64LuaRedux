@@ -3,7 +3,7 @@
 -- ------------------------------------------------------------
 
 -- ------------------------------------------------------------
---   src\BreitbandGraphics\breitbandgraphics.lua
+--   src/BreitbandGraphics/breitbandgraphics.lua
 -- ------------------------------------------------------------
 
 --
@@ -20,7 +20,7 @@ local BreitbandGraphics = {
 }
 
 -- ------------------------------------------------------------
---   src\BreitbandGraphics\types.lua
+--   src/BreitbandGraphics/types.lua
 -- ------------------------------------------------------------
 
 --
@@ -185,7 +185,7 @@ BreitbandGraphics.alignment = {
 }
 
 -- ------------------------------------------------------------
---   src\BreitbandGraphics\core.lua
+--   src/BreitbandGraphics/core.lua
 -- ------------------------------------------------------------
 
 --
@@ -440,7 +440,7 @@ BreitbandGraphics.draw_image_nineslice = function(destination_rectangle, source_
 end
 
 -- ------------------------------------------------------------
---   src\BreitbandGraphics\internal.lua
+--   src/BreitbandGraphics/internal.lua
 -- ------------------------------------------------------------
 
 --
@@ -537,7 +537,7 @@ BreitbandGraphics.internal = {
 }
 
 -- ------------------------------------------------------------
---   src\BreitbandGraphics\backends\mupen64_d2d.lua
+--   src/BreitbandGraphics/backends/mupen64_d2d.lua
 -- ------------------------------------------------------------
 
 --
@@ -1009,7 +1009,7 @@ BreitbandGraphics.free = function()
 end
 
 -- ------------------------------------------------------------
---   src\BreitbandGraphics\epilogue.lua
+--   src/BreitbandGraphics/epilogue.lua
 -- ------------------------------------------------------------
 
 --
