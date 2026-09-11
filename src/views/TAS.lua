@@ -208,7 +208,7 @@ return {
                 end)
 
             atan_field(1,
-                'R: ' .. tostring(Settings.tas.atan_r),
+                'R: ' .. string.format("%.6g", Settings.tas.atan_r),
                 function()
                     Settings.tas.atan_r = Settings.tas.atan_r + math.pow(10, Settings.atan_exp)
                 end,
@@ -218,7 +218,7 @@ return {
 
 
             atan_field(2,
-                'D: ' .. tostring(Settings.tas.atan_d),
+                'D: ' .. string.format("%.6g", Settings.tas.atan_d),
                 function()
                     Settings.tas.atan_d = Settings.tas.atan_d + math.pow(10, Settings.atan_exp)
                 end,
