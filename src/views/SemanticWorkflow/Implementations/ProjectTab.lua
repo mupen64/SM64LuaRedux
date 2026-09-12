@@ -19,17 +19,17 @@ local Gui = dofile(views_path .. 'SemanticWorkflow/Definitions/Gui.lua')
 
 local UID = UIDProvider.allocate_once('ProjectTab', function(enum_next)
     return {
-        NewProject = enum_next(),
-        OpenProject = enum_next(),
-        SaveProject = enum_next(),
-        PurgeProject = enum_next(),
+        NewProject = enum_next(ugui.registry.button.uids()),
+        OpenProject = enum_next(ugui.registry.button.uids()),
+        SaveProject = enum_next(ugui.registry.button.uids()),
+        PurgeProject = enum_next(ugui.registry.button.uids()),
         DisableProjectSheets = enum_next(),
-        ProjectSheetBase = enum_next(1024), -- TODO: allocate an exact amount, assuming a scroll bar for too many sheets in one project
+        ProjectSheetBase = enum_next(UIDProvider.unknown),
         AddSheet = enum_next(),
-        ConfirmationYes = enum_next(),
-        ConfirmationNo = enum_next(),
-        ConfirmationText = enum_next(),
-        NoSheetsLabel = enum_next(),
+        ConfirmationYes = enum_next(ugui.registry.button.uids()),
+        ConfirmationNo = enum_next(ugui.registry.button.uids()),
+        ConfirmationText = enum_next(ugui.registry.label.uids()),
+        NoSheetsLabel = enum_next(ugui.registry.label.uids()),
     }
 end)
 

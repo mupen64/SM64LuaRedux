@@ -23,17 +23,6 @@ lualinq = dofile(lib_path .. 'linq.lua')
 
 json = dofile(lib_path .. 'json.lua')
 
-ugui.STATIC_ENV = {
-    clipboard = {
-        get = function()
-            return clipboard.get('text')
-        end,
-        set = function(text)
-            clipboard.set('text', text)
-        end,
-    },
-}
-
 dofile(styles_path .. 'base_style.lua')
 dofile(core_path .. 'UIDProvider.lua')
 dofile(core_path .. 'Helpers.lua')
@@ -106,9 +95,9 @@ G_KEYS = {}
 
 local UID = UIDProvider.allocate_once('SM64Lua', function(enum_next)
     return {
-        TabIndex = enum_next(),
-        ResetPreset = enum_next(),
-        PresetIndex = enum_next(),
+        TabIndex = enum_next(ugui.registry.carrousel_button.uids()),
+        ResetPreset = enum_next(UIDProvider.unknown),
+        PresetIndex = enum_next(ugui.registry.carrousel_button.uids()),
     }
 end)
 
@@ -300,6 +289,7 @@ local function atdrawd2d()
         wheel = mouse_wheel,
         is_primary_down = keys.leftclick and focused,
         key_events = key_events,
+        shift = keys.shift,
         window_size = {
             x = Drawing.size.width,
             y = Drawing.size.height - 23,

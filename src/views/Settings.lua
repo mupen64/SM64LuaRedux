@@ -13,7 +13,7 @@ local views = {
 
 local UID = UIDProvider.allocate_once('Settings', function(enum_next)
     return {
-        Tabs = enum_next(1 + #views)
+        Tabs = enum_next(UIDProvider.unknown)
     }
 end)
 
