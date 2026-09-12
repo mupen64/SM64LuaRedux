@@ -23,17 +23,6 @@ lualinq = dofile(lib_path .. 'linq.lua')
 
 json = dofile(lib_path .. 'json.lua')
 
-ugui.STATIC_ENV = {
-    clipboard = {
-        get = function()
-            return clipboard.get('text')
-        end,
-        set = function(text)
-            clipboard.set('text', text)
-        end,
-    },
-}
-
 dofile(styles_path .. 'base_style.lua')
 dofile(core_path .. 'UIDProvider.lua')
 dofile(core_path .. 'Helpers.lua')
