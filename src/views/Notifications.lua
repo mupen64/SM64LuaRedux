@@ -8,7 +8,7 @@ local notifications = {}
 
 local UID = UIDProvider.allocate_once('Notifications', function(enum_next)
     return {
-        NotificationBase = enum_next(8),
+        NotificationBase = enum_next(UIDProvider.unknown),
     }
 end)
 

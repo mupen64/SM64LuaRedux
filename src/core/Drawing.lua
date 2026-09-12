@@ -13,7 +13,7 @@ Drawing = {
 
 local UID = UIDProvider.allocate_once('Drawing', function(enum_next)
     return {
-        SettingListLabelBase = enum_next(64),
+        SettingListLabelBase = enum_next(UIDProvider.unknown),
     }
 end)
 

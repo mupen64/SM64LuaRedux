@@ -9,7 +9,7 @@ local UID = UIDProvider.allocate_once('Visualizer', function(enum_next)
         Joystick = enum_next(ugui.registry.joystick.uids()),
         JoystickX = enum_next(ugui.registry.label.uids()),
         JoystickY = enum_next(ugui.registry.label.uids()),
-        Labels = enum_next(1024),
+        Labels = enum_next(UIDProvider.unknown),
     }
 end)
 

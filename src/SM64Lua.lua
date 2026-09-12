@@ -96,7 +96,7 @@ G_KEYS = {}
 local UID = UIDProvider.allocate_once('SM64Lua', function(enum_next)
     return {
         TabIndex = enum_next(ugui.registry.carrousel_button.uids()),
-        ResetPreset = enum_next(1024),
+        ResetPreset = enum_next(UIDProvider.unknown),
         PresetIndex = enum_next(ugui.registry.carrousel_button.uids()),
     }
 end)
