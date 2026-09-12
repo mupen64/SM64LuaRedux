@@ -38,8 +38,8 @@ local UID = UIDProvider.allocate_once('InputsTab', function(enum_next)
 
         -- Joystick Controls
         Joypad = enum_next(ugui.registry.joystick.uids()),
-        JoypadSpinnerX = enum_next(4), -- FIXME: ugui.spinner has no registry entry yet
-        JoypadSpinnerY = enum_next(4), -- FIXME: ugui.spinner has no registry entry yet
+        JoypadSpinnerX = enum_next(ugui.registry.spinner.uids()),
+        JoypadSpinnerY = enum_next(ugui.registry.spinner.uids()),
         GoalAngle = enum_next(ugui.registry.numberbox.uids()),
         GoalMag = enum_next(ugui.registry.numberbox.uids()),
         HighMag = enum_next(ugui.registry.toggle_button.uids()),

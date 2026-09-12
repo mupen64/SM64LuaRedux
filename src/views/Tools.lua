@@ -15,7 +15,7 @@ local UID = UIDProvider.allocate_once('Tools', function(enum_next)
     return {
         RngLock = enum_next(ugui.registry.toggle_button.uids()),
         RngUse = enum_next(ugui.registry.toggle_button.uids()),
-        RngValue = enum_next(4), -- FIXME: ugui.spinner has no registry entry yet
+        RngValue = enum_next(ugui.registry.spinner.uids()),
         Dump = enum_next(ugui.registry.toggle_button.uids()),
         GhostObjectAddress = enum_next(ugui.registry.textbox.uids()),
         RecordGhost = enum_next(ugui.registry.button.uids()),

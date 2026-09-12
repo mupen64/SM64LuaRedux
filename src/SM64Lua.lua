@@ -289,6 +289,7 @@ local function atdrawd2d()
         wheel = mouse_wheel,
         is_primary_down = keys.leftclick and focused,
         key_events = key_events,
+        shift = keys.shift,
         window_size = {
             x = Drawing.size.width,
             y = Drawing.size.height - 23,
