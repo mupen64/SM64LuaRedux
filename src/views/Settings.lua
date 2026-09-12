@@ -13,7 +13,7 @@ local views = {
 
 local UID = UIDProvider.allocate_once('Settings', function(enum_next)
     return {
-        Tabs = enum_next(1 + #views)
+        Tabs = enum_next(1 + #views * ugui.registry.toggle_button.uids()) -- FIXME: ugui.tabcontrol has no registry entry yet
     }
 end)
 

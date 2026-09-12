@@ -6,12 +6,12 @@
 
 local UID = UIDProvider.allocate_once('VarWatchSettings', function(enum_next)
     return {
-        AngleFormat = enum_next(),
-        DecimalPlaces = enum_next(2),
-        SelectedVar = enum_next(4),
-        MoveVarUp = enum_next(),
-        MoveVarDown = enum_next(),
-        HideVar = enum_next(),
+        AngleFormat = enum_next(ugui.registry.button.uids()),
+        DecimalPlaces = enum_next(ugui.registry.numberbox.uids()),
+        SelectedVar = enum_next(ugui.registry.listbox.uids()),
+        MoveVarUp = enum_next(ugui.registry.button.uids()),
+        MoveVarDown = enum_next(ugui.registry.button.uids()),
+        HideVar = enum_next(ugui.registry.toggle_button.uids()),
     }
 end)
 
