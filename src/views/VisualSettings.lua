@@ -6,10 +6,10 @@
 
 local UID = UIDProvider.allocate_once('VisualSettings', function(enum_next)
     return {
-        ActiveStyle = enum_next(2),
-        Locale = enum_next(2),
-        NotificationStyle = enum_next(),
-        RepaintThrottle = enum_next(2),
+        ActiveStyle = enum_next(ugui.registry.combobox.uids()),
+        Locale = enum_next(ugui.registry.combobox.uids()),
+        NotificationStyle = enum_next(ugui.registry.carrousel_button.uids()),
+        RepaintThrottle = enum_next(ugui.registry.numberbox.uids()),
     }
 end)
 

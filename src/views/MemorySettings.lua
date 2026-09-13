@@ -6,10 +6,10 @@
 
 local UID = UIDProvider.allocate_once('MemorySettings', function(enum_next)
     return {
-        LoadMapFile = enum_next(),
-        Region = enum_next(2),
-        AutoDetect = enum_next(),
-        DetectOnStart = enum_next(),
+        LoadMapFile = enum_next(ugui.registry.button.uids()),
+        Region = enum_next(ugui.registry.combobox.uids()),
+        AutoDetect = enum_next(ugui.registry.button.uids()),
+        DetectOnStart = enum_next(ugui.registry.toggle_button.uids()),
     }
 end)
 

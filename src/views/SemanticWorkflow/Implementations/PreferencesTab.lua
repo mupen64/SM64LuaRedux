@@ -16,9 +16,9 @@ local Gui = dofile(views_path .. 'SemanticWorkflow/Definitions/Gui.lua')
 
 local UID = UIDProvider.allocate_once('PreferencesTab', function(enum_next)
     return {
-        ToggleEditEntireState = enum_next(),
-        ToggleFastForward = enum_next(),
-        DefaultSectionTimeout = enum_next(2),
+        ToggleEditEntireState = enum_next(ugui.registry.toggle_button.uids()),
+        ToggleFastForward = enum_next(ugui.registry.toggle_button.uids()),
+        DefaultSectionTimeout = enum_next(ugui.registry.numberbox.uids()),
     }
 end)
 

@@ -6,8 +6,8 @@
 
 local UID = UIDProvider.allocate_once('InteractionSettings', function(enum_next)
     return {
-        EnableManualOnJoystickInteract = enum_next(),
-        LockHotkeysWhenControlActive = enum_next()
+        EnableManualOnJoystickInteract = enum_next(ugui.registry.toggle_button.uids()),
+        LockHotkeysWhenControlActive = enum_next(ugui.registry.toggle_button.uids())
     }
 end)
 

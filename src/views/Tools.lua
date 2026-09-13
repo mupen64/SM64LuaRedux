@@ -13,27 +13,27 @@ local AUTOMATION_ROW = 11
 
 local UID = UIDProvider.allocate_once('Tools', function(enum_next)
     return {
-        RngLock = enum_next(),
-        RngUse = enum_next(),
-        RngValue = enum_next(4),
-        Dump = enum_next(),
-        GhostObjectAddress = enum_next(),
-        RecordGhost = enum_next(),
-        WorldVisualizer = enum_next(),
-        AutoFirsties = enum_next(),
-        MiniVisualizer = enum_next(),
-        TrackMovedDistance = enum_next(),
-        TrackMovedDistanceX = enum_next(),
-        TrackMovedDistanceY = enum_next(),
-        TrackMovedDistanceZ = enum_next(),
-        FrameWalk = enum_next(),
-        Swim = enum_next(),
-        RngLabel = enum_next(),
-        DumpingLabel = enum_next(),
-        GhostLabel = enum_next(),
-        TrackersLabel = enum_next(),
-        OverlaysLabel = enum_next(),
-        AutomationLabel = enum_next(),
+        RngLock = enum_next(ugui.registry.toggle_button.uids()),
+        RngUse = enum_next(ugui.registry.toggle_button.uids()),
+        RngValue = enum_next(ugui.registry.spinner.uids()),
+        Dump = enum_next(ugui.registry.toggle_button.uids()),
+        GhostObjectAddress = enum_next(ugui.registry.textbox.uids()),
+        RecordGhost = enum_next(ugui.registry.button.uids()),
+        WorldVisualizer = enum_next(ugui.registry.toggle_button.uids()),
+        AutoFirsties = enum_next(ugui.registry.toggle_button.uids()),
+        MiniVisualizer = enum_next(ugui.registry.toggle_button.uids()),
+        TrackMovedDistance = enum_next(ugui.registry.toggle_button.uids()),
+        TrackMovedDistanceX = enum_next(ugui.registry.toggle_button.uids()),
+        TrackMovedDistanceY = enum_next(ugui.registry.toggle_button.uids()),
+        TrackMovedDistanceZ = enum_next(ugui.registry.toggle_button.uids()),
+        FrameWalk = enum_next(ugui.registry.toggle_button.uids()),
+        Swim = enum_next(ugui.registry.toggle_button.uids()),
+        RngLabel = enum_next(ugui.registry.label.uids()),
+        DumpingLabel = enum_next(ugui.registry.label.uids()),
+        GhostLabel = enum_next(ugui.registry.label.uids()),
+        TrackersLabel = enum_next(ugui.registry.label.uids()),
+        OverlaysLabel = enum_next(ugui.registry.label.uids()),
+        AutomationLabel = enum_next(ugui.registry.label.uids()),
     }
 end)
 
@@ -58,6 +58,7 @@ return {
             uid = UID.RngLock,
             rectangle = grid_rect(0, RNG_ROW, 2, 1),
             text = Locales.str('TOOLS_RNG_LOCK'),
+            tooltip = Locales.str('TOOLS_RNG_LOCK_TOOLTIP'),
             is_checked = Settings.override_rng,
         })
         Settings.override_rng_use_index = ugui.toggle_button({
@@ -65,6 +66,7 @@ return {
             is_enabled = Settings.override_rng,
             rectangle = grid_rect(6, RNG_ROW, 2, 1),
             text = Locales.str('TOOLS_RNG_USE_INDEX'),
+            tooltip = Locales.str('TOOLS_RNG_USE_INDEX_TOOLTIP'),
             is_checked = Settings.override_rng_use_index,
         })
         Settings.override_rng_value = math.floor(ugui.spinner({
@@ -72,6 +74,7 @@ return {
             is_enabled = Settings.override_rng,
             rectangle = grid_rect(2, RNG_ROW, 4, 1),
             value = Settings.override_rng_value,
+            tooltip = Locales.str('TOOLS_RNG_VALUE_TOOLTIP'),
             minimum_value = math.mininteger,
             maximum_value = math.maxinteger,
         }))
@@ -92,6 +95,7 @@ return {
             uid = UID.Dump,
             rectangle = grid_rect(0, DUMPING_ROW, 4, 1),
             text = Settings.dump_enabled and Locales.str('GENERIC_STOP') or Locales.str('GENERIC_START'),
+            tooltip = Locales.str('TOOLS_DUMPING_TOOLTIP'),
             is_checked = previous_dump_enabled,
         })
 
@@ -126,6 +130,7 @@ return {
                 uid = UID.RecordGhost,
                 rectangle = grid_rect(0, GHOST_ROW, 4, 1),
                 text = Ghost.recording() and Locales.str('TOOLS_GHOST_STOP') or Locales.str('TOOLS_GHOST_START'),
+                tooltip = Locales.str('TOOLS_GHOST_RECORD_TOOLTIP'),
             }) then
             if Ghost.recording() then
                 local result = Ghost.stop_recording()
@@ -157,6 +162,7 @@ return {
             uid = UID.TrackMovedDistance,
             rectangle = grid_rect(0, TRACKERS_ROW, 3, 1),
             text = Locales.str('TOOLS_MOVED_DIST'),
+            tooltip = Locales.str('TOOLS_MOVED_DIST_TOOLTIP'),
             is_checked = Settings.track_moved_distance,
         })
         if meta.signal_change == ugui.signal_change_states.started then
@@ -174,18 +180,21 @@ return {
             uid = UID.TrackMovedDistanceX,
             rectangle = grid_rect(3, TRACKERS_ROW, 1, 1),
             text = 'X',
+            tooltip = Locales.str('TOOLS_MOVED_DIST_X_TOOLTIP'),
             is_checked = Settings.moved_distance_x,
         })
         Settings.moved_distance_y = ugui.toggle_button({
             uid = UID.TrackMovedDistanceY,
             rectangle = grid_rect(4, TRACKERS_ROW, 1, 1),
             text = 'Y',
+            tooltip = Locales.str('TOOLS_MOVED_DIST_Y_TOOLTIP'),
             is_checked = Settings.moved_distance_y,
         })
         Settings.moved_distance_z = ugui.toggle_button({
             uid = UID.TrackMovedDistanceZ,
             rectangle = grid_rect(5, TRACKERS_ROW, 1, 1),
             text = 'Z',
+            tooltip = Locales.str('TOOLS_MOVED_DIST_Z_TOOLTIP'),
             is_checked = Settings.moved_distance_z,
         })
 
@@ -204,12 +213,14 @@ return {
             uid = UID.WorldVisualizer,
             rectangle = grid_rect(0, OVERLAYS_ROW, 3, 1),
             text = Locales.str('TOOLS_WORLD_VISUALIZER'),
+            tooltip = Locales.str('TOOLS_WORLD_VISUALIZER_TOOLTIP'),
             is_checked = Settings.worldviz_enabled,
         })
         Settings.mini_visualizer = ugui.toggle_button({
             uid = UID.MiniVisualizer,
             rectangle = grid_rect(3, OVERLAYS_ROW, 3, 1),
             text = Locales.str('TOOLS_MINI_OVERLAY'),
+            tooltip = Locales.str('TOOLS_MINI_OVERLAY_TOOLTIP'),
             is_checked = Settings.mini_visualizer,
         })
 
@@ -228,6 +239,7 @@ return {
             uid = UID.AutoFirsties,
             rectangle = grid_rect(0, AUTOMATION_ROW, 3, 1),
             text = Locales.str('TOOLS_AUTO_FIRSTIES'),
+            tooltip = Locales.str('TOOLS_AUTO_FIRSTIES_TOOLTIP'),
             is_checked = Settings.auto_firsties,
         })
         if meta.signal_change == ugui.signal_change_states.started then
@@ -238,6 +250,7 @@ return {
             uid = UID.FrameWalk,
             rectangle = grid_rect(3, AUTOMATION_ROW, 2, 1),
             text = Locales.str('FRAMEWALK'),
+            tooltip = Locales.str('FRAMEWALK_TOOLTIP'),
             is_checked = Settings.tas.framewalk,
         })
         if meta.signal_change == ugui.signal_change_states.started then
@@ -248,6 +261,7 @@ return {
             uid = UID.Swim,
             rectangle = grid_rect(5, AUTOMATION_ROW, 2, 1),
             text = Locales.str('SWIM'),
+            tooltip = Locales.str('SWIM_TOOLTIP'),
             is_checked = Settings.tas.swim,
         })
         if meta.signal_change == ugui.signal_change_states.started then

@@ -42,6 +42,7 @@ function get_base_style()
         },
         textbox = {
             item_height = 15,
+            selection = BreitbandGraphics.hex_to_color('#0078D7'),
 
             text = {
                 [1] = BreitbandGraphics.colors.black,
@@ -68,6 +69,9 @@ function get_base_style()
                     center = expand_rect({ 76, 18, 1, 1 }),
                 },
             },
+        },
+        numberbox = {
+            selection = BreitbandGraphics.hex_to_color('#0078D7'),
         },
         listbox = {
             text = {

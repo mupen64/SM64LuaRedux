@@ -23,5 +23,7 @@ end
 
 
 UIDProvider = {
-    allocate_once = allocate_once
+    allocate_once = allocate_once,
+    -- To be used as a placeholder for unknown UID allocations. Big enough to fit most things.
+    unknown = 4096,
 }

@@ -6,27 +6,27 @@
 
 local UID = UIDProvider.allocate_once('Timer', function(enum_next)
     return {
-        Start = enum_next(),
-        Stop = enum_next(),
-        Reset = enum_next(),
-        ToggleAuto = enum_next(),
-        Joypad = enum_next(),
-        A = enum_next(),
-        B = enum_next(),
-        Z = enum_next(),
-        S = enum_next(),
-        L = enum_next(),
-        R = enum_next(),
-        DL = enum_next(),
-        DR = enum_next(),
-        DU = enum_next(),
-        DD = enum_next(),
-        CL = enum_next(),
-        CR = enum_next(),
-        CU = enum_next(),
-        CD = enum_next(),
-        ProcessedValues = enum_next(4),
-        TimerText = enum_next(),
+        Start = enum_next(ugui.registry.button.uids()),
+        Stop = enum_next(ugui.registry.button.uids()),
+        Reset = enum_next(ugui.registry.button.uids()),
+        ToggleAuto = enum_next(ugui.registry.toggle_button.uids()),
+        Joypad = enum_next(ugui.registry.joystick.uids()),
+        A = enum_next(ugui.registry.toggle_button.uids()),
+        B = enum_next(ugui.registry.toggle_button.uids()),
+        Z = enum_next(ugui.registry.toggle_button.uids()),
+        S = enum_next(ugui.registry.toggle_button.uids()),
+        L = enum_next(ugui.registry.toggle_button.uids()),
+        R = enum_next(ugui.registry.toggle_button.uids()),
+        DL = enum_next(ugui.registry.toggle_button.uids()),
+        DR = enum_next(ugui.registry.toggle_button.uids()),
+        DU = enum_next(ugui.registry.toggle_button.uids()),
+        DD = enum_next(ugui.registry.toggle_button.uids()),
+        CL = enum_next(ugui.registry.toggle_button.uids()),
+        CR = enum_next(ugui.registry.toggle_button.uids()),
+        CU = enum_next(ugui.registry.toggle_button.uids()),
+        CD = enum_next(ugui.registry.toggle_button.uids()),
+        ProcessedValues = enum_next(ugui.registry.listbox.uids()),
+        TimerText = enum_next(ugui.registry.label.uids()),
     }
 end)
 
@@ -40,6 +40,7 @@ return {
 
                 rectangle = grid_rect(0, 0, 2, 1),
                 text = Locales.str('TIMER_START'),
+                tooltip = Locales.str('TIMER_START_TOOLTIP'),
             }) then
             Timer.start()
         end
@@ -48,6 +49,7 @@ return {
 
                 rectangle = grid_rect(2, 0, 2, 1),
                 text = Locales.str('TIMER_STOP'),
+                tooltip = Locales.str('TIMER_STOP_TOOLTIP'),
             }) then
             Timer.stop()
         end
@@ -56,6 +58,7 @@ return {
 
                 rectangle = grid_rect(4, 0, 2, 1),
                 text = Locales.str('TIMER_RESET'),
+                tooltip = Locales.str('TIMER_RESET_TOOLTIP'),
             }) then
             Timer.reset()
         end
@@ -63,6 +66,7 @@ return {
             uid = UID.ToggleAuto,
             rectangle = grid_rect(6, 0, 2, 1),
             text = Settings.timer_auto and Locales.str('TIMER_AUTO') or Locales.str('TIMER_MANUAL'),
+            tooltip = Locales.str('TIMER_MODE_TOOLTIP'),
             is_checked = Settings.timer_auto,
         })
         ugui.joystick({
@@ -72,6 +76,7 @@ return {
                 x = Joypad.input.X,
                 y = -Joypad.input.Y,
             },
+
         })
 
         ugui.label({
