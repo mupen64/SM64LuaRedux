@@ -63,7 +63,7 @@ Settings = {
     locale_index = 1,
     tab_index = 1,
     navbar_visible = true,
-    settings_tab_index = 1,
+
     autodetect_address = true,
     auto_firsties = false,
     mini_visualizer = false,
