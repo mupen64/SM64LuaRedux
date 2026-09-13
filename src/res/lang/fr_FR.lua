@@ -164,7 +164,9 @@ Cette action est irréversible.
     SETTINGS_VISUALS_UPDATE_EVERY_VI_TOOLTIP =
     'Met à jour l\'UI chaque VI, améliorant la synchronisation de capture mupen. Réduit les performances.',
     SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT = "Interaction joystick",
+    SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT_TOOLTIP = 'Passe en mode manuel lors de l\'interaction avec le joystick',
     SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE = "Verrouiller les raccourcis quand un contrôle est actif",
+    SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE_TOOLTIP = 'Empêche les raccourcis de se déclencher lorsqu\'un contrôle a le focus clavier',
     SETTINGS_VARWATCH_DISABLED = '(désactivé)',
     SETTINGS_VARWATCH_HIDE = 'Cacher',
     SETTINGS_VARWATCH_ANGLE_FORMAT = 'Format d\'angle',

@@ -164,7 +164,9 @@ This action cannot be undone.
     SETTINGS_VISUALS_UPDATE_EVERY_VI_TOOLTIP =
     'Updates the UI every VI, improving mupen capture sync. Reduces performance.',
     SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT = "Enable manual mode on joystick interact",
+    SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT_TOOLTIP = 'Switches to manual movement mode when you interact with the joystick',
     SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE = "Lock Hotkeys when control is active",
+    SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE_TOOLTIP = 'Prevents hotkeys from triggering while a control has keyboard focus',
     SETTINGS_VARWATCH_DISABLED = '(disabled)',
     SETTINGS_VARWATCH_HIDE = 'Hide',
     SETTINGS_VARWATCH_ANGLE_FORMAT = 'Angle formatting',

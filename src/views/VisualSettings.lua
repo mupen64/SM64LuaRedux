@@ -97,24 +97,30 @@ local visual_items = {
 
 local interaction_items = {
     {
+        show_label = false,
+        control_width = 7.5,
         text = function() return Locales.str('SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT') end,
         func = function(rect)
             Settings.enable_manual_on_joystick_interact = ugui.toggle_button({
                 uid = UID.EnableManualOnJoystickInteract,
                 rectangle = rect,
                 is_checked = Settings.enable_manual_on_joystick_interact,
-                text = Locales.str('GENERIC_ON'),
+                text = Locales.str('SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT'),
+                tooltip = Locales.str('SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT_TOOLTIP'),
             })
         end,
     },
     {
+        show_label = false,
+        control_width = 7.5,
         text = function() return Locales.str('SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE') end,
         func = function(rect)
             Settings.lock_hotkeys_when_control_active = ugui.toggle_button({
                 uid = UID.LockHotkeysWhenControlActive,
                 rectangle = rect,
                 is_checked = Settings.lock_hotkeys_when_control_active,
-                text = Locales.str('GENERIC_ON'),
+                text = Locales.str('SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE'),
+                tooltip = Locales.str('SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE_TOOLTIP'),
             })
         end,
     },
@@ -136,11 +142,11 @@ local function draw_setting_item(item, y, label_uid)
             align_y = BreitbandGraphics.alignment.center,
         })
 
-        item.func(grid_rect(0, y + 0.6, 4, 1))
+        item.func(grid_rect(0, y + 0.6, item.control_width or 4, 1))
         return y + 1.75
     end
 
-    item.func(grid_rect(0, y, 4, 1))
+    item.func(grid_rect(0, y, item.control_width or 4, 1))
     return y + 1.25
 end
 
