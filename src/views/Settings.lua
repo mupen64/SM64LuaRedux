@@ -398,12 +398,13 @@ return {
         local content_rectangle = grid_rect(0, 0, 7.5, VIEWPORT_HEIGHT)
 
         BreitbandGraphics.push_clip(content_rectangle)
-        Drawing.push_offset(0, -Settings.grid_size * Drawing.scale * Settings.settings_scroll_offset)
+        Drawing.push_offset(0, -Settings.settings_scroll_offset)
         draw_groups()
         Drawing.pop_offset()
         BreitbandGraphics.pop_clip()
 
-        local max_scroll = math.max(0, content_height - VIEWPORT_HEIGHT)
+        local cell_height = Settings.grid_size * Drawing.scale
+        local max_scroll = math.max(0, (content_height - VIEWPORT_HEIGHT) * cell_height)
         if max_scroll > 0 then
             Settings.settings_scroll_offset = math.min(Settings.settings_scroll_offset, max_scroll)
             local relative_scroll = ugui.scrollbar({
@@ -412,7 +413,7 @@ return {
                 value = Settings.settings_scroll_offset / max_scroll,
                 ratio = VIEWPORT_HEIGHT / content_height,
             })
-            Settings.settings_scroll_offset = math.floor(relative_scroll * max_scroll + 0.5)
+            Settings.settings_scroll_offset = relative_scroll * max_scroll
         else
             Settings.settings_scroll_offset = 0
         end
