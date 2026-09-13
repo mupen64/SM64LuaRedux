@@ -139,23 +139,29 @@ local function draw_setting_item(item, y, label_uid)
     local theme = Styles.theme()
     local foreground_color = Drawing.foreground_color()
 
+    local control_width = item.control_width or 4
+    local control_height = item.control_height or 1
+
     if item.show_label ~= false then
+        local control_x = 7.5 - control_width
+
         ugui.label({
             uid = label_uid,
-            rectangle = grid_rect(0, y, 7.5, 0.5),
+            rectangle = grid_rect(0, y, control_x, control_height),
             text = item.text(),
             color = foreground_color,
             font_size = theme.font_size * Drawing.scale * 1.1,
             font_name = theme.font_name,
             align_x = BreitbandGraphics.alignment.start,
             align_y = BreitbandGraphics.alignment.center,
+            fit = true
         })
 
-        item.func(grid_rect(0, y + 0.6, item.control_width or 4, item.control_height or 1))
-        return y + (item.row_height or 1.75)
+        item.func(grid_rect(control_x, y, control_width, control_height))
+        return y + (item.row_height or 1.25)
     end
 
-    item.func(grid_rect(0, y, item.control_width or 4, item.control_height or 1))
+    item.func(grid_rect(0, y, control_width, control_height))
     return y + (item.row_height or 1.25)
 end
 
