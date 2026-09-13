@@ -231,6 +231,10 @@ Cette action est irréversible.
     TIMER_RESET = 'Vider',
     TIMER_MANUAL = 'Manuel',
     TIMER_AUTO = 'Auto',
+    TIMER_START_TOOLTIP = 'Démarre le chronomètre',
+    TIMER_STOP_TOOLTIP = 'Arrête le chronomètre',
+    TIMER_RESET_TOOLTIP = 'Réinitialise et arrête le chronomètre',
+    TIMER_MODE_TOOLTIP = 'Définit si le chronomètre démarre manuellement\nou après une transition de niveau',
     -- Varwatch display strings
     VARWATCH_FACING_YAW_LABEL = 'Orientation Yaw',
     VARWATCH_FACING_YAW = '%s (O : %s)',

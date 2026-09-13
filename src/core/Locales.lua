@@ -53,7 +53,6 @@ Locales = {}
 ---@field public TAS_ATAN_N_TOOLTIP string
 ---@field public TAS_ATAN_S_TOOLTIP string
 ---@field public TAS_MAGNITUDE_TOOLTIP string
-
 ---@field public TAS_MAG_RESET_TOOLTIP string
 ---@field public TAS_MAG_HIGH_TOOLTIP string
 ---@field public TAS_SPDKICK_TOOLTIP string
@@ -193,6 +192,10 @@ Locales = {}
 ---@field public TIMER_RESET string
 ---@field public TIMER_MANUAL string
 ---@field public TIMER_AUTO string
+---@field public TIMER_START_TOOLTIP string
+---@field public TIMER_STOP_TOOLTIP string
+---@field public TIMER_RESET_TOOLTIP string
+---@field public TIMER_MODE_TOOLTIP string
 ---@field public VARWATCH_FACING_YAW_LABEL string
 ---@field public VARWATCH_FACING_YAW string
 ---@field public VARWATCH_INTENDED_YAW_LABEL string

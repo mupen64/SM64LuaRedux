@@ -232,6 +232,10 @@ This action cannot be undone.
     TIMER_RESET = 'Reset',
     TIMER_MANUAL = 'Manual',
     TIMER_AUTO = 'Auto',
+    TIMER_START_TOOLTIP = 'Starts the timer',
+    TIMER_STOP_TOOLTIP = 'Stops the timer',
+    TIMER_RESET_TOOLTIP = 'Resets and stops the timer',
+    TIMER_MODE_TOOLTIP = 'Sets whether the timer starts manually\nor after a level transition',
     -- Varwatch
     VARWATCH_FACING_YAW_LABEL = "Facing Yaw",
     VARWATCH_FACING_YAW = '%s (O: %s)',

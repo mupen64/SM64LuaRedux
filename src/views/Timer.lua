@@ -40,6 +40,7 @@ return {
 
                 rectangle = grid_rect(0, 0, 2, 1),
                 text = Locales.str('TIMER_START'),
+                tooltip = Locales.str('TIMER_START_TOOLTIP'),
             }) then
             Timer.start()
         end
@@ -48,6 +49,7 @@ return {
 
                 rectangle = grid_rect(2, 0, 2, 1),
                 text = Locales.str('TIMER_STOP'),
+                tooltip = Locales.str('TIMER_STOP_TOOLTIP'),
             }) then
             Timer.stop()
         end
@@ -56,6 +58,7 @@ return {
 
                 rectangle = grid_rect(4, 0, 2, 1),
                 text = Locales.str('TIMER_RESET'),
+                tooltip = Locales.str('TIMER_RESET_TOOLTIP'),
             }) then
             Timer.reset()
         end
@@ -63,6 +66,7 @@ return {
             uid = UID.ToggleAuto,
             rectangle = grid_rect(6, 0, 2, 1),
             text = Settings.timer_auto and Locales.str('TIMER_AUTO') or Locales.str('TIMER_MANUAL'),
+            tooltip = Locales.str('TIMER_MODE_TOOLTIP'),
             is_checked = Settings.timer_auto,
         })
         ugui.joystick({
@@ -72,6 +76,7 @@ return {
                 x = Joypad.input.X,
                 y = -Joypad.input.Y,
             },
+
         })
 
         ugui.label({
