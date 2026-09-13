@@ -1376,7 +1376,8 @@ ugui.standard_styler = {
     ---@param font_name string? The font name to use for the text. If nil, the default is assumed.
     ---@param font_size number? The font size to use for the text. If nil, the default is assumed.
     ---@param wrap boolean? Whether the text wraps at the rectangle's edges. If nil, false is assumed.
-    draw_rich_text = function(rectangle, align_x, align_y, text, color, visual_state, plaintext, font_name, font_size, wrap)
+    ---@param fit boolean? Whether the rich text is scaled down to fit the rectangle. If nil, false is assumed.
+    draw_rich_text = function(rectangle, align_x, align_y, text, color, visual_state, plaintext, font_name, font_size, wrap, fit)
         align_x = align_x or BreitbandGraphics.alignment.center
         align_y = align_y or BreitbandGraphics.alignment.center
         font_name = font_name or ugui.standard_styler.params.font_name
@@ -1411,6 +1412,7 @@ ugui.standard_styler = {
                 font_name = font_name,
                 font_size = font_size,
                 aliased = not ugui.standard_styler.params.cleartype,
+                fit = fit,
             })
             return
         end
@@ -1418,6 +1420,21 @@ ugui.standard_styler = {
         -- Fast-ish path: no rich text.
         -- COMPAT: We intentionally retain a bug here that makes text rendering not be constrained by `rectangle`.
         if text:find('[', 1, true) == nil then
+            if fit then
+                BreitbandGraphics.draw_text2({
+                    text = text,
+                    rectangle = rectangle,
+                    color = color,
+                    align_x = align_x,
+                    align_y = align_y,
+                    font_name = font_name,
+                    font_size = font_size,
+                    fit = true,
+                    aliased = not ugui.standard_styler.params.cleartype,
+                })
+                return
+            end
+
             local size = BreitbandGraphics.get_text_size(text, font_size, font_name)
             local text_x = rectangle.x
             local text_y = rectangle.y
@@ -1457,6 +1474,19 @@ ugui.standard_styler = {
         local computed = ugui.standard_styler.compute_rich_text(text, plaintext, font_name, font_size)
         local segment_data = computed.segment_data
         local total_width = computed.size.x
+
+        if fit and total_width > 0 and computed.size.y > 0 then
+            local scale = math.min(1, rectangle.width / total_width, rectangle.height / computed.size.y)
+            if scale < 1 then
+                font_size = font_size * scale
+                total_width = total_width * scale
+                for _, data in pairs(segment_data) do
+                    data.rectangle.x = data.rectangle.x * scale
+                    data.rectangle.width = data.rectangle.width * scale
+                    data.rectangle.height = data.rectangle.height * scale
+                end
+            end
+        end
 
         -- 2. Translate all segments to match the specified alignments
         if align_x == BreitbandGraphics.alignment.start then
@@ -2379,6 +2409,7 @@ end
 ---@field public align_y Alignment? The text's vertical alignment inside the control rectangle. If `nil`, `alignment.center` is assumed.
 ---@field public wrap boolean? Whether the text wraps at the control rectangle's edges. If `nil`, false is assumed.
 ---@field public clip boolean? Whether the text is clipped to the control rectangle. If `nil`, false is assumed.
+---@field public fit boolean? Whether the text is scaled to fit the control rectangle. If `nil`, false is assumed.
 ---A label that contains text.
 
 ---@type ControlRegistryEntry
@@ -2397,6 +2428,7 @@ ugui.registry.label = {
         ugui.internal.assert(type(control.align_y) == 'number' or control.align_y == nil, 'expected align_y to be number or nil')
         ugui.internal.assert(type(control.wrap) == 'boolean' or control.wrap == nil, 'expected wrap to be boolean or nil')
         ugui.internal.assert(type(control.clip) == 'boolean' or control.clip == nil, 'expected clip to be boolean or nil')
+        ugui.internal.assert(type(control.fit) == 'boolean' or control.fit == nil, 'expected fit to be boolean or nil')
     end,
     ---@param control Label
     ---@return ControlReturnValue
@@ -2414,7 +2446,7 @@ ugui.registry.label = {
             BreitbandGraphics.push_clip(control.rectangle)
         end
         local visual_state = ugui.get_visual_state(control)
-        ugui.standard_styler.draw_rich_text(control.rectangle, control.align_x, control.align_y, control.text, control.color, visual_state, control.plaintext, control.font_name, control.font_size, control.wrap)
+        ugui.standard_styler.draw_rich_text(control.rectangle, control.align_x, control.align_y, control.text, control.color, visual_state, control.plaintext, control.font_name, control.font_size, control.wrap, control.fit)
         if control.clip then
             BreitbandGraphics.pop_clip()
         end
