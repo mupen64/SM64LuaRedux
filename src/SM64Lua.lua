@@ -110,7 +110,18 @@ end
 
 is_keyboard_captured = false
 
---HACK: We want to know if ugui is capturing keyboard input on a control that cares about inputs.
+-- HACK: Do not consume wheel input while a control owns the mouse or a numberbox owns the keyboard.
+function can_scroll()
+    if ugui.internal.mouse_captured_control ~= nil then
+        return false
+    end
+
+    local keyboard_captured_control = ugui.internal.keyboard_captured_control
+    return keyboard_captured_control == nil or
+        ugui.internal.control_types[keyboard_captured_control] ~= 'numberbox'
+end
+
+-- HACK: We want to know if ugui is capturing keyboard input on a control that cares about inputs.
 function get_is_keyboard_captured()
     if ugui.internal.keyboard_captured_control == nil then
         return false

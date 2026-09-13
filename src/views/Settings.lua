@@ -396,6 +396,17 @@ return {
         local scrollbar_rectangle = grid_rect(7.5, 0, 0.5, VIEWPORT_HEIGHT)
         scrollbar_rectangle.height = scrollbar_rectangle.height + SCROLLBAR_EXTRA_HEIGHT
         local content_rectangle = grid_rect(0, 0, 7.5, VIEWPORT_HEIGHT)
+        local cell_height = Settings.grid_size * Drawing.scale
+        local max_scroll = math.max(0, (content_height - VIEWPORT_HEIGHT) * cell_height)
+
+        if can_scroll() then
+            if ugui.internal.is_mouse_wheel_up() then
+                Settings.settings_scroll_offset = math.max(0, Settings.settings_scroll_offset - cell_height * 3)
+            elseif ugui.internal.is_mouse_wheel_down() then
+                Settings.settings_scroll_offset = math.min(max_scroll,
+                    Settings.settings_scroll_offset + cell_height * 3)
+            end
+        end
 
         BreitbandGraphics.push_clip(content_rectangle)
         Drawing.push_offset(0, -Settings.settings_scroll_offset)
@@ -403,8 +414,7 @@ return {
         Drawing.pop_offset()
         BreitbandGraphics.pop_clip()
 
-        local cell_height = Settings.grid_size * Drawing.scale
-        local max_scroll = math.max(0, (content_height - VIEWPORT_HEIGHT) * cell_height)
+        max_scroll = math.max(0, (content_height - VIEWPORT_HEIGHT) * cell_height)
         if max_scroll > 0 then
             Settings.settings_scroll_offset = math.min(Settings.settings_scroll_offset, max_scroll)
             local relative_scroll = ugui.scrollbar({
