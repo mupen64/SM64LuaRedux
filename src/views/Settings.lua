@@ -40,7 +40,6 @@ local UID = UIDProvider.allocate_once('SettingsV5', function(enum_next)
 end)
 
 local VIEWPORT_HEIGHT = 15
-local SCROLLBAR_EXTRA_HEIGHT = 20
 local content_height = VIEWPORT_HEIGHT
 
 local visual_items = {
@@ -395,7 +394,11 @@ return {
     name = function() return Locales.str('SETTINGS_TAB_NAME') end,
     draw = function()
         local scrollbar_rectangle = grid_rect(7.5, 0, 0.5, VIEWPORT_HEIGHT)
-        scrollbar_rectangle.height = scrollbar_rectangle.height + SCROLLBAR_EXTRA_HEIGHT
+        if Settings.navbar_visible then
+            scrollbar_rectangle.height = grid_rect(0, 16, 0, 0).y - scrollbar_rectangle.y
+        else
+            scrollbar_rectangle.height = Drawing.size.height - scrollbar_rectangle.y
+        end
         local content_rectangle = grid_rect(0, 0, 7.5, VIEWPORT_HEIGHT)
         local cell_height = Settings.grid_size * Drawing.scale
         local max_scroll = math.max(0, (content_height - VIEWPORT_HEIGHT) * cell_height)
