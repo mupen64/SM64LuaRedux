@@ -8,6 +8,8 @@ local theme = get_base_style()
 
 theme.font_name = 'Consolas'
 theme.background_color = BreitbandGraphics.repeated_to_color(34)
+theme.textbox.selection = BreitbandGraphics.hex_to_color('#A8294BFF')
+theme.numberbox.selection = BreitbandGraphics.hex_to_color('#A8294BFF')
 theme.button.text = {
     [1] = BreitbandGraphics.hex_to_color('#F7A8B8'),
     [2] = BreitbandGraphics.colors.black,

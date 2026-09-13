@@ -7,6 +7,8 @@
 local theme = get_base_style()
 
 theme.background_color = BreitbandGraphics.repeated_to_color(57)
+theme.textbox.selection = BreitbandGraphics.hex_to_color('#0078D7')
+theme.numberbox.selection = BreitbandGraphics.hex_to_color('#0078D7')
 theme.font_name = 'MS Sans Serif'
 theme.button.text = {
     [1] = BreitbandGraphics.colors.white,
