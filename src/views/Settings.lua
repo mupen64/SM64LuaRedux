@@ -34,7 +34,8 @@ local UID = UIDProvider.allocate_once('SettingsV5', function(enum_next)
         HideVar = enum_next(ugui.registry.toggle_button.uids()),
         VarWatchGroup = enum_next(ugui.registry.toggle_button.uids()),
         VarWatchGroupLabel = enum_next(ugui.registry.label.uids()),
-        VarWatchItemLabelBase = enum_next(2 * ugui.registry.label.uids()),
+        NavbarCoverLabel = enum_next(ugui.registry.label.uids()),
+        VarWatchItemLabelBase = enum_next(UIDProvider.unknown),
     }
 end)
 
@@ -426,6 +427,26 @@ return {
             Settings.settings_scroll_offset = relative_scroll * max_scroll
         else
             Settings.settings_scroll_offset = 0
+        end
+
+        if Settings.navbar_visible then
+            local cover_rectangle = grid_rect(0, 16, 8, 30)
+
+            -- HACK: Block hittesting with a dummy label below the navbar because the controls scroll under it
+            defer_before_navbar(function()
+                ugui.label({
+                    uid = UID.NavbarCoverLabel,
+                    rectangle = cover_rectangle,
+                    text = '',
+                    color = BreitbandGraphics.colors.black,
+                    hittestable = true,
+                })
+            end)
+
+            -- HACK: Obscure the controls under the navbar too... :P
+            defer_draw(function()
+                BreitbandGraphics.fill_rectangle(grid_rect(0, 16.85, 8, 30), Styles.theme().background_color)
+            end)
         end
     end,
 }
