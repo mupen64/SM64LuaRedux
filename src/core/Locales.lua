@@ -36,6 +36,27 @@ Locales = {}
 ---@field public MAG_RESET string
 ---@field public MAG_HI string
 ---@field public SPDKICK string
+---@field public TAS_MATCH_YAW_TOOLTIP string
+---@field public TAS_REVERSE_YAW_TOOLTIP string
+---@field public TAS_MATCH_ANGLE_TOOLTIP string
+---@field public TAS_GOAL_ANGLE_TOOLTIP string
+---@field public TAS_DYAW_TOOLTIP string
+---@field public TAS_STRAIN_LEFT_TOOLTIP string
+---@field public TAS_STRAIN_RIGHT_TOOLTIP string
+---@field public TAS_D99_TOOLTIP string
+---@field public TAS_D99_ALWAYS_TOOLTIP string
+---@field public TAS_ATAN_STRAIN_TOOLTIP string
+---@field public TAS_ATAN_STRAIN_REV_TOOLTIP string
+---@field public TAS_ATAN_EXP_TOOLTIP string
+---@field public TAS_ATAN_R_TOOLTIP string
+---@field public TAS_ATAN_D_TOOLTIP string
+---@field public TAS_ATAN_N_TOOLTIP string
+---@field public TAS_ATAN_S_TOOLTIP string
+---@field public TAS_MAGNITUDE_TOOLTIP string
+
+---@field public TAS_MAG_RESET_TOOLTIP string
+---@field public TAS_MAG_HIGH_TOOLTIP string
+---@field public TAS_SPDKICK_TOOLTIP string
 ---@field public FRAMEWALK string
 ---@field public SWIM string
 ---@field public YES string

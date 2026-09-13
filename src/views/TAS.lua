@@ -55,6 +55,7 @@ return {
             uid = UID.MovementModeMatchYaw,
             rectangle = grid_rect(0, 0, 4, 1),
             text = Locales.str('MATCH_YAW'),
+            tooltip = Locales.str('TAS_MATCH_YAW_TOOLTIP'),
             is_checked = Settings.tas.movement_mode == MovementModes.match_yaw,
         })
 
@@ -66,6 +67,7 @@ return {
             uid = UID.MovementModeReverseYaw,
             rectangle = grid_rect(4, 0, 4, 1),
             text = Locales.str('REVERSE_YAW'),
+            tooltip = Locales.str('TAS_REVERSE_YAW_TOOLTIP'),
             is_checked = Settings.tas.movement_mode == MovementModes.reverse_yaw,
         })
 
@@ -77,6 +79,7 @@ return {
             uid = UID.MovementModeMatchAngle,
             rectangle = grid_rect(0, 1, 2.5, 1),
             text = Locales.str('MATCH_ANGLE'),
+            tooltip = Locales.str('TAS_MATCH_ANGLE_TOOLTIP'),
             is_checked = Settings.tas.movement_mode == MovementModes.match_angle,
         })
 
@@ -89,6 +92,7 @@ return {
             is_enabled = Settings.tas.movement_mode == MovementModes.match_angle,
             rectangle = grid_rect(2.5, 1, 2, 1),
             text = Locales.str('DYAW'),
+            tooltip = Locales.str('TAS_DYAW_TOOLTIP'),
             is_checked = Settings.tas.dyaw,
         })
         if dyaw_meta.signal_change == ugui.signal_change_states.started then
@@ -99,6 +103,7 @@ return {
             uid = UID.StrainLeft,
             rectangle = grid_rect(4.5, 1, 0.75, 1),
             text = '[icon:arrow_left]',
+            tooltip = Locales.str('TAS_STRAIN_LEFT_TOOLTIP'),
             is_checked = Settings.tas.strain_left,
         })
         if meta.signal_change == ugui.signal_change_states.started then
@@ -109,6 +114,7 @@ return {
             uid = UID.StrainRight,
             rectangle = grid_rect(5.25, 1, 0.75, 1),
             text = '[icon:arrow_right]',
+            tooltip = Locales.str('TAS_STRAIN_RIGHT_TOOLTIP'),
             is_checked = Settings.tas.strain_right,
         })
         if meta.signal_change == ugui.signal_change_states.started then
@@ -121,12 +127,14 @@ return {
             rectangle = grid_rect(6, 1, 2, 1),
             places = 5,
             value = Settings.tas.goal_angle,
+            tooltip = Locales.str('TAS_GOAL_ANGLE_TOOLTIP'),
         }))
 
         local _, meta = ugui.toggle_button({
             uid = UID.D99,
             rectangle = grid_rect(0, 2, 2, 1),
             text = Locales.str('D99'),
+            tooltip = Locales.str('TAS_D99_TOOLTIP'),
             is_checked = Settings.tas.strain_speed_target,
         })
         if meta.signal_change == ugui.signal_change_states.started then
@@ -138,6 +146,7 @@ return {
             is_enabled = Settings.tas.strain_speed_target,
             rectangle = grid_rect(2, 2, 2, 1),
             text = Locales.str('D99_ALWAYS'),
+            tooltip = Locales.str('TAS_D99_ALWAYS_TOOLTIP'),
             is_checked = Settings.tas.strain_always,
         })
         if meta.signal_change == ugui.signal_change_states.started then
@@ -148,6 +157,7 @@ return {
             uid = UID.AtanStrain,
             rectangle = Settings.tas.atan_strain and grid_rect(4, 2, 3, 1) or grid_rect(4, 2, 4, 1),
             text = Locales.str('ATAN_STRAIN'),
+            tooltip = Locales.str('TAS_ATAN_STRAIN_TOOLTIP'),
             is_checked = Settings.tas.atan_strain,
         })
         if meta.signal_change == ugui.signal_change_states.started then
@@ -162,12 +172,13 @@ return {
                 uid = UID.AtanStrainReverse,
                 rectangle = grid_rect(7, 2, 1, 1),
                 text = Locales.str('ATAN_STRAIN_REV'),
+                tooltip = Locales.str('TAS_ATAN_STRAIN_REV_TOOLTIP'),
                 is_checked = Settings.tas.reverse_arc,
             })
         end
 
         if Settings.tas.atan_strain then
-            local function atan_field(index, text, up_callback, down_callback)
+            local function atan_field(index, text, tooltip_key, up_callback, down_callback)
                 local width = 1.6
                 local x = index * width
                 ugui.label({
@@ -186,6 +197,7 @@ return {
                         uid = UID.AtanButtons + index * 2,
                         rectangle = grid_rect(x, 3.5, width / 2, 0.5),
                         text = '-',
+                        tooltip = Locales.str(tooltip_key),
                     }) then
                     down_callback()
                 end
@@ -194,6 +206,7 @@ return {
                         uid = UID.AtanButtons + index * 2 + 1,
                         rectangle = grid_rect(x + width / 2, 3.5, width / 2, 0.5),
                         text = '+',
+                        tooltip = Locales.str(tooltip_key),
                     }) then
                     up_callback()
                 end
@@ -201,6 +214,7 @@ return {
 
             atan_field(0,
                 'E: ' .. tostring(Settings.atan_exp),
+                'TAS_ATAN_EXP_TOOLTIP',
                 function()
                     Settings.atan_exp = math.max(-4, math.min(Settings.atan_exp + 1, 4))
                 end,
@@ -210,6 +224,7 @@ return {
 
             atan_field(1,
                 'R: ' .. tostring(Settings.tas.atan_r),
+                'TAS_ATAN_R_TOOLTIP',
                 function()
                     Settings.tas.atan_r = Settings.tas.atan_r + math.pow(10, Settings.atan_exp)
                 end,
@@ -220,6 +235,7 @@ return {
 
             atan_field(2,
                 'D: ' .. tostring(Settings.tas.atan_d),
+                'TAS_ATAN_D_TOOLTIP',
                 function()
                     Settings.tas.atan_d = Settings.tas.atan_d + math.pow(10, Settings.atan_exp)
                 end,
@@ -229,6 +245,7 @@ return {
 
             atan_field(3,
                 'N: ' .. tostring(Settings.tas.atan_n),
+                'TAS_ATAN_N_TOOLTIP',
                 function()
                     Settings.tas.atan_n = math.max(0,
                         Settings.tas.atan_n + math.pow(10, math.max(-0.6020599913279624, Settings.atan_exp)), 2)
@@ -240,6 +257,7 @@ return {
 
             atan_field(4,
                 'S: ' .. tostring(Settings.tas.atan_start),
+                'TAS_ATAN_S_TOOLTIP',
                 function()
                     Settings.tas.atan_start = math.max(0,
                         Settings.tas.atan_start + math.pow(10, math.max(0, Settings.atan_exp)))
@@ -291,12 +309,14 @@ return {
             rectangle = grid_rect(4, YORG + 2, 2, 1),
             places = 3,
             value = Settings.tas.goal_mag,
+            tooltip = Locales.str('TAS_MAGNITUDE_TOOLTIP'),
         }))
 
         if ugui.button({
                 uid = UID.ResetMag,
                 rectangle = grid_rect(4, YORG + 3, 2, 1),
                 text = Locales.str('MAG_RESET'),
+                tooltip = Locales.str('TAS_MAG_RESET_TOOLTIP'),
                 styler_mixin = {
                     font_size = theme.font_size * Drawing.scale * 0.9,
                 },
@@ -308,6 +328,7 @@ return {
             uid = UID.HighMagnitude,
             rectangle = grid_rect(6, YORG + 3, 2, 1),
             text = Locales.str('MAG_HI'),
+            tooltip = Locales.str('TAS_MAG_HIGH_TOOLTIP'),
             is_checked = Settings.tas.high_magnitude,
             styler_mixin = {
                 font_size = theme.font_size * Drawing.scale * 0.9,
@@ -321,6 +342,7 @@ return {
                 uid = UID.SpeedKick,
                 rectangle = grid_rect(6, YORG + 2, 2, 1),
                 text = Locales.str('SPDKICK'),
+                tooltip = Locales.str('TAS_SPDKICK_TOOLTIP'),
             }) then
             action.invoke(ACTION_SET_SPDKICK)
         end
@@ -336,6 +358,7 @@ return {
                 height = joystick_rect[4],
             },
             position = displayPosition,
+
             mag = Settings.tas.goal_mag >= 127 and 0 or Settings.tas.goal_mag,
             x_snap = 8,
             y_snap = 8,

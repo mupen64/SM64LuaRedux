@@ -260,6 +260,7 @@ local function lower_controls(draw, old_values, new_values, top)
         uid = UID.Joypad,
         rectangle = grid_rect(0, top, 2, 2),
         position = display_position,
+
     })
     if meta.signal_change == ugui.signal_change_states.started then
         new_values.movement_mode = MovementModes.manual
@@ -299,6 +300,7 @@ local function lower_controls(draw, old_values, new_values, top)
         rectangle = grid_rect(2, top, 2, Gui.LARGE_CONTROL_HEIGHT),
         places = 3,
         value = math.max(0, math.min(127, new_values.goal_mag)),
+        tooltip = Locales.str('TAS_MAGNITUDE_TOOLTIP'),
     })
     -- a value starting with a 9 likely indicates that the user scrolled down
     -- on the most significant digit while its value was 0, so we "clamp" to 0 here
@@ -310,6 +312,7 @@ local function lower_controls(draw, old_values, new_values, top)
         uid = UID.SpeedKick,
         rectangle = grid_rect(4, top, 1.5, Gui.LARGE_CONTROL_HEIGHT),
         text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_SPDKICK'),
+        tooltip = Locales.str('TAS_SPDKICK_TOOLTIP'),
     }) then
         if new_values.goal_mag ~= 48 then
             new_values.goal_mag = 48
@@ -322,6 +325,7 @@ local function lower_controls(draw, old_values, new_values, top)
         uid = UID.HighMag,
         rectangle = grid_rect(5.5, top, 1.5, Gui.LARGE_CONTROL_HEIGHT),
         text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_HIGH_MAG'),
+        tooltip = Locales.str('TAS_MAG_HIGH_TOOLTIP'),
         is_checked = new_values.high_magnitude,
     })
 
@@ -329,6 +333,7 @@ local function lower_controls(draw, old_values, new_values, top)
         uid = UID.ResetMag,
         rectangle = grid_rect(7, top, 1, Gui.LARGE_CONTROL_HEIGHT),
         text = Locales.str('MAG_RESET'),
+        tooltip = Locales.str('TAS_MAG_RESET_TOOLTIP'),
     }) then
         new_values.goal_mag = 127
     end
@@ -383,7 +388,7 @@ local function atan_controls(draw, sheet, new_values, top)
     local theme = Styles.theme()
     local foreground_color = Drawing.foreground_color()
 
-    local function atan_field(index, text, table, field, increment, low_bound, high_bound)
+    local function atan_field(index, text, tooltip_key, table, field, increment, low_bound, high_bound)
         local width = 1.6
         local x = index * width
         ugui.label({
@@ -402,6 +407,7 @@ local function atan_controls(draw, sheet, new_values, top)
             uid = UID.AtanButtons + index * 2,
             rectangle = grid_rect(x, top + 1.5, width / 2, 0.5),
             text = '-',
+            tooltip = Locales.str(tooltip_key),
         }) then
             table[field] = math.max(low_bound, table[field] - increment)
         end
@@ -410,16 +416,17 @@ local function atan_controls(draw, sheet, new_values, top)
             uid = UID.AtanButtons + index * 2 + 1,
             rectangle = grid_rect(x + width / 2, top + 1.5, width / 2, 0.5),
             text = '+',
+            tooltip = Locales.str(tooltip_key),
         }) then
             table[field] = math.min(high_bound, table[field] + increment)
         end
     end
 
-    atan_field(0, 'E: ', Settings, 'atan_exp', 1, -4, 4)
-    atan_field(1, 'R: ', new_values, 'atan_r', math.pow(10, Settings.atan_exp), -math.huge, math.huge)
-    atan_field(2, 'D: ', new_values, 'atan_d', math.pow(10, Settings.atan_exp), -math.huge, math.huge)
-    atan_field(3, 'N: ', new_values, 'atan_n', math.pow(10, math.max(-0.6020599913279624, Settings.atan_exp)), 1, math.huge)
-    atan_field(4, 'S: ', new_values, 'atan_start', math.pow(10, math.max(0, Settings.atan_exp)), -math.huge, math.huge)
+    atan_field(0, 'E: ', 'TAS_ATAN_EXP_TOOLTIP', Settings, 'atan_exp', 1, -4, 4)
+    atan_field(1, 'R: ', 'TAS_ATAN_R_TOOLTIP', new_values, 'atan_r', math.pow(10, Settings.atan_exp), -math.huge, math.huge)
+    atan_field(2, 'D: ', 'TAS_ATAN_D_TOOLTIP', new_values, 'atan_d', math.pow(10, Settings.atan_exp), -math.huge, math.huge)
+    atan_field(3, 'N: ', 'TAS_ATAN_N_TOOLTIP', new_values, 'atan_n', math.pow(10, math.max(-0.6020599913279624, Settings.atan_exp)), 1, math.huge)
+    atan_field(4, 'S: ', 'TAS_ATAN_S_TOOLTIP', new_values, 'atan_start', math.pow(10, math.max(0, Settings.atan_exp)), -math.huge, math.huge)
 end
 
 local function upper_controls(new_values, top)
@@ -427,6 +434,7 @@ local function upper_controls(new_values, top)
         uid = UID.MovementModeMatchYaw,
         rectangle = grid_rect(0, top, 4, Gui.LARGE_CONTROL_HEIGHT),
         text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_MATCH_YAW'),
+        tooltip = Locales.str('TAS_MATCH_YAW_TOOLTIP'),
         is_checked = new_values.movement_mode == MovementModes.match_yaw,
     }) then
         new_values.movement_mode = MovementModes.match_yaw
@@ -436,6 +444,7 @@ local function upper_controls(new_values, top)
         uid = UID.MovementModeReverseYaw,
         rectangle = grid_rect(4, top, 4, Gui.LARGE_CONTROL_HEIGHT),
         text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_REVERSE_YAW'),
+        tooltip = Locales.str('TAS_REVERSE_YAW_TOOLTIP'),
         is_checked = new_values.movement_mode == MovementModes.reverse_yaw,
     }) then
         new_values.movement_mode = MovementModes.reverse_yaw
@@ -447,12 +456,14 @@ local function upper_controls(new_values, top)
         rectangle = grid_rect(6, top + 1, 2, Gui.LARGE_CONTROL_HEIGHT),
         places = 5,
         value = new_values.goal_angle,
+        tooltip = Locales.str('TAS_GOAL_ANGLE_TOOLTIP'),
     }))
 
     if ugui.toggle_button({
             uid = UID.MovementModeMatchAngle,
             rectangle = grid_rect(0, top + 1, 3, Gui.LARGE_CONTROL_HEIGHT),
             text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_MATCH_ANGLE'),
+            tooltip = Locales.str('TAS_MATCH_ANGLE_TOOLTIP'),
             is_checked = new_values.movement_mode == MovementModes.match_angle,
         }) then
         new_values.movement_mode = MovementModes.match_angle
@@ -462,6 +473,7 @@ local function upper_controls(new_values, top)
         uid = UID.DYaw,
         rectangle = grid_rect(3, top + 1, 1.5, Gui.LARGE_CONTROL_HEIGHT),
         text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_DYAW'),
+        tooltip = Locales.str('TAS_DYAW_TOOLTIP'),
         is_checked = new_values.dyaw,
     })
 
@@ -469,6 +481,7 @@ local function upper_controls(new_values, top)
             uid = UID.StrainLeft,
             rectangle = grid_rect(4.5, top + 1, 0.75, Gui.LARGE_CONTROL_HEIGHT),
             text = '[icon:arrow_left]',
+            tooltip = Locales.str('TAS_STRAIN_LEFT_TOOLTIP'),
             is_checked = new_values.strain_left,
         }) then
         new_values.strain_right = false
@@ -481,6 +494,7 @@ local function upper_controls(new_values, top)
             uid = UID.StrainRight,
             rectangle = grid_rect(5.25, top + 1, 0.75, Gui.LARGE_CONTROL_HEIGHT),
             text = '[icon:arrow_right]',
+            tooltip = Locales.str('TAS_STRAIN_RIGHT_TOOLTIP'),
             is_checked = new_values.strain_right,
         }) then
         new_values.strain_left = false
@@ -493,6 +507,7 @@ local function upper_controls(new_values, top)
         uid = UID.StrainSpeedTarget,
         rectangle = grid_rect(0, top + 2, 2, Gui.LARGE_CONTROL_HEIGHT),
         text = Locales.str('D99'),
+        tooltip = Locales.str('TAS_D99_TOOLTIP'),
         is_checked = new_values.strain_speed_target,
     })
 
@@ -500,6 +515,7 @@ local function upper_controls(new_values, top)
         uid = UID.StrainAlways,
         rectangle = grid_rect(2, top + 2, 2, Gui.LARGE_CONTROL_HEIGHT),
         text = Locales.str('D99_ALWAYS'),
+        tooltip = Locales.str('TAS_D99_ALWAYS_TOOLTIP'),
         is_checked = new_values.strain_always,
     })
 
@@ -507,6 +523,7 @@ local function upper_controls(new_values, top)
         uid = UID.Atan,
         rectangle = grid_rect(4, top + 2, 3, Gui.LARGE_CONTROL_HEIGHT),
         text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_ATAN'),
+        tooltip = Locales.str('TAS_ATAN_STRAIN_TOOLTIP'),
         is_checked = new_values.atan_strain,
     })
     if new_atan and not new_values.atan_strain then
@@ -518,6 +535,7 @@ local function upper_controls(new_values, top)
         uid = UID.AtanReverse,
         rectangle = grid_rect(7, top + 2, 1, Gui.LARGE_CONTROL_HEIGHT),
         text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_ATAN_REVERSE'),
+        tooltip = Locales.str('TAS_ATAN_STRAIN_REV_TOOLTIP'),
         is_checked = new_values.reverse_arc,
     })
 end
