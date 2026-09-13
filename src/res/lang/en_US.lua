@@ -181,6 +181,7 @@ This action cannot be undone.
     'The formatting style for the speed efficiency variable.\n    Percentage: Shows the speed efficiency as a percentage (0-100%)\n    Fraction: Shows the speed efficiency as a mathematical fraction (e.g. 1/4)',
     SETTINGS_MEMORY_FILE_SELECT = 'Select map file...',
     SETTINGS_MEMORY_DETECT_NOW = 'Autodetect now',
+    SETTINGS_MEMORY_REGION = 'Game region',
     SETTINGS_MEMORY_DETECT_ON_START = 'Autodetect on start',
     SETTINGS_MEMORY_FILE_SELECT_TOOLTIP = 'Choose a .map file to load addresses from',
     SETTINGS_MEMORY_DETECT_NOW_TOOLTIP = 'Autodetects the game region based on the currently running game',

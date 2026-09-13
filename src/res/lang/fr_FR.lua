@@ -180,6 +180,7 @@ Cette action est irréversible.
     SETTINGS_MEMORY_FILE_SELECT = 'Carte mémoire…',
     SETTINGS_MEMORY_FILE_SELECT_TOOLTIP = 'Choisissez un fichier .map pour charger les adresses',
     SETTINGS_MEMORY_DETECT_NOW = 'Détecter maintenant',
+    SETTINGS_MEMORY_REGION = 'Région du jeu',
     SETTINGS_MEMORY_DETECT_NOW_TOOLTIP = 'Détecte automatiquement la région du jeu en cours d\'exécution',
     SETTINGS_MEMORY_DETECT_ON_START = 'Détecter au démarrage',
     SETTINGS_MEMORY_DETECT_ON_START_TOOLTIP = 'Détecte automatiquement la région du jeu au démarrage du script',

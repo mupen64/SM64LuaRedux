@@ -4,7 +4,7 @@
 -- SPDX-License-Identifier: GPL-2.0-or-later
 --
 
-local UID = UIDProvider.allocate_once('VisualSettingsV3', function(enum_next)
+local UID = UIDProvider.allocate_once('VisualSettingsV4', function(enum_next)
     return {
         ActiveStyle = enum_next(ugui.registry.combobox.uids()),
         Locale = enum_next(ugui.registry.combobox.uids()),
@@ -18,8 +18,20 @@ local UID = UIDProvider.allocate_once('VisualSettingsV3', function(enum_next)
         InteractionGroupLabel = enum_next(ugui.registry.label.uids()),
         VisualItemLabelBase = enum_next(4 * ugui.registry.label.uids()),
         InteractionItemLabelBase = enum_next(2 * ugui.registry.label.uids()),
+        LoadMapFile = enum_next(ugui.registry.button.uids()),
+        Region = enum_next(ugui.registry.combobox.uids()),
+        AutoDetect = enum_next(ugui.registry.button.uids()),
+        DetectOnStart = enum_next(ugui.registry.toggle_button.uids()),
+        MemoryGroup = enum_next(ugui.registry.toggle_button.uids()),
+        MemoryGroupLabel = enum_next(ugui.registry.label.uids()),
+        MemoryItemLabelBase = enum_next(4 * ugui.registry.label.uids()),
+        Scrollbar = enum_next(ugui.registry.scrollbar.uids()),
     }
 end)
+
+local VIEWPORT_HEIGHT = 15
+local CONTENT_HEIGHT = 22
+local scroll_offset = 0
 
 local visual_items = {
     {
@@ -112,19 +124,24 @@ local function draw_setting_item(item, y, label_uid)
     local theme = Styles.theme()
     local foreground_color = Drawing.foreground_color()
 
-    ugui.label({
-        uid = label_uid,
-        rectangle = grid_rect(0, y, 8, 0.5),
-        text = item.text(),
-        color = foreground_color,
-        font_size = theme.font_size * Drawing.scale * 1.1,
-        font_name = theme.font_name,
-        align_x = BreitbandGraphics.alignment.start,
-        align_y = BreitbandGraphics.alignment.center,
-    })
+    if item.show_label ~= false then
+        ugui.label({
+            uid = label_uid,
+            rectangle = grid_rect(0, y, 7.5, 0.5),
+            text = item.text(),
+            color = foreground_color,
+            font_size = theme.font_size * Drawing.scale * 1.1,
+            font_name = theme.font_name,
+            align_x = BreitbandGraphics.alignment.start,
+            align_y = BreitbandGraphics.alignment.center,
+        })
 
-    item.func(grid_rect(0, y + 0.6, 4, 1))
-    return y + 1.75
+        item.func(grid_rect(0, y + 0.6, 4, 1))
+        return y + 1.75
+    end
+
+    item.func(grid_rect(0, y, 4, 1))
+    return y + 1.25
 end
 
 local function draw_group(group, y)
@@ -133,7 +150,7 @@ local function draw_group(group, y)
 
     ugui.label({
         uid = group.label_uid,
-        rectangle = grid_rect(1.1, y, 6.9, 1),
+        rectangle = grid_rect(1.1, y, 6.4, 1),
         text = group.text(),
         color = foreground_color,
         font_size = theme.font_size * Drawing.scale * 1.1,
@@ -161,6 +178,70 @@ local function draw_group(group, y)
     return y + 0.2
 end
 
+local memory_items = {
+    {
+        show_label = false,
+        text = function() return Locales.str('SETTINGS_MEMORY_FILE_SELECT') end,
+        func = function(rect)
+            if ugui.button({
+                    uid = UID.LoadMapFile,
+                    rectangle = rect,
+                    text = Locales.str('SETTINGS_MEMORY_FILE_SELECT'),
+                    is_enabled = false,
+                }) then
+                local path = iohelper.filediag('*.map', 0)
+                if string.len(path) > 0 then
+                    local file = io.open(path, 'r')
+                    if file then
+                        local text = file:read('a')
+                        io.close(file)
+                        -- TODO: Implement
+                    end
+                end
+            end
+        end,
+    },
+    {
+        text = function() return Locales.str('SETTINGS_MEMORY_REGION') end,
+        func = function(rect)
+            Settings.address_source_index = ugui.combobox({
+                uid = UID.Region,
+                rectangle = rect,
+                items = lualinq.select(Addresses, function(addr) return addr.name() end),
+                selected_index = Settings.address_source_index,
+                tooltip = Locales.str('SETTINGS_MEMORY_REGION_TOOLTIP'),
+            })
+        end,
+    },
+    {
+        show_label = false,
+        text = function() return Locales.str('SETTINGS_MEMORY_DETECT_NOW') end,
+        func = function(rect)
+            if ugui.button({
+                    uid = UID.AutoDetect,
+                    rectangle = rect,
+                    text = Locales.str('SETTINGS_MEMORY_DETECT_NOW'),
+                    tooltip = Locales.str('SETTINGS_MEMORY_DETECT_NOW_TOOLTIP'),
+                }) then
+                Settings.address_source_index = Memory.find_matching_address_source_index()
+            end
+        end,
+    },
+    {
+        show_label = false,
+        text = function() return Locales.str('SETTINGS_MEMORY_DETECT_ON_START') end,
+        func = function(rect)
+            Settings.autodetect_address = ugui.toggle_button({
+                uid = UID.DetectOnStart,
+                rectangle = rect,
+                text = Locales.str('SETTINGS_MEMORY_DETECT_ON_START'),
+                is_checked = Settings.autodetect_address,
+                tooltip = Locales.str('SETTINGS_MEMORY_DETECT_ON_START_TOOLTIP'),
+            })
+        end,
+    },
+}
+
 local groups = {
     {
         uid = UID.VisualGroup,
@@ -178,6 +259,14 @@ local groups = {
         items = interaction_items,
         expanded = true,
     },
+    {
+        uid = UID.MemoryGroup,
+        label_uid = UID.MemoryGroupLabel,
+        item_label_uid_base = UID.MemoryItemLabelBase,
+        text = function() return Locales.str('SETTINGS_MEMORY_TAB_NAME') end,
+        items = memory_items,
+        expanded = true,
+    },
 }
 
 local function draw_groups()
@@ -190,6 +279,24 @@ end
 return {
     name = function() return Locales.str('SETTINGS_VISUALS_TAB_NAME') end,
     draw = function()
+        local max_scroll = math.max(0, CONTENT_HEIGHT - VIEWPORT_HEIGHT)
+        local scrollbar_rectangle = grid_rect(7.5, 0, 0.5, VIEWPORT_HEIGHT)
+        local content_rectangle = grid_rect(0, 0, 7.5, VIEWPORT_HEIGHT)
+
+        if max_scroll > 0 then
+            local relative_scroll = ugui.scrollbar({
+                uid = UID.Scrollbar,
+                rectangle = scrollbar_rectangle,
+                value = scroll_offset / max_scroll,
+                ratio = VIEWPORT_HEIGHT / CONTENT_HEIGHT,
+            })
+            scroll_offset = math.floor(relative_scroll * max_scroll + 0.5)
+        end
+
+        BreitbandGraphics.push_clip(content_rectangle)
+        Drawing.push_offset(0, -Settings.grid_size * Drawing.scale * scroll_offset)
         draw_groups()
+        Drawing.pop_offset()
+        BreitbandGraphics.pop_clip()
     end,
 }

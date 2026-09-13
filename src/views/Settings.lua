@@ -7,7 +7,6 @@
 local views = {
     dofile(views_path .. 'VisualSettings.lua'),
     dofile(views_path .. 'VarWatchSettings.lua'),
-    dofile(views_path .. 'MemorySettings.lua'),
 }
 
 local UID = UIDProvider.allocate_once('Settings', function(enum_next)

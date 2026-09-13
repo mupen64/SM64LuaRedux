@@ -147,7 +147,8 @@ Locales = {}
 ---@field public SETTINGS_VARWATCH_DECIMAL_POINTS string
 ---@field public SETTINGS_MEMORY_FILE_SELECT string
 ---@field public SETTINGS_MEMORY_DETECT_NOW string
----@field public SETTINGS_MEMORY_DETECT_ON_START string
+---@field public SETTINGS_MEMORY_REGION string
+---@field public SETTINGS_MEMORY_DETECT_NOW_TOOLTIP string
 ---@field public SETTINGS_HOTKEYS_NOTHING string
 ---@field public SETTINGS_HOTKEYS_CONFIRMATION string
 ---@field public SETTINGS_HOTKEYS_CLEAR string
