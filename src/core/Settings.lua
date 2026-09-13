@@ -63,6 +63,11 @@ Settings = {
     locale_index = 1,
     tab_index = 1,
     navbar_visible = true,
+    settings_scroll_offset = 0,
+    settings_visuals_expanded = true,
+    settings_interaction_expanded = true,
+    settings_memory_expanded = true,
+    settings_varwatch_expanded = true,
 
     autodetect_address = true,
     auto_firsties = false,

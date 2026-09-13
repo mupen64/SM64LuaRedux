@@ -39,8 +39,8 @@ local UID = UIDProvider.allocate_once('SettingsV5', function(enum_next)
 end)
 
 local VIEWPORT_HEIGHT = 15
-local CONTENT_HEIGHT = 33
-local scroll_offset = 0
+local SCROLLBAR_EXTRA_HEIGHT = 20
+local content_height = VIEWPORT_HEIGHT
 
 local visual_items = {
     {
@@ -175,22 +175,24 @@ local function draw_group(group, y)
         styler_mixin = { is_bold = true },
     })
 
-    group.expanded = ugui.toggle_button({
+    local expanded = Settings[group.expanded_setting]
+    local new_expanded = ugui.toggle_button({
         uid = group.uid,
         rectangle = grid_rect(0, y, 1, 1),
-        text = group.expanded and '[icon:arrow_down]' or '[icon:arrow_right]',
-        is_checked = group.expanded,
+        text = expanded and '[icon:arrow_down]' or '[icon:arrow_right]',
+        is_checked = expanded,
         styler_mixin = { icon_size = 14 },
     })
+    Settings[group.expanded_setting] = new_expanded
 
     y = y + 1.1
-    if group.expanded then
+    if new_expanded then
         for item_index = 1, #group.items, 1 do
             y = draw_setting_item(group.items[item_index], y, group.item_label_uid_base + item_index - 1)
         end
         return y + 0.3
     end
-    return y + 0.2
+    return y
 end
 
 local selected_var_index = 1
@@ -352,7 +354,7 @@ local groups = {
         item_label_uid_base = UID.VisualItemLabelBase,
         text = function() return Locales.str('SETTINGS_VISUALS_TAB_NAME') end,
         items = visual_items,
-        expanded = true,
+        expanded_setting = 'settings_visuals_expanded',
     },
     {
         uid = UID.InteractionGroup,
@@ -360,7 +362,7 @@ local groups = {
         item_label_uid_base = UID.InteractionItemLabelBase,
         text = function() return Locales.str('SETTINGS_INTERACTION_TAB_NAME') end,
         items = interaction_items,
-        expanded = true,
+        expanded_setting = 'settings_interaction_expanded',
     },
     {
         uid = UID.MemoryGroup,
@@ -368,7 +370,7 @@ local groups = {
         item_label_uid_base = UID.MemoryItemLabelBase,
         text = function() return Locales.str('SETTINGS_MEMORY_TAB_NAME') end,
         items = memory_items,
-        expanded = true,
+        expanded_setting = 'settings_memory_expanded',
     },
     {
         uid = UID.VarWatchGroup,
@@ -376,7 +378,7 @@ local groups = {
         item_label_uid_base = UID.VarWatchItemLabelBase,
         text = function() return Locales.str('SETTINGS_VARWATCH_TAB_NAME') end,
         items = varwatch_items,
-        expanded = true,
+        expanded_setting = 'settings_varwatch_expanded',
     },
 }
 
@@ -385,29 +387,34 @@ local function draw_groups()
     for i = 1, #groups, 1 do
         y = draw_group(groups[i], y)
     end
+    content_height = y
 end
 
 return {
     name = function() return Locales.str('SETTINGS_TAB_NAME') end,
     draw = function()
-        local max_scroll = math.max(0, CONTENT_HEIGHT - VIEWPORT_HEIGHT)
         local scrollbar_rectangle = grid_rect(7.5, 0, 0.5, VIEWPORT_HEIGHT)
+        scrollbar_rectangle.height = scrollbar_rectangle.height + SCROLLBAR_EXTRA_HEIGHT
         local content_rectangle = grid_rect(0, 0, 7.5, VIEWPORT_HEIGHT)
 
-        if max_scroll > 0 then
-            local relative_scroll = ugui.scrollbar({
-                uid = UID.Scrollbar,
-                rectangle = scrollbar_rectangle,
-                value = scroll_offset / max_scroll,
-                ratio = VIEWPORT_HEIGHT / CONTENT_HEIGHT,
-            })
-            scroll_offset = math.floor(relative_scroll * max_scroll + 0.5)
-        end
-
         BreitbandGraphics.push_clip(content_rectangle)
-        Drawing.push_offset(0, -Settings.grid_size * Drawing.scale * scroll_offset)
+        Drawing.push_offset(0, -Settings.grid_size * Drawing.scale * Settings.settings_scroll_offset)
         draw_groups()
         Drawing.pop_offset()
         BreitbandGraphics.pop_clip()
+
+        local max_scroll = math.max(0, content_height - VIEWPORT_HEIGHT)
+        if max_scroll > 0 then
+            Settings.settings_scroll_offset = math.min(Settings.settings_scroll_offset, max_scroll)
+            local relative_scroll = ugui.scrollbar({
+                uid = UID.Scrollbar,
+                rectangle = scrollbar_rectangle,
+                value = Settings.settings_scroll_offset / max_scroll,
+                ratio = VIEWPORT_HEIGHT / content_height,
+            })
+            Settings.settings_scroll_offset = math.floor(relative_scroll * max_scroll + 0.5)
+        else
+            Settings.settings_scroll_offset = 0
+        end
     end,
 }
