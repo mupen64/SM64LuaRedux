@@ -88,7 +88,8 @@ local reset_preset_menu_open = false
 local last_rmb_down_position = { x = 0, y = 0 }
 local keys = input.get()
 local last_keys = input.get()
-local defer_queue = {}
+local defer_draw_queue = {}
+local defer_before_navbar_queue = {}
 local key_events = {}
 local next_vi_signal = false
 G_KEYS = {}
@@ -101,16 +102,42 @@ local UID = UIDProvider.allocate_once('SM64Lua', function(enum_next)
     }
 end)
 
-local function execute_defer_queue()
-    for i = 1, #defer_queue, 1 do
-        defer_queue[i]()
+function defer_draw(fn)
+    defer_draw_queue[#defer_draw_queue + 1] = fn
+end
+
+function defer_before_navbar(fn)
+    defer_before_navbar_queue[#defer_before_navbar_queue + 1] = fn
+end
+
+local function execute_defer_draw_queue()
+    for i = 1, #defer_draw_queue, 1 do
+        defer_draw_queue[i]()
     end
-    defer_queue = {}
+    defer_draw_queue = {}
+end
+
+local function execute_defer_before_navbar_queue()
+    for i = 1, #defer_before_navbar_queue, 1 do
+        defer_before_navbar_queue[i]()
+    end
+    defer_before_navbar_queue = {}
 end
 
 is_keyboard_captured = false
 
---HACK: We want to know if ugui is capturing keyboard input on a control that cares about inputs.
+-- HACK: Do not consume wheel input while a control owns the mouse or a numberbox owns the keyboard.
+function can_scroll()
+    if ugui.internal.mouse_captured_control ~= nil then
+        return false
+    end
+
+    local keyboard_captured_control = ugui.internal.keyboard_captured_control
+    return keyboard_captured_control == nil or
+        ugui.internal.control_types[keyboard_captured_control] ~= 'numberbox'
+end
+
+-- HACK: We want to know if ugui is capturing keyboard input on a control that cares about inputs.
 function get_is_keyboard_captured()
     if ugui.internal.keyboard_captured_control == nil then
         return false
@@ -317,13 +344,14 @@ local function atdrawd2d()
     views[Settings.tab_index].draw()
     Drawing.pop_offset()
 
+    execute_defer_before_navbar_queue()
     draw_navbar()
 
     is_keyboard_captured = get_is_keyboard_captured()
     ugui.end_frame()
     key_events = {}
 
-    execute_defer_queue()
+    execute_defer_draw_queue()
 end
 
 local function at_loadstate()

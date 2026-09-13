@@ -164,7 +164,9 @@ This action cannot be undone.
     SETTINGS_VISUALS_UPDATE_EVERY_VI_TOOLTIP =
     'Updates the UI every VI, improving mupen capture sync. Reduces performance.',
     SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT = "Enable manual mode on joystick interact",
+    SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT_TOOLTIP = 'Switches to manual movement mode when you interact with the joystick',
     SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE = "Lock Hotkeys when control is active",
+    SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE_TOOLTIP = 'Prevents hotkeys from triggering while a control has keyboard focus',
     SETTINGS_VARWATCH_DISABLED = '(disabled)',
     SETTINGS_VARWATCH_HIDE = 'Hide',
     SETTINGS_VARWATCH_ANGLE_FORMAT = 'Angle formatting',
@@ -181,6 +183,7 @@ This action cannot be undone.
     'The formatting style for the speed efficiency variable.\n    Percentage: Shows the speed efficiency as a percentage (0-100%)\n    Fraction: Shows the speed efficiency as a mathematical fraction (e.g. 1/4)',
     SETTINGS_MEMORY_FILE_SELECT = 'Select map file...',
     SETTINGS_MEMORY_DETECT_NOW = 'Autodetect now',
+    SETTINGS_MEMORY_REGION = 'Game region',
     SETTINGS_MEMORY_DETECT_ON_START = 'Autodetect on start',
     SETTINGS_MEMORY_FILE_SELECT_TOOLTIP = 'Choose a .map file to load addresses from',
     SETTINGS_MEMORY_DETECT_NOW_TOOLTIP = 'Autodetects the game region based on the currently running game',

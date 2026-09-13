@@ -11,11 +11,7 @@ Drawing = {
     offset_stack = {},
 }
 
-local UID = UIDProvider.allocate_once('Drawing', function(enum_next)
-    return {
-        SettingListLabelBase = enum_next(UIDProvider.unknown),
-    }
-end)
+
 
 function Drawing.size_up()
     Drawing.initial_size = wgui.info()
@@ -89,6 +85,12 @@ function Drawing.pop_offset()
     table.remove(Drawing.offset_stack, #Drawing.offset_stack)
 end
 
+local UID = UIDProvider.allocate_once('Drawing', function(enum_next)
+    return {
+        SettingListLabelBase = enum_next(UIDProvider.unknown),
+    }
+end)
+
 ---Draws a setting item list.
 ---@param items { text: fun(): string, func: fun(rect: Rectangle) }[] An array of setting items with their names and control spawning functions.
 ---@param pos Vector2 The initial position of the settings list in grid coordinates.
@@ -99,20 +101,21 @@ function Drawing.setting_list(items, pos)
     local y = pos.y
     for i = 1, #items, 1 do
         local item = items[i]
+        ---@cast item { text: fun(): string, func: fun(rect: Rectangle) }
 
         ugui.label({
             uid = UID.SettingListLabelBase + i,
             rectangle = grid_rect(pos.x, y, 8, 0.5),
             text = item.text(),
             color = foreground_color,
-            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_size = theme.font_size * Drawing.scale * 1.1,
             font_name = theme.font_name,
             align_x = BreitbandGraphics.alignment['start'],
             align_y = BreitbandGraphics.alignment.center,
         })
 
+        ---@diagnostic disable-next-line: undefined-field
         item.func(grid_rect(pos.x, y + 0.6, 4, 1))
-
         y = y + 1.75
     end
 end

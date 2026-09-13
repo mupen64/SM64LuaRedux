@@ -130,6 +130,8 @@ Locales = {}
 ---@field public SETTINGS_INTERACTION_TAB_NAME string
 ---@field public SETTINGS_VARWATCH_TAB_NAME string
 ---@field public SETTINGS_MEMORY_TAB_NAME string
+---@field public SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT_TOOLTIP string
+---@field public SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE_TOOLTIP string
 ---@field public SETTINGS_VISUALS_STYLE string
 ---@field public SETTINGS_VISUALS_LOCALE string
 ---@field public SETTINGS_VISUALS_NOTIFICATIONS string
@@ -147,7 +149,8 @@ Locales = {}
 ---@field public SETTINGS_VARWATCH_DECIMAL_POINTS string
 ---@field public SETTINGS_MEMORY_FILE_SELECT string
 ---@field public SETTINGS_MEMORY_DETECT_NOW string
----@field public SETTINGS_MEMORY_DETECT_ON_START string
+---@field public SETTINGS_MEMORY_REGION string
+---@field public SETTINGS_MEMORY_DETECT_NOW_TOOLTIP string
 ---@field public SETTINGS_HOTKEYS_NOTHING string
 ---@field public SETTINGS_HOTKEYS_CONFIRMATION string
 ---@field public SETTINGS_HOTKEYS_CLEAR string
