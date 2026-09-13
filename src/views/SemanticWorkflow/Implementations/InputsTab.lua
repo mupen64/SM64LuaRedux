@@ -395,6 +395,7 @@ local function atan_controls(draw, sheet, new_values, top)
             font_name = 'Consolas',
             align_x = BreitbandGraphics.alignment.center,
             align_y = BreitbandGraphics.alignment.center,
+            fit = true
         })
 
         if ugui.button({

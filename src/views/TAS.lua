@@ -179,6 +179,7 @@ return {
                     font_name = 'Consolas',
                     align_x = BreitbandGraphics.alignment.center,
                     align_y = BreitbandGraphics.alignment.center,
+                    fit = true
                 })
 
                 if ugui.button({
