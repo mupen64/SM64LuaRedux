@@ -70,7 +70,16 @@ function Presets.load()
     local encoded = file:read('a')
     io.close(file)
 
-    local deserialized = json.decode(encoded)
+    local ok, deserialized = pcall(json.decode, encoded)
+    if not ok or type(deserialized) ~= 'table' then
+        print(string.format('Failed to load %s, restoring default presets. Reason: %s', PRESETS_PATH,
+            tostring(deserialized)))
+
+        Presets.persistent.current_index = 1
+        Presets.persistent.presets = { ugui.internal.deep_clone(DEFAULT_PRESET) }
+        Presets.save()
+        return
+    end
 
     deserialized = deep_merge(Presets.persistent, deserialized)
 
