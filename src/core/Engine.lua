@@ -19,7 +19,7 @@ local FREEFALL_LAND_STOP = 0x0C000232
 local CROUCH_SLIDE = 0x04808459
 local HOLD_WALKING = 0x00000442 -- Replace 0x04000442 with this?
 local TURNING_AROUND = 0x00000443 -- Replace 0x04000443 with this?
-local BRAKING = 0x04000445 
+local BRAKING = 0x04000445
 local HOLD_BUTT_SLIDE = 0x00840454
 local BUTT_SLIDE = 0x00840452
 local TRIPLE_JUMP = 0x01000882
@@ -33,22 +33,22 @@ local FREEFALL = 0x0100088C
 local DIVE_SLIDE = 0x00880456
 
 -- MARIO action >= 0x04000470, <= 0x04000473
-local JUMP_LAND = 0x04000470 
-local FREEFALL_LAND = 0x04000471 
-local DOUBLE_JUMP_LAND = 0x04000472 
-local SIDE_FLIP_LAND = 0x04000473 
+local JUMP_LAND = 0x04000470
+local FREEFALL_LAND = 0x04000471
+local DOUBLE_JUMP_LAND = 0x04000472
+local SIDE_FLIP_LAND = 0x04000473
 
 -- MARIO action >= 0x00000474, <= 0x00000477
-local HOLD_JUMP_LAND = 0x00000474 
-local HOLD_FREEFALL_LAND = 0x00000475 
-local QUICKSAND_JUMP_LAND = 0x00000476 
+local HOLD_JUMP_LAND = 0x00000474
+local HOLD_FREEFALL_LAND = 0x00000475
+local QUICKSAND_JUMP_LAND = 0x00000476
 local HOLD_QUICKSAND_JUMP_LAND = 0x00000477
 
 -- MARIO action >= 0x0C008220, <= 0x0C008223
 local CROUCHING = 0x0C008220
-local START_CROUCHING = 0x0C008221 
-local STOP_CROUCHING = 0x0C008222 
-local START_CRAWLING = 0x0C008223 
+local START_CROUCHING = 0x0C008221
+local STOP_CROUCHING = 0x0C008222
+local START_CRAWLING = 0x0C008223
 
 
 Engine = {}
@@ -69,12 +69,11 @@ function Engine.stick_for_input_y(state)
 	return state.movement_mode == MovementModes.manual and state.manual_joystick_y or Joypad.input.Y or 0
 end
 
----Gets the magnitude of the joystick input, accounting for the deadzone.
----@param x number
----@param y number
----@return number
+-- SM64 deadzone: a component with |val| <= 7 is zeroed, |val| >= 8 has 6 subtracted.
 function Engine.get_magnitude_for_stick(x, y)
-	return math.sqrt(math.max(0, math.abs(x) - 6) ^ 2 + math.max(0, math.abs(y) - 6) ^ 2)
+	local ex = math.abs(x) >= 8 and math.abs(x) - 6 or 0
+	local ey = math.abs(y) >= 8 and math.abs(y) - 6 or 0
+	return math.sqrt(ex * ex + ey * ey)
 end
 
 function Engine.get_effective_angle(angle)
@@ -113,6 +112,7 @@ ENABLE_REVERSE_YAW_ON_WALLKICK = true
 actionflag = 0
 speedsign = 0
 targetspeed = 0.0
+
 function Engine.getgoal(targetspd) -- getting angle for target speed
 	if (targetspd > 0) then
 		return math.floor(math.acos((targetspd + 0.35 - Memory.current.mario_f_speed) / 1.5) * 32768 / math.pi)
@@ -121,7 +121,7 @@ function Engine.getgoal(targetspd) -- getting angle for target speed
 end
 
 function Engine.getArctanAngle(r, d, n, s, goal)
-	-- r is ratio, d is displacement (offset), n is number of frames and  s is starting frame
+	-- r is ratio, d is displacement (offset), n is number of frames and s is starting frame
 	s = s - 1
 	if (s < Memory.current.mario_global_timer and s > Memory.current.mario_global_timer - n - 1) then
 		yaw = 0
@@ -187,12 +187,29 @@ Engine.inputsForAngle = function(goal, curr_input)
 	end
 
 	if Settings.tas.strain_speed_target then
-		if Memory.current.mario_action == WALKING or Memory.current.mario_action == DECELERATING or Memory.current.mario_action == LAVA_BOOST_LAND or Memory.current.mario_action == FREEFALL_LAND_STOP or Memory.current.mario_action == 0x04000442 or Memory.current.mario_action == 0x04000443 or Memory.current.mario_action == LAVA_BOOST or Memory.current.mario_action == BRAKING or Memory.current.mario_action == HOLD_BUTT_SLIDE or Memory.current.mario_action == BUTT_SLIDE or (Memory.current.mario_action >= JUMP_LAND and Memory.current.mario_action <= SIDE_FLIP_LAND) or (Memory.current.mario_action >= HOLD_JUMP_LAND and Memory.current.mario_action <= HOLD_QUICKSAND_JUMP_LAND) then
+		if Memory.current.mario_action == WALKING
+			or Memory.current.mario_action == DECELERATING
+			or Memory.current.mario_action == LAVA_BOOST_LAND
+			or Memory.current.mario_action == FREEFALL_LAND_STOP
+			or Memory.current.mario_action == 0x04000442
+			or Memory.current.mario_action == 0x04000443
+			or Memory.current.mario_action == LAVA_BOOST
+			or Memory.current.mario_action == BRAKING
+			or Memory.current.mario_action == HOLD_BUTT_SLIDE
+			or Memory.current.mario_action == BUTT_SLIDE
+			or (Memory.current.mario_action >= JUMP_LAND and Memory.current.mario_action <= SIDE_FLIP_LAND)
+			or (Memory.current.mario_action >= HOLD_JUMP_LAND and Memory.current.mario_action <= HOLD_QUICKSAND_JUMP_LAND)
+		then
 			actionflag = 1
 		else
 			actionflag = 0
 		end
-		if (Memory.current.mario_f_speed > 937 / 30 and Memory.current.mario_f_speed < 31.9 + offset * 3000000 and (Memory.current.mario_action == CROUCH_SLIDE or Memory.current.mario_action == LONG_JUMP_LAND) and Memory.current.mario_held_buttons < 128 and curr_input.A and (Memory.current.mario_held_buttons % 128 > 63 or not curr_input.B) and Settings.tas.movement_mode == MovementModes.match_yaw) then
+
+		if (Memory.current.mario_f_speed > 937 / 30 and Memory.current.mario_f_speed < 31.9 + offset * 3000000
+			and (Memory.current.mario_action == CROUCH_SLIDE or Memory.current.mario_action == LONG_JUMP_LAND)
+			and Memory.current.mario_held_buttons < 128 and curr_input.A
+			and (Memory.current.mario_held_buttons % 128 > 63 or not curr_input.B)
+			and Settings.tas.movement_mode == MovementModes.match_yaw) then
 			targetspeed = 48 - Memory.current.mario_f_speed / 2
 			speedsign = 1
 			if (Memory.current.mario_f_speed > 32) then
@@ -200,7 +217,11 @@ Engine.inputsForAngle = function(goal, curr_input)
 			else
 				goal = Engine.getDyaw(Engine.getgoal(targetspeed))
 			end
-		elseif (Memory.current.mario_f_speed >= 10 and offset ~= 0 and Memory.current.mario_f_speed < 34.85 and Memory.current.mario_action == CROUCH_SLIDE and (Memory.current.mario_held_buttons > 127 or not curr_input.A) and Memory.current.mario_held_buttons % 128 < 64 and curr_input.B and Settings.tas.movement_mode == MovementModes.match_yaw) then
+		elseif (Memory.current.mario_f_speed >= 10 and offset ~= 0 and Memory.current.mario_f_speed < 34.85
+			and Memory.current.mario_action == CROUCH_SLIDE
+			and (Memory.current.mario_held_buttons > 127 or not curr_input.A)
+			and Memory.current.mario_held_buttons % 128 < 64 and curr_input.B
+			and Settings.tas.movement_mode == MovementModes.match_yaw) then
 			speedsign = 1
 			targetspeed = 32
 			if (Memory.current.mario_f_speed > 32) then
@@ -209,17 +230,28 @@ Engine.inputsForAngle = function(goal, curr_input)
 			else
 				goal = Engine.getDyaw(13927)
 			end
-		elseif (Memory.current.mario_f_speed > -337 / 30 - offset / 1.5 and Memory.current.mario_f_speed < -9.9 and Memory.current.mario_action == LONG_JUMP_LAND and Settings.tas.movement_mode == MovementModes.reverse_yaw) then
+		elseif (Memory.current.mario_f_speed > -337 / 30 - offset / 1.5 and Memory.current.mario_f_speed < -9.9
+			and Memory.current.mario_action == LONG_JUMP_LAND
+			and Settings.tas.movement_mode == MovementModes.reverse_yaw) then
 			targetspeed = -16 - Memory.current.mario_f_speed / 2
 			if (Memory.current.mario_f_speed < -11.9) then targetspeed = targetspeed - 2 end
 			speedsign = -1
 			goal = Engine.getDyaw(Engine.getgoal(targetspeed))
-		elseif (Memory.current.mario_f_speed > 46.85 and Memory.current.mario_f_speed < 47.85 + offset and Memory.current.mario_action == LONG_JUMP and Settings.tas.movement_mode == MovementModes.match_yaw) then
+		elseif (Memory.current.mario_f_speed > 46.85 and Memory.current.mario_f_speed < 47.85 + offset
+			and Memory.current.mario_action == LONG_JUMP
+			and Settings.tas.movement_mode == MovementModes.match_yaw) then
 			targetspeed = 48
 			if (Memory.current.mario_f_speed > 49.85) then targetspeed = targetspeed + 1 end
 			speedsign = 1
 			goal = Engine.getDyaw(Engine.getgoal(targetspeed))
-		elseif (Memory.current.mario_f_speed > 30.85 and Memory.current.mario_f_speed < 31.85 + offset and (actionflag == 0 or (Memory.current.mario_action == DOUBLE_JUMP_LAND and Memory.current.mario_hat_state % 16 > 7 and Memory.current.mario_held_buttons < 128 and curr_input.A)) and Memory.current.mario_action ~= LONG_JUMP and Memory.current.mario_action ~= LONG_JUMP_LAND and Memory.current.mario_action ~= CROUCH_SLIDE and (Memory.current.mario_action ~= DIVE_SLIDE or ((Memory.current.mario_held_buttons < 128 and curr_input.A) or (Memory.current.mario_held_buttons % 128 < 64 and curr_input.B))) and ((Memory.current.mario_held_buttons % 128 > 63 or not curr_input.B) or Memory.current.mario_action == DIVE_SLIDE) and Settings.tas.movement_mode == MovementModes.match_yaw) then
+		elseif (Memory.current.mario_f_speed > 30.85 and Memory.current.mario_f_speed < 31.85 + offset
+			and (actionflag == 0 or (Memory.current.mario_action == DOUBLE_JUMP_LAND and Memory.current.mario_hat_state % 16 > 7 and Memory.current.mario_held_buttons < 128 and curr_input.A))
+			and Memory.current.mario_action ~= LONG_JUMP
+			and Memory.current.mario_action ~= LONG_JUMP_LAND
+			and Memory.current.mario_action ~= CROUCH_SLIDE
+			and (Memory.current.mario_action ~= DIVE_SLIDE or ((Memory.current.mario_held_buttons < 128 and curr_input.A) or (Memory.current.mario_held_buttons % 128 < 64 and curr_input.B)))
+			and ((Memory.current.mario_held_buttons % 128 > 63 or not curr_input.B) or Memory.current.mario_action == DIVE_SLIDE)
+			and Settings.tas.movement_mode == MovementModes.match_yaw) then
 			targetspeed = 32
 			if (Memory.current.mario_f_speed > 33.85) then targetspeed = targetspeed + 1 end
 			speedsign = 1
@@ -227,7 +259,16 @@ Engine.inputsForAngle = function(goal, curr_input)
 			if (Memory.current.mario_action == AIR_HIT_WALL or Memory.current.mario_action == SOFT_BONK or Memory.current.mario_action == BACKWARDS_AIR_KB or Memory.current.mario_action == HOLDING_POLE or Memory.current.mario_action == CLIMBING_POLE and ENABLE_REVERSE_YAW_ON_WALLKICK) then
 				goal = (goal + 32768) % 65536
 			end
-		elseif (Memory.current.mario_f_speed > 15.85 and Memory.current.mario_f_speed < 16.85 + offset and (((Memory.current.mario_action == TRIPLE_JUMP or Memory.current.mario_action == SPECIAL_TRIPLE_JUMP or Memory.current.mario_action == WALL_KICK or Memory.current.mario_action == FLYING_TRIPLE_JUMP or Memory.current.mario_action == SIDEFLIP or Memory.current.mario_action == FREEFALL) or (Memory.current.mario_action == DOUBLE_JUMP_LAND and Memory.current.mario_hat_state % 16 > 7)) and Memory.current.mario_held_buttons % 128 < 64 and curr_input.B) and Settings.tas.movement_mode == MovementModes.match_yaw) then
+		elseif (Memory.current.mario_f_speed > 15.85 and Memory.current.mario_f_speed < 16.85 + offset
+			and (((Memory.current.mario_action == TRIPLE_JUMP
+				or Memory.current.mario_action == SPECIAL_TRIPLE_JUMP
+				or Memory.current.mario_action == WALL_KICK
+				or Memory.current.mario_action == FLYING_TRIPLE_JUMP
+				or Memory.current.mario_action == SIDEFLIP
+				or Memory.current.mario_action == FREEFALL)
+				or (Memory.current.mario_action == DOUBLE_JUMP_LAND and Memory.current.mario_hat_state % 16 > 7))
+				and Memory.current.mario_held_buttons % 128 < 64 and curr_input.B)
+			and Settings.tas.movement_mode == MovementModes.match_yaw) then
 			targetspeed = 32 - 15
 			if (Memory.current.mario_f_speed > 18.85) then targetspeed = targetspeed + 1 end
 			speedsign = 1
@@ -235,30 +276,75 @@ Engine.inputsForAngle = function(goal, curr_input)
 			if (Memory.current.mario_action == AIR_HIT_WALL or Memory.current.mario_action == SOFT_BONK or Memory.current.mario_action == BACKWARDS_AIR_KB or Memory.current.mario_action == HOLDING_POLE or Memory.current.mario_action == CLIMBING_POLE and ENABLE_REVERSE_YAW_ON_WALLKICK) then
 				goal = (goal + 32768) % 65536
 			end
-		elseif (Memory.current.mario_f_speed > -32 and Memory.current.mario_f_speed < 32 and ((Memory.current.mario_action >= CROUCHING and Memory.current.mario_action <= START_CRAWLING) or Memory.current.mario_action == BACKFLIP_LAND or Memory.current.mario_action == BACKFLIP_LAND_STOP) and Settings.tas.movement_mode == MovementModes.reverse_yaw) then
+		elseif (Memory.current.mario_f_speed > -32 and Memory.current.mario_f_speed < 32
+			and ((Memory.current.mario_action >= CROUCHING and Memory.current.mario_action <= START_CRAWLING)
+				or Memory.current.mario_action == BACKFLIP_LAND
+				or Memory.current.mario_action == BACKFLIP_LAND_STOP)
+			and Settings.tas.movement_mode == MovementModes.reverse_yaw) then
 			speedsign = -1
 			goal = Engine.getDyaw(18840)
-		elseif (Memory.current.mario_f_speed > -16.85 - offset and Memory.current.mario_f_speed < -14.85 and Memory.current.mario_action ~= LONG_JUMP_LAND and ((actionflag == 0 and (Memory.current.mario_action ~= TRIPLE_JUMP and Memory.current.mario_action ~= SPECIAL_TRIPLE_JUMP and Memory.current.mario_action ~= WALL_KICK and Memory.current.mario_action ~= FLYING_TRIPLE_JUMP and Memory.current.mario_action ~= SIDEFLIP and Memory.current.mario_action ~= FREEFALL or Memory.current.mario_held_buttons % 128 > 63 or not curr_input.B)) or (Memory.current.mario_action == DOUBLE_JUMP_LAND and Memory.current.mario_held_buttons < 128 and curr_input.A and (Memory.current.mario_held_buttons % 128 > 63 or not curr_input.B) and Memory.current.mario_hat_state % 16 > 7)) and Settings.tas.movement_mode == MovementModes.reverse_yaw) then
+		elseif (Memory.current.mario_f_speed > -16.85 - offset and Memory.current.mario_f_speed < -14.85
+			and Memory.current.mario_action ~= LONG_JUMP_LAND
+			and ((actionflag == 0
+					and (Memory.current.mario_action ~= TRIPLE_JUMP
+						and Memory.current.mario_action ~= SPECIAL_TRIPLE_JUMP
+						and Memory.current.mario_action ~= WALL_KICK
+						and Memory.current.mario_action ~= FLYING_TRIPLE_JUMP
+						and Memory.current.mario_action ~= SIDEFLIP
+						and Memory.current.mario_action ~= FREEFALL
+						or Memory.current.mario_held_buttons % 128 > 63 or not curr_input.B))
+				or (Memory.current.mario_action == DOUBLE_JUMP_LAND
+						and Memory.current.mario_held_buttons < 128 and curr_input.A
+						and (Memory.current.mario_held_buttons % 128 > 63 or not curr_input.B)
+						and Memory.current.mario_hat_state % 16 > 7))
+			and Settings.tas.movement_mode == MovementModes.reverse_yaw) then
 			targetspeed = -16
 			if (Memory.current.mario_f_speed < -17.85) then targetspeed = targetspeed - 2 end
 			speedsign = -1
 			goal = Engine.getDyaw(Engine.getgoal(targetspeed))
-		elseif (Memory.current.mario_f_speed > -31.85 - offset and Memory.current.mario_f_speed < -29.85 and Memory.current.mario_action ~= LONG_JUMP_LAND and (((Memory.current.mario_action == TRIPLE_JUMP or Memory.current.mario_action == SPECIAL_TRIPLE_JUMP or Memory.current.mario_action == WALL_KICK or Memory.current.mario_action == FLYING_TRIPLE_JUMP or Memory.current.mario_action == SIDEFLIP or Memory.current.mario_action == FREEFALL) or (Memory.current.mario_action == DOUBLE_JUMP_LAND and Memory.current.mario_hat_state % 16 > 7)) and Memory.current.mario_held_buttons % 128 < 64 and curr_input.B) and Settings.tas.movement_mode == MovementModes.reverse_yaw) then
+		elseif (Memory.current.mario_f_speed > -31.85 - offset and Memory.current.mario_f_speed < -29.85
+			and Memory.current.mario_action ~= LONG_JUMP_LAND
+			and (((Memory.current.mario_action == TRIPLE_JUMP
+				or Memory.current.mario_action == SPECIAL_TRIPLE_JUMP
+				or Memory.current.mario_action == WALL_KICK
+				or Memory.current.mario_action == FLYING_TRIPLE_JUMP
+				or Memory.current.mario_action == SIDEFLIP
+				or Memory.current.mario_action == FREEFALL)
+				or (Memory.current.mario_action == DOUBLE_JUMP_LAND and Memory.current.mario_hat_state % 16 > 7))
+				and Memory.current.mario_held_buttons % 128 < 64 and curr_input.B)
+			and Settings.tas.movement_mode == MovementModes.reverse_yaw) then
 			targetspeed = -16 - 15
 			if (Memory.current.mario_f_speed < -32.85) then targetspeed = targetspeed - 2 end
 			speedsign = -1
 			goal = Engine.getDyaw(Engine.getgoal(targetspeed))
-		elseif (Memory.current.mario_f_speed > -21.0625 - offset / 0.8 and Memory.current.mario_f_speed < -18.5625 and Memory.current.mario_action ~= LONG_JUMP_LAND and (Memory.current.mario_action ~= DOUBLE_JUMP_LAND or Memory.current.mario_hat_state % 16 < 8) and (actionflag == 1 or Memory.current.mario_action == CROUCH_SLIDE) and Memory.current.mario_held_buttons < 128 and curr_input.A and Settings.tas.movement_mode == MovementModes.reverse_yaw) then
+		elseif (Memory.current.mario_f_speed > -21.0625 - offset / 0.8 and Memory.current.mario_f_speed < -18.5625
+			and Memory.current.mario_action ~= LONG_JUMP_LAND
+			and (Memory.current.mario_action ~= DOUBLE_JUMP_LAND or Memory.current.mario_hat_state % 16 < 8)
+			and (actionflag == 1 or Memory.current.mario_action == CROUCH_SLIDE)
+			and Memory.current.mario_held_buttons < 128 and curr_input.A
+			and Settings.tas.movement_mode == MovementModes.reverse_yaw) then
 			targetspeed = -16 + Memory.current.mario_f_speed / 5
 			if (Memory.current.mario_f_speed < -22.3125) then targetspeed = targetspeed - 2 end
 			speedsign = -1
 			goal = Engine.getDyaw(Engine.getgoal(targetspeed))
-		elseif (Memory.current.mario_f_speed > 38.5625 and Memory.current.mario_f_speed < 39.8125 + offset / 0.8 and Memory.current.mario_action ~= LONG_JUMP_LAND and Memory.current.mario_action ~= LONG_JUMP and (Memory.current.mario_action ~= DOUBLE_JUMP_LAND or Memory.current.mario_hat_state % 16 < 8) and actionflag == 1 and Memory.current.mario_held_buttons < 128 and curr_input.A and (Memory.current.mario_held_buttons % 128 > 63 or not curr_input.B) and Settings.tas.movement_mode == MovementModes.match_yaw) then
+		elseif (Memory.current.mario_f_speed > 38.5625 and Memory.current.mario_f_speed < 39.8125 + offset / 0.8
+			and Memory.current.mario_action ~= LONG_JUMP_LAND
+			and Memory.current.mario_action ~= LONG_JUMP
+			and (Memory.current.mario_action ~= DOUBLE_JUMP_LAND or Memory.current.mario_hat_state % 16 < 8)
+			and actionflag == 1
+			and Memory.current.mario_held_buttons < 128 and curr_input.A
+			and (Memory.current.mario_held_buttons % 128 > 63 or not curr_input.B)
+			and Settings.tas.movement_mode == MovementModes.match_yaw) then
 			targetspeed = 32 + Memory.current.mario_f_speed / 5
 			if (Memory.current.mario_f_speed > 42.3125) then targetspeed = targetspeed + 1 end
 			speedsign = 1
 			goal = Engine.getDyaw(Engine.getgoal(targetspeed))
-		elseif (Memory.current.mario_f_speed > 20 and Memory.current.mario_f_speed < 21.0625 + offset / 0.8 and Memory.current.mario_action == DOUBLE_JUMP_LAND and Memory.current.mario_hat_state % 16 < 8 and Memory.current.mario_held_buttons < 128 and curr_input.A and Memory.current.mario_held_buttons % 128 < 64 and curr_input.B and Settings.tas.movement_mode == MovementModes.match_yaw) then
+		elseif (Memory.current.mario_f_speed > 20 and Memory.current.mario_f_speed < 21.0625 + offset / 0.8
+			and Memory.current.mario_action == DOUBLE_JUMP_LAND
+			and Memory.current.mario_hat_state % 16 < 8
+			and Memory.current.mario_held_buttons < 128 and curr_input.A
+			and Memory.current.mario_held_buttons % 128 < 64 and curr_input.B
+			and Settings.tas.movement_mode == MovementModes.match_yaw) then
 			targetspeed = 32 - 15 + Memory.current.mario_f_speed / 5
 			if (Memory.current.mario_f_speed > 23.5625) then targetspeed = targetspeed + 1 end
 			speedsign = 1
@@ -317,8 +403,7 @@ Engine.inputsForAngle = function(goal, curr_input)
 end
 
 function Engine.GetQFs(Mariospeed)
-	-- print(math.sqrt(math.abs(math.abs(MoreMaths.hexToFloat(string.format("%x", Memory.previous.mario_x))) - math.abs(MoreMaths.hexToFloat(string.format("%x", Memory.current.mario_x)))) ^ 2 + math.abs(math.abs(MoreMaths.hexToFloat(string.format("%x", Memory.previous.mario_z))) - math.abs(MoreMaths.hexToFloat(string.format("%x", Memory.current.mario_z)))) ^ 2))
-	-- return math.floor(4 * (math.sqrt(math.abs(math.abs(MoreMaths.hexToFloat(string.format("%x", Memory.previous.mario_x))) - math.abs(MoreMaths.hexToFloat(string.format("%x", Memory.current.mario_x)))) ^ 2 + math.abs(math.abs(MoreMaths.hexToFloat(string.format("%x", Memory.previous.mario_z))) - math.abs(MoreMaths.hexToFloat(string.format("%x", Memory.current.mario_z)))) ^ 2)) / math.abs(Mariospeed))
+
 end
 
 
@@ -368,36 +453,25 @@ local function clamp(min, n, max)
 	if n > max then return max end
 	return n
 end
-local function effectiveAngle(x, y)
-	if math.abs(x) < 8 then
-		x = 0
-	elseif x > 0 then
-		x = x - 6
-	else
-		x = x + 6
-	end
-	if math.abs(y) < 8 then
-		y = 0
-	elseif y > 0 then
-		y = y - 6
-	else
-		y = y + 6
-	end
-	return math.atan2(-y, x)
+
+-- SM64 deadzone: a component with |v| <= 7 becomes 0, otherwise 6 is subtracted toward zero.
+local function eff_vec(x, y)
+	if math.abs(x) < 8 then x = 0 elseif x > 0 then x = x - 6 else x = x + 6 end
+	if math.abs(y) < 8 then y = 0 elseif y > 0 then y = y - 6 else y = y + 6 end
+	return x, y
 end
 
+-- Rewrites result.X/Y so that, after the deadzone, the input has magnitude close to
+-- goal_mag and the same direction as the incoming result. Scores candidates by squared
+-- distance of their effective vector to the ideal target (magnitude + angle jointly);
+-- never emits a component in the silent-zero band [1,7], never exceeds goal_mag.
+-- use_high_mag biases toward the higher-magnitude candidate on near-ties.
 Engine.scaleInputsForMagnitude = function(result, goal_mag, use_high_mag)
 	if goal_mag >= 127 then return end
 
 	local start_x, start_y = result.X, result.Y
-	local current_mag = Engine.get_magnitude_for_stick(start_x, start_y)
-	local ideal_x, ideal_y = start_x * goal_mag / current_mag, start_y * goal_mag / current_mag
-	--print(magnitude(ideal_x, ideal_y))
-	--print(goal_mag)
 
-	--local x0, y0 = math.floor(ideal_x), math.floor(ideal_y)
-	--local x0, y0 = 0, 0
-
+	-- Analytic starting point (x0, y0) to centre the search.
 	local x0, y0 = 0, 0
 	if start_x == 0 then
 		y0 = goal_mag + 6
@@ -409,47 +483,40 @@ Engine.scaleInputsForMagnitude = function(result, goal_mag, use_high_mag)
 		local x, y = math.abs(start_x), math.abs(start_y)
 		local x2, y2 = x * x, y * y
 		local crazy = math.sqrt((4 * (k ^ 2 - 72) * y2) / (x2 + y2) + (y2 * (-12 * x - 12 * y) ^ 2) / (x2 + y2) ^ 2)
-		--print(crazy)
 		x0 = math.floor(math.abs(x * crazy / (2 * y) + (6 * x2) / (x2 + y2) + (6 * x * y) / (x2 + y2)))
 		y0 = math.floor(math.abs(0.5 * crazy + (6 * y2) / (x2 + y2) + (6 * x * y) / (x2 + y2)))
 	end
-	if start_x < 0 then
-		x0 = -x0
-	end
-	if start_y < 0 then
-		y0 = -y0
-	end
-	if x0 ~= x0 then x0 = 0 end -- NaN?
+	if start_x < 0 then x0 = -x0 end
+	if start_y < 0 then y0 = -y0 end
+	if x0 ~= x0 then x0 = 0 end
 	if y0 ~= y0 then y0 = 0 end
 
-	-- search neighbourhood for input with greatest component in goal direction
-	local closest_x, closest_y = x0, y0
-	local err = -1
-	local goal_angle = effectiveAngle(start_x, start_y)
+	local sex, sey = eff_vec(start_x, start_y)
+	local smag = math.sqrt(sex * sex + sey * sey)
+	if smag == 0 then return end
+	local t_ex, t_ey = sex * goal_mag / smag, sey * goal_mag / smag
+
+	local best_x, best_y = 0, 0
+	local best_score = math.huge
 	for i = -32, 32 do
 		for j = -32, 32 do
-			local x, y = clamp(-127, x0 + i, 127), clamp(-127, y0 + j, 127)
-			--print(string.format("%d,%d", x, y))
-			local mag = Engine.get_magnitude_for_stick(x, y)
-			if (mag <= goal_mag) and (mag * mag >= err) then
-				local angle = effectiveAngle(x, y)
-				--print(string.format("%d:%d: %f (%f)", x,y,angle,goal_angle))
-				--local this_err = math.cos(angle - goal_angle)*mag
-				local this_err = math.cos(angle - goal_angle)
-				if (use_high_mag) then this_err = this_err * mag * mag end
-				--print(string.format("%d,%d: %f, %d; %f, %f; %f, %s", x, y, mag, goal_mag, angle, goal_angle, this_err, tostring(err)))
-				if this_err > err then
-					err = this_err
-					closest_x, closest_y = x, y
+			local x = clamp(-127, x0 + i, 127)
+			local y = clamp(-127, y0 + j, 127)
+			if not ((math.abs(x) >= 1 and math.abs(x) <= 7) or (math.abs(y) >= 1 and math.abs(y) <= 7)) then
+				local ex, ey = eff_vec(x, y)
+				local mag = math.sqrt(ex * ex + ey * ey)
+				if mag <= goal_mag then
+					local dx, dy = ex - t_ex, ey - t_ey
+					local score = dx * dx + dy * dy
+					if use_high_mag then score = score - mag * 1e-4 end
+					if score < best_score then
+						best_score = score
+						best_x, best_y = x, y
+					end
 				end
 			end
 		end
 	end
 
-	closest_x = clamp(-127, closest_x, 127)
-	closest_y = clamp(-127, closest_y, 127)
-	if math.abs(closest_x) < 8 then closest_x = 0 end
-	if math.abs(closest_y) < 8 then closest_y = 0 end
-
-	result.X, result.Y = closest_x, closest_y
+	result.X, result.Y = best_x, best_y
 end
