@@ -45,6 +45,13 @@
 ---@field public mario_animation integer
 ---@field public mario_gfx_angle integer
 ---@field public mario_hat_state integer
+---@field public floor_address integer
+---@field public floor_yaw integer
+---@field public floor_type integer
+---@field public floor_normal_x number
+---@field public floor_normal_y number
+---@field public floor_normal_z number
+---@field public area_terrain_type integer
 ---Represents a readout of the game state.
 
 Memory = {
@@ -103,9 +110,16 @@ function Memory.update()
 	Memory.current.mario_pressed_buttons = memory.readbyte(address_source.mario_pressed_buttons)
 	Memory.current.mario_global_timer = memory.readdword(address_source.global_timer)
 	Memory.current.rng_value = memory.readword(address_source.rng_value)
-	Memory.current.mario_animation = memory.readword(memory.readdword(address_source.mario_object_effective) + address_source.mario_animation)
-	Memory.current.mario_gfx_angle = memory.readword(memory.readdword(address_source.mario_object_effective) + address_source.mario_gfx_angle)
+	Memory.current.mario_animation = memory.readword(Memory.current.mario_object_effective + address_source.mario_animation)
+	Memory.current.mario_gfx_angle = memory.readword(Memory.current.mario_object_effective + address_source.mario_gfx_angle)
 	Memory.current.mario_hat_state = memory.readbyte(address_source.mario_hat_state)
+	Memory.current.floor_address = memory.readdword(address_source.floor_address)
+	Memory.current.floor_yaw = memory.readword(address_source.floor_yaw)
+	Memory.current.floor_type = memory.readword(Memory.current.floor_address)
+	Memory.current.floor_normal_x = memory.readfloat(Memory.current.floor_address + address_source.floor_normal_offset)
+	Memory.current.floor_normal_y = memory.readfloat(Memory.current.floor_address + address_source.floor_normal_offset + 4)
+	Memory.current.floor_normal_z = memory.readfloat(Memory.current.floor_address + address_source.floor_normal_offset + 8)
+	Memory.current.area_terrain_type = memory.readword(memory.readdword(address_source.area_address) + address_source.area_terrain_type_offset)
 end
 
 ---Copies the current game state to the previous game state.

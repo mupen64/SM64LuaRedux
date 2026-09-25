@@ -25,8 +25,8 @@ ACTION_TOGGLE_STRAIN_RIGHT = ROOT .. 'D-Yaw > Strain Right'
 ACTION_SET_GOAL_ANGLE = ROOT .. 'Set Angle... ---'
 ACTION_RESET_MAGNITUDE = ROOT .. 'Magnitude --- > Reset'
 ACTION_SET_MAGNITUDE = ROOT .. 'Magnitude --- > Set... ---'
-ACTION_TOGGLE_HIGH_MAGNITUDE = ROOT .. 'Magnitude --- > High-Magnitude'
 ACTION_SET_SPDKICK = ROOT .. 'Speedkick'
+ACTION_SET_DUSTLESS_WALK = ROOT .. 'Dustless Walk'
 ACTION_TOGGLE_FRAMEWALK = ROOT .. 'Framewalk'
 ACTION_TOGGLE_SWIM = ROOT .. 'Swim'
 ACTION_TOGGLE_AUTOFIRSTIES = ROOT .. 'Auto-Firsties ---'
@@ -84,6 +84,7 @@ actions[#actions + 1] = wrap_params({
     hotkey = { ctrl = true, key = string.byte('2') },
     on_press = function()
         Settings.tas.movement_mode = MovementModes.match_yaw
+        Settings.tas.atan_readonly_r = nil
         action.notify_active_changed(ACTION_MOVEMENT_MODE .. '>*')
     end,
     get_active = function()
@@ -254,8 +255,9 @@ actions[#actions + 1] = wrap_params({
 actions[#actions + 1] = wrap_params({
     path = ACTION_RESET_MAGNITUDE,
     on_press = function()
-        Settings.tas.goal_mag = 127
-        Settings.tas.high_magnitude = false
+        Settings.tas.goal_mag = 64
+        Settings.tas.maximize_airspeed = false
+        Settings.tas.dustless_walk = false
     end,
 })
 
@@ -270,31 +272,34 @@ actions[#actions + 1] = wrap_params({
     },
     on_press = function(params)
         local magnitude = tonumber(params.magnitude)
-        Settings.tas.goal_mag = magnitude % 128
-    end,
-})
-
-actions[#actions + 1] = wrap_params({
-    path = ACTION_TOGGLE_HIGH_MAGNITUDE,
-    on_press = function()
-        Settings.tas.high_magnitude = not Settings.tas.high_magnitude
-        action.notify_active_changed(ACTION_TOGGLE_HIGH_MAGNITUDE)
-    end,
-    get_active = function()
-        return Settings.tas.high_magnitude
+        Settings.tas.goal_mag = math.min(magnitude, 64)
     end,
 })
 
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_SPDKICK,
     on_press = function()
-        if Settings.tas.goal_mag ~= 48 then
+        if Settings.tas.dustless_walk or Settings.tas.goal_mag ~= 48 then
             Settings.tas.goal_mag = 48
+            Settings.tas.maximize_airspeed = true
 		else
-		    Settings.tas.goal_mag = 127
+		    Settings.tas.goal_mag = 64
+            Settings.tas.maximize_airspeed = false
         end
-        Settings.tas.high_magnitude = true
+        Settings.tas.dustless_walk = false
     end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_SET_DUSTLESS_WALK,
+    on_press = function()
+        if Settings.tas.dustless_walk then
+            Settings.tas.goal_mag = 64
+        else
+            Settings.tas.maximize_airspeed = false
+        end
+        Settings.tas.dustless_walk = not Settings.tas.dustless_walk
+    end
 })
 
 actions[#actions + 1] = wrap_params({

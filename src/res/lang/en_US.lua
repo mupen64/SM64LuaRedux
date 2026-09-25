@@ -35,8 +35,8 @@ return {
     ATAN_STRAIN = 'Arctan Strain',
     ATAN_STRAIN_REV = 'I',
     MAG_RESET = 'Reset',
-    MAG_HI = 'High',
-    SPDKICK = 'Spdkick',
+    DUSTLESS_WALK = 'Dustless Walk',
+    SPDKICK = 'Speedkick',
     TAS_MATCH_YAW_TOOLTIP = 'Holds the angle closest to\nMario\'s facing direction',
     TAS_REVERSE_YAW_TOOLTIP = 'Holds the angle closest to the opposite of\nMario\'s facing direction',
     TAS_MATCH_ANGLE_TOOLTIP = 'Holds the specified angle',
@@ -49,15 +49,26 @@ return {
     TAS_ATAN_STRAIN_TOOLTIP = 'Strains over N frames to gain more distance',
     TAS_ATAN_STRAIN_REV_TOOLTIP = 'Reverses the progression of\nthe arctan arc',
     TAS_ATAN_EXP_TOOLTIP = 'Sets the exponent for parameter increments:\nR and D change by 10^E, N by at least 0.25,\nand S by at least 1',
-    TAS_ATAN_R_TOOLTIP = 'Adjusts the arctan ratio',
-    TAS_ATAN_D_TOOLTIP = 'Adjusts the arctan displacement offset',
+    TAS_ATAN_R_TOOLTIP = [[
+Adjusts the arctan movement ratio:
+|r|=1 maximize along target angle
+|r|<1 maximize sideways distance
+|r|>1 maximize forwards distance
+use r<0 for backwards distance
+When 'Match Angle' is selected,
+this is automatically chosen.
+]],
+    TAS_ATAN_D_TOOLTIP = [[
+Adjusts the arctan speed:distance ratio:
+d=0 will optimize for distance
+d>0 will optimize for speed
+]],
     TAS_ATAN_N_TOOLTIP = 'Adjusts the number of frames used\nfor arctan strain',
     TAS_ATAN_S_TOOLTIP = 'Adjusts the frame where arctan strain starts',
     TAS_MAGNITUDE_TOOLTIP = 'Sets the maximum allowed joystick magnitude',
-
-    TAS_MAG_RESET_TOOLTIP = 'Removes the magnitude cap and disables\nHigh Magnitude',
-    TAS_MAG_HIGH_TOOLTIP = 'Prioritizes magnitude over angle',
-    TAS_SPDKICK_TOOLTIP = 'Sets magnitude to 48 and enables\nHigh Magnitude',
+    TAS_DUSTLESS_WALK_TOOLTIP = 'Sets the magnitude to\nprevent dust particles',
+    TAS_MAG_RESET_TOOLTIP = 'Removes the magnitude cap and disables\nmagnitude modifiers',
+    TAS_SPDKICK_TOOLTIP = 'Sets magnitude to 48 and picks\njoystick based on air speed',
     FRAMEWALK = 'Framewalk',
     SWIM = 'Swim',
     -- Semantic Workflow Tab
