@@ -297,45 +297,37 @@ local function lower_controls(draw, old_values, new_values, top)
 
     new_values.goal_mag = ugui.numberbox({
         uid = UID.GoalMag,
-        rectangle = grid_rect(2, top, 2, Gui.LARGE_CONTROL_HEIGHT),
-        places = 3,
-        value = math.max(0, math.min(127, new_values.goal_mag)),
+        rectangle = grid_rect(2, top, 1.5, Gui.LARGE_CONTROL_HEIGHT),
+        places = 2,
+        value = math.max(0, math.min(64, new_values.goal_mag)),
         tooltip = Locales.str('TAS_MAGNITUDE_TOOLTIP'),
     })
     -- a value starting with a 9 likely indicates that the user scrolled down
     -- on the most significant digit while its value was 0, so we "clamp" to 0 here
     -- this makes it so typing in a 9 explicitly will set the entire value to 0 as well,
     -- but I'll accept this weirdness for now until a more coherently bounded numberbox implementation exists.
-    if new_values.goal_mag >= 900 then new_values.goal_mag = 0 end
+    if new_values.goal_mag >= 90 then new_values.goal_mag = 0 end
 
     if ugui.button({
         uid = UID.SpeedKick,
-        rectangle = grid_rect(4, top, 1.5, Gui.LARGE_CONTROL_HEIGHT),
+        rectangle = grid_rect(3.5, top, 1.5, Gui.LARGE_CONTROL_HEIGHT),
         text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_SPDKICK'),
         tooltip = Locales.str('TAS_SPDKICK_TOOLTIP'),
     }) then
         if new_values.goal_mag ~= 48 then
             new_values.goal_mag = 48
         else
-            new_values.goal_mag = 127
+            new_values.goal_mag = 64
         end
     end
 
-    new_values.high_magnitude = ugui.toggle_button({
-        uid = UID.HighMag,
-        rectangle = grid_rect(5.5, top, 1.5, Gui.LARGE_CONTROL_HEIGHT),
-        text = Locales.str('SEMANTIC_WORKFLOW_CONTROL_HIGH_MAG'),
-        tooltip = Locales.str('TAS_MAG_HIGH_TOOLTIP'),
-        is_checked = new_values.high_magnitude,
-    })
-
     if ugui.button({
         uid = UID.ResetMag,
-        rectangle = grid_rect(7, top, 1, Gui.LARGE_CONTROL_HEIGHT),
+        rectangle = grid_rect(5, top, 1.5, Gui.LARGE_CONTROL_HEIGHT),
         text = Locales.str('MAG_RESET'),
         tooltip = Locales.str('TAS_MAG_RESET_TOOLTIP'),
     }) then
-        new_values.goal_mag = 127
+        new_values.goal_mag = 64
     end
 end
 

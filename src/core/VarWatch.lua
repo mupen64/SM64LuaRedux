@@ -35,7 +35,7 @@ VarWatch.var_funcs = {
     end,
     ['h_spd'] = function()
         local h_speed = Memory.current.mario_h_speed
-        local h_sliding_speed = Engine.GetHSlidingSpeed()
+        local h_sliding_speed = Engine.get_h_sliding_speed()
         return {
             label = Locales.str('VARWATCH_H_SPEED_LABEL'),
             value = string.format(Locales.str('VARWATCH_H_SPEED'),
@@ -50,7 +50,7 @@ VarWatch.var_funcs = {
         }
     end,
     ['spd_efficiency'] = function()
-        local spd_efficiency = Engine.GetSpeedEfficiency()
+        local spd_efficiency = Engine.get_speed_efficiency()
         local percentage = Formatter.percent(spd_efficiency)
         local fraction = Formatter.fraction(spd_efficiency, 4)
         local full = string.format("%s (%s)", percentage, fraction)

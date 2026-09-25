@@ -35,8 +35,8 @@ return {
     ATAN_STRAIN = 'Arctan strain',
     ATAN_STRAIN_REV = 'I',
     MAG_RESET = 'Vider',
-    MAG_HI = 'Élevé',
-    SPDKICK = 'Spdkick',
+    DUSTLESS_WALK = 'Marcher',
+    SPDKICK = 'Speedkick',
     TAS_MATCH_YAW_TOOLTIP = 'Maintient l\'angle le plus proche de\nla direction de Mario',
     TAS_REVERSE_YAW_TOOLTIP = 'Maintient l\'angle le plus proche de la direction\nopposée de Mario',
     TAS_MATCH_ANGLE_TOOLTIP = 'Maintient l\'angle indiqué',
@@ -49,15 +49,26 @@ return {
     TAS_ATAN_STRAIN_TOOLTIP = 'Effectue un strain sur N frames pour gagner plus de distance',
     TAS_ATAN_STRAIN_REV_TOOLTIP = 'Inverse la progression de\nl\'arc arctan',
     TAS_ATAN_EXP_TOOLTIP = 'Définit l\'exposant des incréments :\nR et D varient de 10^E, N d\'au moins 0,25,\net S d\'au moins 1',
-    TAS_ATAN_R_TOOLTIP = 'Modifie le ratio arctan',
-    TAS_ATAN_D_TOOLTIP = 'Modifie le décalage de déplacement arctan',
+    TAS_ATAN_R_TOOLTIP = [[
+Modifie le rapport de mouvement arctan:
+|r|=1 maximiser selon l'angle cible
+|r|<1 maximiser la distance de côté
+|r|>1 maximiser la distance vers l'avant
+utilisez r<0 pour distance opposée
+Lorsque « Correspondre Yaw » est sélectionné,
+ce paramètre est choisi automatiquement.
+]],
+    TAS_ATAN_D_TOOLTIP = [[
+Modifie le rapport vitesse/distance de l'arctan:
+d=0 optimisera la distance
+d>0 optimisera la vitesse
+]],
     TAS_ATAN_N_TOOLTIP = 'Modifie le nombre de frames utilisées\npour le strain arctan',
     TAS_ATAN_S_TOOLTIP = 'Modifie la frame où commence le strain arctan',
     TAS_MAGNITUDE_TOOLTIP = 'Définit la magnitude maximale du joystick',
-
-    TAS_MAG_RESET_TOOLTIP = 'Retire la limite de magnitude et désactive\nÉlevé',
-    TAS_MAG_HIGH_TOOLTIP = 'Privilégie la magnitude à l\'angle',
-    TAS_SPDKICK_TOOLTIP = 'Définit la magnitude à 48 et active\nÉlevé',
+    TAS_DUSTLESS_WALK_TOOLTIP = 'Définit la magnitude maximale pour\nempêcher les particules de poussière',
+    TAS_MAG_RESET_TOOLTIP = 'Retire la limite de magnitude et désactive\nles modificateurs de magnitude',
+    TAS_SPDKICK_TOOLTIP = 'Définit la magnitude à 48 et sélectionne le\njoystick en fonction de la vitesse de l\'air',
     FRAMEWALK = 'Framewalk',
     SWIM = 'Nager',
     -- Semantic Workflow Tab

@@ -14,11 +14,12 @@ return {
             return Joypad.input
         end
         Memory.update()
-        local result = Engine.inputsForAngle(Settings.tas.goal_angle, input)
-        if Settings.tas.goal_mag then
-            Engine.scaleInputsForMagnitude(result, Settings.tas.goal_mag, Settings.tas.high_magnitude)
+        local result = Engine.inputs_for_angle(Settings.tas.goal_angle, input, Settings.tas.movement_mode)
+        if Settings.tas.dustless_walk then
+            Engine.scale_inputs_for_dustless_walk(result)
+        elseif Settings.tas.goal_mag then
+            Engine.scale_inputs_to_magnitude(result, Settings.tas.goal_mag, Settings.tas.maximize_airspeed)
         end
-
         input.X = result.X
         input.Y = result.Y
         return input

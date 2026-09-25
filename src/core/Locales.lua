@@ -34,7 +34,7 @@ Locales = {}
 ---@field public ATAN_STRAIN string
 ---@field public ATAN_STRAIN_REV string
 ---@field public MAG_RESET string
----@field public MAG_HI string
+---@field public DUSTLESS_WALK string
 ---@field public SPDKICK string
 ---@field public TAS_MATCH_YAW_TOOLTIP string
 ---@field public TAS_REVERSE_YAW_TOOLTIP string
@@ -54,7 +54,7 @@ Locales = {}
 ---@field public TAS_ATAN_S_TOOLTIP string
 ---@field public TAS_MAGNITUDE_TOOLTIP string
 ---@field public TAS_MAG_RESET_TOOLTIP string
----@field public TAS_MAG_HIGH_TOOLTIP string
+---@field public TAS_DUSTLESS_WALK_TOOLTIP string
 ---@field public TAS_SPDKICK_TOOLTIP string
 ---@field public FRAMEWALK string
 ---@field public SWIM string

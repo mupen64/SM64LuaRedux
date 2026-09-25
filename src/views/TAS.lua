@@ -11,6 +11,7 @@ local UID = UIDProvider.allocate_once('TAS', function(enum_next)
         GoalMag = enum_next(ugui.registry.numberbox.uids()),
         HighMagnitude = enum_next(ugui.registry.toggle_button.uids()),
         ResetMag = enum_next(ugui.registry.button.uids()),
+        DustlessWalk = enum_next(ugui.registry.button.uids()),
         SpeedKick = enum_next(ugui.registry.button.uids()),
         D99Always = enum_next(ugui.registry.toggle_button.uids()),
         D99 = enum_next(ugui.registry.toggle_button.uids()),
@@ -223,30 +224,50 @@ return {
                 end)
 
             atan_field(1,
-                'R: ' .. tostring(Settings.tas.atan_r),
+                string.format('R: %.5g', Settings.tas.atan_readonly_r ~= nil and Settings.tas.atan_readonly_r or Settings.tas.atan_r),
                 'TAS_ATAN_R_TOOLTIP',
                 function()
                     Settings.tas.atan_r = Settings.tas.atan_r + math.pow(10, Settings.atan_exp)
+                    if Settings.tas.atan_r > 1e5 then
+                        Settings.tas.atan_r = 99999
+                    elseif math.abs(Settings.tas.atan_r) < 1e-4 then
+                        Settings.tas.atan_r = 0
+                    end
                 end,
                 function()
                     Settings.tas.atan_r = Settings.tas.atan_r - math.pow(10, Settings.atan_exp)
+                    if Settings.tas.atan_r < -1e5 then
+                        Settings.tas.atan_r = -99999
+                    elseif math.abs(Settings.tas.atan_r) < 1e-4 then
+                        Settings.tas.atan_r = 0
+                    end
                 end)
 
 
             atan_field(2,
-                'D: ' .. tostring(Settings.tas.atan_d),
+                string.format('D: %.5g', Settings.tas.atan_d),
                 'TAS_ATAN_D_TOOLTIP',
                 function()
                     Settings.tas.atan_d = Settings.tas.atan_d + math.pow(10, Settings.atan_exp)
+                    if Settings.tas.atan_d >= 1e5 then
+                        Settings.tas.atan_d = 99999
+                    elseif math.abs(Settings.tas.atan_d) < 1e-4 then
+                        Settings.tas.atan_d = 0
+                    end
                 end,
                 function()
                     Settings.tas.atan_d = Settings.tas.atan_d - math.pow(10, Settings.atan_exp)
+                    if Settings.tas.atan_d <= -1e5 then
+                        Settings.tas.atan_d = -99999
+                    elseif math.abs(Settings.tas.atan_d) < 1e-4 then
+                        Settings.tas.atan_d = 0
+                    end
                 end)
 
             atan_field(3,
                 'N: ' .. tostring(Settings.tas.atan_n),
                 'TAS_ATAN_N_TOOLTIP',
-                function()
+                function() -- minimum change of 0.25
                     Settings.tas.atan_n = math.max(0,
                         Settings.tas.atan_n + math.pow(10, math.max(-0.6020599913279624, Settings.atan_exp)), 2)
                 end,
@@ -258,7 +279,7 @@ return {
             atan_field(4,
                 'S: ' .. tostring(Settings.tas.atan_start),
                 'TAS_ATAN_S_TOOLTIP',
-                function()
+                function() -- minimum change of 1
                     Settings.tas.atan_start = math.max(0,
                         Settings.tas.atan_start + math.pow(10, math.max(0, Settings.atan_exp)))
                 end,
@@ -296,7 +317,7 @@ return {
         ugui.label({
             uid = UID.StickMag,
             rectangle = grid_rect(4, YORG + 1, 4, 1),
-            text = 'Mag: ' .. Formatter.u(Engine.get_magnitude_for_stick(stick_x, stick_y), 0),
+            text = 'Mag: ' .. Formatter.u(Engine.get_magnitude_for_stick(stick_x, stick_y), 2),
             color = foreground_color,
             font_size = theme.font_size * Drawing.scale * 1.25,
             font_name = 'Consolas',
@@ -306,15 +327,15 @@ return {
 
         Settings.tas.goal_mag = math.abs(ugui.numberbox({
             uid = UID.GoalMag,
-            rectangle = grid_rect(4, YORG + 2, 2, 1),
-            places = 3,
+            rectangle = grid_rect(4, YORG + 2, 1.5, 1),
+            places = 2,
             value = Settings.tas.goal_mag,
             tooltip = Locales.str('TAS_MAGNITUDE_TOOLTIP'),
         }))
 
         if ugui.button({
                 uid = UID.ResetMag,
-                rectangle = grid_rect(4, YORG + 3, 2, 1),
+                rectangle = grid_rect(4, YORG + 3, 1.5, 1),
                 text = Locales.str('MAG_RESET'),
                 tooltip = Locales.str('TAS_MAG_RESET_TOOLTIP'),
                 styler_mixin = {
@@ -324,24 +345,21 @@ return {
             action.invoke(ACTION_RESET_MAGNITUDE)
         end
 
-        local _, meta = ugui.toggle_button({
-            uid = UID.HighMagnitude,
-            rectangle = grid_rect(6, YORG + 3, 2, 1),
-            text = Locales.str('MAG_HI'),
-            tooltip = Locales.str('TAS_MAG_HIGH_TOOLTIP'),
-            is_checked = Settings.tas.high_magnitude,
-            styler_mixin = {
-                font_size = theme.font_size * Drawing.scale * 0.9,
-            },
-        })
-        if meta.signal_change == ugui.signal_change_states.started then
-            action.invoke(ACTION_TOGGLE_HIGH_MAGNITUDE)
+        if ugui.button({
+                uid = UID.DustlessWalk,
+                rectangle = grid_rect(5.5, YORG + 3, 2.5, 1),
+                text = Locales.str('DUSTLESS_WALK'),
+                is_checked = Settings.tas.dustless_walk,
+                tooltip = Locales.str('TAS_DUSTLESS_WALK_TOOLTIP'),
+            }) then
+            action.invoke(ACTION_SET_DUSTLESS_WALK)
         end
 
         if ugui.button({
                 uid = UID.SpeedKick,
-                rectangle = grid_rect(6, YORG + 2, 2, 1),
+                rectangle = grid_rect(5.5, YORG + 2, 2.5, 1),
                 text = Locales.str('SPDKICK'),
+                is_checked = Settings.tas.maximize_airspeed,
                 tooltip = Locales.str('TAS_SPDKICK_TOOLTIP'),
             }) then
             action.invoke(ACTION_SET_SPDKICK)
@@ -358,8 +376,7 @@ return {
                 height = joystick_rect[4],
             },
             position = displayPosition,
-
-            mag = Settings.tas.goal_mag >= 127 and 0 or Settings.tas.goal_mag,
+            mag = Settings.tas.goal_mag >= 64 and 0 or Settings.tas.goal_mag + 6,
             x_snap = 8,
             y_snap = 8,
         })
