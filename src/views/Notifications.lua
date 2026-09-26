@@ -43,7 +43,7 @@ return {
         for i = 1, #notifications, 1 do
             local notification = notifications[i]
 
-            local size = BreitbandGraphics.get_text_size(notification.text, theme.font_size * Drawing.scale * text_scale,
+            local size = BreitbandGraphics.get_text_size(notification.text, theme.font_size * text_scale,
                 theme.font_name)
 
             local padding = ugui.standard_styler.params.textbox.padding.x
@@ -63,7 +63,7 @@ return {
                 rectangle = { x = x, y = y, width = size.width + 1, height = size.height + 1 },
                 text = notification.text,
                 color = foreground_color,
-                font_size = theme.font_size * Drawing.scale * text_scale,
+                font_size = theme.font_size * text_scale,
                 font_name = theme.font_name,
                 align_x = BreitbandGraphics.alignment['start'],
                 align_y = BreitbandGraphics.alignment['start'],

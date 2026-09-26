@@ -84,7 +84,7 @@ return {
             rectangle = grid_rect(0, 5, 8, 1),
             text = Timer.get_frame_text(),
             color = BreitbandGraphics.invert_color(theme.background_color),
-            font_size = theme.font_size * Drawing.scale * 2,
+            font_size = theme.font_size * 2,
             font_name = 'Consolas',
             align_x = BreitbandGraphics.alignment.center,
             align_y = BreitbandGraphics.alignment.center,

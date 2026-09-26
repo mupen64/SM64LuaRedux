@@ -153,7 +153,7 @@ end
 
 local function draw_scrollbar(num_rows)
     local baseline = grid_rect(COL_BUTTONS_END, ROW2, BUTTON_COLUMN_WIDTH, FRAME_COLUMN_HEIGHT, 0)
-    local unit = Settings.grid_size * Drawing.scale
+    local unit = Settings.grid_size
     local num_actually_shown_rows = math.min(MAX_DISPLAYED_SECTIONS, num_rows)
     local scrollbar_rect = {
         x = baseline.x - SCROLLBAR_WIDTH * unit,
@@ -455,7 +455,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
 
             -- mini joysticks and yaw numbers
             local joystick_box = span(COL_JOYSTICK_1, COL_JOYSTICK_2)
-            local mixin = { joystick = { tip_size = 4 * Drawing.scale } }
+            local mixin = { joystick = { tip_size = 4 } }
             if input.editing then
                 mixin.joystick.back = { [1] = '#00C80064' }
             end
@@ -500,7 +500,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
             end
 
             -- draw buttons
-            local unit = Settings.grid_size * Drawing.scale
+            local unit = Settings.grid_size
             local sz = BUTTON_SIZE * unit
             local rect = {
                 x = 0,

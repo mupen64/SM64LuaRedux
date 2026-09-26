@@ -294,6 +294,7 @@ local function atdrawd2d()
             x = Drawing.size.width,
             y = Drawing.size.height - 23,
         },
+        scale = Drawing.scale,
     }
     ugui.begin_frame(ugui_environment)
 

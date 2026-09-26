@@ -117,7 +117,7 @@ local function draw_factory(theme)
     return {
         foreground_color = Drawing.foreground_color(),
         background_color = theme.background_color,
-        font_size = theme.font_size * Drawing.scale * 0.75,
+        font_size = theme.font_size * 0.75,
 
         text = function(self, rect, horizontal_alignment, text)
             ugui.label({
