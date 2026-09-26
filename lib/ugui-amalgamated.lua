@@ -56,7 +56,8 @@ end
 ---@field public wheel number The mouse wheel delta.
 ---@field public is_primary_down boolean? Whether the primary mouse button is being pressed.
 ---@field public key_events KeyEventArgs[] The key events that happened since the last frame.
----@field public window_size { x: number, y: number }? The rendering bounds. If nil, no rendering bounds are considered and certain controls, such as menus, might overflow off-screen.
+---@field public scale number? The global GUI scale. Defaults to 1.
+---@field public window_size { x: number, y: number }? The rendering bounds in device pixels. If nil, no rendering bounds are considered and certain controls, such as menus, might overflow off-screen.
 ---@field public shift boolean? Whether the shift key is being held down during this frame.
 
 ---@alias RichText string
@@ -145,17 +146,13 @@ ugui.begin_frame = function(environment)
             'Tried to call begin_frame() while a frame is already in progress. End the previous frame with end_frame() before starting a new one.')
     end
 
-    ugui.internal.frame_in_progress = true
-    local current_time = os.clock()
-    local has_previous_frame = ugui.internal.last_frame_time > 0
-    ugui.internal.delta_time = current_time - ugui.internal.last_frame_time
-    ugui.internal.last_frame_time = current_time
-
-    ugui.internal.update_debug_frame_time(current_time, has_previous_frame)
-
-    if not ugui.internal.environment then
-        ugui.internal.environment = environment
+    local scale = ugui.internal.update_debug_scale(environment)
+    if type(scale) ~= 'number' or scale <= 0 or scale ~= scale or scale == math.huge then
+        error('The GUI scale must be a finite number greater than zero.')
     end
+
+    ugui.internal.frame_in_progress = true
+    ugui.internal.frame_start_time = os.clock()
 
     if not environment.window_size then
         -- Assume unbounded window size if user is too lazy to provide one
@@ -165,7 +162,7 @@ ugui.begin_frame = function(environment)
     -- Replace paste operations with synthetic type events.
     local clipboard_text
     for i, e in ipairs(environment.key_events) do
-        if e.pressed and e.keycode == Mupen.VKeycodes.VK_V and e.ctrl then
+        if e.pressed and e.keycode2 == Mupen.keycode.SDLK_V and e.ctrl then
             if not clipboard_text then
                 clipboard_text = clipboard.get('text')
             end
@@ -183,8 +180,24 @@ ugui.begin_frame = function(environment)
         end
     end
 
+    local normalized_environment = ugui.internal.deep_clone(environment)
+    normalized_environment.scale = scale
+    normalized_environment.mouse_position = {
+        x = environment.mouse_position.x / scale,
+        y = environment.mouse_position.y / scale,
+    }
+    normalized_environment.window_size = {
+        x = environment.window_size.x / scale,
+        y = environment.window_size.y / scale,
+    }
+
+    if not ugui.internal.environment then
+        ugui.internal.environment = normalized_environment
+    end
+
     ugui.internal.previous_environment = ugui.internal.deep_clone(ugui.internal.environment)
-    ugui.internal.environment = ugui.internal.deep_clone(environment)
+    ugui.internal.environment = normalized_environment
+    ugui.internal.scale = scale
 
     if ugui.internal.is_mouse_just_down() then
         ugui.internal.mouse_down_position = ugui.internal.environment.mouse_position
@@ -208,6 +221,10 @@ ugui.end_frame = function()
     ugui.internal.dispatch_events()
 
     -- 4. Rendering pass
+    local current_painter = painter.current()
+    current_painter:save()
+    current_painter:scale(ugui.internal.scale, ugui.internal.scale)
+
     for i = 1, #ugui.internal.scene, 1 do
         local control = ugui.internal.scene[i].control
         local type = ugui.internal.scene[i].type
@@ -229,6 +246,8 @@ ugui.end_frame = function()
 
     ugui.internal.draw_debug_overlay()
 
+    current_painter:restore()
+
     -- Store UIDs that were present in this frame
     ugui.internal.previous_uids = {}
     for i = 1, #ugui.internal.scene, 1 do
@@ -238,6 +257,10 @@ ugui.end_frame = function()
 
     ugui.internal.scene = {}
     ugui.internal.last_control_rectangle = nil
+
+    local frame_end_time = os.clock()
+    ugui.internal.delta_time = frame_end_time - ugui.internal.frame_start_time
+    ugui.internal.update_debug_frame_time(frame_end_time)
     ugui.internal.frame_in_progress = false
 end
 
@@ -384,10 +407,16 @@ ugui.internal = {
     ---The most recent time at which `hovered_control` changed, as returned by `os.clock`.
     hover_start_time = 0,
 
+    ---@type number
+    ---The global GUI scale for the current frame.
+    scale = 1,
+
     ---Whether a frame is currently in progress.
     frame_in_progress = false,
 
-    last_frame_time = 0,
+    ---The `os.clock` timestamp captured at the start of the current frame.
+    frame_start_time = 0,
+    ---The duration of the most recently completed frame, in seconds.
     delta_time = 0,
 
     ---@type { t: number, dt: number }[]
@@ -472,46 +501,31 @@ ugui.internal = {
         return true
     end,
 
-    ---Gets the character index for the specified relative x position in a textbox.
+    ---Gets the caret index for the specified relative x position in a textbox.
     ---Considers font_size and font_name, as provided by the styler.
     ---@param text string The textbox's text.
-    ---@param scroll_offset integer The scroll offset.
-    ---@param relative_x number The relative x position.
-    ---@return integer The character index.
+    ---@param scroll_offset integer The 1-based scroll offset.
+    ---@param relative_x number The x position relative to the textbox's left edge.
+    ---@return integer The caret index.
     get_caret_index = function(text, scroll_offset, relative_x)
         local font_size = ugui.standard_styler.params.font_size
         local font_name = ugui.standard_styler.params.font_name
-
-        local scroll_pixel = 0
-        if scroll_offset > 1 then
-            scroll_pixel = BreitbandGraphics.get_text_size(
-                text:sub(1, scroll_offset - 1),
-                font_size,
-                font_name
-            ).width
-        end
-
-        local text_x = relative_x + scroll_pixel
-
-        if text_x <= 0 then
-            return 1
-        end
-
-        local cumulative_width = 0
-
-        for i = 1, #text do
-            local char = text:sub(i, i)
-            local char_width = BreitbandGraphics.get_text_size(char, font_size, font_name).width
-
-            local midpoint = cumulative_width + char_width * 0.5
-            if text_x < midpoint then
-                return i
-            end
-
-            cumulative_width = cumulative_width + char_width
-        end
-
-        return #text + 1
+        local first_visible_index = math.max(1, scroll_offset)
+        local visible_text = text:sub(first_visible_index)
+        local hit = painter.hittest_text_position(
+            visible_text,
+            relative_x - ugui.standard_styler.params.textbox.padding.x,
+            0,
+            {
+                family = font_name,
+                size = font_size,
+            },
+            {
+                wrap = 'none',
+                clip = false,
+            }
+        )
+        return hit.index + first_visible_index - 1
     end,
 
     ---Applies a control's styler mixin if it has one.
@@ -1949,44 +1963,45 @@ ugui.standard_styler = {
             and data.selection_start ~= data.selection_end
             and ugui.internal.keyboard_captured_control == control.uid
 
-        local string_to_caret = text:sub(data.scroll_offset, data.caret_index - 1)
-        local string_to_caret_width = BreitbandGraphics.get_text_size(string_to_caret, ugui.standard_styler.params.font_size, ugui.standard_styler.params.font_name).width
-        local caret_x = control.rectangle.x + ugui.standard_styler.params.textbox.padding.x + string_to_caret_width
-        local string_to_selection_start
-        local string_to_selection_end
-        local string_to_selection_start_width
-        local string_to_selection_end_width
-        local selection_start_x
-        local selection_end_x
-        local caret_height<const> = ugui.standard_styler.params.font_size * 1.5
-
-        if should_visualize_selection then
-            string_to_selection_start = text:sub(data.scroll_offset, data.selection_start - 1)
-            string_to_selection_end = text:sub(data.scroll_offset, data.selection_end - 1)
-
-            string_to_selection_start_width = BreitbandGraphics.get_text_size(string_to_selection_start, ugui.standard_styler.params.font_size, ugui.standard_styler.params.font_name).width
-            string_to_selection_end_width = BreitbandGraphics.get_text_size(string_to_selection_end, ugui.standard_styler.params.font_size, ugui.standard_styler.params.font_name).width
-
-            selection_start_x = control.rectangle.x + ugui.standard_styler.params.textbox.padding.x + string_to_selection_start_width
-            selection_end_x = control.rectangle.x + ugui.standard_styler.params.textbox.padding.x + string_to_selection_end_width
-        end
-
-        if should_visualize_selection then
-            BreitbandGraphics.fill_rectangle({
-                    x = control.rectangle.x + ugui.standard_styler.params.textbox.padding.x + string_to_selection_start_width,
-                    y = control.rectangle.y,
-                    width = string_to_selection_end_width - string_to_selection_start_width,
-                    height = caret_height,
-                },
-                ugui.standard_styler.params.textbox.selection)
-        end
-
         local text_rect = {
             x = control.rectangle.x + ugui.standard_styler.params.textbox.padding.x,
             y = control.rectangle.y,
             width = 9999,
             height = control.rectangle.height,
         }
+        local text_style = {
+            family = ugui.standard_styler.params.font_name,
+            size = ugui.standard_styler.params.font_size,
+        }
+        local first_visible_index = math.max(1, data.scroll_offset)
+        local function x_at_index(index)
+            local local_index = math.max(1, math.min(#scrolled_text + 1, index - first_visible_index + 1))
+            local position = painter.hittest_text_index(scrolled_text, local_index, text_style, {
+                wrap = 'none',
+                clip = false,
+            })
+            return text_rect.x + position.x
+        end
+
+        local caret_x = x_at_index(data.caret_index)
+        local selection_start_x
+        local selection_end_x
+        local caret_height<const> = ugui.standard_styler.params.font_size * 1.5
+
+        if should_visualize_selection then
+            selection_start_x = x_at_index(data.selection_start)
+            selection_end_x = x_at_index(data.selection_end)
+        end
+
+        if should_visualize_selection then
+            BreitbandGraphics.fill_rectangle({
+                    x = selection_start_x,
+                    y = control.rectangle.y,
+                    width = selection_end_x - selection_start_x,
+                    height = caret_height,
+                },
+                ugui.standard_styler.params.textbox.selection)
+        end
 
         BreitbandGraphics.draw_text2({
             text = scrolled_text,
@@ -2217,11 +2232,34 @@ ugui.standard_styler = {
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
+---Updates the debug scale in response to Ctrl+Up/Down.
+---@param environment Environment The environment for the current frame.
+---@return number scale The scale to use for the current frame.
+ugui.internal.update_debug_scale = function(environment)
+    if not ugui.DEBUG then
+        ugui.internal.debug_scale = nil
+        return environment.scale or 1
+    end
+
+    local scale = ugui.internal.debug_scale or environment.scale or 1
+    for _, e in ipairs(environment.key_events) do
+        if e.pressed and not e['repeat'] and e.ctrl then
+            if e.keycode2 == Mupen.keycode.SDLK_UP then
+                scale = scale + 0.05
+            elseif e.keycode2 == Mupen.keycode.SDLK_DOWN then
+                scale = math.max(0.05, scale - 0.05)
+            end
+        end
+    end
+
+    ugui.internal.debug_scale = scale
+    return scale
+end
+
 ---Updates the rolling one-second frametime average used by the debug overlay.
 ---@param current_time number The current os.clock time.
----@param has_previous_frame boolean Whether a previous frame timestamp is available.
-ugui.internal.update_debug_frame_time = function(current_time, has_previous_frame)
-    if has_previous_frame and ugui.internal.delta_time > 0 then
+ugui.internal.update_debug_frame_time = function(current_time)
+    if ugui.internal.delta_time > 0 then
         ugui.internal.frame_times[#ugui.internal.frame_times + 1] = {
             t = current_time,
             dt = ugui.internal.delta_time,
@@ -2307,8 +2345,13 @@ ugui.internal.draw_debug_overlay = function()
     if #ugui.internal.frame_times == 0 then
         frame_time_text = 'wait...'
     else
-        frame_time_text = string.format('%.2f ms (~%.2f FPS)', average_frame_time * 1000, frames_per_second)
+        frame_time_text = string.format('took %.2f ms (~%.2f FPS)', average_frame_time * 1000, frames_per_second)
     end
+    frame_time_text = string.format(
+        '%s | Ctrl + Up/Down: scale +/- 5%% (%.0f%%)',
+        frame_time_text,
+        ugui.internal.scale * 100
+    )
 
     BreitbandGraphics.draw_text2({
         text = frame_time_text,
@@ -2883,35 +2926,35 @@ ugui.registry.listbox = {
 
         if ugui.internal.keyboard_captured_control == control.uid then
             for _, e in ipairs(ugui.internal.environment.key_events) do
-                if not e.keycode or not e.pressed then
+                if not e.keycode2 or not e.pressed then
                     goto continue
                 end
 
-                if e.keycode == Mupen.VKeycodes.VK_UP and data.selected_index ~= nil then
+                if e.keycode2 == Mupen.keycode.SDLK_UP and data.selected_index ~= nil then
                     data.selected_index = ugui.internal.clamp(data.selected_index - 1, 1, #control.items)
                     scroll_selected_index_into_view()
                 end
-                if e.keycode == Mupen.VKeycodes.VK_DOWN and data.selected_index ~= nil then
+                if e.keycode2 == Mupen.keycode.SDLK_DOWN and data.selected_index ~= nil then
                     data.selected_index = ugui.internal.clamp(data.selected_index + 1, 1, #control.items)
                     scroll_selected_index_into_view()
                 end
-                if e.keycode == Mupen.VKeycodes.VK_C and e.ctrl and data.selected_index ~= nil then
+                if e.keycode2 == Mupen.keycode.SDLK_C and e.ctrl and data.selected_index ~= nil then
                     local item = control.items[data.selected_index]
                     clipboard.set("text", item)
                 end
-                if e.keycode == Mupen.VKeycodes.VK_PRIOR and data.selected_index ~= nil then
+                if e.keycode2 == Mupen.keycode.SDLK_PAGEUP and data.selected_index ~= nil then
                     data.selected_index = data.selected_index - items_per_page
                     scroll_selected_index_into_view()
                 end
-                if e.keycode == Mupen.VKeycodes.VK_NEXT and data.selected_index ~= nil then
+                if e.keycode2 == Mupen.keycode.SDLK_PAGEDOWN and data.selected_index ~= nil then
                     data.selected_index = data.selected_index + items_per_page
                     scroll_selected_index_into_view()
                 end
-                if e.keycode == Mupen.VKeycodes.VK_HOME then
+                if e.keycode2 == Mupen.keycode.SDLK_HOME then
                     data.selected_index = 1
                     scroll_selected_index_into_view()
                 end
-                if e.keycode == Mupen.VKeycodes.VK_END then
+                if e.keycode2 == Mupen.keycode.SDLK_END then
                     data.selected_index = #control.items
                     scroll_selected_index_into_view()
                 end
@@ -3115,14 +3158,14 @@ ugui.registry.textbox = {
         if ugui.internal.keyboard_captured_control == control.uid then
             for _, e in ipairs(ugui.internal.environment.key_events) do
                 local has_selection = data.selection_start ~= data.selection_end
-                if e.keycode and e.pressed then
+                if e.keycode2 and e.pressed then
                     local lower_selection = math.min(data.selection_start, data.selection_end)
                     local higher_selection = math.max(data.selection_start, data.selection_end)
                     local anchor = has_selection
                         and ((data.caret_index == data.selection_end) and data.selection_start or data.selection_end)
                         or data.caret_index
 
-                    if e.keycode == Mupen.VKeycodes.VK_BACK then
+                    if e.keycode2 == Mupen.keycode.SDLK_BACKSPACE then
                         if e.ctrl then
                             -- Ctrl+Backspace with a selection is REALLY weird and unintuitive, but this is what EDIT does:
                             -- 1. collapse selection to lower bound 2. delete backwards word from there (we already have that so we just fall through to it)
@@ -3154,7 +3197,7 @@ ugui.registry.textbox = {
                                 data.last_changed_anchor = 'caret'
                             end
                         end
-                    elseif e.keycode == Mupen.VKeycodes.VK_LEFT then
+                    elseif e.keycode2 == Mupen.keycode.SDLK_LEFT then
                         if e.ctrl then
                             if e.shift then
                                 local prev_word, _ = surrounding_word_index(data.text, data.caret_index)
@@ -3188,7 +3231,7 @@ ugui.registry.textbox = {
                                 end
                             end
                         end
-                    elseif e.keycode == Mupen.VKeycodes.VK_RIGHT then
+                    elseif e.keycode2 == Mupen.keycode.SDLK_RIGHT then
                         if e.ctrl then
                             if e.shift then
                                 local _, next_word = surrounding_word_index(data.text, data.caret_index)
@@ -3224,12 +3267,12 @@ ugui.registry.textbox = {
                         end
                     end
 
-                    if e.keycode == Mupen.VKeycodes.VK_C and e.ctrl and has_selection then
+                    if e.keycode2 == Mupen.keycode.SDLK_C and e.ctrl and has_selection then
                         local selected_text = data.text:sub(lower_selection, higher_selection - 1)
                         clipboard.set('text', selected_text)
                     end
 
-                    if e.keycode == Mupen.VKeycodes.VK_A and e.ctrl then
+                    if e.keycode2 == Mupen.keycode.SDLK_A and e.ctrl then
                         data.selection_start = 1
                         data.selection_end = #data.text + 1
                         data.caret_index = data.selection_end
@@ -3537,7 +3580,7 @@ ugui.combobox = function(control)
             and ugui.internal.keyboard_captured_control <= highest_owned_uid
         then
             for _, e in ipairs(ugui.internal.environment.key_events) do
-                if e.keycode == Mupen.VKeycodes.VK_RETURN and e.pressed then
+                if e.keycode2 == Mupen.keycode.SDLK_RETURN and e.pressed then
                     enter_pressed = true
                     break
                 end
@@ -4111,20 +4154,20 @@ ugui.registry.numberbox = {
         if ugui.internal.keyboard_captured_control == control.uid then
             -- handle number key press
             for _, e in ipairs(ugui.internal.environment.key_events) do
-                if e.keycode and e.pressed then
-                    if e.keycode == Mupen.VKeycodes.VK_LEFT then
+                if e.keycode2 and e.pressed then
+                    if e.keycode2 == Mupen.keycode.SDLK_LEFT then
                         data.caret_index = data.caret_index - 1
                     end
-                    if e.keycode == Mupen.VKeycodes.VK_RIGHT then
+                    if e.keycode2 == Mupen.keycode.SDLK_RIGHT then
                         data.caret_index = data.caret_index + 1
                     end
-                    if e.keycode == Mupen.VKeycodes.VK_UP then
+                    if e.keycode2 == Mupen.keycode.SDLK_UP then
                         increment_digit(data.caret_index, 1)
                     end
-                    if e.keycode == Mupen.VKeycodes.VK_DOWN then
+                    if e.keycode2 == Mupen.keycode.SDLK_DOWN then
                         increment_digit(data.caret_index, -1)
                     end
-                    if e.keycode == Mupen.VKeycodes.VK_C and e.ctrl then
+                    if e.keycode2 == Mupen.keycode.SDLK_C and e.ctrl then
                         local digit = ugui.internal.get_digit(data.value, control.places, data.caret_index)
                         clipboard.set("text", tostring(digit))
                     end

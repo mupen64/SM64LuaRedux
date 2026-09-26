@@ -195,12 +195,8 @@ BreitbandGraphics.alignment = {
 --
 
 BreitbandGraphics.internal = {
-    ---@type table<string, integer>
-    ---Map of color keys to brush handles.
-    brushes = {},
-
-    ---@type table<string, integer>
-    ---Map of image paths to image handles.
+    ---@type table<string, PainterImage>
+    ---Map of image paths to decoded images.
     images = {},
 
     --- Creates a FloatColor from a Color.
@@ -223,10 +219,10 @@ BreitbandGraphics.internal = {
         -- Match RawColor
         if math.type(source) == "integer" then
             return {
-                r = (source >> 24) & 0xFF,
-                g = (source >> 16) & 0xFF,
-                b = (source >> 8) & 0xFF,
-                a = source & 0xFF,
+                r = ((source >> 24) & 0xFF) / 255.0,
+                g = ((source >> 16) & 0xFF) / 255.0,
+                b = ((source >> 8) & 0xFF) / 255.0,
+                a = (source & 0xFF) / 255.0,
             }
         end
 
@@ -278,6 +274,37 @@ BreitbandGraphics.internal = {
         print('Invalid color source:')
         print(source)
         error('See above.')
+    end,
+
+    ---Converts a color source to the painter API's color table type.
+    ---@param source ColorSource The color source.
+    ---@return PainterColorTable # The converted color.
+    color_source_to_painter_color = function(source)
+        local color = BreitbandGraphics.internal.color_source_to_float_color(source)
+        return {
+            r = color.r,
+            g = color.g,
+            b = color.b,
+            a = color.a,
+        }
+    end,
+
+    ---Gets an image from a path, loading and caching it if necessary.
+    ---@param path string The path to the image.
+    ---@return PainterImage # The decoded image.
+    image_from_path = function(path)
+        local cached_image = BreitbandGraphics.internal.images[path]
+        if cached_image then
+            return cached_image
+        end
+
+        local image, error_message = painter.load_image(path)
+        if not image then
+            error(error_message or ('failed to load image: ' .. path), 2)
+        end
+        BreitbandGraphics.internal.images[path] = image
+        ---@cast image PainterImage
+        return image
     end,
 }
 
@@ -536,36 +563,46 @@ BreitbandGraphics.draw_image_nineslice = function(destination_rectangle, source_
     }, bottom, path, color, filter)
 end
 
----Gets a brush from a color value, creating one and caching it if it doesn't already exist in the cache.
----@param color ColorSource The color value to create a brush from.
----@return integer # The brush handle.
-BreitbandGraphics.internal.brush_from_color = function(color)
-    local float = BreitbandGraphics.internal.color_source_to_float_color(color)
-    local converted = BreitbandGraphics.float_to_color(float)
-    local key = (converted.r << 24) | (converted.g << 16) | (converted.b << 8) | (converted.a and converted.a or 255)
-    if not BreitbandGraphics.internal.brushes[key] then
-        BreitbandGraphics.internal.brushes[key] = d2d.create_brush(float.r, float.g, float.b, float.a)
-    end
-    return BreitbandGraphics.internal.brushes[key]
-end
-
----Gets an image from a path, creating one and caching it if it doesn't already exist in the cache.
----@param path string The path to the image.
----@return integer # The image handle.
-BreitbandGraphics.internal.image_from_path = function(path)
-    if not BreitbandGraphics.internal.images[path] then
-        BreitbandGraphics.internal.images[path] = d2d.load_image(path)
-    end
-    return BreitbandGraphics.internal.images[path]
-end
-
 ---Computes the bounding box of a text string given a font size and font name.
 ---@param text string The string to be measured.
 ---@param font_size number The font size.
 ---@param font_name string The font name.
 ---@return Size # The text's bounding box.
 BreitbandGraphics.get_text_size = function(text, font_size, font_name)
-    return d2d.get_text_size(text, font_name, font_size, 99999999, 99999999)
+    local metrics = painter.measure_text(text, {
+        family = font_name,
+        size = font_size,
+    })
+    return {
+        width = metrics.w,
+        height = metrics.h,
+    }
+end
+
+local function fit_text(text, font_name, font_size, rectangle)
+    local text_size = BreitbandGraphics.get_text_size(text, font_size, font_name)
+    if text_size.width > rectangle.width then
+        font_size = font_size / math.max(0.01, text_size.width / rectangle.width)
+    end
+    if text_size.height > rectangle.height then
+        font_size = font_size / math.max(0.01, text_size.height / rectangle.height)
+    end
+    return font_size, BreitbandGraphics.get_text_size(text, font_size, font_name)
+end
+
+---@param alignment Alignment
+---@return PainterTextHorizontalAlign
+local function painter_text_horizontal_alignment(alignment)
+    return alignment == BreitbandGraphics.alignment.center and 'center' or
+        alignment == BreitbandGraphics.alignment['end'] and 'right' or
+        alignment == BreitbandGraphics.alignment.stretch and 'justify' or 'left'
+end
+
+---@param alignment Alignment
+---@return PainterTextVerticalAlign
+local function painter_text_vertical_alignment(alignment)
+    return alignment == BreitbandGraphics.alignment.center and 'center' or
+        alignment == BreitbandGraphics.alignment['end'] and 'bottom' or 'top'
 end
 
 ---Draws a rectangle's outline.
@@ -573,27 +610,30 @@ end
 ---@param color ColorSource The outline's color.
 ---@param thickness number The outline's thickness.
 BreitbandGraphics.draw_rectangle = function(rectangle, color, thickness)
-    local brush = BreitbandGraphics.internal.brush_from_color(color)
-    d2d.draw_rectangle(
-        rectangle.x,
-        rectangle.y,
-        rectangle.x + rectangle.width,
-        rectangle.y + rectangle.height,
-        thickness,
-        brush)
+    local p = painter.current()
+    p:begin_path()
+    p:rect({
+        x = rectangle.x,
+        y = rectangle.y,
+        w = rectangle.width,
+        h = rectangle.height,
+    })
+    p:stroke(BreitbandGraphics.internal.color_source_to_painter_color(color), {width = thickness})
 end
 
 ---Draws a filled-in rectangle.
 ---@param rectangle Rectangle The shape's bounding rectangle.
 ---@param color ColorSource The fill color.
 BreitbandGraphics.fill_rectangle = function(rectangle, color)
-    local brush = BreitbandGraphics.internal.brush_from_color(color)
-    d2d.fill_rectangle(
-        rectangle.x,
-        rectangle.y,
-        rectangle.x + rectangle.width,
-        rectangle.y + rectangle.height,
-        brush)
+    local p = painter.current()
+    p:begin_path()
+    p:rect({
+        x = rectangle.x,
+        y = rectangle.y,
+        w = rectangle.width,
+        h = rectangle.height,
+    })
+    p:fill(BreitbandGraphics.internal.color_source_to_painter_color(color))
 end
 
 ---Draws a rounded rectangle's outline.
@@ -602,16 +642,15 @@ end
 ---@param radii Vector2 The corner radii.
 ---@param thickness number The outline's thickness.
 BreitbandGraphics.draw_rounded_rectangle = function(rectangle, color, radii, thickness)
-    local brush = BreitbandGraphics.internal.brush_from_color(color)
-    d2d.draw_rounded_rectangle(
-        rectangle.x,
-        rectangle.y,
-        rectangle.x + rectangle.width,
-        rectangle.y + rectangle.height,
-        radii.x,
-        radii.y,
-        thickness,
-        brush)
+    local p = painter.current()
+    p:begin_path()
+    p:round_rect({
+        x = rectangle.x,
+        y = rectangle.y,
+        w = rectangle.width,
+        h = rectangle.height,
+    }, math.min(radii.x, radii.y))
+    p:stroke(BreitbandGraphics.internal.color_source_to_painter_color(color), {width = thickness})
 end
 
 ---Draws a filled-in rounded rectangle.
@@ -619,15 +658,15 @@ end
 ---@param color ColorSource The fill color.
 ---@param radii Vector2 The corner radii.
 BreitbandGraphics.fill_rounded_rectangle = function(rectangle, color, radii)
-    local brush = BreitbandGraphics.internal.brush_from_color(color)
-    d2d.fill_rounded_rectangle(
-        rectangle.x,
-        rectangle.y,
-        rectangle.x + rectangle.width,
-        rectangle.y + rectangle.height,
-        radii.x,
-        radii.y,
-        brush)
+    local p = painter.current()
+    p:begin_path()
+    p:round_rect({
+        x = rectangle.x,
+        y = rectangle.y,
+        w = rectangle.width,
+        h = rectangle.height,
+    }, math.min(radii.x, radii.y))
+    p:fill(BreitbandGraphics.internal.color_source_to_painter_color(color))
 end
 
 ---Draws an ellipse's outline.
@@ -635,27 +674,30 @@ end
 ---@param color ColorSource The outline's color.
 ---@param thickness number The outline's thickness.
 BreitbandGraphics.draw_ellipse = function(rectangle, color, thickness)
-    local brush = BreitbandGraphics.internal.brush_from_color(color)
-    d2d.draw_ellipse(
-        rectangle.x + rectangle.width / 2,
-        rectangle.y + rectangle.height / 2,
-        rectangle.width / 2,
-        rectangle.height / 2,
-        thickness,
-        brush)
+    local p = painter.current()
+    p:begin_path()
+    p:circle({
+        x = rectangle.x,
+        y = rectangle.y,
+        w = rectangle.width,
+        h = rectangle.height,
+    })
+    p:stroke(BreitbandGraphics.internal.color_source_to_painter_color(color), {width = thickness})
 end
 
 ---Draws a filled-in ellipse.
 ---@param rectangle Rectangle The shape's bounding rectangle.
 ---@param color ColorSource The fill color.
 BreitbandGraphics.fill_ellipse = function(rectangle, color)
-    local brush = BreitbandGraphics.internal.brush_from_color(color)
-    d2d.fill_ellipse(
-        rectangle.x + rectangle.width / 2,
-        rectangle.y + rectangle.height / 2,
-        rectangle.width / 2,
-        rectangle.height / 2,
-        brush)
+    local p = painter.current()
+    p:begin_path()
+    p:circle({
+        x = rectangle.x,
+        y = rectangle.y,
+        w = rectangle.width,
+        h = rectangle.height,
+    })
+    p:fill(BreitbandGraphics.internal.color_source_to_painter_color(color))
 end
 
 ---Draws text with the specified parameters.
@@ -674,108 +716,53 @@ BreitbandGraphics.draw_text = function(rectangle, horizontal_alignment, vertical
     text)
     if text == nil then
         text = ''
+    elseif type(text) ~= 'string' then
+        text = tostring(text)
     end
 
     local rect_x = rectangle.x
     local rect_y = rectangle.y
     local rect_w = rectangle.width
     local rect_h = rectangle.height
-    local brush = BreitbandGraphics.internal.brush_from_color(color)
-    local d_horizontal_alignment = 0
-    local d_vertical_alignment = 0
-    local d_style = 0
-    local d_weight = 400
-    local d_options = 0
-    local d_text_antialias_mode = 1
+    local align_x = horizontal_alignment == 'center' and 'center' or
+        horizontal_alignment == 'end' and 'right' or
+        horizontal_alignment == 'stretch' and 'justify' or 'left'
+    local align_y = vertical_alignment == 'center' and 'center' or
+        vertical_alignment == 'end' and 'bottom' or 'top'
 
-    if horizontal_alignment == 'center' then
-        d_horizontal_alignment = 2
-    elseif horizontal_alignment == 'start' then
-        d_horizontal_alignment = 0
-    elseif horizontal_alignment == 'end' then
-        d_horizontal_alignment = 1
-    elseif horizontal_alignment == 'stretch' then
-        d_horizontal_alignment = 3
-    end
-
-    if vertical_alignment == 'center' then
-        d_vertical_alignment = 2
-    elseif vertical_alignment == 'start' then
-        d_vertical_alignment = 0
-    elseif vertical_alignment == 'end' then
-        d_vertical_alignment = 1
-    end
-
-    if style.is_bold then
-        d_weight = 700
-    end
-    if style.is_italic then
-        d_style = 2
-    end
-    if style.clip then
-        d_options = d_options | 0x00000002
-    end
-    if style.grayscale then
-        d_text_antialias_mode = 2
-    end
-    if style.aliased then
-        d_text_antialias_mode = 3
-    end
     if style.fit then
-        -- Try to fit the text into the specified rectangle by reducing the font size
-        local text_size = d2d.get_text_size(text, font_name, font_size, math.maxinteger, math.maxinteger)
-
-        if text_size.width > rectangle.width then
-            font_size = font_size / math.max(0.01, (text_size.width / rectangle.width))
-        end
-        if text_size.height > rectangle.height then
-            font_size = font_size / math.max(0.01, (text_size.height / rectangle.height))
-        end
-
-        local text_size = d2d.get_text_size(text, font_name, font_size, math.maxinteger, math.maxinteger)
-
-        -- Since the rect stays the same, the text will want to wrap.
-        -- We solve that by recomputing the rect and alignments
+        local fitted_font_size, text_size = fit_text(text, font_name, font_size, rectangle)
+        font_size = fitted_font_size
         if horizontal_alignment == 'center' or horizontal_alignment == 'stretch' then
             rect_x = rect_x + rect_w / 2 - text_size.width / 2
-        elseif horizontal_alignment == 'start' then
-            rect_x = rect_x
         elseif horizontal_alignment == 'end' then
             rect_x = rect_x + rect_w - text_size.width
         end
-
         if vertical_alignment == 'center' or vertical_alignment == 'stretch' then
             rect_y = rect_y + rect_h / 2 - text_size.height / 2
-        elseif vertical_alignment == 'start' then
-            rect_y = rect_y
         elseif vertical_alignment == 'end' then
             rect_y = rect_y + rect_h - text_size.height
         end
-
-        d_horizontal_alignment = 0
-        d_vertical_alignment = 0
-
+        align_x = 'left'
+        align_y = 'top'
         rect_w = text_size.width + 1
         rect_h = text_size.height + 1
     end
-    if type(text) ~= 'string' then
-        text = tostring(text)
-    end
-    d2d.set_text_antialias_mode(d_text_antialias_mode)
-    d2d.draw_text(
-        rect_x,
-        rect_y,
-        rect_x + rect_w,
-        rect_y + rect_h,
-        text,
-        font_name,
-        font_size,
-        d_weight,
-        d_style,
-        d_horizontal_alignment,
-        d_vertical_alignment,
-        d_options,
-        brush)
+
+    local p = painter.current()
+    p:begin_path()
+    p:text(text, {x = rect_x, y = rect_y, w = rect_w, h = rect_h}, {
+        family = font_name,
+        size = font_size,
+        weight = style.is_bold and 700 or 400,
+        slant = style.is_italic and 'italic' or 'normal',
+        align_x = align_x,
+        align_y = align_y,
+        antialiased = not style.aliased,
+        overflow = style.clip and 'clip' or 'visible',
+        clip = style.clip or false,
+    })
+    p:fill(BreitbandGraphics.internal.color_source_to_painter_color(color))
 end
 
 ---Draws text with the specified parameters.
@@ -785,98 +772,48 @@ BreitbandGraphics.draw_text2 = function(params)
         return
     end
 
-    local internal_alignment_to_d2d_alignment_map = {
-        [BreitbandGraphics.alignment.start] = 0,
-        [BreitbandGraphics.alignment.center] = 2,
-        [BreitbandGraphics.alignment['end']] = 1,
-        [BreitbandGraphics.alignment.stretch] = 3,
-    }
-
     local rect_x = params.rectangle.x
     local rect_y = params.rectangle.y
     local rect_w = params.rectangle.width
     local rect_h = params.rectangle.height
-    local brush = BreitbandGraphics.internal.brush_from_color(params.color)
-    local d_horizontal_alignment = params.align_x and internal_alignment_to_d2d_alignment_map[params.align_x] or
-        internal_alignment_to_d2d_alignment_map[BreitbandGraphics.alignment.center]
-    local d_vertical_alignment = params.align_y and internal_alignment_to_d2d_alignment_map[params.align_y] or
-        internal_alignment_to_d2d_alignment_map[BreitbandGraphics.alignment.center]
-    local d_style = 0
-    local d_weight = 400
-    local d_options = 0
-    local d_text_antialias_mode = 1
+    local align_x = params.align_x or BreitbandGraphics.alignment.center
+    local align_y = params.align_y or BreitbandGraphics.alignment.center
     local font_size = params.font_size
+    local text = type(params.text) == 'string' and params.text or tostring(params.text)
 
-    if params.is_bold then
-        d_weight = 700
-    end
-    if params.is_italic then
-        d_style = 2
-    end
-    if params.clip then
-        d_options = d_options | 0x00000002
-    end
-    if params.grayscale then
-        d_text_antialias_mode = 2
-    end
-    if params.aliased then
-        d_text_antialias_mode = 3
-    end
     if params.fit then
-        -- Try to fit the text into the specified rectangle by reducing the font size
-        local text_size = d2d.get_text_size(params.text, params.font_name, params.font_size, math.maxinteger,
-            math.maxinteger)
-
-        if text_size.width > params.rectangle.width then
-            font_size = font_size / math.max(0.01, (text_size.width / params.rectangle.width))
-        end
-        if text_size.height > params.rectangle.height then
-            font_size = font_size / math.max(0.01, (text_size.height / params.rectangle.height))
-        end
-
-        local text_size = d2d.get_text_size(params.text, params.font_name, font_size, math.maxinteger, math.maxinteger)
-
-        -- Since the rect stays the same, the text will want to wrap.
-        -- We solve that by recomputing the rect and alignments
-        if params.align_x == BreitbandGraphics.alignment.center or params.align_x == BreitbandGraphics.alignment.stretch then
+        local fitted_font_size, text_size = fit_text(text, params.font_name, font_size, params.rectangle)
+        font_size = fitted_font_size
+        if align_x == BreitbandGraphics.alignment.center or align_x == BreitbandGraphics.alignment.stretch then
             rect_x = rect_x + rect_w / 2 - text_size.width / 2
-        elseif params.align_x == BreitbandGraphics.alignment.start then
-            rect_x = rect_x
-        elseif params.align_x == BreitbandGraphics.alignment['end'] then
+        elseif align_x == BreitbandGraphics.alignment['end'] then
             rect_x = rect_x + rect_w - text_size.width
         end
-
-        if params.align_y == BreitbandGraphics.alignment.center or params.align_y == BreitbandGraphics.alignment.stretch then
+        if align_y == BreitbandGraphics.alignment.center or align_y == BreitbandGraphics.alignment.stretch then
             rect_y = rect_y + rect_h / 2 - text_size.height / 2
-        elseif params.align_y == BreitbandGraphics.alignment.start then
-            rect_y = rect_y
-        elseif params.align_y == BreitbandGraphics.alignment['end'] then
+        elseif align_y == BreitbandGraphics.alignment['end'] then
             rect_y = rect_y + rect_h - text_size.height
         end
-
-        d_horizontal_alignment = 0
-        d_vertical_alignment = 0
-
         rect_w = text_size.width + 1
         rect_h = text_size.height + 1
+        align_x = BreitbandGraphics.alignment.start
+        align_y = BreitbandGraphics.alignment.start
     end
 
-
-    d2d.set_text_antialias_mode(d_text_antialias_mode)
-    d2d.draw_text(
-        rect_x,
-        rect_y,
-        rect_x + rect_w,
-        rect_y + rect_h,
-        params.text,
-        params.font_name,
-        font_size,
-        d_weight,
-        d_style,
-        d_horizontal_alignment,
-        d_vertical_alignment,
-        d_options,
-        brush)
+    local p = painter.current()
+    p:begin_path()
+    p:text(text, {x = rect_x, y = rect_y, w = rect_w, h = rect_h}, {
+        family = params.font_name,
+        size = font_size,
+        weight = params.is_bold and 700 or 400,
+        slant = params.is_italic and 'italic' or 'normal',
+        align_x = painter_text_horizontal_alignment(align_x),
+        align_y = painter_text_vertical_alignment(align_y),
+        antialiased = not params.aliased,
+        overflow = params.clip and 'clip' or 'visible',
+        clip = params.clip or false,
+    })
+    p:fill(BreitbandGraphics.internal.color_source_to_painter_color(params.color))
 end
 
 ---Draws a line between two points.
@@ -885,27 +822,28 @@ end
 ---@param color ColorSource The line's color.
 ---@param thickness number The line's thickness.
 BreitbandGraphics.draw_line = function(from, to, color, thickness)
-    local brush = BreitbandGraphics.internal.brush_from_color(color)
-
-    d2d.draw_line(
-        from.x,
-        from.y,
-        to.x,
-        to.y,
-        thickness,
-        brush)
+    local p = painter.current()
+    p:begin_path()
+    p:line(from.x, from.y, to.x, to.y)
+    p:stroke(BreitbandGraphics.internal.color_source_to_painter_color(color), {width = thickness})
 end
 
 ---Pushes a clip layer to the clip stack.
 ---@param rectangle Rectangle The clip bounds.
 BreitbandGraphics.push_clip = function(rectangle)
-    d2d.push_clip(rectangle.x, rectangle.y, rectangle.x + rectangle.width,
-        rectangle.y + rectangle.height)
+    local p = painter.current()
+    p:save()
+    p:clip({
+        x = rectangle.x,
+        y = rectangle.y,
+        w = rectangle.width,
+        h = rectangle.height,
+    })
 end
 
 --- Removes the topmost clip layer from the clip stack.
 BreitbandGraphics.pop_clip = function()
-    d2d.pop_clip()
+    painter.current():restore()
 end
 
 ---Draws an image with the specified parameters.
@@ -956,23 +894,35 @@ end
 ---@param params DrawImageParams The parameters to use when drawing the image.
 BreitbandGraphics.draw_image2 = function(params)
     local image = BreitbandGraphics.internal.image_from_path(params.path)
+    ---@cast image PainterImage
+    local destx2 = params.destx2 or params.destx1 + image.w
+    local desty2 = params.desty2 or params.desty1 + image.h
+    local srcx1 = params.srcx1 or 0
+    local srcy1 = params.srcy1 or 0
+    local srcx2 = params.srcx2 or srcx1 + image.w
+    local srcy2 = params.srcy2 or srcy1 + image.h
+    local options = {
+        source = {
+            x = srcx1,
+            y = srcy1,
+            w = srcx2 - srcx1,
+            h = srcy2 - srcy1,
+        },
+        sampling = params.interpolation == 0 and 'nearest' or 'linear',
+    }
 
-    local float_color = params.color and BreitbandGraphics.internal.color_source_to_float_color(params.color) or nil
+    if params.color then
+        local color = BreitbandGraphics.internal.color_source_to_painter_color(params.color)
+        options.tint = {r = color.r, g = color.g, b = color.b, a = 1}
+        options.opacity = color.a
+    end
 
-    d2d.draw_image2({
-        identifier = image,
-        destx1 = params.destx1,
-        desty1 = params.desty1,
-        destx2 = params.destx2,
-        desty2 = params.desty2,
-        srcx1 = params.srcx1,
-        srcy1 = params.srcy1,
-        srcx2 = params.srcx2,
-        srcy2 = params.srcy2,
-        ---@diagnostic disable-next-line: assign-type-mismatch
-        color = float_color,
-        interpolation = params.interpolation,
-    })
+    painter.current():image(image, {
+        x = params.destx1,
+        y = params.desty1,
+        w = destx2 - params.destx1,
+        h = desty2 - params.desty1,
+    }, options)
 end
 
 ---Gets information about an image.
@@ -980,17 +930,20 @@ end
 ---@return ImageInfo # Information about the image.
 BreitbandGraphics.get_image_info = function(path)
     local image = BreitbandGraphics.internal.image_from_path(path)
-    return d2d.get_image_info(image)
+    ---@cast image PainterImage
+    return {
+        width = image.w,
+        height = image.h,
+    }
 end
 
 ---Releases allocated resources.
 ---Must be called before stopping the Lua environment.
 BreitbandGraphics.free = function()
-    for key, value in pairs(BreitbandGraphics.internal.brushes) do
-        d2d.free_brush(value)
-    end
-    for key, value in pairs(BreitbandGraphics.internal.images) do
-        d2d.free_image(value)
+    for path, image in pairs(BreitbandGraphics.internal.images) do
+        ---@cast image PainterImage
+        image:close()
+        BreitbandGraphics.internal.images[path] = nil
     end
 end
 
