@@ -19,7 +19,6 @@ function NewTASState()
         goal_mag = 64,
         strain_always = false,
         maximize_airspeed = false,
-        dustless_walk = false,
         strain_left = true,
         strain_right = false,
         dyaw = false,
