@@ -432,6 +432,7 @@ return {
         else
             scrollbar_rectangle.height = ugui.internal.environment.window_size.y - scrollbar_rectangle.y
         end
+        scrollbar_rectangle.height = scrollbar_rectangle.height - 4
         local content_rectangle = grid_rect(0, 0, 7.5, VIEWPORT_HEIGHT)
         local cell_height = Settings.grid_size
         local max_scroll = math.max(0, (content_height - VIEWPORT_HEIGHT) * cell_height)
