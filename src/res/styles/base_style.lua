@@ -184,31 +184,5 @@ function get_base_style()
             },
         },
         scrollbar_rail = expand_rect({ 30, 99, 17, 11 }),
-        icons = {
-            arrow_left = {
-                [1] = expand_rect({ 74, 171, 7, 10 }),
-                [2] = expand_rect({ 55, 171, 7, 10 }),
-                [3] = expand_rect({ 36, 171, 7, 10 }),
-                [0] = expand_rect({ 17, 171, 7, 10 }),
-            },
-            arrow_right = {
-                [1] = expand_rect({ 17, 184, 7, 10 }),
-                [2] = expand_rect({ 36, 184, 7, 10 }),
-                [3] = expand_rect({ 55, 184, 7, 10 }),
-                [0] = expand_rect({ 74, 184, 7, 10 }),
-            },
-            arrow_up = {
-                [1] = expand_rect({ 72, 254, 10, 7 }),
-                [2] = expand_rect({ 72, 235, 10, 7 }),
-                [3] = expand_rect({ 72, 216, 10, 7 }),
-                [0] = expand_rect({ 72, 197, 10, 7 }),
-            },
-            arrow_down = {
-                [1] = expand_rect({ 58, 197, 10, 7 }),
-                [2] = expand_rect({ 58, 216, 10, 7 }),
-                [3] = expand_rect({ 58, 235, 10, 7 }),
-                [0] = expand_rect({ 58, 254, 10, 7 }),
-            },
-        },
     }
 end

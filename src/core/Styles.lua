@@ -67,7 +67,9 @@ Styles.update_style = function()
     ugui.standard_styler.params.tabcontrol.gap_x = Settings.grid_gap
     ugui.standard_styler.params.tabcontrol.gap_y = Settings.grid_gap
 
+    local prev_draw_icon = ugui.standard_styler.draw_icon
     ugui.apply_nineslice(mod_theme)
+    ugui.standard_styler.draw_icon = prev_draw_icon
 end
 
 Styles.theme = function()
