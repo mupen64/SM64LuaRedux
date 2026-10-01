@@ -26,6 +26,7 @@ ACTION_SET_GOAL_ANGLE = ROOT .. 'Set Angle... ---'
 ACTION_RESET_MAGNITUDE = ROOT .. 'Magnitude --- > Reset'
 ACTION_SET_MAGNITUDE = ROOT .. 'Magnitude --- > Set... ---'
 ACTION_SET_SPDKICK = ROOT .. 'Speedkick'
+ACTION_SET_DUSTLESS_WALK = ROOT .. 'Dustless Walk'
 ACTION_TOGGLE_FRAMEWALK = ROOT .. 'Framewalk'
 ACTION_TOGGLE_SWIM = ROOT .. 'Swim'
 ACTION_TOGGLE_AUTOFIRSTIES = ROOT .. 'Auto-Firsties ---'
@@ -256,6 +257,7 @@ actions[#actions + 1] = wrap_params({
     on_press = function()
         Settings.tas.goal_mag = 64
         Settings.tas.maximize_airspeed = false
+        Settings.tas.dustless_walk = false
     end,
 })
 
@@ -277,14 +279,27 @@ actions[#actions + 1] = wrap_params({
 actions[#actions + 1] = wrap_params({
     path = ACTION_SET_SPDKICK,
     on_press = function()
-        if Settings.tas.goal_mag ~= 48 then
+        if Settings.tas.dustless_walk or Settings.tas.goal_mag ~= 48 then
             Settings.tas.goal_mag = 48
             Settings.tas.maximize_airspeed = true
 		else
 		    Settings.tas.goal_mag = 64
             Settings.tas.maximize_airspeed = false
         end
+        Settings.tas.dustless_walk = false
     end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_SET_DUSTLESS_WALK,
+    on_press = function()
+        if Settings.tas.dustless_walk then
+            Settings.tas.goal_mag = 64
+        else
+            Settings.tas.maximize_airspeed = false
+        end
+        Settings.tas.dustless_walk = not Settings.tas.dustless_walk
+    end
 })
 
 actions[#actions + 1] = wrap_params({

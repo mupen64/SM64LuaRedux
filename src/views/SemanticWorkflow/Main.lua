@@ -117,7 +117,7 @@ local function draw_factory(theme)
     return {
         foreground_color = Drawing.foreground_color(),
         background_color = theme.background_color,
-        font_size = theme.font_size * Drawing.scale * 0.75,
+        font_size = theme.font_size * 0.75,
 
         text = function(self, rect, horizontal_alignment, text)
             ugui.label({
@@ -127,8 +127,8 @@ local function draw_factory(theme)
                 color = self.foreground_color,
                 font_size = self.font_size,
                 font_name = 'Consolas',
-                align_x = BreitbandGraphics.alignment[horizontal_alignment],
-                align_y = BreitbandGraphics.alignment.center,
+                align_x = ugui.alignment[horizontal_alignment],
+                align_y = ugui.alignment.center,
             })
         end,
 
@@ -140,8 +140,8 @@ local function draw_factory(theme)
                 color = self.foreground_color,
                 font_size = self.font_size * 0.75,
                 font_name = 'Consolas',
-                align_x = BreitbandGraphics.alignment[horizontal_alignment],
-                align_y = BreitbandGraphics.alignment.center,
+                align_x = ugui.alignment[horizontal_alignment],
+                align_y = ugui.alignment.center,
             })
         end,
     }

@@ -60,12 +60,6 @@ Styles.update_style = function()
 
     local mod_theme = ugui.internal.deep_clone(theme)
 
-    -- HACK: We scale some visual properties according to drawing scale
-    local listbox_item_height = theme.listbox_item.height or ugui.standard_styler.params.listbox_item.height
-    mod_theme.font_size = theme.font_size * Drawing.scale
-    mod_theme.icon_size = theme.icon_size * Drawing.scale
-    mod_theme.listbox_item.height = listbox_item_height * Drawing.scale
-    mod_theme.joystick.tip_size = (theme.joystick.tip_size or 8) * Drawing.scale
 
     ugui.standard_styler.params = mod_theme
     ugui.standard_styler.params.tabcontrol.rail_size = grid_rect(0, 0, 0, 1).height

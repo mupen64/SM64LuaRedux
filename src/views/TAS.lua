@@ -11,6 +11,7 @@ local UID = UIDProvider.allocate_once('TAS', function(enum_next)
         GoalMag = enum_next(ugui.registry.numberbox.uids()),
         HighMagnitude = enum_next(ugui.registry.toggle_button.uids()),
         ResetMag = enum_next(ugui.registry.button.uids()),
+        DustlessWalk = enum_next(ugui.registry.button.uids()),
         SpeedKick = enum_next(ugui.registry.button.uids()),
         D99Always = enum_next(ugui.registry.toggle_button.uids()),
         D99 = enum_next(ugui.registry.toggle_button.uids()),
@@ -186,10 +187,10 @@ return {
                     rectangle = grid_rect(x, 3, width, 0.5),
                     text = text,
                     color = foreground_color,
-                    font_size = theme.font_size * Drawing.scale,
+                    font_size = theme.font_size,
                     font_name = 'Consolas',
-                    align_x = BreitbandGraphics.alignment.center,
-                    align_y = BreitbandGraphics.alignment.center,
+                    align_x = ugui.alignment.center,
+                    align_y = ugui.alignment.center,
                     fit = true
                 })
 
@@ -296,10 +297,10 @@ return {
             rectangle = grid_rect(4, YORG, 2, 1),
             text = 'X: ' .. stick_x,
             color = foreground_color,
-            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_size = theme.font_size * 1.25,
             font_name = 'Consolas',
-            align_x = BreitbandGraphics.alignment.center,
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment.center,
+            align_y = ugui.alignment.center,
         })
 
         ugui.label({
@@ -307,10 +308,10 @@ return {
             rectangle = grid_rect(6, YORG, 2, 1),
             text = 'Y: ' .. stick_y,
             color = foreground_color,
-            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_size = theme.font_size * 1.25,
             font_name = 'Consolas',
-            align_x = BreitbandGraphics.alignment.center,
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment.center,
+            align_y = ugui.alignment.center,
         })
 
         ugui.label({
@@ -318,10 +319,10 @@ return {
             rectangle = grid_rect(4, YORG + 1, 4, 1),
             text = 'Mag: ' .. Formatter.u(Engine.get_magnitude_for_stick(stick_x, stick_y), 2),
             color = foreground_color,
-            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_size = theme.font_size * 1.25,
             font_name = 'Consolas',
-            align_x = BreitbandGraphics.alignment.center,
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment.center,
+            align_y = ugui.alignment.center,
         })
 
         Settings.tas.goal_mag = math.abs(ugui.numberbox({
@@ -334,14 +335,24 @@ return {
 
         if ugui.button({
                 uid = UID.ResetMag,
-                rectangle = grid_rect(4, YORG + 3, 4, 1),
+                rectangle = grid_rect(4, YORG + 3, 1.5, 1),
                 text = Locales.str('MAG_RESET'),
                 tooltip = Locales.str('TAS_MAG_RESET_TOOLTIP'),
                 styler_mixin = {
-                    font_size = theme.font_size * Drawing.scale * 0.9,
+                    font_size = theme.font_size * 0.9,
                 },
             }) then
             action.invoke(ACTION_RESET_MAGNITUDE)
+        end
+
+        if ugui.button({
+                uid = UID.DustlessWalk,
+                rectangle = grid_rect(5.5, YORG + 3, 2.5, 1),
+                text = Locales.str('DUSTLESS_WALK'),
+                is_checked = Settings.tas.dustless_walk,
+                tooltip = Locales.str('TAS_DUSTLESS_WALK_TOOLTIP'),
+            }) then
+            action.invoke(ACTION_SET_DUSTLESS_WALK)
         end
 
         if ugui.button({

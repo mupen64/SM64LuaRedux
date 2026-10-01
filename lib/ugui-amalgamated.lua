@@ -13,17 +13,12 @@
 --
 
 local ugui = {
-    _VERSION = 'v3.2.0',
-    _URL = 'https://github.com/mupen64/ugui',
+    _VERSION = 'v4.0.0',
+    _URL = 'https://codeberg.org/mupen64/ugui',
     _DESCRIPTION = 'Flexible immediate-mode GUI library for Mupen Lua',
     _LICENSE = 'GPL-3',
     DEBUG = false,
 }
-
-if not BreitbandGraphics then
-    error('BreitbandGraphics must be present in the global scope as \'BreitbandGraphics\' prior to executing ugui', 0)
-    return
-end
 
 -- ------------------------------------------------------------
 --   src/ugui/core.lua
@@ -53,10 +48,12 @@ end
 
 ---@class Environment
 ---@field public mouse_position { x: number, y: number } The mouse position.
----@field public wheel number The mouse wheel delta.
+---@field public wheel number? **DEPRECATED**, use `mouse_events` instead. The mouse wheel delta.
 ---@field public is_primary_down boolean? Whether the primary mouse button is being pressed.
 ---@field public key_events KeyEventArgs[] The key events that happened since the last frame.
----@field public window_size { x: number, y: number }? The rendering bounds. If nil, no rendering bounds are considered and certain controls, such as menus, might overflow off-screen.
+---@field public mouse_events MouseEventArgs[] The mouse events that happened since the last frame.
+---@field public scale number? The global GUI scale. Defaults to 1.
+---@field public window_size { x: number, y: number }? The rendering bounds in device pixels. If nil, no rendering bounds are considered and certain controls, such as menus, might overflow off-screen.
 ---@field public shift boolean? Whether the shift key is being held down during this frame.
 
 ---@alias RichText string
@@ -83,7 +80,7 @@ end
 
 ---@alias ControlReturnValue { primary: any, meta: Meta }
 
----@alias ControlType "label" | "button" | "toggle_button" | "carrousel_button" | "textbox" | "joystick" | "trackbar" | "listbox" | "scrollbar" | "combobox" | "menu" | "tabcontrol" | "numberbox" | "spinner"
+---@alias ControlType "label" | "button" | "toggle_button" | "carrousel_button" | "textbox" | "joystick" | "trackbar" | "listbox" | "scrollbar" | "combobox" | "menu" | "tabcontrol" | "numberbox" | "spinner" | "panel"
 
 ---@enum VisualState
 -- The possible states of a control, which are used by the styler for drawing.
@@ -109,6 +106,19 @@ ugui.signal_change_states = {
     ongoing = 2,
     --- The signal has just stopped changing.
     ended = 3,
+}
+
+---@enum UguiAlignment
+--- The alignment inside a container.
+ugui.alignment = {
+    --- The item is aligned to the start of the container.
+    start = 1,
+    --- The item is aligned to the center of the container.
+    center = 2,
+    --- The item is aligned to the end of the container.
+    ['end'] = 3,
+    --- The item is stretched to fill the container.
+    stretch = 4,
 }
 
 ---@type { [string]: ControlRegistryEntry }
@@ -145,27 +155,49 @@ ugui.begin_frame = function(environment)
             'Tried to call begin_frame() while a frame is already in progress. End the previous frame with end_frame() before starting a new one.')
     end
 
-    ugui.internal.frame_in_progress = true
-    local current_time = os.clock()
-    local has_previous_frame = ugui.internal.last_frame_time > 0
-    ugui.internal.delta_time = current_time - ugui.internal.last_frame_time
-    ugui.internal.last_frame_time = current_time
+    ugui.internal.painter = painter.current()
 
-    ugui.internal.update_debug_frame_time(current_time, has_previous_frame)
-
-    if not ugui.internal.environment then
-        ugui.internal.environment = environment
+    local scale = ugui.internal.update_debug_scale(environment)
+    if type(scale) ~= 'number' or scale <= 0 or scale ~= scale or scale == math.huge then
+        error('The GUI scale must be a finite number greater than zero.')
     end
+
+    ugui.internal.frame_in_progress = true
+    ugui.internal.frame_index = ugui.internal.frame_index + 1
+    ugui.internal.frame_start_time = os.clock()
 
     if not environment.window_size then
         -- Assume unbounded window size if user is too lazy to provide one
         environment.window_size = {x = math.maxinteger, y = math.maxinteger}
     end
 
+    -- Compute scroll delta.
+    local scroll_delta = {x = 0, y = 0}
+    if environment.mouse_events then
+        for i = 1, #environment.mouse_events, 1 do
+            local e = environment.mouse_events[i]
+            if e.x_wheel ~= nil then
+                scroll_delta.x = scroll_delta.x + ugui.internal.sign(e.x_wheel)
+            end
+            if e.y_wheel ~= nil then
+                scroll_delta.y = scroll_delta.y + ugui.internal.sign(e.y_wheel)
+            end
+        end
+    elseif environment.wheel ~= nil then
+        scroll_delta = {x = 0, y = ugui.internal.sign(environment.wheel)}
+    end
+
+    ---@diagnostic disable-next-line: inject-field
+    environment._scroll_delta = scroll_delta
+
+    if not environment.mouse_events then
+        environment.mouse_events = {}
+    end
+
     -- Replace paste operations with synthetic type events.
     local clipboard_text
     for i, e in ipairs(environment.key_events) do
-        if e.pressed and e.keycode == Mupen.VKeycodes.VK_V and e.ctrl then
+        if e.pressed and e.keycode2 == Mupen.keycode.SDLK_V and e.ctrl then
             if not clipboard_text then
                 clipboard_text = clipboard.get('text')
             end
@@ -183,8 +215,24 @@ ugui.begin_frame = function(environment)
         end
     end
 
+    local normalized_environment = ugui.internal.deep_clone(environment)
+    normalized_environment.scale = scale
+    normalized_environment.mouse_position = {
+        x = environment.mouse_position.x / scale,
+        y = environment.mouse_position.y / scale,
+    }
+    normalized_environment.window_size = {
+        x = environment.window_size.x / scale,
+        y = environment.window_size.y / scale,
+    }
+
+    if not ugui.internal.environment then
+        ugui.internal.environment = normalized_environment
+    end
+
     ugui.internal.previous_environment = ugui.internal.deep_clone(ugui.internal.environment)
-    ugui.internal.environment = ugui.internal.deep_clone(environment)
+    ugui.internal.environment = normalized_environment
+    ugui.internal.scale = scale
 
     if ugui.internal.is_mouse_just_down() then
         ugui.internal.mouse_down_position = ugui.internal.environment.mouse_position
@@ -208,6 +256,165 @@ ugui.end_frame = function()
     ugui.internal.dispatch_events()
 
     -- 4. Rendering pass
+    local current_painter = painter.current()
+    current_painter:save()
+    current_painter:scale(ugui.internal.scale, ugui.internal.scale)
+
+    ---@param control Control
+    local function begin_control_rectangle_path(control)
+        current_painter:begin_path()
+
+        local rectangle = {
+            x = control.rectangle.x,
+            y = control.rectangle.y,
+            w = control.rectangle.width,
+            h = control.rectangle.height,
+        }
+
+        if control.border_radius then
+            current_painter:round_rect(rectangle, math.min(control.border_radius.x, control.border_radius.y))
+        else
+            current_painter:rect(rectangle)
+        end
+    end
+
+    ---@param control Control
+    local function draw_control_background(control)
+        local rectangle = control.rectangle
+        local fill_color = control.fill
+
+        if fill_color then
+            begin_control_rectangle_path(control)
+            current_painter:fill(ugui.internal.color_source_to_painter_color(fill_color))
+        end
+
+        local image_source = control.background_image
+        if not image_source then
+            return
+        end
+
+        local nineslice_source = control.background_nineslice_source
+        local nineslice_center = control.background_nineslice_center
+        ugui.internal.assert(
+            (nineslice_source == nil) == (nineslice_center == nil),
+            'background_nineslice_source and background_nineslice_center must be set together'
+        )
+
+        local repeat_mode = control.background_repeat or 'repeat'
+        local position = control.background_position or {x = 0, y = 0}
+        local size = control.background_size or 'auto'
+        local repeats_x = repeat_mode == 'repeat' or repeat_mode == 'repeat-x'
+        local repeats_y = repeat_mode == 'repeat' or repeat_mode == 'repeat-y'
+
+        current_painter:save()
+        current_painter:clip({
+            x = rectangle.x,
+            y = rectangle.y,
+            w = rectangle.width,
+            h = rectangle.height,
+        })
+
+        local image
+        if type(image_source) == 'string' then
+            image = ugui.internal.image_from_path(image_source)
+        else
+            ---@cast image_source PainterImage
+            image = image_source
+        end
+
+        if nineslice_source then
+            current_painter:image(image, {
+                x = rectangle.x,
+                y = rectangle.y,
+                w = rectangle.width,
+                h = rectangle.height,
+            }, {
+                source = nineslice_source,
+                center = nineslice_center,
+                sampling = 'nearest',
+            })
+            current_painter:restore()
+            return
+        end
+
+        ugui.internal.assert(
+            repeat_mode == 'repeat' or repeat_mode == 'repeat-x' or repeat_mode == 'repeat-y' or
+            repeat_mode == 'no-repeat',
+            string.format("Unknown background repeat mode '%s'", tostring(repeat_mode))
+        )
+
+        local image_width = image.w
+        local image_height = image.h
+
+        if type(size) == 'table' then
+            image_width = size.x
+            image_height = size.y
+        elseif size == 'cover' or size == 'contain' then
+            local scale_x = rectangle.width / image.w
+            local scale_y = rectangle.height / image.h
+            local image_scale = size == 'cover' and math.max(scale_x, scale_y) or math.min(scale_x, scale_y)
+            image_width = image.w * image_scale
+            image_height = image.h * image_scale
+        else
+            ugui.internal.assert(size == 'auto', string.format("Unknown background size '%s'", tostring(size)))
+        end
+
+        if image_width > 0 and image_height > 0 then
+            local origin_x = rectangle.x + position.x
+            local origin_y = rectangle.y + position.y
+            local start_x = origin_x
+            local start_y = origin_y
+
+            if repeats_x then
+                start_x = origin_x + math.floor((rectangle.x - origin_x) / image_width) * image_width
+            end
+            if repeats_y then
+                start_y = origin_y + math.floor((rectangle.y - origin_y) / image_height) * image_height
+            end
+
+            local y = start_y
+            while y < rectangle.y + rectangle.height do
+                local x = start_x
+                while x < rectangle.x + rectangle.width do
+                    current_painter:image(image, {
+                        x = x,
+                        y = y,
+                        w = image_width,
+                        h = image_height,
+                    })
+                    if not repeats_x then
+                        break
+                    end
+                    local next_x = x + image_width
+                    if next_x <= x then
+                        break
+                    end
+                    x = next_x
+                end
+                if not repeats_y then
+                    break
+                end
+                local next_y = y + image_height
+                if next_y <= y then
+                    break
+                end
+                y = next_y
+            end
+        end
+
+        current_painter:restore()
+    end
+
+    ---@param control Control
+    local function draw_control_stroke(control)
+        if not control.stroke then return end
+        begin_control_rectangle_path(control)
+        current_painter:stroke(
+            ugui.internal.color_source_to_painter_color(control.stroke),
+            control.stroke_style
+        )
+    end
+
     for i = 1, #ugui.internal.scene, 1 do
         local control = ugui.internal.scene[i].control
         local type = ugui.internal.scene[i].type
@@ -217,7 +424,11 @@ ugui.end_frame = function()
         local revert_styler_mixin = ugui.internal.apply_styler_mixin(control)
 
         local draw_start = os.clock()
+
+        draw_control_background(control)
         entry.draw(control)
+        draw_control_stroke(control)
+
         ugui.internal.record_control_draw_time(control.uid, draw_start)
 
         revert_styler_mixin()
@@ -229,15 +440,16 @@ ugui.end_frame = function()
 
     ugui.internal.draw_debug_overlay()
 
-    -- Store UIDs that were present in this frame
-    ugui.internal.previous_uids = {}
-    for i = 1, #ugui.internal.scene, 1 do
-        local control = ugui.internal.scene[i].control
-        ugui.internal.previous_uids[control.uid] = true
-    end
+    current_painter:restore()
+
 
     ugui.internal.scene = {}
     ugui.internal.last_control_rectangle = nil
+
+    local frame_end_time = os.clock()
+    ugui.internal.delta_time = frame_end_time - ugui.internal.frame_start_time
+    ugui.internal.update_debug_frame_time(frame_end_time)
+    ugui.internal.painter = nil
     ugui.internal.frame_in_progress = false
 end
 
@@ -282,21 +494,16 @@ ugui.control = function(control, type)
         return_value = registry_entry.logic(control, ugui.internal.control_data[control.uid])
     end
 
-    -- Check for UID duplicates
-    for i = 1, #ugui.internal.scene, 1 do
-        local uid = ugui.internal.scene[i].control.uid
-        if control.uid == uid then
+    local stored_control_type = ugui.internal.control_types[control.uid]
+    if stored_control_type then
+        if stored_control_type.frame == ugui.internal.frame_index then
             error(string.format(
                 'Attempted to show a control with uid %d, which is already in use! Note that some controls reserve more than one uid slot after them.',
                 control.uid))
+        elseif stored_control_type.type ~= type then
+            error(string.format('Attempted to reuse UID %d of %s for %s.', control.uid,
+                stored_control_type.type, type))
         end
-    end
-
-    -- Check that any existing control with the same UID matches this control's type
-    local stored_control_type = ugui.internal.control_types[control.uid]
-    if stored_control_type ~= nil and stored_control_type ~= type then
-        error(string.format('Attempted to reuse UID %d of %s for %s.', control.uid,
-            ugui.internal.control_types[control.uid], type))
     end
 
     registry_entry.validate(control)
@@ -306,11 +513,20 @@ ugui.control = function(control, type)
 
     ugui.internal.record_control_execution_time(control.uid, execution_start)
 
-    ugui.internal.scene[#ugui.internal.scene + 1] = {
+    local scene_entry = {
         control = control,
         type = type,
+        order = #ugui.internal.scene + 1,
     }
-    ugui.internal.control_types[control.uid] = type
+    ugui.internal.scene[#ugui.internal.scene + 1] = scene_entry
+    ugui.internal.control_types[control.uid] = {
+        type = type,
+        frame = ugui.internal.frame_index,
+    }
+
+    if (not stored_control_type or stored_control_type.frame ~= ugui.internal.frame_index - 1) and registry_entry.added then
+        ugui.internal.pending_added[#ugui.internal.pending_added + 1] = scene_entry
+    end
 
     revert_styler_mixin()
 
@@ -327,14 +543,27 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
----@alias SceneEntry { control: Control, type: ControlType }
+---@alias SceneEntry { control: Control, type: ControlType, order: integer }
+
+---@class ControlTypeState
+---@field public type ControlType The type last used with this UID.
+---@field public frame integer The most recent frame in which this UID was placed.
 
 ugui.internal = {
     ---@type SceneEntry[]
     scene = {},
 
-    ---@type table<UID, ControlType>
+    ---@type Painter
+    painter = nil,
+
+    ---@type table<UID, ControlTypeState>
     control_types = {},
+
+    ---@type SceneEntry[]
+    pending_added = {},
+
+    ---@type integer
+    frame_index = 0,
 
     ---@type table<UID, any>
     ---Map of control UIDs to their data.
@@ -348,9 +577,6 @@ ugui.internal = {
     ---Draw time, in seconds, accumulated for each control during the current frame.
     control_draw_times = {},
 
-    ---@type { [UID]: boolean }
-    ---Dictionary of all UIDs that were present in the previous frame. Used for dispatching events related to control lifecycles via `dispatch_events`.
-    previous_uids = {},
 
     ---@type Environment
     ---The environment for the current frame.
@@ -360,13 +586,21 @@ ugui.internal = {
     ---The environment for the previous frame.
     previous_environment = nil,
 
-    ---@type Vector2
+    ---@type UguiVector2
     -- The position of the mouse the last time the primary button was pressed.
     mouse_down_position = {x = 0, y = 0},
 
     ---@type UID?
     ---The control that was clicked this frame.
     clicked_control = nil,
+
+    ---@type UID?
+    ---The control that was double-clicked this frame.
+    doubleclicked_control = nil,
+
+    ---@type UID?
+    ---The control that was triple-clicked this frame.
+    tripleclicked_control = nil,
 
     ---@type UID?
     ---The control that is being hovered over.
@@ -384,10 +618,16 @@ ugui.internal = {
     ---The most recent time at which `hovered_control` changed, as returned by `os.clock`.
     hover_start_time = 0,
 
+    ---@type number
+    ---The global GUI scale for the current frame.
+    scale = 1,
+
     ---Whether a frame is currently in progress.
     frame_in_progress = false,
 
-    last_frame_time = 0,
+    ---The `os.clock` timestamp captured at the start of the current frame.
+    frame_start_time = 0,
+    ---The duration of the most recently completed frame, in seconds.
     delta_time = 0,
 
     ---@type { t: number, dt: number }[]
@@ -402,29 +642,30 @@ ugui.internal = {
     ---Cache of nineslice drawings. Only used after calling `ugui.apply_nineslice`.
     nineslice_draw_cache = {},
 
+    ---@type table<string, PainterImage>
+    image_cache = {},
+
     ---Sorts controls stably in the scene by their Z-index.
     sort_scene = function()
-        ugui.internal.stable_sort(ugui.internal.scene, function(a, b)
-            return (a.control.z_index or 0) < (b.control.z_index or 0)
+        table.sort(ugui.internal.scene, function(a, b)
+            local a_z_index = a.control.z_index or 0
+            local b_z_index = b.control.z_index or 0
+            if a_z_index == b_z_index then
+                return a.order < b.order
+            end
+            return a_z_index < b_z_index
         end)
     end,
 
     ---Dispatches events related to controls in the scene.
     dispatch_events = function()
-        for _, value in pairs(ugui.internal.scene) do
-            local existed_in_previous_frame = false
-            for uid, _ in pairs(ugui.internal.previous_uids) do
-                if value.control.uid == uid then
-                    existed_in_previous_frame = true
-                    break
-                end
-            end
+        local pending_added = ugui.internal.pending_added
+        ugui.internal.pending_added = {}
 
-            if not existed_in_previous_frame then
-                local registry_entry = ugui.registry[value.type]
-                if registry_entry.added then
-                    registry_entry.added(value.control, ugui.internal.control_data[value.control.uid])
-                end
+        for _, value in ipairs(pending_added) do
+            local registry_entry = ugui.registry[value.type]
+            if registry_entry.added then
+                registry_entry.added(value.control, ugui.internal.control_data[value.control.uid])
             end
         end
     end,
@@ -445,24 +686,26 @@ ugui.internal = {
     end,
 
     ---@return boolean # Whether the mouse wheel was just moved up.
+    ---@deprecated Kept for external compat, do not use internally.
     is_mouse_wheel_up = function()
-        return ugui.internal.environment.wheel == 1
+        return ugui.internal.environment._scroll_delta.y > 0
     end,
 
     ---@return boolean # Whether the mouse wheel was just moved down.
+    ---@deprecated Kept for external compat, do not use internally.
     is_mouse_wheel_down = function()
-        return ugui.internal.environment.wheel == -1
+        return ugui.internal.environment._scroll_delta.y < 0
     end,
 
     ---Checks whether the specified point lies inside the control's bounds, considering special cases such as the enabled state, hittest-free and offscreen regions.
-    ---@param point Vector2 A point.
+    ---@param point UguiVector2 A point.
     ---@param control Control A control.
     ---@return boolean # Whether the point lies inside the control.
     is_point_inside_control = function(point, control)
         if control.is_enabled == false then
             return false
         end
-        if not BreitbandGraphics.is_point_inside_rectangle(point, control.rectangle) then
+        if not ugui.internal.point_in_rect(point, control.rectangle) then
             return false
         end
         if point.x < 0 or point.x > ugui.internal.environment.window_size.x
@@ -472,46 +715,59 @@ ugui.internal = {
         return true
     end,
 
-    ---Gets the character index for the specified relative x position in a textbox.
+    ---@param path string
+    ---@return PainterImage
+    image_from_path = function(path)
+        local cached_image = ugui.internal.image_cache[path]
+        if cached_image then
+            return cached_image
+        end
+
+        local image, error_message = painter.load_image(path)
+        if not image then
+            error(error_message or ('failed to load background image: ' .. path), 2)
+        end
+
+        ugui.internal.image_cache[path] = image
+        return image
+    end,
+
+    ---@param rect UguiRect
+    ---@return PainterRect rect
+    rect_to_painter_rect = function(rect)
+        return {
+            x = rect.x,
+            y = rect.y,
+            w = rect.width,
+            h = rect.height,
+        }
+    end,
+
+    ---Gets the caret index for the specified relative x position in a textbox.
     ---Considers font_size and font_name, as provided by the styler.
     ---@param text string The textbox's text.
-    ---@param scroll_offset integer The scroll offset.
-    ---@param relative_x number The relative x position.
-    ---@return integer The character index.
+    ---@param scroll_offset integer The 1-based scroll offset.
+    ---@param relative_x number The x position relative to the textbox's left edge.
+    ---@return integer The caret index.
     get_caret_index = function(text, scroll_offset, relative_x)
         local font_size = ugui.standard_styler.params.font_size
         local font_name = ugui.standard_styler.params.font_name
-
-        local scroll_pixel = 0
-        if scroll_offset > 1 then
-            scroll_pixel = BreitbandGraphics.get_text_size(
-                text:sub(1, scroll_offset - 1),
-                font_size,
-                font_name
-            ).width
-        end
-
-        local text_x = relative_x + scroll_pixel
-
-        if text_x <= 0 then
-            return 1
-        end
-
-        local cumulative_width = 0
-
-        for i = 1, #text do
-            local char = text:sub(i, i)
-            local char_width = BreitbandGraphics.get_text_size(char, font_size, font_name).width
-
-            local midpoint = cumulative_width + char_width * 0.5
-            if text_x < midpoint then
-                return i
-            end
-
-            cumulative_width = cumulative_width + char_width
-        end
-
-        return #text + 1
+        local first_visible_index = math.max(1, scroll_offset)
+        local visible_text = text:sub(first_visible_index)
+        local hit = painter.hittest_text_position(
+            visible_text,
+            relative_x - ugui.standard_styler.params.textbox.padding.x,
+            0,
+            {
+                family = font_name,
+                size = font_size,
+            },
+            {
+                wrap = 'none',
+                clip = false,
+            }
+        )
+        return hit.index + first_visible_index - 1
     end,
 
     ---Applies a control's styler mixin if it has one.
@@ -641,15 +897,12 @@ ugui.internal = {
 
     ---Does core input processing work, such as control capture/hover/click state management.
     do_input_processing = function()
-        local function is_point_inside_rectangle(point, rectangle)
-            return point.x >= rectangle.x and
-                point.y >= rectangle.y and
-                point.x <= rectangle.x + rectangle.width and
-                point.y <= rectangle.y + rectangle.height
-        end
-
         ---@type Control?
         local clicked_control = nil
+        ---@type Control?
+        local doubleclicked_control = nil
+        ---@type Control?
+        local tripleclicked_control = nil
 
         ---@type SceneEntry?
         local mouse_captured_control = nil
@@ -683,7 +936,7 @@ ugui.internal = {
             -- Determine the clicked control if we haven't already
             if clicked_control == nil and effective_hittestable then
                 if ugui.internal.is_mouse_just_down() then
-                    if is_point_inside_rectangle(ugui.internal.mouse_down_position, control.rectangle) then
+                    if ugui.internal.point_in_rect(ugui.internal.mouse_down_position, control.rectangle) then
                         clicked_control = control
                         keyboard_captured_control = entry
                         mouse_captured_control = entry
@@ -693,7 +946,7 @@ ugui.internal = {
 
             -- Determine the hovered control if we haven't already
             if ugui.internal.hovered_control == nil and effective_hittestable then
-                if is_point_inside_rectangle(ugui.internal.environment.mouse_position, control.rectangle) then
+                if ugui.internal.point_in_rect(ugui.internal.environment.mouse_position, control.rectangle) then
                     ugui.internal.hovered_control = control.uid
 
                     if ugui.internal.hovered_control ~= prev_hovered_control then
@@ -724,6 +977,33 @@ ugui.internal = {
             keyboard_captured_control = nil
         end
 
+        -- Resolve double- and triple-click events against the topmost hit-testable control.
+        for _, mouse_event in ipairs(ugui.internal.environment.mouse_events) do
+            local target
+            if mouse_event.double_click or mouse_event.triple_click then
+                for i = #ugui.internal.scene, 1, -1 do
+                    local entry = ugui.internal.scene[i]
+                    local effective_hittestable = ugui.internal.compute_prop(
+                        entry.control,
+                        ugui.registry[entry.type],
+                        'hittestable',
+                        function() return true end
+                    )
+                    if effective_hittestable and entry.control.is_enabled ~= false and
+                        ugui.internal.point_in_rect({x = mouse_event.x, y = mouse_event.y}, entry.control.rectangle) then
+                        target = entry.control
+                        break
+                    end
+                end
+            end
+            if mouse_event.double_click and target then
+                doubleclicked_control = target
+            end
+            if mouse_event.triple_click and target then
+                tripleclicked_control = target
+            end
+        end
+
         -- Clear hovered control if it's disabled
         for i = 1, #ugui.internal.scene, 1 do
             local control = ugui.internal.scene[i].control
@@ -747,6 +1027,8 @@ ugui.internal = {
         ugui.internal.keyboard_captured_control = keyboard_captured_control and keyboard_captured_control.control.uid or
             nil
         ugui.internal.clicked_control = clicked_control and clicked_control.uid or nil
+        ugui.internal.doubleclicked_control = doubleclicked_control and doubleclicked_control.uid or nil
+        ugui.internal.tripleclicked_control = tripleclicked_control and tripleclicked_control.uid or nil
     end,
 }
 
@@ -760,6 +1042,147 @@ ugui.internal = {
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
+---Converts a color source to an RGBA float color.
+---@param source UguiColorSource The color source.
+---@return UguiRGBAF # The converted color.
+ugui.color_source_to_rgbaf = function(source)
+    if math.type(source) == 'integer' then
+        return {
+            r = ((source >> 24) & 0xFF) / 255.0,
+            g = ((source >> 16) & 0xFF) / 255.0,
+            b = ((source >> 8) & 0xFF) / 255.0,
+            a = (source & 0xFF) / 255.0,
+        }
+    end
+
+    if type(source) == 'string' then
+        local r = tonumber(source:sub(2, 3), 16)
+        local g = tonumber(source:sub(4, 5), 16)
+        local b = tonumber(source:sub(6, 7), 16)
+        local a = tonumber(source:sub(8, 9), 16)
+        return {
+            r = (r or 0) / 255.0,
+            g = (g or 0) / 255.0,
+            b = (b or 0) / 255.0,
+            a = (a or 255) / 255.0,
+        }
+    end
+
+    if source[1] or source[2] or source[3] or source[4] then
+        if math.type(source[1]) == 'float' or math.type(source[2]) == 'float' or math.type(source[3]) == 'float' then
+            return {
+                r = source[1] or 0.0,
+                g = source[2] or 0.0,
+                b = source[3] or 0.0,
+                a = source[4] or 1.0,
+            }
+        end
+
+        return {
+            r = (source[1] or 0) / 255.0,
+            g = (source[2] or 0) / 255.0,
+            b = (source[3] or 0) / 255.0,
+            a = (source[4] or 255) / 255.0,
+        }
+    end
+
+    if math.type(source.r) == 'float' or math.type(source.g) == 'float' or math.type(source.b) == 'float' then
+        return {
+            r = source.r or 0.0,
+            g = source.g or 0.0,
+            b = source.b or 0.0,
+            a = source.a or 1.0,
+        }
+    end
+
+    if math.type(source.r) == 'integer' or math.type(source.g) == 'integer' or math.type(source.b) == 'integer' then
+        return {
+            r = (source.r or 0) / 255.0,
+            g = (source.g or 0) / 255.0,
+            b = (source.b or 0) / 255.0,
+            a = (source.a or 255) / 255.0,
+        }
+    end
+
+    if type(source) == 'table' then
+        return {r = 0.0, g = 0.0, b = 0.0, a = 1.0}
+    end
+
+    error('Invalid color source: ' .. tostring(source), 2)
+end
+
+---Converts a `UguiColorSource` to an `UguiRGBA8`.
+---@param source UguiColorSource The color source.
+---@return UguiRGBA8 color
+ugui.color_source_to_rgba8 = function(source)
+    local color = ugui.color_source_to_rgbaf(source)
+    return {
+        r = math.tointeger(math.floor(color.r * 255.0 + 0.5)),
+        g = math.tointeger(math.floor(color.g * 255.0 + 0.5)),
+        b = math.tointeger(math.floor(color.b * 255.0 + 0.5)),
+        a = math.tointeger(math.floor(color.a * 255.0 + 0.5)),
+    }
+end
+
+---Inverts the RGB channels of a color source while preserving its alpha.
+---@param source UguiColorSource The color source.
+---@return UguiRGBAF # The inverted color.
+ugui.invert_color = function(source)
+    local color = ugui.color_source_to_rgbaf(source)
+    return {
+        r = 1.0 - color.r,
+        g = 1.0 - color.g,
+        b = 1.0 - color.b,
+        a = color.a,
+    }
+end
+
+---Converts a color source to the painter API's color table type.
+---@param source ColorSource The color source.
+---@return PainterColorTable # The converted color.
+ugui.internal.color_source_to_painter_color = function(source)
+    local color = ugui.color_source_to_rgbaf(source)
+    return {
+        r = color.r,
+        g = color.g,
+        b = color.b,
+        a = color.a,
+    }
+end
+
+---Converts an RGBA float color to the painter API's color table type.
+---@param color UguiRGBAF
+---@return PainterColorTable
+ugui.internal.rgbaf_to_painter_color = function(color)
+    return {
+        r = color.r,
+        g = color.g,
+        b = color.b,
+        a = color.a,
+    }
+end
+
+---Inflates a rectangle around its center by the specified amount.
+---@param rectangle UguiRect The rectangle.
+---@param amount number The amount to inflate the rectangle by.
+---@return UguiRect rectangle
+ugui.internal.inflate_rect = function(rectangle, amount)
+    return {
+        x = rectangle.x - amount,
+        y = rectangle.y - amount,
+        width = rectangle.width + amount * 2,
+        height = rectangle.height + amount * 2,
+    }
+end
+
+---@param point UguiVector2
+---@param rect UguiRect
+---@return boolean inside
+ugui.internal.point_in_rect = function(point, rect)
+    return point.x >= rect.x and point.x <= rect.x + rect.width and
+        point.y >= rect.y and point.y <= rect.y + rect.height
+end
+
 ---Asserts that the specified condition is true, printing the stacktrace if it's false.
 ---@param condition boolean
 ---@param message string
@@ -769,6 +1192,19 @@ ugui.internal.assert = function(condition, message)
     end
     print(debug.traceback())
     assert(condition, message)
+end
+
+---Returns the sign of a number.
+---@param value number
+---@return -1|0|1
+ugui.internal.sign = function(value)
+    if value > 0 then
+        return 1
+    elseif value < 0 then
+        return -1
+    else
+        return 0
+    end
 end
 
 ---Deeply clones a table.
@@ -820,53 +1256,6 @@ ugui.internal.deep_merge = function(a, b)
     end
 end
 
----Performs an in-place stable sort on the specified table.
----@generic T
----@param t T[]
----@param cmp? fun(a: T, b: T):boolean
-ugui.internal.stable_sort = function(t, cmp)
-    local function merge(left, right)
-        local result = {}
-        local i, j = 1, 1
-
-        while i <= #left and j <= #right do
-            -- If left < right, or they are "equal" (cmp false both ways),
-            -- take from the left to preserve stability
-            if cmp(left[i], right[j]) or (not cmp(right[j], left[i])) then
-                table.insert(result, left[i])
-                i = i + 1
-            else
-                table.insert(result, right[j])
-                j = j + 1
-            end
-        end
-
-        while i <= #left do
-            table.insert(result, left[i])
-            i = i + 1
-        end
-        while j <= #right do
-            table.insert(result, right[j])
-            j = j + 1
-        end
-
-        return result
-    end
-
-    local function mergesort(arr)
-        if #arr <= 1 then return arr end
-        local mid = math.floor(#arr / 2)
-        local left, right = {}, {}
-        for i = 1, mid do table.insert(left, arr[i]) end
-        for i = mid + 1, #arr do table.insert(right, arr[i]) end
-        return merge(mergesort(left), mergesort(right))
-    end
-
-    local sorted = mergesort(t)
-    for i = 1, #t do
-        t[i] = sorted[i]
-    end
-end
 
 ---Removes a range of characters from a string.
 ---@param string string The string to remove characters from.
@@ -992,7 +1381,7 @@ ugui.standard_styler = {
         monospace_font_name = 'Consolas',
 
         --- The color filter used for rendering controls. Only applies to cached control rendering.
-        color_filter = BreitbandGraphics.hex_to_color('#FFFFFFFF'),
+        color_filter = ugui.color_source_to_rgba8('#FFFFFFFF'),
 
         --- The font size.
         font_size = 12,
@@ -1002,88 +1391,88 @@ ugui.standard_styler = {
 
         button = {
             back = {
-                [1] = BreitbandGraphics.hex_to_color('#E1E1E1'),
-                [2] = BreitbandGraphics.hex_to_color('#E5F1FB'),
-                [3] = BreitbandGraphics.hex_to_color('#CCE4F7'),
-                [0] = BreitbandGraphics.hex_to_color('#CCCCCC'),
+                [1] = ugui.color_source_to_rgba8('#E1E1E1'),
+                [2] = ugui.color_source_to_rgba8('#E5F1FB'),
+                [3] = ugui.color_source_to_rgba8('#CCE4F7'),
+                [0] = ugui.color_source_to_rgba8('#CCCCCC'),
             },
             border = {
-                [1] = BreitbandGraphics.hex_to_color('#ADADAD'),
-                [2] = BreitbandGraphics.hex_to_color('#0078D7'),
-                [3] = BreitbandGraphics.hex_to_color('#005499'),
-                [0] = BreitbandGraphics.hex_to_color('#BFBFBF'),
+                [1] = ugui.color_source_to_rgba8('#ADADAD'),
+                [2] = ugui.color_source_to_rgba8('#0078D7'),
+                [3] = ugui.color_source_to_rgba8('#005499'),
+                [0] = ugui.color_source_to_rgba8('#BFBFBF'),
             },
             text = {
-                [1] = BreitbandGraphics.hex_to_color('#000000'),
-                [2] = BreitbandGraphics.hex_to_color('#000000'),
-                [3] = BreitbandGraphics.hex_to_color('#000000'),
-                [0] = BreitbandGraphics.hex_to_color('#A0A0A0'),
+                [1] = ugui.color_source_to_rgba8('#000000'),
+                [2] = ugui.color_source_to_rgba8('#000000'),
+                [3] = ugui.color_source_to_rgba8('#000000'),
+                [0] = ugui.color_source_to_rgba8('#A0A0A0'),
             },
         },
         textbox = {
             padding = {x = 2, y = 0},
             back = {
-                [1] = BreitbandGraphics.hex_to_color('#FFFFFF'),
-                [2] = BreitbandGraphics.hex_to_color('#FFFFFF'),
-                [3] = BreitbandGraphics.hex_to_color('#FFFFFF'),
-                [0] = BreitbandGraphics.hex_to_color('#FFFFFF'),
+                [1] = ugui.color_source_to_rgba8('#FFFFFF'),
+                [2] = ugui.color_source_to_rgba8('#FFFFFF'),
+                [3] = ugui.color_source_to_rgba8('#FFFFFF'),
+                [0] = ugui.color_source_to_rgba8('#FFFFFF'),
             },
             border = {
-                [1] = BreitbandGraphics.hex_to_color('#7A7A7A'),
-                [2] = BreitbandGraphics.hex_to_color('#171717'),
-                [3] = BreitbandGraphics.hex_to_color('#0078D7'),
-                [0] = BreitbandGraphics.hex_to_color('#CCCCCC'),
+                [1] = ugui.color_source_to_rgba8('#7A7A7A'),
+                [2] = ugui.color_source_to_rgba8('#171717'),
+                [3] = ugui.color_source_to_rgba8('#0078D7'),
+                [0] = ugui.color_source_to_rgba8('#CCCCCC'),
             },
             text = {
-                [1] = BreitbandGraphics.hex_to_color('#000000'),
-                [2] = BreitbandGraphics.hex_to_color('#000000'),
-                [3] = BreitbandGraphics.hex_to_color('#000000'),
-                [0] = BreitbandGraphics.hex_to_color('#A0A0A0'),
+                [1] = ugui.color_source_to_rgba8('#000000'),
+                [2] = ugui.color_source_to_rgba8('#000000'),
+                [3] = ugui.color_source_to_rgba8('#000000'),
+                [0] = ugui.color_source_to_rgba8('#A0A0A0'),
             },
-            selection = BreitbandGraphics.hex_to_color('#0078D7'),
+            selection = ugui.color_source_to_rgba8('#0078D7'),
         },
         listbox = {
             back = {
-                [1] = BreitbandGraphics.hex_to_color('#FFFFFF'),
-                [2] = BreitbandGraphics.hex_to_color('#FFFFFF'),
-                [3] = BreitbandGraphics.hex_to_color('#FFFFFF'),
-                [0] = BreitbandGraphics.hex_to_color('#FFFFFF'),
+                [1] = ugui.color_source_to_rgba8('#FFFFFF'),
+                [2] = ugui.color_source_to_rgba8('#FFFFFF'),
+                [3] = ugui.color_source_to_rgba8('#FFFFFF'),
+                [0] = ugui.color_source_to_rgba8('#FFFFFF'),
             },
             border = {
-                [1] = BreitbandGraphics.hex_to_color('#7A7A7A'),
-                [2] = BreitbandGraphics.hex_to_color('#7A7A7A'),
-                [3] = BreitbandGraphics.hex_to_color('#7A7A7A'),
-                [0] = BreitbandGraphics.hex_to_color('#7A7A7A'),
+                [1] = ugui.color_source_to_rgba8('#7A7A7A'),
+                [2] = ugui.color_source_to_rgba8('#7A7A7A'),
+                [3] = ugui.color_source_to_rgba8('#7A7A7A'),
+                [0] = ugui.color_source_to_rgba8('#7A7A7A'),
             },
         },
         listbox_item = {
             height = 15,
             back = {
-                [1] = BreitbandGraphics.hex_to_color('#FFFFFF'),
-                [2] = BreitbandGraphics.hex_to_color('#FFFFFF'),
-                [3] = BreitbandGraphics.hex_to_color('#0078D7'),
-                [0] = BreitbandGraphics.hex_to_color('#FFFFFF'),
+                [1] = ugui.color_source_to_rgba8('#FFFFFF'),
+                [2] = ugui.color_source_to_rgba8('#FFFFFF'),
+                [3] = ugui.color_source_to_rgba8('#0078D7'),
+                [0] = ugui.color_source_to_rgba8('#FFFFFF'),
             },
             text = {
-                [1] = BreitbandGraphics.hex_to_color('#000000'),
-                [2] = BreitbandGraphics.hex_to_color('#000000'),
-                [3] = BreitbandGraphics.hex_to_color('#FFFFFF'),
-                [0] = BreitbandGraphics.hex_to_color('#A0A0A0'),
+                [1] = ugui.color_source_to_rgba8('#000000'),
+                [2] = ugui.color_source_to_rgba8('#000000'),
+                [3] = ugui.color_source_to_rgba8('#FFFFFF'),
+                [0] = ugui.color_source_to_rgba8('#A0A0A0'),
             },
         },
         menu = {
             overlap_size = 3,
             back = {
-                [1] = BreitbandGraphics.hex_to_color('#F2F2F2'),
-                [2] = BreitbandGraphics.hex_to_color('#F2F2F2'),
-                [3] = BreitbandGraphics.hex_to_color('#F2F2F2'),
-                [0] = BreitbandGraphics.hex_to_color('#F2F2F2'),
+                [1] = ugui.color_source_to_rgba8('#F2F2F2'),
+                [2] = ugui.color_source_to_rgba8('#F2F2F2'),
+                [3] = ugui.color_source_to_rgba8('#F2F2F2'),
+                [0] = ugui.color_source_to_rgba8('#F2F2F2'),
             },
             border = {
-                [1] = BreitbandGraphics.hex_to_color('#CCCCCC'),
-                [2] = BreitbandGraphics.hex_to_color('#CCCCCC'),
-                [3] = BreitbandGraphics.hex_to_color('#CCCCCC'),
-                [0] = BreitbandGraphics.hex_to_color('#CCCCCC'),
+                [1] = ugui.color_source_to_rgba8('#CCCCCC'),
+                [2] = ugui.color_source_to_rgba8('#CCCCCC'),
+                [3] = ugui.color_source_to_rgba8('#CCCCCC'),
+                [0] = ugui.color_source_to_rgba8('#CCCCCC'),
             },
         },
         menu_item = {
@@ -1091,61 +1480,61 @@ ugui.standard_styler = {
             left_padding = 32,
             right_padding = 32,
             back = {
-                [1] = BreitbandGraphics.hex_to_color('#00000000'),
-                [2] = BreitbandGraphics.hex_to_color('#91C9F7'),
-                [3] = BreitbandGraphics.hex_to_color('#91C9F7'),
-                [0] = BreitbandGraphics.hex_to_color('#00000000'),
+                [1] = ugui.color_source_to_rgba8('#00000000'),
+                [2] = ugui.color_source_to_rgba8('#91C9F7'),
+                [3] = ugui.color_source_to_rgba8('#91C9F7'),
+                [0] = ugui.color_source_to_rgba8('#00000000'),
             },
             border = {
-                [1] = BreitbandGraphics.hex_to_color('#CCCCCC'),
-                [2] = BreitbandGraphics.hex_to_color('#CCCCCC'),
-                [3] = BreitbandGraphics.hex_to_color('#CCCCCC'),
-                [0] = BreitbandGraphics.hex_to_color('#CCCCCC'),
+                [1] = ugui.color_source_to_rgba8('#CCCCCC'),
+                [2] = ugui.color_source_to_rgba8('#CCCCCC'),
+                [3] = ugui.color_source_to_rgba8('#CCCCCC'),
+                [0] = ugui.color_source_to_rgba8('#CCCCCC'),
             },
             text = {
-                [1] = BreitbandGraphics.hex_to_color('#000000'),
-                [2] = BreitbandGraphics.hex_to_color('#000000'),
-                [3] = BreitbandGraphics.hex_to_color('#000000'),
-                [0] = BreitbandGraphics.hex_to_color('#6D6D6D'),
+                [1] = ugui.color_source_to_rgba8('#000000'),
+                [2] = ugui.color_source_to_rgba8('#000000'),
+                [3] = ugui.color_source_to_rgba8('#000000'),
+                [0] = ugui.color_source_to_rgba8('#6D6D6D'),
             },
         },
         joystick = {
             tip_size = 8,
             back = {
-                [1] = BreitbandGraphics.hex_to_color('#FFFFFF'),
-                [2] = BreitbandGraphics.hex_to_color('#FFFFFF'),
-                [3] = BreitbandGraphics.hex_to_color('#FFFFFF'),
-                [0] = BreitbandGraphics.hex_to_color('#FFFFFF'),
+                [1] = ugui.color_source_to_rgba8('#FFFFFF'),
+                [2] = ugui.color_source_to_rgba8('#FFFFFF'),
+                [3] = ugui.color_source_to_rgba8('#FFFFFF'),
+                [0] = ugui.color_source_to_rgba8('#FFFFFF'),
             },
             outline = {
-                [1] = BreitbandGraphics.hex_to_color('#000000'),
-                [2] = BreitbandGraphics.hex_to_color('#000000'),
-                [3] = BreitbandGraphics.hex_to_color('#000000'),
-                [0] = BreitbandGraphics.hex_to_color('#000000'),
+                [1] = ugui.color_source_to_rgba8('#000000'),
+                [2] = ugui.color_source_to_rgba8('#000000'),
+                [3] = ugui.color_source_to_rgba8('#000000'),
+                [0] = ugui.color_source_to_rgba8('#000000'),
             },
             tip = {
-                [1] = BreitbandGraphics.hex_to_color('#FF0000'),
-                [2] = BreitbandGraphics.hex_to_color('#FF0000'),
-                [3] = BreitbandGraphics.hex_to_color('#FF0000'),
-                [0] = BreitbandGraphics.hex_to_color('#FF8080'),
+                [1] = ugui.color_source_to_rgba8('#FF0000'),
+                [2] = ugui.color_source_to_rgba8('#FF0000'),
+                [3] = ugui.color_source_to_rgba8('#FF0000'),
+                [0] = ugui.color_source_to_rgba8('#FF8080'),
             },
             line = {
-                [1] = BreitbandGraphics.hex_to_color('#0000FF'),
-                [2] = BreitbandGraphics.hex_to_color('#0000FF'),
-                [3] = BreitbandGraphics.hex_to_color('#0000FF'),
-                [0] = BreitbandGraphics.hex_to_color('#8080FF'),
+                [1] = ugui.color_source_to_rgba8('#0000FF'),
+                [2] = ugui.color_source_to_rgba8('#0000FF'),
+                [3] = ugui.color_source_to_rgba8('#0000FF'),
+                [0] = ugui.color_source_to_rgba8('#8080FF'),
             },
             inner_mag = {
-                [1] = BreitbandGraphics.hex_to_color('#FF000022'),
-                [2] = BreitbandGraphics.hex_to_color('#FF000022'),
-                [3] = BreitbandGraphics.hex_to_color('#FF000022'),
-                [0] = BreitbandGraphics.hex_to_color('#00000000'),
+                [1] = ugui.color_source_to_rgba8('#FF000022'),
+                [2] = ugui.color_source_to_rgba8('#FF000022'),
+                [3] = ugui.color_source_to_rgba8('#FF000022'),
+                [0] = ugui.color_source_to_rgba8('#00000000'),
             },
             outer_mag = {
-                [1] = BreitbandGraphics.hex_to_color('#FF0000'),
-                [2] = BreitbandGraphics.hex_to_color('#FF0000'),
-                [3] = BreitbandGraphics.hex_to_color('#FF0000'),
-                [0] = BreitbandGraphics.hex_to_color('#FF8080'),
+                [1] = ugui.color_source_to_rgba8('#FF0000'),
+                [2] = ugui.color_source_to_rgba8('#FF0000'),
+                [3] = ugui.color_source_to_rgba8('#FF0000'),
+                [0] = ugui.color_source_to_rgba8('#FF8080'),
             },
             mag_thicknesses = {
                 [1] = 2,
@@ -1157,16 +1546,16 @@ ugui.standard_styler = {
         scrollbar = {
             thickness = 17,
             back = {
-                [1] = BreitbandGraphics.hex_to_color('#F0F0F0'),
-                [2] = BreitbandGraphics.hex_to_color('#F0F0F0'),
-                [3] = BreitbandGraphics.hex_to_color('#F0F0F0'),
-                [0] = BreitbandGraphics.hex_to_color('#F0F0F0'),
+                [1] = ugui.color_source_to_rgba8('#F0F0F0'),
+                [2] = ugui.color_source_to_rgba8('#F0F0F0'),
+                [3] = ugui.color_source_to_rgba8('#F0F0F0'),
+                [0] = ugui.color_source_to_rgba8('#F0F0F0'),
             },
             thumb = {
-                [1] = BreitbandGraphics.hex_to_color('#CDCDCD'),
-                [2] = BreitbandGraphics.hex_to_color('#A6A6A6'),
-                [3] = BreitbandGraphics.hex_to_color('#606060'),
-                [0] = BreitbandGraphics.hex_to_color('#C0C0C0'),
+                [1] = ugui.color_source_to_rgba8('#CDCDCD'),
+                [2] = ugui.color_source_to_rgba8('#A6A6A6'),
+                [3] = ugui.color_source_to_rgba8('#606060'),
+                [0] = ugui.color_source_to_rgba8('#C0C0C0'),
             },
         },
         trackbar = {
@@ -1174,22 +1563,22 @@ ugui.standard_styler = {
             bar_width = 6,
             bar_height = 16,
             back = {
-                [1] = BreitbandGraphics.hex_to_color('#E7EAEA'),
-                [2] = BreitbandGraphics.hex_to_color('#E7EAEA'),
-                [3] = BreitbandGraphics.hex_to_color('#E7EAEA'),
-                [0] = BreitbandGraphics.hex_to_color('#E7EAEA'),
+                [1] = ugui.color_source_to_rgba8('#E7EAEA'),
+                [2] = ugui.color_source_to_rgba8('#E7EAEA'),
+                [3] = ugui.color_source_to_rgba8('#E7EAEA'),
+                [0] = ugui.color_source_to_rgba8('#E7EAEA'),
             },
             border = {
-                [1] = BreitbandGraphics.hex_to_color('#D6D6D6'),
-                [2] = BreitbandGraphics.hex_to_color('#D6D6D6'),
-                [3] = BreitbandGraphics.hex_to_color('#D6D6D6'),
-                [0] = BreitbandGraphics.hex_to_color('#D6D6D6'),
+                [1] = ugui.color_source_to_rgba8('#D6D6D6'),
+                [2] = ugui.color_source_to_rgba8('#D6D6D6'),
+                [3] = ugui.color_source_to_rgba8('#D6D6D6'),
+                [0] = ugui.color_source_to_rgba8('#D6D6D6'),
             },
             thumb = {
-                [1] = BreitbandGraphics.hex_to_color('#007AD9'),
-                [2] = BreitbandGraphics.hex_to_color('#171717'),
-                [3] = BreitbandGraphics.hex_to_color('#CCCCCC'),
-                [0] = BreitbandGraphics.hex_to_color('#CCCCCC'),
+                [1] = ugui.color_source_to_rgba8('#007AD9'),
+                [2] = ugui.color_source_to_rgba8('#171717'),
+                [3] = ugui.color_source_to_rgba8('#CCCCCC'),
+                [0] = ugui.color_source_to_rgba8('#CCCCCC'),
             },
         },
         tooltip = {
@@ -1207,72 +1596,76 @@ ugui.standard_styler = {
         },
         numberbox = {
             font_scale = 1.5,
-            selection = BreitbandGraphics.hex_to_color('#0078D7'),
+            selection = ugui.color_source_to_rgba8('#0078D7'),
         },
     },
 
     ---Draws an icon with the specified parameters.
     ---The draw_icon implementation may choose to use either the color or visual_state parameter to determine the icon's appearance.
     ---Therefore, the caller must provide either a color or a visual state, or both.
-    ---@param rectangle Rectangle The icon's bounds.
-    ---@param color ColorSource? The icon's fill color.
+    ---@param rectangle UguiRect The icon's bounds.
+    ---@param color UguiColorSource? The icon's fill color.
     ---@param visual_state VisualState? The icon's visual state.
     ---@param key string The icon's identifier.
     draw_icon = function(rectangle, color, visual_state, key)
         -- NOTE: visual_state is not utilized by the standard implementation of draw_icon.
         if not color then
-            BreitbandGraphics.fill_rectangle(rectangle, BreitbandGraphics.colors.red)
+            ugui.internal.painter:begin_path()
+            ugui.internal.painter:rect(ugui.internal.rect_to_painter_rect(rectangle))
+            ugui.internal.painter:fill({r = 1, g = 0, b = 0, a = 1})
             return
         end
 
-        local font_name = 'Segoe UI Mono'
-        local font_size = ugui.standard_styler.params.font_size
+        local p = ugui.internal.painter
+        local painter_color = ugui.internal.color_source_to_painter_color(color)
+        local center_x = rectangle.x + rectangle.width / 2
+        local center_y = rectangle.y + rectangle.height / 2
+        local arrow_extent = math.min(rectangle.width, rectangle.height) * 0.27
+        local half_width = arrow_extent
+        local half_height = arrow_extent
+        local point_extent = arrow_extent * 0.75
 
         if key == 'arrow_left' then
-            BreitbandGraphics.draw_text2({
-                text = '<',
-                rectangle = rectangle,
-                color = color,
-                font_name = font_name,
-                font_size = font_size,
-                aliased = not ugui.standard_styler.params.cleartype,
-            })
+            p:begin_path()
+            p:move_to(center_x - point_extent, center_y)
+            p:line_to(center_x + point_extent, center_y - half_height)
+            p:line_to(center_x + point_extent, center_y + half_height)
+            p:close_path()
+            p:fill(painter_color)
         elseif key == 'arrow_right' then
-            BreitbandGraphics.draw_text2({
-                text = '>',
-                rectangle = rectangle,
-                color = color,
-                font_name = font_name,
-                font_size = font_size,
-                aliased = not ugui.standard_styler.params.cleartype,
-            })
+            p:begin_path()
+            p:move_to(center_x + point_extent, center_y)
+            p:line_to(center_x - point_extent, center_y - half_height)
+            p:line_to(center_x - point_extent, center_y + half_height)
+            p:close_path()
+            p:fill(painter_color)
         elseif key == 'arrow_up' then
-            BreitbandGraphics.draw_text2({
-                text = '^',
-                rectangle = rectangle,
-                color = color,
-                font_name = font_name,
-                font_size = font_size,
-                aliased = not ugui.standard_styler.params.cleartype,
-            })
+            p:begin_path()
+            p:move_to(center_x, center_y - point_extent)
+            p:line_to(center_x + half_width, center_y + point_extent)
+            p:line_to(center_x - half_width, center_y + point_extent)
+            p:close_path()
+            p:fill(painter_color)
         elseif key == 'arrow_down' then
-            BreitbandGraphics.draw_text2({
-                text = 'v',
-                rectangle = rectangle,
-                color = color,
-                font_name = font_name,
-                font_size = font_size,
-                aliased = not ugui.standard_styler.params.cleartype,
-            })
+            p:begin_path()
+            p:move_to(center_x, center_y + point_extent)
+            p:line_to(center_x + half_width, center_y - point_extent)
+            p:line_to(center_x - half_width, center_y - point_extent)
+            p:close_path()
+            p:fill(painter_color)
         elseif key == 'checkmark' then
             local connection_point = {x = rectangle.x + rectangle.width * 0.3, y = rectangle.y + rectangle.height}
-            BreitbandGraphics.draw_line({x = rectangle.x, y = rectangle.y + rectangle.height / 2}, connection_point,
-                color, 1)
-            BreitbandGraphics.draw_line(connection_point, {x = rectangle.x + rectangle.width, y = rectangle.y}, color,
-                1)
+            p:begin_path()
+            p:line(rectangle.x, rectangle.y + rectangle.height / 2, connection_point.x, connection_point.y)
+            p:stroke(painter_color, {width = 1})
+            p:begin_path()
+            p:line(connection_point.x, connection_point.y, rectangle.x + rectangle.width, rectangle.y)
+            p:stroke(painter_color, {width = 1})
         else
             -- Unknown icon, probably a good idea to nag the user
-            BreitbandGraphics.fill_rectangle(rectangle, BreitbandGraphics.colors.red)
+            p:begin_path()
+            p:rect(ugui.internal.rect_to_painter_rect(rectangle))
+            p:fill(ugui.internal.color_source_to_painter_color('#FF0000'))
         end
     end,
 
@@ -1281,7 +1674,7 @@ ugui.standard_styler = {
     ---@param plaintext boolean? Whether the text is drawn without rich formatting. If nil, false is assumed.
     ---@param font_name string The font name to use for the text.
     ---@param font_size number The font size to use for the text.
-    ---@return { segment_data: { segment: RichTextSegment, rectangle: Rectangle }[], size: Vector2  } # The computed rich text segment data.
+    ---@return { segment_data: { segment: RichTextSegment, rectangle: UguiRect }[], size: UguiVector2  } # The computed rich text segment data.
     compute_rich_text = function(text, plaintext, font_name, font_size)
         if not text then
             return {segment_data = {}, size = {x = 0, y = 0}}
@@ -1289,7 +1682,7 @@ ugui.standard_styler = {
         if text:find('[', 1, true) == nil then plaintext = true end
 
         if plaintext then
-            local size = BreitbandGraphics.get_text_size(text, font_size, font_name)
+            local size = painter.measure_text(text, {family = font_name, size = font_size})
             return {
                 segment_data = {
                     segment = {
@@ -1299,13 +1692,13 @@ ugui.standard_styler = {
                     rectangle = {
                         x = 0,
                         y = 0,
-                        width = size.width,
-                        height = size.height,
+                        width = size.w,
+                        height = size.h,
                     },
                 },
                 size = {
-                    x = size.width,
-                    y = size.height,
+                    x = size.w,
+                    y = size.h,
                 },
             }
         end
@@ -1327,9 +1720,9 @@ ugui.standard_styler = {
                 width = icon_size
                 height = icon_size
             elseif segment.type == 'text' then
-                local size = BreitbandGraphics.get_text_size(segment.value, font_size, font_name)
-                width = size.width
-                height = size.height
+                local size = painter.measure_text(segment.value, {family = font_name, size = font_size})
+                width = size.w
+                height = size.h
             else
                 error(string.format("Unknown segment type '%s' encountered in measure_rich_text.", segment.type))
             end
@@ -1366,11 +1759,11 @@ ugui.standard_styler = {
     end,
 
     ---Draws rich text with the specified parameters.
-    ---@param rectangle Rectangle The rich text's bounds.
-    ---@param align_x Alignment? The rich text's horizontal alignment inside the rectangle. If nil, the default is assumed.
-    ---@param align_y Alignment? The rich text's vertical alignment inside the rectangle. If nil, the default is assumed.
+    ---@param rectangle UguiRect The rich text's bounds.
+    ---@param align_x UguiAlignment? The rich text's horizontal alignment inside the rectangle. If nil, the default is assumed.
+    ---@param align_y UguiAlignment? The rich text's vertical alignment inside the rectangle. If nil, the default is assumed.
     ---@param text RichText The rich text.
-    ---@param color Color The rich text's color. If a rich text segment contains a color, it is used instead.
+    ---@param color UguiRGBA8 The rich text's color. If a rich text segment contains a color, it is used instead.
     ---@param visual_state VisualState The visual state for rich icons.
     ---@param plaintext boolean? Whether the text is drawn without rich formatting. If nil, false is assumed.
     ---@param font_name string? The font name to use for the text. If nil, the default is assumed.
@@ -1378,8 +1771,8 @@ ugui.standard_styler = {
     ---@param wrap boolean? Whether the text wraps at the rectangle's edges. If nil, false is assumed.
     ---@param fit boolean? Whether the rich text is scaled down to fit the rectangle. If nil, false is assumed.
     draw_rich_text = function(rectangle, align_x, align_y, text, color, visual_state, plaintext, font_name, font_size, wrap, fit)
-        align_x = align_x or BreitbandGraphics.alignment.center
-        align_y = align_y or BreitbandGraphics.alignment.center
+        align_x = align_x or ugui.alignment.center
+        align_y = align_y or ugui.alignment.center
         font_name = font_name or ugui.standard_styler.params.font_name
         font_size = font_size or ugui.standard_styler.params.font_size
 
@@ -1391,8 +1784,8 @@ ugui.standard_styler = {
                     local current_line = ''
                     for word in line:gmatch('%S+%s*') do
                         local candidate = current_line .. word
-                        local size = BreitbandGraphics.get_text_size(candidate, font_size, font_name)
-                        if current_line ~= '' and size.width > rectangle.width then
+                        local size = painter.measure_text(candidate, {family = font_name, size = font_size})
+                        if current_line ~= '' and size.w > rectangle.width then
                             wrapped_lines[#wrapped_lines + 1] = current_line
                             current_line = word
                         else
@@ -1403,17 +1796,51 @@ ugui.standard_styler = {
                 end
                 text = table.concat(wrapped_lines, '\n')
             end
-            BreitbandGraphics.draw_text2({
-                text = text,
-                rectangle = rectangle,
-                color = color,
-                align_x = align_x,
-                align_y = align_y,
-                font_name = font_name,
-                font_size = font_size,
-                aliased = not ugui.standard_styler.params.cleartype,
-                fit = fit,
+            local text_x, text_y = rectangle.x, rectangle.y
+            local text_width, text_height = rectangle.width, rectangle.height
+            local text_align_x, text_align_y = align_x, align_y
+            if fit then
+                local metrics = painter.measure_text(text, {family = font_name, size = font_size})
+                if metrics.w > text_width then
+                    font_size = font_size / math.max(0.01, metrics.w / text_width)
+                end
+                if metrics.h > text_height then
+                    font_size = font_size / math.max(0.01, metrics.h / text_height)
+                end
+                metrics = painter.measure_text(text, {family = font_name, size = font_size})
+                if text_align_x == ugui.alignment.center or text_align_x == ugui.alignment.stretch then
+                    text_x = text_x + text_width / 2 - metrics.w / 2
+                elseif text_align_x == ugui.alignment['end'] then
+                    text_x = text_x + text_width - metrics.w
+                end
+                if text_align_y == ugui.alignment.center or text_align_y == ugui.alignment.stretch then
+                    text_y = text_y + text_height / 2 - metrics.h / 2
+                elseif text_align_y == ugui.alignment['end'] then
+                    text_y = text_y + text_height - metrics.h
+                end
+                text_width = metrics.w + 1
+                text_height = metrics.h + 1
+                text_align_x = ugui.alignment.start
+                text_align_y = ugui.alignment.start
+            end
+
+            local p = ugui.internal.painter
+            p:begin_path()
+            p:text(text, {x = text_x, y = text_y, w = text_width, h = text_height}, {
+                family = font_name,
+                size = font_size,
+                weight = 400,
+                slant = 'normal',
+                align_x = text_align_x == ugui.alignment.center and 'center' or
+                    text_align_x == ugui.alignment['end'] and 'right' or
+                    text_align_x == ugui.alignment.stretch and 'justify' or 'left',
+                align_y = text_align_y == ugui.alignment.center and 'center' or
+                    text_align_y == ugui.alignment['end'] and 'bottom' or 'top',
+                antialiased = ugui.standard_styler.params.cleartype,
+                overflow = 'visible',
+                clip = false,
             })
+            p:fill(ugui.internal.color_source_to_painter_color(color))
             return
         end
 
@@ -1421,52 +1848,74 @@ ugui.standard_styler = {
         -- COMPAT: We intentionally retain a bug here that makes text rendering not be constrained by `rectangle`.
         if text:find('[', 1, true) == nil then
             if fit then
-                BreitbandGraphics.draw_text2({
-                    text = text,
-                    rectangle = rectangle,
-                    color = color,
-                    align_x = align_x,
-                    align_y = align_y,
-                    font_name = font_name,
-                    font_size = font_size,
-                    fit = true,
-                    aliased = not ugui.standard_styler.params.cleartype,
+                local metrics = painter.measure_text(text, {family = font_name, size = font_size})
+                if metrics.w > rectangle.width then
+                    font_size = font_size / math.max(0.01, metrics.w / rectangle.width)
+                end
+                if metrics.h > rectangle.height then
+                    font_size = font_size / math.max(0.01, metrics.h / rectangle.height)
+                end
+                metrics = painter.measure_text(text, {family = font_name, size = font_size})
+
+                local text_x, text_y = rectangle.x, rectangle.y
+                if align_x == ugui.alignment.center or align_x == ugui.alignment.stretch then
+                    text_x = text_x + rectangle.width / 2 - metrics.w / 2
+                elseif align_x == ugui.alignment['end'] then
+                    text_x = text_x + rectangle.width - metrics.w
+                end
+                if align_y == ugui.alignment.center or align_y == ugui.alignment.stretch then
+                    text_y = text_y + rectangle.height / 2 - metrics.h / 2
+                elseif align_y == ugui.alignment['end'] then
+                    text_y = text_y + rectangle.height - metrics.h
+                end
+
+                local p = ugui.internal.painter
+                p:begin_path()
+                p:text(text, {x = text_x, y = text_y, w = metrics.w + 1, h = metrics.h + 1}, {
+                    family = font_name,
+                    size = font_size,
+                    weight = 400,
+                    slant = 'normal',
+                    align_x = 'left',
+                    align_y = 'top',
+                    antialiased = ugui.standard_styler.params.cleartype,
+                    overflow = 'visible',
+                    clip = false,
                 })
+                p:fill(ugui.internal.color_source_to_painter_color(color))
                 return
             end
 
-            local size = BreitbandGraphics.get_text_size(text, font_size, font_name)
+            local size = painter.measure_text(text, {family = font_name, size = font_size})
             local text_x = rectangle.x
             local text_y = rectangle.y
 
-            if align_x == BreitbandGraphics.alignment.center then
-                text_x = text_x + (rectangle.width - size.width) / 2
-            elseif align_x == BreitbandGraphics.alignment['end'] then
-                text_x = text_x + rectangle.width - size.width
+            if align_x == ugui.alignment.center then
+                text_x = text_x + (rectangle.width - size.w) / 2
+            elseif align_x == ugui.alignment['end'] then
+                text_x = text_x + rectangle.width - size.w
             end
 
-            if align_y == BreitbandGraphics.alignment.center then
-                text_y = text_y + rectangle.height / 2 - size.height / 2
-            elseif align_y == BreitbandGraphics.alignment['end'] then
-                text_y = text_y + rectangle.height - size.height
+            if align_y == ugui.alignment.center then
+                text_y = text_y + rectangle.height / 2 - size.h / 2
+            elseif align_y == ugui.alignment['end'] then
+                text_y = text_y + rectangle.height - size.h
             end
 
-            BreitbandGraphics.draw_text2({
-                text = text,
-                rectangle = {
-                    x = text_x,
-                    y = text_y - 1,
-                    width = size.width + 1,
-                    height = size.height + 1,
-                },
-                color = color,
-                align_x = BreitbandGraphics.alignment.start,
-                align_y = BreitbandGraphics.alignment.start,
-                font_name = font_name,
-                font_size = font_size,
+            local p = ugui.internal.painter
+            p:begin_path()
+            p:text(text, {x = text_x, y = text_y - 1, w = size.w + 1, h = size.h + 1}, {
+                family = font_name,
+                size = font_size,
+                weight = 400,
+                slant = 'normal',
+                align_x = 'left',
+                align_y = 'top',
+                antialiased = ugui.standard_styler.params.cleartype,
+                overflow = 'clip',
                 clip = true,
-                aliased = not ugui.standard_styler.params.cleartype,
             })
+            p:fill(ugui.internal.color_source_to_painter_color(color))
             return
         end
 
@@ -1489,31 +1938,31 @@ ugui.standard_styler = {
         end
 
         -- 2. Translate all segments to match the specified alignments
-        if align_x == BreitbandGraphics.alignment.start then
+        if align_x == ugui.alignment.start then
             for _, data in pairs(segment_data) do
                 data.rectangle.x = data.rectangle.x + rectangle.x
             end
-        elseif align_x == BreitbandGraphics.alignment.center then
+        elseif align_x == ugui.alignment.center then
             local x_offset = rectangle.x + (rectangle.width - total_width) / 2
             for _, data in pairs(segment_data) do
                 data.rectangle.x = data.rectangle.x + x_offset
             end
-        elseif align_x == BreitbandGraphics.alignment['end'] then
+        elseif align_x == ugui.alignment['end'] then
             local x_offset = rectangle.x + rectangle.width - total_width
             for _, data in pairs(segment_data) do
                 data.rectangle.x = data.rectangle.x + x_offset
             end
         end
 
-        if align_y == BreitbandGraphics.alignment.start then
+        if align_y == ugui.alignment.start then
             for _, data in pairs(segment_data) do
                 data.rectangle.y = data.rectangle.y + rectangle.y
             end
-        elseif align_y == BreitbandGraphics.alignment.center then
+        elseif align_y == ugui.alignment.center then
             for _, data in pairs(segment_data) do
                 data.rectangle.y = data.rectangle.y + rectangle.y + rectangle.height / 2 - data.rectangle.height / 2
             end
-        elseif align_y == BreitbandGraphics.alignment['end'] then
+        elseif align_y == ugui.alignment['end'] then
             for _, data in pairs(segment_data) do
                 data.rectangle.y = data.rectangle.y + rectangle.y + rectangle.height - data.rectangle.height
             end
@@ -1526,22 +1975,25 @@ ugui.standard_styler = {
                     data.segment.value)
             end
             if data.segment.type == 'text' then
-                BreitbandGraphics.draw_text2({
-                    text = data.segment.value,
-                    rectangle = {
-                        x = data.rectangle.x,
-                        y = data.rectangle.y - 1,
-                        width = data.rectangle.width + 1,
-                        height = data.rectangle.height + 1,
-                    },
-                    color = color,
-                    align_x = BreitbandGraphics.alignment.start,
-                    align_y = BreitbandGraphics.alignment.start,
-                    font_name = font_name,
-                    font_size = font_size,
+                local p = ugui.internal.painter
+                p:begin_path()
+                p:text(data.segment.value, {
+                    x = data.rectangle.x,
+                    y = data.rectangle.y - 1,
+                    w = data.rectangle.width + 1,
+                    h = data.rectangle.height + 1,
+                }, {
+                    family = font_name,
+                    size = font_size,
+                    weight = 400,
+                    slant = 'normal',
+                    align_x = 'left',
+                    align_y = 'top',
+                    antialiased = ugui.standard_styler.params.cleartype,
+                    overflow = 'clip',
                     clip = true,
-                    aliased = not ugui.standard_styler.params.cleartype,
                 })
+                p:fill(ugui.internal.color_source_to_painter_color(color))
             end
         end
     end,
@@ -1550,36 +2002,45 @@ ugui.standard_styler = {
     ---@param control Control The control table.
     ---@param visual_state VisualState The control's visual state.
     draw_raised_frame = function(control, visual_state)
-        BreitbandGraphics.fill_rectangle(control.rectangle,
-            ugui.standard_styler.params.button.border[visual_state])
-        BreitbandGraphics.fill_rectangle(BreitbandGraphics.inflate_rectangle(control.rectangle, -1),
-            ugui.standard_styler.params.button.back[visual_state])
+        local p = ugui.internal.painter
+        p:begin_path()
+        p:rect(ugui.internal.rect_to_painter_rect(control.rectangle))
+        p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.button.border[visual_state]))
+        p:begin_path()
+        p:rect(ugui.internal.rect_to_painter_rect(ugui.internal.inflate_rect(control.rectangle, -1)))
+        p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.button.back[visual_state]))
     end,
 
     ---Draws an edit frame with the specified parameters.
     ---@param control Control The control table.
     ---@param visual_state VisualState The control's visual state.
     draw_edit_frame = function(control, rectangle, visual_state)
-        BreitbandGraphics.fill_rectangle(control.rectangle,
-            ugui.standard_styler.params.textbox.border[visual_state])
-        BreitbandGraphics.fill_rectangle(BreitbandGraphics.inflate_rectangle(control.rectangle, -1),
-            ugui.standard_styler.params.textbox.back[visual_state])
+        local p = ugui.internal.painter
+        p:begin_path()
+        p:rect(ugui.internal.rect_to_painter_rect(control.rectangle))
+        p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.textbox.border[visual_state]))
+        p:begin_path()
+        p:rect(ugui.internal.rect_to_painter_rect(ugui.internal.inflate_rect(control.rectangle, -1)))
+        p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.textbox.back[visual_state]))
     end,
 
     ---Draws a list frame with the specified parameters.
-    ---@param rectangle Rectangle The control bounds.
+    ---@param rectangle UguiRect The control bounds.
     ---@param visual_state VisualState The control's visual state.
     draw_list_frame = function(rectangle, visual_state)
-        BreitbandGraphics.fill_rectangle(rectangle,
-            ugui.standard_styler.params.listbox.border[visual_state])
-        BreitbandGraphics.fill_rectangle(BreitbandGraphics.inflate_rectangle(rectangle, -1),
-            ugui.standard_styler.params.listbox.back[visual_state])
+        local p = ugui.internal.painter
+        p:begin_path()
+        p:rect(ugui.internal.rect_to_painter_rect(rectangle))
+        p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.listbox.border[visual_state]))
+        p:begin_path()
+        p:rect(ugui.internal.rect_to_painter_rect(ugui.internal.inflate_rect(rectangle, -1)))
+        p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.listbox.back[visual_state]))
     end,
 
     ---Draws a joystick's inner part with the specified parameters.
-    ---@param rectangle Rectangle The control bounds.
+    ---@param rectangle UguiRect The control bounds.
     ---@param visual_state VisualState The control's visual state.
-    ---@param position Vector2 The joystick's position.
+    ---@param position UguiVector2 The joystick's position.
     draw_joystick_inner = function(rectangle, visual_state, position)
         local back_color = ugui.standard_styler.params.joystick.back[visual_state]
         local outline_color = ugui.standard_styler.params.joystick.outline[visual_state]
@@ -1588,84 +2049,90 @@ ugui.standard_styler = {
         local inner_mag_color = ugui.standard_styler.params.joystick.inner_mag[visual_state]
         local outer_mag_color = ugui.standard_styler.params.joystick.outer_mag[visual_state]
         local mag_thickness = ugui.standard_styler.params.joystick.mag_thicknesses[visual_state]
+        local p = ugui.internal.painter
+        local inner_rect = ugui.internal.rect_to_painter_rect(ugui.internal.inflate_rect(rectangle, -1))
 
-        BreitbandGraphics.fill_ellipse(BreitbandGraphics.inflate_rectangle(rectangle, -1),
-            back_color)
-        BreitbandGraphics.draw_ellipse(BreitbandGraphics.inflate_rectangle(rectangle, -1),
-            outline_color, 1)
-        BreitbandGraphics.draw_line({
-            x = rectangle.x + rectangle.width / 2,
-            y = rectangle.y,
-        }, {
-            x = rectangle.x + rectangle.width / 2,
-            y = rectangle.y + rectangle.height,
-        }, outline_color, 1)
-        BreitbandGraphics.draw_line({
-            x = rectangle.x,
-            y = rectangle.y + rectangle.height / 2,
-        }, {
-            x = rectangle.x + rectangle.width,
-            y = rectangle.y + rectangle.height / 2,
-        }, outline_color, 1)
+        p:begin_path()
+        p:circle(inner_rect)
+        p:fill(ugui.internal.color_source_to_painter_color(back_color))
+        p:begin_path()
+        p:circle(inner_rect)
+        p:stroke(ugui.internal.color_source_to_painter_color(outline_color), {width = 1})
 
+        p:begin_path()
+        p:line(rectangle.x + rectangle.width / 2, rectangle.y,
+            rectangle.x + rectangle.width / 2, rectangle.y + rectangle.height)
+        p:stroke(ugui.internal.color_source_to_painter_color(outline_color), {width = 1})
+        p:begin_path()
+        p:line(rectangle.x, rectangle.y + rectangle.height / 2,
+            rectangle.x + rectangle.width, rectangle.y + rectangle.height / 2)
+        p:stroke(ugui.internal.color_source_to_painter_color(outline_color), {width = 1})
 
         local r = position.r - mag_thickness
         if r > 0 then
-            BreitbandGraphics.fill_ellipse({
+            p:begin_path()
+            p:circle({
                 x = rectangle.x + rectangle.width / 2 - r / 2,
                 y = rectangle.y + rectangle.height / 2 - r / 2,
-                width = r,
-                height = r,
-            }, inner_mag_color)
+                w = r,
+                h = r,
+            })
+            p:fill(ugui.internal.color_source_to_painter_color(inner_mag_color))
             r = position.r
 
-            BreitbandGraphics.draw_ellipse({
+            p:begin_path()
+            p:circle({
                 x = rectangle.x + rectangle.width / 2 - r / 2,
                 y = rectangle.y + rectangle.height / 2 - r / 2,
-                width = r,
-                height = r,
-            }, outer_mag_color, mag_thickness)
+                w = r,
+                h = r,
+            })
+            p:stroke(ugui.internal.color_source_to_painter_color(outer_mag_color), {width = mag_thickness})
         end
 
+        p:begin_path()
+        p:line(rectangle.x + rectangle.width / 2, rectangle.y + rectangle.height / 2,
+            position.x, position.y)
+        p:stroke(ugui.internal.color_source_to_painter_color(line_color), {width = 3})
 
-        BreitbandGraphics.draw_line({
-            x = rectangle.x + rectangle.width / 2,
-            y = rectangle.y + rectangle.height / 2,
-        }, {
-            x = position.x,
-            y = position.y,
-        }, line_color, 3)
-
-        BreitbandGraphics.fill_ellipse({
-            x = position.x - ugui.standard_styler.params.joystick.tip_size / 2,
-            y = position.y - ugui.standard_styler.params.joystick.tip_size / 2,
-            width = ugui.standard_styler.params.joystick.tip_size,
-            height = ugui.standard_styler.params.joystick.tip_size,
-        }, tip_color)
+        local tip_size = ugui.standard_styler.params.joystick.tip_size
+        p:begin_path()
+        p:circle({
+            x = position.x - tip_size / 2,
+            y = position.y - tip_size / 2,
+            w = tip_size,
+            h = tip_size,
+        })
+        p:fill(ugui.internal.color_source_to_painter_color(tip_color))
     end,
 
     ---Draws a scrollbar with the specified parameters.
     ---@param control ScrollBar
-    ---@param thumb_rectangle Rectangle The scrollbar thumb's bounds.
+    ---@param thumb_rectangle UguiRect The scrollbar thumb's bounds.
     draw_scrollbar = function(control, thumb_rectangle)
         local visual_state = ugui.get_visual_state(control)
-        BreitbandGraphics.fill_rectangle(control.rectangle,
-            ugui.standard_styler.params.scrollbar.back[visual_state])
-        BreitbandGraphics.fill_rectangle(thumb_rectangle,
-            ugui.standard_styler.params.scrollbar.thumb[visual_state])
+        local p = ugui.internal.painter
+        p:begin_path()
+        p:rect(ugui.internal.rect_to_painter_rect(control.rectangle))
+        p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.scrollbar.back[visual_state]))
+        p:begin_path()
+        p:rect(ugui.internal.rect_to_painter_rect(thumb_rectangle))
+        p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.scrollbar.thumb[visual_state]))
     end,
 
     ---Draws a list item with the specified parameters.
     ---@param control Control The associated list control.
     ---@param item string The list item's text.
-    ---@param rectangle Rectangle The list item's bounds.
+    ---@param rectangle UguiRect The list item's bounds.
     ---@param visual_state VisualState The control's visual state.
     draw_list_item = function(control, item, rectangle, visual_state)
         if not item then
             return
         end
-        BreitbandGraphics.fill_rectangle(rectangle,
-            ugui.standard_styler.params.listbox_item.back[visual_state])
+        local p = ugui.internal.painter
+        p:begin_path()
+        p:rect(ugui.internal.rect_to_painter_rect(rectangle))
+        p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.listbox_item.back[visual_state]))
 
         local rect = {
             x = rectangle.x + 2,
@@ -1673,13 +2140,13 @@ ugui.standard_styler = {
             width = rectangle.width - 4,
             height = rectangle.height,
         }
-        ugui.standard_styler.draw_rich_text(rect, BreitbandGraphics.alignment.start, nil, item,
+        ugui.standard_styler.draw_rich_text(rect, ugui.alignment.start, nil, item,
             ugui.standard_styler.params.listbox_item.text[visual_state], visual_state, control.plaintext)
     end,
 
     ---Draws a list with the specified parameters.
     ---@param control ListBox The control table.
-    ---@param rectangle Rectangle The list item's bounds.
+    ---@param rectangle UguiRect The list item's bounds.
     draw_list = function(control, rectangle)
         local visual_state = ugui.get_visual_state(control)
         local data = ugui.internal.control_data[control.uid]
@@ -1705,7 +2172,9 @@ ugui.standard_styler = {
 
         local x_offset = math.max((content_bounds.width - control.rectangle.width) * scroll_x, 0)
 
-        BreitbandGraphics.push_clip(BreitbandGraphics.inflate_rectangle(rectangle, -1))
+        local p = ugui.internal.painter
+        p:save()
+        p:clip(ugui.internal.rect_to_painter_rect(ugui.internal.inflate_rect(rectangle, -1)))
 
         for i = index_begin, index_end, 1 do
             local y_offset = (ugui.standard_styler.params.listbox_item.height * (i - 1)) -
@@ -1728,35 +2197,36 @@ ugui.standard_styler = {
             }, item_visual_state)
         end
 
-        BreitbandGraphics.pop_clip()
+        p:restore()
     end,
 
     ---Draws a menu frame with the specified parameters.
-    ---@param rectangle Rectangle The control's bounds.
+    ---@param rectangle UguiRect The control's bounds.
     ---@param visual_state VisualState The control's visual state.
     draw_menu_frame = function(rectangle, visual_state)
-        BreitbandGraphics.fill_rectangle(rectangle,
-            ugui.standard_styler.params.menu.border[visual_state])
-        BreitbandGraphics.fill_rectangle(BreitbandGraphics.inflate_rectangle(rectangle, -1),
-            ugui.standard_styler.params.menu.back[visual_state])
+        local p = ugui.internal.painter
+        p:begin_path()
+        p:rect(ugui.internal.rect_to_painter_rect(rectangle))
+        p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.menu.border[visual_state]))
+        p:begin_path()
+        p:rect(ugui.internal.rect_to_painter_rect(ugui.internal.inflate_rect(rectangle, -1)))
+        p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.menu.back[visual_state]))
     end,
 
     ---Draws a menu item with the specified parameters.
     ---@param item MenuItem The menu item.
-    ---@param rectangle Rectangle The control's bounds.
+    ---@param rectangle UguiRect The control's bounds.
     ---@param visual_state VisualState The control's visual state.
     draw_menu_item = function(item, rectangle, visual_state)
-        BreitbandGraphics.fill_rectangle(rectangle,
-            ugui.standard_styler.params.menu_item.back[visual_state])
-        BreitbandGraphics.push_clip({
-            x = rectangle.x,
-            y = rectangle.y,
-            width = rectangle.width,
-            height = rectangle.height,
-        })
+        local p = ugui.internal.painter
+        p:begin_path()
+        p:rect(ugui.internal.rect_to_painter_rect(rectangle))
+        p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.menu_item.back[visual_state]))
+        p:save()
+        p:clip(ugui.internal.rect_to_painter_rect(rectangle))
 
         if item.checked then
-            local icon_rect = BreitbandGraphics.inflate_rectangle({
+            local icon_rect = ugui.internal.inflate_rect({
                 x = rectangle.x + (ugui.standard_styler.params.menu_item.left_padding - rectangle.height) * 0.5,
                 y = rectangle.y,
                 width = rectangle.height,
@@ -1766,7 +2236,7 @@ ugui.standard_styler = {
         end
 
         if item.items then
-            local icon_rect = BreitbandGraphics.inflate_rectangle({
+            local icon_rect = ugui.internal.inflate_rect({
                 x = rectangle.x + rectangle.width - (ugui.standard_styler.params.menu_item.right_padding),
                 y = rectangle.y,
                 width = ugui.standard_styler.params.menu_item.right_padding,
@@ -1782,22 +2252,26 @@ ugui.standard_styler = {
             height = rectangle.height,
         }
 
-        BreitbandGraphics.draw_text2({
-            text = item.text,
-            rectangle = text_rect,
-            color = ugui.standard_styler.params.menu_item.text[visual_state],
-            align_x = BreitbandGraphics.alignment.start,
-            font_name = ugui.standard_styler.params.font_name,
-            font_size = ugui.standard_styler.params.font_size,
-            aliased = not ugui.standard_styler.params.cleartype,
+        p:begin_path()
+        p:text(item.text, ugui.internal.rect_to_painter_rect(text_rect), {
+            family = ugui.standard_styler.params.font_name,
+            size = ugui.standard_styler.params.font_size,
+            weight = 400,
+            slant = 'normal',
+            align_x = 'left',
+            align_y = 'center',
+            antialiased = ugui.standard_styler.params.cleartype,
+            overflow = 'visible',
+            clip = false,
         })
+        p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.menu_item.text[visual_state]))
 
-        BreitbandGraphics.pop_clip()
+        p:restore()
     end,
 
     ---Draws a menu with the specified parameters.
     ---@param control Menu The menu control.
-    ---@param rectangle Rectangle The control's bounds.
+    ---@param rectangle UguiRect The control's bounds.
     draw_menu = function(control, rectangle)
         local visual_state = ugui.get_visual_state(control)
         ugui.standard_styler.draw_menu_frame(rectangle, visual_state)
@@ -1805,7 +2279,7 @@ ugui.standard_styler = {
         local y = rectangle.y
 
         for i, item in pairs(control.items) do
-            local rectangle = BreitbandGraphics.inflate_rectangle({
+            local rectangle = ugui.internal.inflate_rect({
                 x = rectangle.x,
                 y = y,
                 width = rectangle.width,
@@ -1827,7 +2301,7 @@ ugui.standard_styler = {
 
     ---Draws a tooltip with the specified parameters.
     ---@param control Control The tooltip's parent control.
-    ---@param position Vector2 The tooltip's position.
+    ---@param position UguiVector2 The tooltip's position.
     draw_tooltip = function(control, position)
         local text = control.tooltip
         if not text then
@@ -1876,7 +2350,7 @@ ugui.standard_styler = {
             rectangle.width = 99999
         end
 
-        ugui.standard_styler.draw_rich_text(rectangle, BreitbandGraphics.alignment.start, nil, text,
+        ugui.standard_styler.draw_rich_text(rectangle, ugui.alignment.start, nil, text,
             ugui.standard_styler.params.menu_item.text[ugui.visual_states.normal], ugui.visual_states.normal,
             control.plaintext)
     end,
@@ -1933,110 +2407,128 @@ ugui.standard_styler = {
     draw_textbox = function(control)
         local data = ugui.internal.control_data[control.uid]
         local visual_state = ugui.get_visual_state(control)
-        local text = control.text
-        local scrolled_text = control.text:sub(data.scroll_offset)
+        local text<const> = data.text
+        local scroll_offset = data.scroll_offset
+        local scrolled_text<const> = scroll_offset == 1 and text or text:sub(scroll_offset)
+
+        local keyboard_captured = ugui.internal.keyboard_captured_control == control.uid
 
         -- Special case: if we're capturing the keyboard, we consider ourselves "active"
-        if ugui.internal.keyboard_captured_control == control.uid then
+        if keyboard_captured then
             visual_state = ugui.visual_states.active
         end
 
         ugui.standard_styler.draw_edit_frame(control, control.rectangle, visual_state)
-        BreitbandGraphics.push_clip(control.rectangle)
+        local p = ugui.internal.painter
+        p:save()
 
         local should_visualize_selection =
             control.is_enabled ~= false
             and data.selection_start ~= data.selection_end
-            and ugui.internal.keyboard_captured_control == control.uid
+            and keyboard_captured
 
-        local string_to_caret = text:sub(data.scroll_offset, data.caret_index - 1)
-        local string_to_caret_width = BreitbandGraphics.get_text_size(string_to_caret, ugui.standard_styler.params.font_size, ugui.standard_styler.params.font_name).width
-        local caret_x = control.rectangle.x + ugui.standard_styler.params.textbox.padding.x + string_to_caret_width
-        local string_to_selection_start
-        local string_to_selection_end
-        local string_to_selection_start_width
-        local string_to_selection_end_width
-        local selection_start_x
-        local selection_end_x
-        local caret_height<const> = ugui.standard_styler.params.font_size * 1.5
-
-        if should_visualize_selection then
-            string_to_selection_start = text:sub(data.scroll_offset, data.selection_start - 1)
-            string_to_selection_end = text:sub(data.scroll_offset, data.selection_end - 1)
-
-            string_to_selection_start_width = BreitbandGraphics.get_text_size(string_to_selection_start, ugui.standard_styler.params.font_size, ugui.standard_styler.params.font_name).width
-            string_to_selection_end_width = BreitbandGraphics.get_text_size(string_to_selection_end, ugui.standard_styler.params.font_size, ugui.standard_styler.params.font_name).width
-
-            selection_start_x = control.rectangle.x + ugui.standard_styler.params.textbox.padding.x + string_to_selection_start_width
-            selection_end_x = control.rectangle.x + ugui.standard_styler.params.textbox.padding.x + string_to_selection_end_width
+        local padding_x = ugui.standard_styler.params.textbox.padding.x
+        local text_x = control.rectangle.x + padding_x
+        local available_width = math.max(0, control.rectangle.width - padding_x * 2)
+        p:clip(ugui.internal.rect_to_painter_rect({
+            x = text_x,
+            y = control.rectangle.y,
+            width = available_width,
+            height = control.rectangle.height,
+        }))
+        local text_style = {
+            family = ugui.standard_styler.params.font_name,
+            size = ugui.standard_styler.params.font_size,
+        }
+        local text_x_align = control.text_x_align
+        if scroll_offset == 1 and
+            (text_x_align == ugui.alignment.center or text_x_align == ugui.alignment['end']) then
+            local text_width = painter.measure_text(scrolled_text, text_style).w
+            if text_width < available_width then
+                local remaining_width = available_width - text_width
+                text_x = text_x + (text_x_align == ugui.alignment.center and remaining_width / 2 or remaining_width)
+            end
         end
-
-        if should_visualize_selection then
-            BreitbandGraphics.fill_rectangle({
-                    x = control.rectangle.x + ugui.standard_styler.params.textbox.padding.x + string_to_selection_start_width,
-                    y = control.rectangle.y,
-                    width = string_to_selection_end_width - string_to_selection_start_width,
-                    height = caret_height,
-                },
-                ugui.standard_styler.params.textbox.selection)
-        end
-
-        local text_rect = {
-            x = control.rectangle.x + ugui.standard_styler.params.textbox.padding.x,
+        local text_rect = ugui.internal.rect_to_painter_rect({
+            x = text_x,
             y = control.rectangle.y,
             width = 9999,
             height = control.rectangle.height,
-        }
-
-        BreitbandGraphics.draw_text2({
-            text = scrolled_text,
-            rectangle = text_rect,
-            color = ugui.standard_styler.params.textbox.text[visual_state],
-            align_x = BreitbandGraphics.alignment.start,
-            align_y = BreitbandGraphics.alignment.start,
-            font_name = ugui.standard_styler.params.font_name,
-            font_size = ugui.standard_styler.params.font_size,
-            aliased = not ugui.standard_styler.params.cleartype,
         })
+        local draw_text_style = {
+            family = text_style.family,
+            size = text_style.size,
+            weight = 400,
+            slant = 'normal',
+            align_x = 'left',
+            align_y = 'top',
+            antialiased = ugui.standard_styler.params.cleartype,
+            overflow = 'visible',
+            clip = false,
+        }
+        local text_color = ugui.standard_styler.params.textbox.text[visual_state]
+        local should_draw_caret = visual_state == ugui.visual_states.active and not should_visualize_selection
+            and math.floor((os.clock() - (data.caret_blink_start or 0)) * 2) % 2 == 0
+        local caret_x
+        local selection_start_x
+        local selection_width
+        local caret_height<const> = ugui.standard_styler.params.font_size * 1.5
+
+        if should_visualize_selection or should_draw_caret then
+            local first_visible_index = math.max(1, scroll_offset)
+            local last_local_index = #scrolled_text + 1
+            local hit_test_options = {wrap = 'none', clip = false}
+            local function x_at_index(index)
+                local local_index = math.max(1, math.min(last_local_index, index - first_visible_index + 1))
+                local position = painter.hittest_text_index(scrolled_text, local_index, text_style, hit_test_options)
+                return text_x + position.x
+            end
+
+            if should_visualize_selection then
+                selection_start_x = x_at_index(data.selection_start)
+                selection_width = x_at_index(data.selection_end) - selection_start_x
+            else
+                caret_x = x_at_index(data.caret_index)
+            end
+        end
 
         if should_visualize_selection then
-            BreitbandGraphics.push_clip({
+            p:begin_path()
+            p:rect(ugui.internal.rect_to_painter_rect({
                 x = selection_start_x,
                 y = control.rectangle.y,
-                width = selection_end_x - selection_start_x,
+                width = selection_width,
+                height = caret_height,
+            }))
+            p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.textbox.selection))
+        end
+        p:begin_path()
+        p:text(scrolled_text, text_rect, draw_text_style)
+        p:fill(ugui.internal.color_source_to_painter_color(text_color))
+
+        if should_visualize_selection then
+            p:save()
+            p:clip(ugui.internal.rect_to_painter_rect({
+                x = selection_start_x,
+                y = control.rectangle.y,
+                width = selection_width,
                 height = control.rectangle.height,
-            })
+            }))
 
-            BreitbandGraphics.draw_text2({
-                text = scrolled_text,
-                rectangle = text_rect,
-                color = BreitbandGraphics.invert_color(ugui.standard_styler.params.textbox.text[visual_state]),
-                align_x = BreitbandGraphics.alignment.start,
-                align_y = BreitbandGraphics.alignment.start,
-                font_name = ugui.standard_styler.params.font_name,
-                font_size = ugui.standard_styler.params.font_size,
-                aliased = not ugui.standard_styler.params.cleartype,
-            })
+            p:begin_path()
+            p:text(scrolled_text, text_rect, draw_text_style)
+            p:fill(ugui.internal.color_source_to_painter_color(ugui.invert_color(text_color)))
 
-            BreitbandGraphics.pop_clip()
+            p:restore()
         end
 
-
-        if visual_state == ugui.visual_states.active and math.floor(os.clock() * 2) % 2 == 0 and not should_visualize_selection then
-            BreitbandGraphics.draw_line({
-                x = caret_x,
-                y = control.rectangle.y + 3,
-            }, {
-                x = caret_x,
-                y = control.rectangle.y + caret_height - 3,
-            }, {
-                r = 0,
-                g = 0,
-                b = 0,
-            }, 1)
+        if should_draw_caret then
+            p:begin_path()
+            p:line(caret_x, control.rectangle.y + 3, caret_x, control.rectangle.y + caret_height - 3)
+            p:stroke(ugui.internal.color_source_to_painter_color({r = 0, g = 0, b = 0}), {width = 1})
         end
 
-        BreitbandGraphics.pop_clip()
+        p:restore()
     end,
 
     ---Draws a Joystick with the specified parameters.
@@ -2082,10 +2574,13 @@ ugui.standard_styler = {
             }
         end
 
-        BreitbandGraphics.fill_rectangle(BreitbandGraphics.inflate_rectangle(track_rectangle, 1),
-            ugui.standard_styler.params.trackbar.border[visual_state])
-        BreitbandGraphics.fill_rectangle(track_rectangle,
-            ugui.standard_styler.params.trackbar.back[visual_state])
+        local p = ugui.internal.painter
+        p:begin_path()
+        p:rect(ugui.internal.rect_to_painter_rect(ugui.internal.inflate_rect(track_rectangle, 1)))
+        p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.trackbar.border[visual_state]))
+        p:begin_path()
+        p:rect(ugui.internal.rect_to_painter_rect(track_rectangle))
+        p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.trackbar.back[visual_state]))
     end,
 
     ---Draws a Trackbar's thumb with the specified parameters.
@@ -2117,8 +2612,10 @@ ugui.standard_styler = {
                 height = effective_bar_height,
             }
         end
-        BreitbandGraphics.fill_rectangle(head_rectangle,
-            ugui.standard_styler.params.trackbar.thumb[visual_state])
+        local p = ugui.internal.painter
+        p:begin_path()
+        p:rect(ugui.internal.rect_to_painter_rect(head_rectangle))
+        p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.trackbar.thumb[visual_state]))
     end,
 
     ---Draws a Trackbar with the specified parameters.
@@ -2164,7 +2661,7 @@ ugui.standard_styler = {
             height = control.rectangle.height,
         }
 
-        ugui.standard_styler.draw_rich_text(text_rect, BreitbandGraphics.alignment.start, nil, selected_item, text_color,
+        ugui.standard_styler.draw_rich_text(text_rect, ugui.alignment.start, nil, selected_item, text_color,
             visual_state, control.plaintext)
         ugui.standard_styler.draw_icon({
             x = control.rectangle.x + control.rectangle.width - ugui.standard_styler.params.icon_size -
@@ -2189,8 +2686,10 @@ ugui.standard_styler = {
         local max_width = 0
         if control.horizontal_scroll == true then
             for _, value in pairs(control.items) do
-                local width = BreitbandGraphics.get_text_size(value, ugui.standard_styler.params.font_size,
-                    ugui.standard_styler.params.font_name).width
+                local width = painter.measure_text(value, {
+                    family = ugui.standard_styler.params.font_name,
+                    size = ugui.standard_styler.params.font_size,
+                }).w
 
                 if width > max_width then
                     max_width = width
@@ -2217,11 +2716,35 @@ ugui.standard_styler = {
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
+
+---Updates the debug scale in response to Ctrl+Up/Down.
+---@param environment Environment The environment for the current frame.
+---@return number scale The scale to use for the current frame.
+ugui.internal.update_debug_scale = function(environment)
+    if not ugui.DEBUG then
+        ugui.internal.debug_scale = nil
+        return environment.scale or 1
+    end
+
+    local scale = ugui.internal.debug_scale or environment.scale or 1
+    for _, e in ipairs(environment.key_events) do
+        if e.pressed and not e['repeat'] and e.ctrl then
+            if e.keycode2 == Mupen.keycode.SDLK_UP then
+                scale = scale + 0.05
+            elseif e.keycode2 == Mupen.keycode.SDLK_DOWN then
+                scale = math.max(0.05, scale - 0.05)
+            end
+        end
+    end
+
+    ugui.internal.debug_scale = scale
+    return scale
+end
+
 ---Updates the rolling one-second frametime average used by the debug overlay.
 ---@param current_time number The current os.clock time.
----@param has_previous_frame boolean Whether a previous frame timestamp is available.
-ugui.internal.update_debug_frame_time = function(current_time, has_previous_frame)
-    if has_previous_frame and ugui.internal.delta_time > 0 then
+ugui.internal.update_debug_frame_time = function(current_time)
+    if ugui.internal.delta_time > 0 then
         ugui.internal.frame_times[#ugui.internal.frame_times + 1] = {
             t = current_time,
             dt = ugui.internal.delta_time,
@@ -2279,11 +2802,28 @@ ugui.internal.draw_debug_control_state = function(control)
         return
     end
 
+    local p = ugui.internal.painter
     if ugui.internal.keyboard_captured_control == control.uid then
-        BreitbandGraphics.draw_rectangle(BreitbandGraphics.inflate_rectangle(control.rectangle, 4), '#000000', 2)
+        local rectangle = {
+            x = control.rectangle.x - 4,
+            y = control.rectangle.y - 4,
+            width = control.rectangle.width + 8,
+            height = control.rectangle.height + 8,
+        }
+        p:begin_path()
+        p:rect(ugui.internal.rect_to_painter_rect(rectangle))
+        p:stroke('#000000', {width = 2})
     end
     if ugui.internal.mouse_captured_control == control.uid then
-        BreitbandGraphics.draw_rectangle(BreitbandGraphics.inflate_rectangle(control.rectangle, 8), '#FF0000', 2)
+        local rectangle = {
+            x = control.rectangle.x - 8,
+            y = control.rectangle.y - 8,
+            width = control.rectangle.width + 16,
+            height = control.rectangle.height + 16,
+        }
+        p:begin_path()
+        p:rect(ugui.internal.rect_to_painter_rect(rectangle))
+        p:stroke('#FF0000', {width = 2})
     end
 end
 
@@ -2293,6 +2833,7 @@ ugui.internal.draw_debug_overlay = function()
         return
     end
 
+    local p = ugui.internal.painter
     local debug_font_size = ugui.standard_styler.params.font_size + 2
     local debug_text_rectangle = {
         x = 0,
@@ -2307,19 +2848,25 @@ ugui.internal.draw_debug_overlay = function()
     if #ugui.internal.frame_times == 0 then
         frame_time_text = 'wait...'
     else
-        frame_time_text = string.format('%.2f ms (~%.2f FPS)', average_frame_time * 1000, frames_per_second)
+        frame_time_text = string.format('took %.2f ms (~%.2f FPS)', average_frame_time * 1000, frames_per_second)
     end
+    frame_time_text = string.format(
+        '%s | Ctrl + Up/Down: scale +/- 5%% (%.0f%%)',
+        frame_time_text,
+        ugui.internal.scale * 100
+    )
 
-    BreitbandGraphics.draw_text2({
-        text = frame_time_text,
-        rectangle = debug_text_rectangle,
-        color = BreitbandGraphics.colors.black,
-        align_x = BreitbandGraphics.alignment['end'],
-        align_y = BreitbandGraphics.alignment.start,
-        font_name = ugui.standard_styler.params.font_name,
-        font_size = debug_font_size,
-        aliased = not ugui.standard_styler.params.cleartype,
+    p:begin_path()
+    p:text(frame_time_text, ugui.internal.rect_to_painter_rect(debug_text_rectangle), {
+        family = ugui.standard_styler.params.font_name,
+        size = debug_font_size,
+        align_x = 'right',
+        align_y = 'top',
+        antialiased = ugui.standard_styler.params.cleartype,
+        overflow = 'visible',
+        clip = false,
     })
+    p:fill(ugui.internal.color_source_to_painter_color('#000000'))
 
     local execution_entries = {}
     for i = 1, #ugui.internal.scene, 1 do
@@ -2352,21 +2899,24 @@ ugui.internal.draw_debug_overlay = function()
     end
 
     if #execution_lines > 0 then
-        BreitbandGraphics.draw_text2({
-            text = table.concat(execution_lines, '\n'),
-            rectangle = {
-                x = 0,
-                y = debug_font_size + 4,
-                width = ugui.internal.environment.window_size.x,
-                height = ugui.internal.environment.window_size.y - debug_font_size - 4,
-            },
-            color = BreitbandGraphics.colors.black,
-            align_x = BreitbandGraphics.alignment['end'],
-            align_y = BreitbandGraphics.alignment.start,
-            font_name = ugui.standard_styler.params.font_name,
-            font_size = debug_font_size,
-            aliased = not ugui.standard_styler.params.cleartype,
-        })
+        local execution_text_rectangle = {
+            x = 0,
+            y = debug_font_size + 4,
+            width = ugui.internal.environment.window_size.x,
+            height = ugui.internal.environment.window_size.y - debug_font_size - 4,
+        }
+        p:begin_path()
+        p:text(table.concat(execution_lines, '\n'),
+            ugui.internal.rect_to_painter_rect(execution_text_rectangle), {
+                family = ugui.standard_styler.params.font_name,
+                size = debug_font_size,
+                align_x = 'right',
+                align_y = 'top',
+                antialiased = ugui.standard_styler.params.cleartype,
+                overflow = 'visible',
+                clip = false,
+            })
+        p:fill(ugui.internal.color_source_to_painter_color('#000000'))
     end
 end
 
@@ -2380,15 +2930,104 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
+---@alias UguiRect { x: number, y: number, width: number, height: number }
+
+---@alias UguiVector2 { x: number, y: number }
+
+---@class UguiRGBA8
+---@field public r integer The red channel in the range 0 - 255.
+---@field public g integer The green channel in the range 0 - 255.
+---@field public b integer The blue channel in the range 0 - 255.
+---@field public a integer? The alpha channel in the range 0 - 255. If nil, 255 is assumed.
+
+---@class UguiRGBAF
+---@field public r number The red channel in the range 0.0 - 1.0.
+---@field public g number The green channel in the range 0.0 - 1.0.
+---@field public b number The blue channel in the range 0.0 - 1.0.
+---@field public a number? The alpha channel in the range 0.0 - 1.0. If nil, 1.0 is assumed.
+
+---@alias UguiArrayColor { [1]: integer, [2]: integer, [3]: integer, [4]: integer? }
+---An integer color array in the format `{r, g, b, a?}`, with channels in the range 0 - 255.
+
+---@alias UguiArrayFloatColor { [1]: number, [2]: number, [3]: number, [4]: number? }
+---An integer color array in the format `{r, g, b, a?}`, with channels in the range 0.0 - 1.0.
+
+---@alias UguiHexColor string
+---A hexadecimal color string in the format `#RRGGBB` or `#RRGGBBAA`.
+
+---@alias UguiRawColor integer
+---A raw color value in the format `0xRRGGBBAA`.
+
+---@alias UguiColorSource UguiRGBA8|UguiRGBAF|UguiArrayColor|UguiArrayFloatColor|UguiHexColor|UguiRawColor
+---A color-providing object that can be converted to a color.
+
+---@alias UguiBackgroundRepeat "repeat" | "repeat-x" | "repeat-y" | "no-repeat"
+
+---@alias UguiBackgroundSize "auto" | "cover" | "contain" | UguiVector2
+
 ---@class Control
 ---@field public uid UID The unique identifier of the control.
 ---@field public styler_mixin any? An optional styler mixin table which can override specific styler parameters for this control.
----@field public rectangle Rectangle The rectangle in which the control is drawn.
+---@field public rectangle UguiRect The rectangle in which the control is drawn.
 ---@field public is_enabled boolean? Whether the control is enabled. If nil or true, the control is enabled.
 ---@field public tooltip string? The control's tooltip. If nil, no tooltip will be shown.
 ---@field public plaintext boolean? Whether the control's text content is drawn as plain text without rich rendering.
 ---@field public z_index integer? The control's Z-index. If nil, `0` is assumed.
+---@field public fill UguiColorSource? The control's fill color. The fill is drawn before the control graphics. If nil, no fill will be drawn.
+---@field public stroke UguiColorSource? The control's stroke color. The stroke is drawn after the control graphics. If nil, no stroke will be drawn.
+---@field public stroke_style PainterStrokeStyle? The control's stroke style. Requires `stroke`. If nil, the default stroke style will be used.
+---@field public border_radius UguiVector2? The control's border radii. Applies to `fill`/`stroke`, but not to styler-drawn control graphics. If nil, the control has square corners.
+---@field public background_image (string | PainterImage)? Background image. Drawn before the control graphics. If nil, no background image will be drawn.
+---@field public background_repeat UguiBackgroundRepeat? Background image repetition mode. Defaults to `"repeat"`. Requires `background_image`.
+---@field public background_position UguiVector2? Background image offset in pixels from the control's top-left corner. Requires `background_image`.
+---@field public background_size UguiBackgroundSize? Background image dimensions in pixels, `"auto"`, `"cover"`, or `"contain"`. Requires `background_image`.
+---@field public background_nineslice_source PainterRect? Source rectangle for nine-slice rendering. Requires `background_image` and `background_nineslice_center`.
+---@field public background_nineslice_center PainterRect? Center rectangle for nine-slice rendering. Requires `background_image` and `background_nineslice_source`.
+
 ---The base class for all controls.
+
+-- ------------------------------------------------------------
+--   src/ugui/controls/panel.lua
+-- ------------------------------------------------------------
+
+--
+-- Copyright (c) 2026, Mupen64 Organization (https://github.com/mupen64)
+--
+-- SPDX-License-Identifier: GPL-3.0-or-later
+--
+
+---@class Panel : Control
+---A non-interactive surface.
+
+---@type ControlRegistryEntry
+ugui.registry.panel = {
+    uids = function() return 1 end,
+    hittestable = function() return false end,
+    ---@param control Panel
+    validate = function(control)
+    end,
+    ---@param control Panel
+    ---@return ControlReturnValue
+    logic = function(control, data)
+        return {
+            primary = nil,
+            meta = {
+                signal_change = ugui.signal_change_states.none,
+            },
+        }
+    end,
+    ---@param control Panel
+    draw = function(control)
+    end,
+}
+
+---Places a Panel.
+---@param control Panel The control table.
+---@return nil, Meta # Nothing.
+ugui.panel = function(control)
+    local result = ugui.control(control, 'panel')
+    return result.primary, result.meta
+end
 
 -- ------------------------------------------------------------
 --   src/ugui/controls/label.lua
@@ -2402,11 +3041,11 @@ end
 
 ---@class Label : Control
 ---@field public text RichText The text.
----@field public color Color The color of the text.
+---@field public color UguiRGBA8 The color of the text.
 ---@field public font_size number? The font size of the text. If `nil`, the default font size is used.
 ---@field public font_name string? The font family of the text. If `nil`, the default font family is used.
----@field public align_x Alignment? The text's horizontal alignment inside the control rectangle. If `nil`, `alignment.center` is assumed.
----@field public align_y Alignment? The text's vertical alignment inside the control rectangle. If `nil`, `alignment.center` is assumed.
+---@field public align_x UguiAlignment? The text's horizontal alignment inside the control rectangle. If `nil`, `alignment.center` is assumed.
+---@field public align_y UguiAlignment? The text's vertical alignment inside the control rectangle. If `nil`, `alignment.center` is assumed.
 ---@field public wrap boolean? Whether the text wraps at the control rectangle's edges. If `nil`, false is assumed.
 ---@field public clip boolean? Whether the text is clipped to the control rectangle. If `nil`, false is assumed.
 ---@field public fit boolean? Whether the text is scaled to fit the control rectangle. If `nil`, false is assumed.
@@ -2443,12 +3082,13 @@ ugui.registry.label = {
     ---@param control Label
     draw = function(control)
         if control.clip then
-            BreitbandGraphics.push_clip(control.rectangle)
+            ugui.internal.painter:save()
+            ugui.internal.painter:clip(ugui.internal.rect_to_painter_rect(control.rectangle))
         end
         local visual_state = ugui.get_visual_state(control)
         ugui.standard_styler.draw_rich_text(control.rectangle, control.align_x, control.align_y, control.text, control.color, visual_state, control.plaintext, control.font_name, control.font_size, control.wrap, control.fit)
         if control.clip then
-            BreitbandGraphics.pop_clip()
+            ugui.internal.painter:restore()
         end
     end,
 }
@@ -2674,26 +3314,33 @@ ugui.registry.scrollbar = {
             and control.rectangle.width * control.ratio
             or control.rectangle.height * control.ratio
 
-        if ugui.internal.mouse_captured_control == control.uid then
+        if ugui.internal.clicked_control == control.uid and ugui.internal.environment.shift then
             local mouse_pos = ugui.internal.environment.mouse_position
-            local mouse_down = ugui.internal.mouse_down_position
-
-            if data.drag_offset == nil then
-                if is_horizontal then
-                    local thumb_start = ugui.internal.remap(data.value, 0, 1, 0, control.rectangle.width - thumb_size)
-                    data.drag_offset = mouse_down.x - (control.rectangle.x + thumb_start)
-                else
-                    local thumb_start = ugui.internal.remap(data.value, 0, 1, 0, control.rectangle.height - thumb_size)
-                    data.drag_offset = mouse_down.y - (control.rectangle.y + thumb_start)
-                end
-            end
-
-            local current_pos = is_horizontal and (mouse_pos.x - control.rectangle.x - data.drag_offset) or (mouse_pos.y - control.rectangle.y - data.drag_offset)
+            local current_pos = is_horizontal and (mouse_pos.x - control.rectangle.x) or (mouse_pos.y - control.rectangle.y)
             local track_length = (is_horizontal and control.rectangle.width or control.rectangle.height) - thumb_size
-
             data.value = ugui.internal.clamp(current_pos / track_length, 0, 1)
         else
-            data.drag_offset = nil
+            if ugui.internal.mouse_captured_control == control.uid then
+                local mouse_pos = ugui.internal.environment.mouse_position
+                local mouse_down = ugui.internal.mouse_down_position
+
+                if data.drag_offset == nil then
+                    if is_horizontal then
+                        local thumb_start = ugui.internal.remap(data.value, 0, 1, 0, control.rectangle.width - thumb_size)
+                        data.drag_offset = mouse_down.x - (control.rectangle.x + thumb_start)
+                    else
+                        local thumb_start = ugui.internal.remap(data.value, 0, 1, 0, control.rectangle.height - thumb_size)
+                        data.drag_offset = mouse_down.y - (control.rectangle.y + thumb_start)
+                    end
+                end
+
+                local current_pos = is_horizontal and (mouse_pos.x - control.rectangle.x - data.drag_offset) or (mouse_pos.y - control.rectangle.y - data.drag_offset)
+                local track_length = (is_horizontal and control.rectangle.width or control.rectangle.height) - thumb_size
+
+                data.value = ugui.internal.clamp(current_pos / track_length, 0, 1)
+            else
+                data.drag_offset = nil
+            end
         end
 
         data.signal_change = ugui.internal.process_signal_changes(data.signal_change, control.value ~= data.value)
@@ -2708,7 +3355,7 @@ ugui.registry.scrollbar = {
         local data = ugui.internal.control_data[control.uid]
         local is_horizontal = control.rectangle.width > control.rectangle.height
 
-        ---@type Rectangle
+        ---@type UguiRect
         local thumb_rectangle
 
         if is_horizontal then
@@ -2873,45 +3520,40 @@ ugui.registry.listbox = {
         end
 
         if can_mouse_scroll then
-            if ugui.internal.is_mouse_wheel_up() then
-                data.scroll_y = data.scroll_y - one_item_scroll_y
-            end
-            if ugui.internal.is_mouse_wheel_down() then
-                data.scroll_y = data.scroll_y + one_item_scroll_y
-            end
+            data.scroll_y = data.scroll_y - ugui.internal.environment._scroll_delta.y * one_item_scroll_y
         end
 
         if ugui.internal.keyboard_captured_control == control.uid then
             for _, e in ipairs(ugui.internal.environment.key_events) do
-                if not e.keycode or not e.pressed then
+                if not e.keycode2 or not e.pressed then
                     goto continue
                 end
 
-                if e.keycode == Mupen.VKeycodes.VK_UP and data.selected_index ~= nil then
+                if e.keycode2 == Mupen.keycode.SDLK_UP and data.selected_index ~= nil then
                     data.selected_index = ugui.internal.clamp(data.selected_index - 1, 1, #control.items)
                     scroll_selected_index_into_view()
                 end
-                if e.keycode == Mupen.VKeycodes.VK_DOWN and data.selected_index ~= nil then
+                if e.keycode2 == Mupen.keycode.SDLK_DOWN and data.selected_index ~= nil then
                     data.selected_index = ugui.internal.clamp(data.selected_index + 1, 1, #control.items)
                     scroll_selected_index_into_view()
                 end
-                if e.keycode == Mupen.VKeycodes.VK_C and e.ctrl and data.selected_index ~= nil then
+                if e.keycode2 == Mupen.keycode.SDLK_C and e.ctrl and data.selected_index ~= nil then
                     local item = control.items[data.selected_index]
-                    clipboard.set("text", item)
+                    clipboard.set('text', item)
                 end
-                if e.keycode == Mupen.VKeycodes.VK_PRIOR and data.selected_index ~= nil then
+                if e.keycode2 == Mupen.keycode.SDLK_PAGEUP and data.selected_index ~= nil then
                     data.selected_index = data.selected_index - items_per_page
                     scroll_selected_index_into_view()
                 end
-                if e.keycode == Mupen.VKeycodes.VK_NEXT and data.selected_index ~= nil then
+                if e.keycode2 == Mupen.keycode.SDLK_PAGEDOWN and data.selected_index ~= nil then
                     data.selected_index = data.selected_index + items_per_page
                     scroll_selected_index_into_view()
                 end
-                if e.keycode == Mupen.VKeycodes.VK_HOME then
+                if e.keycode2 == Mupen.keycode.SDLK_HOME then
                     data.selected_index = 1
                     scroll_selected_index_into_view()
                 end
-                if e.keycode == Mupen.VKeycodes.VK_END then
+                if e.keycode2 == Mupen.keycode.SDLK_END then
                     data.selected_index = #control.items
                     scroll_selected_index_into_view()
                 end
@@ -3014,6 +3656,8 @@ end
 
 ---@class TextBox : Control
 ---@field public text string The text contained in the textbox.
+---@field public text_x_align Alignment? The text's horizontal alignment. Defaults to `alignment.start`.
+---@field public history_size integer? The maximum history size. Defaults to `64`.
 ---A textbox which can be edited.
 
 
@@ -3035,11 +3679,11 @@ local function surrounding_word_index(text, from)
         return 'punct'
     end
 
-    local initial_class = classify(text:sub(from, from))
-    local initial_class_lo = classify(text:sub(from - 1, from - 1))
+    local initial_class<const> = classify(text:sub(from, from))
+    local initial_class_lo<const> = classify(text:sub(from - 1, from - 1))
 
     for i = from - 1, 1, -1 do
-        local class = classify(text:sub(i, i))
+        local class<const> = classify(text:sub(i, i))
         if class ~= initial_class_lo then
             lo = i + 1
             break
@@ -3047,7 +3691,7 @@ local function surrounding_word_index(text, from)
     end
 
     for i = from, #text, 1 do
-        local class = classify(text:sub(i, i))
+        local class<const> = classify(text:sub(i, i))
         if class ~= initial_class then
             hi = i
             break
@@ -3063,6 +3707,11 @@ ugui.registry.textbox = {
     ---@param control TextBox
     validate = function(control)
         ugui.internal.assert(type(control.text) == 'string', 'expected text to be string')
+        ugui.internal.assert(type(control.text_x_align) == 'number' or control.text_x_align == nil,
+            'expected text_x_align to be number or nil')
+        ugui.internal.assert(control.history_size == nil or
+            (type(control.history_size) == 'number' and control.history_size >= 0 and control.history_size % 1 == 0),
+            'expected history_size to be a non-negative integer or nil')
     end,
     ---@param control TextBox
     setup = function(control, data)
@@ -3076,23 +3725,142 @@ ugui.registry.textbox = {
             data.selection_end = 1
         end
         if data.scroll_offset == nil then
-            data.scroll_offset = 0
+            data.scroll_offset = 1
         end
         if data.last_changed_anchor == nil then
             data.last_changed_anchor = 'caret'
+        end
+        if data.caret_blink_start == nil then
+            data.caret_blink_start = os.clock()
+        end
+        if data.undo_stack == nil then
+            data.undo_stack = {}
+        end
+        if data.redo_stack == nil then
+            data.redo_stack = {}
         end
     end,
     ---@param control TextBox
     ---@return ControlReturnValue
     logic = function(control, data)
         data.text = control.text
+        local previous_caret_index<const> = data.caret_index
 
-        local index_at_mouse = ugui.internal.get_caret_index(data.text, data.scroll_offset, ugui.internal.environment.mouse_position.x - control.rectangle.x)
+        local padding_x<const> = ugui.standard_styler.params.textbox.padding.x
+        local visible_width<const> = math.max(0, control.rectangle.width - padding_x * 2)
+        local scroll_width<const> = math.max(0, visible_width - 1) -- Leave room for the caret stroke.
+        local font_name<const> = ugui.standard_styler.params.font_name
+        local font_size<const> = ugui.standard_styler.params.font_size
+        local clicked<const> = ugui.internal.clicked_control == control.uid
+        local double_clicked<const> = ugui.internal.doubleclicked_control == control.uid
+        local triple_clicked<const> = ugui.internal.tripleclicked_control == control.uid
+        local mouse_position<const> = ugui.internal.environment.mouse_position
+        local mouse_down_position<const> = ugui.internal.mouse_down_position
+        local mouse_moved_since_press<const> = mouse_position.x ~= mouse_down_position.x or
+            mouse_position.y ~= mouse_down_position.y
+        local dragging<const> = ugui.internal.mouse_captured_control == control.uid and mouse_moved_since_press and
+            data.selection_mode ~= 'all' and not clicked and not triple_clicked
+        local scroll_target = data.caret_index
+        if data.last_changed_anchor == 'selection_start' then
+            scroll_target = data.selection_start
+        elseif data.last_changed_anchor == 'selection_end' then
+            scroll_target = data.selection_end
+        end
+        local scroll_state = data.scroll_state
+        local scroll_dirty<const> = not scroll_state or scroll_state.text ~= data.text or
+            scroll_state.width ~= scroll_width or scroll_state.font_name ~= font_name or
+            scroll_state.font_size ~= font_size or scroll_state.target ~= scroll_target or
+            scroll_state.offset ~= data.scroll_offset
+        local keyboard_input<const> = ugui.internal.keyboard_captured_control == control.uid and
+            #ugui.internal.environment.key_events > 0
 
-        -- If the control was just clicked, start a new selection or create/extend one with shift held.
-        if ugui.internal.clicked_control == control.uid then
+        -- Idle frames need no text shaping, measurement, or mouse hit-testing.
+        if not scroll_dirty and not clicked and not double_clicked and not triple_clicked and
+            not dragging and not keyboard_input then
+            data.next_drag_scroll_time = nil
+            data.signal_change = ugui.internal.process_signal_changes(data.signal_change, false)
+            return {
+                primary = data.text,
+                meta = {signal_change = data.signal_change},
+            }
+        end
+
+        local text_style<const> = {
+            family = ugui.standard_styler.params.font_name,
+            size = ugui.standard_styler.params.font_size,
+        }
+        local function width_from_offset(offset, target_index)
+            if target_index <= offset then
+                return 0
+            end
+            local position<const> = painter.hittest_text_index(data.text:sub(offset), target_index - offset + 1,
+                text_style, {wrap = 'none', clip = false})
+            return position.x
+        end
+
+        data.scroll_offset = ugui.internal.clamp(data.scroll_offset, 1, #data.text + 1)
+
+        local outside_left<const> = mouse_position.x < control.rectangle.x
+        local outside_right<const> = mouse_position.x > control.rectangle.x + control.rectangle.width
+        if dragging and (outside_left or outside_right) then
+            local now<const> = os.clock()
+            if now >= (data.next_drag_scroll_time or 0) then
+                local distance<const> = outside_left and (control.rectangle.x - mouse_position.x) or
+                    (mouse_position.x - control.rectangle.x - control.rectangle.width)
+                local step<const> = math.min(10, 1 + math.floor(distance / math.max(1, text_style.size)))
+                if outside_left then
+                    data.scroll_offset = math.max(1, data.scroll_offset - step)
+                elseif width_from_offset(data.scroll_offset, #data.text + 1) > scroll_width then
+                    data.scroll_offset = math.min(#data.text + 1, data.scroll_offset + step)
+                end
+                data.next_drag_scroll_time = now + 0.05
+            end
+        else
+            data.next_drag_scroll_time = nil
+        end
+
+        local index_at_mouse
+        if not triple_clicked and (clicked or double_clicked or dragging) then
+            local text_x_align<const> = control.text_x_align or ugui.alignment.start
+            local text_x_align_offset = 0
+            if data.scroll_offset == 1 and text_x_align ~= ugui.alignment.start then
+                local text_width<const> = painter.measure_text(data.text, text_style).w
+                if text_width < visible_width then
+                    if text_x_align == ugui.alignment.center then
+                        text_x_align_offset = (visible_width - text_width) / 2
+                    elseif text_x_align == ugui.alignment['end'] then
+                        text_x_align_offset = visible_width - text_width
+                    end
+                end
+            end
+            local mouse_x = mouse_position.x
+            if dragging then
+                mouse_x = ugui.internal.clamp(mouse_x, control.rectangle.x + padding_x,
+                    control.rectangle.x + padding_x + visible_width)
+            end
+            index_at_mouse = ugui.internal.get_caret_index(data.text, data.scroll_offset,
+                mouse_x - control.rectangle.x - text_x_align_offset)
+        end
+
+        if triple_clicked then
+            data.selection_mode = 'all'
+            data.selection_start = 1
+            data.selection_end = #data.text + 1
+            data.caret_index = data.selection_end
+            data.last_changed_anchor = 'selection_end'
+        elseif double_clicked then
+            local word_start<const>, word_end<const> = surrounding_word_index(data.text, index_at_mouse)
+            data.selection_mode = 'word'
+            data.selection_word_start = word_start
+            data.selection_word_end = word_end
+            data.selection_start = word_start
+            data.selection_end = word_end
+            data.caret_index = word_end
+            data.last_changed_anchor = 'selection_end'
+        elseif clicked then
+            data.selection_mode = 'character'
             if ugui.internal.environment.shift then
-                local anchor = (data.caret_index == data.selection_end) and data.selection_start or data.selection_end
+                local anchor<const> = (data.caret_index == data.selection_end) and data.selection_start or data.selection_end
                 data.selection_start = anchor
                 data.selection_end = index_at_mouse
                 data.caret_index = index_at_mouse
@@ -3106,153 +3874,222 @@ ugui.registry.textbox = {
         end
 
         -- If we're dragging the control, extend the existing selection.
-        if ugui.internal.mouse_captured_control == control.uid then
-            data.selection_end = index_at_mouse
+        if dragging then
+            if data.selection_mode == 'word' then
+                if index_at_mouse < data.selection_word_start then
+                    local word_start<const> = surrounding_word_index(data.text, index_at_mouse + 1)
+                    data.selection_start = data.selection_word_end
+                    data.selection_end = word_start
+                elseif index_at_mouse > data.selection_word_end then
+                    local _, word_end<const> = surrounding_word_index(data.text, index_at_mouse)
+                    data.selection_start = data.selection_word_start
+                    data.selection_end = word_end
+                else
+                    data.selection_start = data.selection_word_start
+                    data.selection_end = data.selection_word_end
+                end
+                data.caret_index = data.selection_end
+            else
+                data.selection_end = index_at_mouse
+            end
             data.last_changed_anchor = 'selection_end'
         end
 
         -- If we're capturing the keyboard, we process all the key presses.
         if ugui.internal.keyboard_captured_control == control.uid then
             for _, e in ipairs(ugui.internal.environment.key_events) do
-                local has_selection = data.selection_start ~= data.selection_end
-                if e.keycode and e.pressed then
-                    local lower_selection = math.min(data.selection_start, data.selection_end)
-                    local higher_selection = math.max(data.selection_start, data.selection_end)
-                    local anchor = has_selection
-                        and ((data.caret_index == data.selection_end) and data.selection_start or data.selection_end)
-                        or data.caret_index
+                local before_edit<const> = {
+                    text = data.text,
+                    caret_index = data.caret_index,
+                    selection_start = data.selection_start,
+                    selection_end = data.selection_end,
+                }
+                local is_undo<const> = e.keycode2 == Mupen.keycode.SDLK_Z and e.ctrl and not e.shift
+                local is_redo<const> = e.keycode2 == Mupen.keycode.SDLK_Y and e.ctrl or
+                    e.keycode2 == Mupen.keycode.SDLK_Z and e.ctrl and e.shift
 
-                    if e.keycode == Mupen.VKeycodes.VK_BACK then
-                        if e.ctrl then
-                            -- Ctrl+Backspace with a selection is REALLY weird and unintuitive, but this is what EDIT does:
-                            -- 1. collapse selection to lower bound 2. delete backwards word from there (we already have that so we just fall through to it)
-                            if has_selection then
-                                data.caret_index = lower_selection
-                                data.selection_start = lower_selection
-                                data.selection_end = lower_selection
-                                data.last_changed_anchor = 'caret'
-                            end
+                if e.keycode2 and e.pressed and is_undo then
+                    if #data.undo_stack > 0 then
+                        table.insert(data.redo_stack, before_edit)
+                        local previous<const> = table.remove(data.undo_stack)
+                        data.text = previous.text
+                        data.caret_index = previous.caret_index
+                        data.selection_start = previous.selection_start
+                        data.selection_end = previous.selection_end
+                        data.last_changed_anchor = 'caret'
+                    end
+                elseif e.keycode2 and e.pressed and is_redo then
+                    if #data.redo_stack > 0 then
+                        table.insert(data.undo_stack, before_edit)
+                        local next_state<const> = table.remove(data.redo_stack)
+                        data.text = next_state.text
+                        data.caret_index = next_state.caret_index
+                        data.selection_start = next_state.selection_start
+                        data.selection_end = next_state.selection_end
+                        data.last_changed_anchor = 'caret'
+                    end
+                else
+                    local has_selection<const> = data.selection_start ~= data.selection_end
+                    if e.keycode2 and e.pressed then
+                        local lower_selection<const> = math.min(data.selection_start, data.selection_end)
+                        local higher_selection<const> = math.max(data.selection_start, data.selection_end)
+                        local anchor<const> = has_selection
+                            and ((data.caret_index == data.selection_end) and data.selection_start or data.selection_end)
+                            or data.caret_index
 
-                            local prev_word, _ = surrounding_word_index(data.text, data.caret_index)
-                            data.text = ugui.internal.remove_range(data.text, prev_word, data.caret_index)
-                            data.caret_index = prev_word
-                            data.selection_start = prev_word
-                            data.selection_end = prev_word
-                            data.last_changed_anchor = 'caret'
-                        else
-                            if has_selection then
-                                data.text = ugui.internal.remove_range(data.text, lower_selection, higher_selection)
-
-                                data.caret_index = lower_selection
-                                data.selection_start = lower_selection
-                                data.selection_end = lower_selection
-                                data.last_changed_anchor = 'caret'
-                            else
-                                local delete_index = data.caret_index - 1
-                                data.text = ugui.internal.remove_at(data.text, delete_index)
-                                data.caret_index = delete_index
-                                data.last_changed_anchor = 'caret'
-                            end
-                        end
-                    elseif e.keycode == Mupen.VKeycodes.VK_LEFT then
-                        if e.ctrl then
-                            if e.shift then
-                                local prev_word, _ = surrounding_word_index(data.text, data.caret_index)
-                                data.caret_index = prev_word
-                                data.selection_start = math.min(anchor, prev_word)
-                                data.selection_end = math.max(anchor, prev_word)
-                                data.last_changed_anchor = 'caret'
-                            else
-                                local prev_word, _ = surrounding_word_index(data.text, lower_selection)
-                                data.selection_start = prev_word
-                                data.selection_end = prev_word
-                                data.caret_index = prev_word
-                                data.last_changed_anchor = 'caret'
-                            end
-                        else
-                            if e.shift then
-                                local prev_index = data.caret_index - 1
-                                data.caret_index = prev_index
-                                data.selection_start = math.min(anchor, prev_index)
-                                data.selection_end = math.max(anchor, prev_index)
-                                data.last_changed_anchor = 'caret'
-                            else
+                        if e.keycode2 == Mupen.keycode.SDLK_BACKSPACE then
+                            if e.ctrl then
+                                -- Ctrl+Backspace with a selection is REALLY weird and unintuitive, but this is what EDIT does:
+                                -- 1. collapse selection to lower bound 2. delete backwards word from there (we already have that so we just fall through to it)
                                 if has_selection then
+                                    data.caret_index = lower_selection
                                     data.selection_start = lower_selection
                                     data.selection_end = lower_selection
-                                    data.caret_index = lower_selection
-                                    data.last_changed_anchor = 'caret'
-                                else
-                                    data.caret_index = data.caret_index - 1
                                     data.last_changed_anchor = 'caret'
                                 end
-                            end
-                        end
-                    elseif e.keycode == Mupen.VKeycodes.VK_RIGHT then
-                        if e.ctrl then
-                            if e.shift then
-                                local _, next_word = surrounding_word_index(data.text, data.caret_index)
-                                data.caret_index = next_word
-                                data.selection_start = math.min(anchor, next_word)
-                                data.selection_end = math.max(anchor, next_word)
-                                data.last_changed_anchor = 'caret'
-                            else
-                                local _, next_word = surrounding_word_index(data.text, higher_selection)
-                                data.selection_start = next_word
-                                data.selection_end = next_word
-                                data.caret_index = next_word
-                                data.last_changed_anchor = 'caret'
-                            end
-                        else
-                            if e.shift then
-                                local next_index = data.caret_index + 1
-                                data.caret_index = next_index
-                                data.selection_start = math.min(anchor, next_index)
-                                data.selection_end = math.max(anchor, next_index)
+
+                                local prev_word<const>, _ = surrounding_word_index(data.text, data.caret_index)
+                                data.text = ugui.internal.remove_range(data.text, prev_word, data.caret_index)
+                                data.caret_index = prev_word
+                                data.selection_start = prev_word
+                                data.selection_end = prev_word
                                 data.last_changed_anchor = 'caret'
                             else
                                 if has_selection then
-                                    data.selection_start = higher_selection
-                                    data.selection_end = higher_selection
-                                    data.caret_index = higher_selection
+                                    data.text = ugui.internal.remove_range(data.text, lower_selection, higher_selection)
+
+                                    data.caret_index = lower_selection
+                                    data.selection_start = lower_selection
+                                    data.selection_end = lower_selection
                                     data.last_changed_anchor = 'caret'
                                 else
-                                    data.caret_index = data.caret_index + 1
+                                    local delete_index<const> = data.caret_index - 1
+                                    data.text = ugui.internal.remove_at(data.text, delete_index)
+                                    data.caret_index = delete_index
                                     data.last_changed_anchor = 'caret'
                                 end
                             end
+                        elseif e.keycode2 == Mupen.keycode.SDLK_DELETE then
+                            if has_selection then
+                                data.text = ugui.internal.remove_range(data.text, lower_selection, higher_selection)
+                                data.caret_index = lower_selection
+                                data.selection_start = lower_selection
+                                data.selection_end = lower_selection
+                            else
+                                data.text = ugui.internal.remove_at(data.text, data.caret_index)
+                                data.selection_start = data.caret_index
+                                data.selection_end = data.caret_index
+                            end
+                            data.last_changed_anchor = 'caret'
+                        elseif e.keycode2 == Mupen.keycode.SDLK_LEFT then
+                            if e.ctrl then
+                                if e.shift then
+                                    local prev_word<const>, _ = surrounding_word_index(data.text, data.caret_index)
+                                    data.caret_index = prev_word
+                                    data.selection_start = math.min(anchor, prev_word)
+                                    data.selection_end = math.max(anchor, prev_word)
+                                    data.last_changed_anchor = 'caret'
+                                else
+                                    local prev_word<const>, _ = surrounding_word_index(data.text, lower_selection)
+                                    data.selection_start = prev_word
+                                    data.selection_end = prev_word
+                                    data.caret_index = prev_word
+                                    data.last_changed_anchor = 'caret'
+                                end
+                            else
+                                if e.shift then
+                                    local prev_index<const> = data.caret_index - 1
+                                    data.caret_index = prev_index
+                                    data.selection_start = math.min(anchor, prev_index)
+                                    data.selection_end = math.max(anchor, prev_index)
+                                    data.last_changed_anchor = 'caret'
+                                else
+                                    if has_selection then
+                                        data.selection_start = lower_selection
+                                        data.selection_end = lower_selection
+                                        data.caret_index = lower_selection
+                                        data.last_changed_anchor = 'caret'
+                                    else
+                                        data.caret_index = data.caret_index - 1
+                                        data.last_changed_anchor = 'caret'
+                                    end
+                                end
+                            end
+                        elseif e.keycode2 == Mupen.keycode.SDLK_RIGHT then
+                            if e.ctrl then
+                                if e.shift then
+                                    local _, next_word<const> = surrounding_word_index(data.text, data.caret_index)
+                                    data.caret_index = next_word
+                                    data.selection_start = math.min(anchor, next_word)
+                                    data.selection_end = math.max(anchor, next_word)
+                                    data.last_changed_anchor = 'caret'
+                                else
+                                    local _, next_word<const> = surrounding_word_index(data.text, higher_selection)
+                                    data.selection_start = next_word
+                                    data.selection_end = next_word
+                                    data.caret_index = next_word
+                                    data.last_changed_anchor = 'caret'
+                                end
+                            else
+                                if e.shift then
+                                    local next_index<const> = data.caret_index + 1
+                                    data.caret_index = next_index
+                                    data.selection_start = math.min(anchor, next_index)
+                                    data.selection_end = math.max(anchor, next_index)
+                                    data.last_changed_anchor = 'caret'
+                                else
+                                    if has_selection then
+                                        data.selection_start = higher_selection
+                                        data.selection_end = higher_selection
+                                        data.caret_index = higher_selection
+                                        data.last_changed_anchor = 'caret'
+                                    else
+                                        data.caret_index = data.caret_index + 1
+                                        data.last_changed_anchor = 'caret'
+                                    end
+                                end
+                            end
+                        end
+
+                        if e.keycode2 == Mupen.keycode.SDLK_C and e.ctrl and has_selection then
+                            local selected_text<const> = data.text:sub(lower_selection, higher_selection - 1)
+                            clipboard.set('text', selected_text)
+                        end
+
+                        if e.keycode2 == Mupen.keycode.SDLK_A and e.ctrl then
+                            data.selection_start = 1
+                            data.selection_end = #data.text + 1
+                            data.caret_index = data.selection_end
+                            data.last_changed_anchor = 'selection_end'
                         end
                     end
 
-                    if e.keycode == Mupen.VKeycodes.VK_C and e.ctrl and has_selection then
-                        local selected_text = data.text:sub(lower_selection, higher_selection - 1)
-                        clipboard.set('text', selected_text)
-                    end
+                    if e.text then
+                        if has_selection then
+                            local lower_selection<const> = math.min(data.selection_start, data.selection_end)
+                            local higher_selection<const> = math.max(data.selection_start, data.selection_end)
 
-                    if e.keycode == Mupen.VKeycodes.VK_A and e.ctrl then
-                        data.selection_start = 1
-                        data.selection_end = #data.text + 1
-                        data.caret_index = data.selection_end
-                        data.last_changed_anchor = 'selection_end'
+                            data.text = ugui.internal.remove_range(data.text, lower_selection, higher_selection)
+
+                            data.caret_index = lower_selection
+                            data.selection_start = lower_selection
+                            data.selection_end = lower_selection
+
+                            data.last_changed_anchor = 'caret'
+                        end
+                        data.text = ugui.internal.insert_at(data.text, e.text, data.caret_index)
+                        data.caret_index = data.caret_index + #e.text
+                        data.last_changed_anchor = 'caret'
                     end
                 end
 
-                if e.text then
-                    if has_selection then
-                        local lower_selection = math.min(data.selection_start, data.selection_end)
-                        local higher_selection = math.max(data.selection_start, data.selection_end)
-
-                        data.text = ugui.internal.remove_range(data.text, lower_selection, higher_selection)
-
-                        data.caret_index = lower_selection
-                        data.selection_start = lower_selection
-                        data.selection_end = lower_selection
-
-                        data.last_changed_anchor = 'caret'
+                if not is_undo and not is_redo and data.text ~= before_edit.text then
+                    table.insert(data.undo_stack, before_edit)
+                    local history_size<const> = control.history_size or 64
+                    while #data.undo_stack > history_size do
+                        table.remove(data.undo_stack, 1)
                     end
-                    data.text = ugui.internal.insert_at(data.text, e.text, data.caret_index)
-                    data.caret_index = data.caret_index + #e.text
-                    data.last_changed_anchor = 'caret'
+                    data.redo_stack = {}
                 end
             end
         end
@@ -3262,47 +4099,39 @@ ugui.registry.textbox = {
         data.selection_start = ugui.internal.clamp(data.selection_start, 1, #data.text + 1)
         data.selection_end = ugui.internal.clamp(data.selection_end, 1, #data.text + 1)
 
-        local padding_x = ugui.standard_styler.params.textbox.padding.x
-        local visible_width = control.rectangle.width - padding_x
-
-        local function width_from_offset(offset, target_index)
-            if target_index <= offset then
-                return 0
-            end
-
-            local font_size = ugui.standard_styler.params.font_size
-            local font_name = ugui.standard_styler.params.font_name
-
-            local text_segment = data.text:sub(offset, target_index - 1)
-            return BreitbandGraphics.get_text_size(
-                text_segment,
-                font_size,
-                font_name
-            ).width
+        if data.caret_index ~= previous_caret_index then
+            data.caret_blink_start = os.clock()
         end
 
-        local scroll_target = data.caret_index
+        scroll_target = data.caret_index
         if data.last_changed_anchor == 'selection_start' then
             scroll_target = data.selection_start
         elseif data.last_changed_anchor == 'selection_end' then
             scroll_target = data.selection_end
         end
 
-        -- If the chosen target is off the right edge, advance scroll_offset until it fits.
-        local target_x = width_from_offset(data.scroll_offset, scroll_target)
-        if target_x > visible_width then
-            repeat
+        if scroll_dirty or scroll_state.text ~= data.text or scroll_state.target ~= scroll_target or
+            scroll_state.offset ~= data.scroll_offset then
+            data.scroll_offset = ugui.internal.clamp(data.scroll_offset, 1, scroll_target)
+            while data.scroll_offset < scroll_target and
+                width_from_offset(data.scroll_offset, scroll_target) > scroll_width do
                 data.scroll_offset = data.scroll_offset + 1
-                target_x = width_from_offset(data.scroll_offset, scroll_target)
-            until target_x <= visible_width or data.scroll_offset >= scroll_target
-        end
+            end
 
-        -- If the chosen target is off the left edge, snap scroll_offset to it.
-        if scroll_target < data.scroll_offset then
-            data.scroll_offset = scroll_target
-        end
+            while data.scroll_offset > 1 and
+                width_from_offset(data.scroll_offset - 1, #data.text + 1) <= scroll_width do
+                data.scroll_offset = data.scroll_offset - 1
+            end
 
-        data.scroll_offset = 1 -- This is too unstable, so it's disabled for now.
+            scroll_state = scroll_state or {}
+            scroll_state.text = data.text
+            scroll_state.width = scroll_width
+            scroll_state.font_name = font_name
+            scroll_state.font_size = font_size
+            scroll_state.target = scroll_target
+            scroll_state.offset = data.scroll_offset
+            data.scroll_state = scroll_state
+        end
 
         data.signal_change = ugui.internal.process_signal_changes(data.signal_change, control.text ~= data.text)
 
@@ -3321,7 +4150,7 @@ ugui.registry.textbox = {
 ---@param control TextBox The control table.
 ---@return string, Meta # The new text.
 ugui.textbox = function(control)
-    local result = ugui.control(control, 'textbox')
+    local result<const> = ugui.control(control, 'textbox')
     return result.primary, result.meta
 end
 
@@ -3537,7 +4366,7 @@ ugui.combobox = function(control)
             and ugui.internal.keyboard_captured_control <= highest_owned_uid
         then
             for _, e in ipairs(ugui.internal.environment.key_events) do
-                if e.keycode == Mupen.VKeycodes.VK_RETURN and e.pressed then
+                if e.keycode2 == Mupen.keycode.SDLK_RETURN and e.pressed then
                     enter_pressed = true
                     break
                 end
@@ -3584,7 +4413,7 @@ end
 --
 
 ---@class Joystick : Control
----@field public position Vector2 The joystick's position with the range 0-128 on both axes.
+---@field public position UguiVector2 The joystick's position with the range 0-128 on both axes.
 ---@field public mag number? The joystick's magnitude circle radius with the range `0-128`. If nil, no magnitude circle will be drawn.
 ---@field public x_snap integer? The snap distance to 0 on the X axis. If nil, no snap will be applied.
 ---@field public y_snap integer? The snap distance to 0 on the Y axis. If nil, no snap will be applied.
@@ -3646,7 +4475,7 @@ ugui.registry.joystick = {
 
 ---Places a Joystick.
 ---@param control Joystick The control table.
----@return Vector2, Meta
+---@return UguiVector2, Meta
 ugui.joystick = function(control)
     local result = ugui.control(control, 'joystick')
     return result.primary, result.meta
@@ -3790,7 +4619,7 @@ ugui.registry.menu = {
             data.dismissed = 2
         end
 
-        if ugui.internal.is_mouse_just_down() and not BreitbandGraphics.is_point_inside_rectangle(ugui.internal.mouse_down_position, control.rectangle) then
+        if ugui.internal.is_mouse_just_down() and not ugui.internal.point_in_rect(ugui.internal.mouse_down_position, control.rectangle) then
             data.dismissed = 1
         end
 
@@ -3839,10 +4668,9 @@ ugui.menu = function(control)
     -- We adjust the dimensions with what should fit the content
     local max_text_width = 0
     for _, item in pairs(control.items) do
-        local size = BreitbandGraphics.get_text_size(item.text, ugui.standard_styler.params.font_size,
-            ugui.standard_styler.params.font_name)
-        if size.width > max_text_width then
-            max_text_width = size.width
+        local size = painter.measure_text(item.text, { family = ugui.standard_styler.params.font_name, size = ugui.standard_styler.params.font_size})
+        if size.w > max_text_width then
+            max_text_width = size.w
         end
     end
 
@@ -3915,7 +4743,7 @@ end
 
 ---@class TabControlResult
 ---@field public selected_index integer The index of the selected tab.
----@field public rectangle Rectangle The visual bounds the selected tab can place its contents in.
+---@field public rectangle UguiRect The visual bounds the selected tab can place its contents in.
 
 local function tabcontrol_get_uids(control)
     ugui.internal.assert(control ~= nil, 'control is required')
@@ -4076,15 +4904,17 @@ ugui.registry.numberbox = {
             local text = string.format('%0' .. tostring(control.places) .. 'd', data.value)
 
             -- award for most painful basic geometry
-            local full_width = BreitbandGraphics.get_text_size(text,
-                font_size,
-                font_name).width
+            local full_width = painter.measure_text(text, {
+                family = font_name,
+                size = font_size,
+            }).w
 
             local positions = {}
             for i = 1, #text, 1 do
-                local width = BreitbandGraphics.get_text_size(text:sub(1, i),
-                    font_size,
-                    font_name).width
+                local width = painter.measure_text(text:sub(1, i), {
+                    family = font_name,
+                    size = font_size,
+                }).w
 
                 local left = control.rectangle.width / 2 - full_width / 2
                 positions[#positions + 1] = width + left
@@ -4111,22 +4941,22 @@ ugui.registry.numberbox = {
         if ugui.internal.keyboard_captured_control == control.uid then
             -- handle number key press
             for _, e in ipairs(ugui.internal.environment.key_events) do
-                if e.keycode and e.pressed then
-                    if e.keycode == Mupen.VKeycodes.VK_LEFT then
+                if e.keycode2 and e.pressed then
+                    if e.keycode2 == Mupen.keycode.SDLK_LEFT then
                         data.caret_index = data.caret_index - 1
                     end
-                    if e.keycode == Mupen.VKeycodes.VK_RIGHT then
+                    if e.keycode2 == Mupen.keycode.SDLK_RIGHT then
                         data.caret_index = data.caret_index + 1
                     end
-                    if e.keycode == Mupen.VKeycodes.VK_UP then
+                    if e.keycode2 == Mupen.keycode.SDLK_UP then
                         increment_digit(data.caret_index, 1)
                     end
-                    if e.keycode == Mupen.VKeycodes.VK_DOWN then
+                    if e.keycode2 == Mupen.keycode.SDLK_DOWN then
                         increment_digit(data.caret_index, -1)
                     end
-                    if e.keycode == Mupen.VKeycodes.VK_C and e.ctrl then
+                    if e.keycode2 == Mupen.keycode.SDLK_C and e.ctrl then
                         local digit = ugui.internal.get_digit(data.value, control.places, data.caret_index)
-                        clipboard.set("text", tostring(digit))
+                        clipboard.set('text', tostring(digit))
                     end
                 end
                 if e.text then
@@ -4151,11 +4981,8 @@ ugui.registry.numberbox = {
                 ::continue::
             end
 
-            if ugui.internal.is_mouse_wheel_up() then
-                increment_digit(data.caret_index, 1)
-            end
-            if ugui.internal.is_mouse_wheel_down() then
-                increment_digit(data.caret_index, -1)
+            if ugui.internal.environment._scroll_delta.y ~= 0 then
+                increment_digit(data.caret_index, ugui.internal.environment._scroll_delta.y)
             end
         end
 
@@ -4178,6 +5005,7 @@ ugui.registry.numberbox = {
         local font_size = ugui.standard_styler.params.font_size * ugui.standard_styler.params.numberbox.font_scale
         local font_name = ugui.standard_styler.params.monospace_font_name
         local text = string.format('%0' .. tostring(control.places) .. 'd', math.abs(control.value))
+        local p = ugui.internal.painter
 
         local visual_state = ugui.get_visual_state(control)
         if ugui.internal.keyboard_captured_control == control.uid then
@@ -4185,23 +5013,33 @@ ugui.registry.numberbox = {
         end
         ugui.standard_styler.draw_edit_frame(control, control.rectangle, visual_state)
 
-        BreitbandGraphics.draw_text2({
-            text = text,
-            rectangle = control.rectangle,
-            color = ugui.standard_styler.params.textbox.text[visual_state],
-            font_name = font_name,
-            font_size = font_size,
-            aliased = not ugui.standard_styler.params.cleartype,
-        })
+        local rectangle = ugui.internal.rect_to_painter_rect(control.rectangle)
+        local text_style = {
+            family = font_name,
+            size = font_size,
+            weight = 400,
+            slant = 'normal',
+            align_x = 'center',
+            align_y = 'center',
+            antialiased = ugui.standard_styler.params.cleartype,
+            overflow = 'visible',
+            clip = false,
+        }
 
-        local text_width_up_to_caret = BreitbandGraphics.get_text_size(
-            text:sub(1, data.caret_index - 1),
-            font_size,
-            font_name).width
+        p:begin_path()
+        p:text(text, rectangle, text_style)
+        local text_color = ugui.color_source_to_rgbaf(ugui.standard_styler.params.textbox.text[visual_state])
+        p:fill(ugui.internal.rgbaf_to_painter_color(text_color))
 
-        local full_width = BreitbandGraphics.get_text_size(text,
-            font_size,
-            font_name).width
+        local text_width_up_to_caret = painter.measure_text(text:sub(1, data.caret_index - 1), {
+            family = font_name,
+            size = font_size,
+        }).w
+
+        local full_width = painter.measure_text(text, {
+            family = font_name,
+            size = font_size,
+        }).w
 
         local left = control.rectangle.width / 2 - full_width / 2
 
@@ -4213,17 +5051,18 @@ ugui.registry.numberbox = {
         }
 
         if ugui.internal.keyboard_captured_control == control.uid then
-            BreitbandGraphics.fill_rectangle(selected_char_rect, ugui.standard_styler.params.numberbox.selection)
-            BreitbandGraphics.push_clip(selected_char_rect)
-            BreitbandGraphics.draw_text2({
-                text = text,
-                rectangle = control.rectangle,
-                color = BreitbandGraphics.invert_color(ugui.standard_styler.params.textbox.text[visual_state]),
-                font_name = font_name,
-                font_size = font_size,
-                aliased = not ugui.standard_styler.params.cleartype,
-            })
-            BreitbandGraphics.pop_clip()
+            p:begin_path()
+            p:rect(ugui.internal.rect_to_painter_rect(selected_char_rect))
+            local selection_color = ugui.color_source_to_rgbaf(ugui.standard_styler.params.numberbox.selection)
+            p:fill(ugui.internal.rgbaf_to_painter_color(selection_color))
+
+            p:save()
+            p:clip(ugui.internal.rect_to_painter_rect(selected_char_rect))
+            p:begin_path()
+            p:text(text, rectangle, text_style)
+            local inverted_text_color = ugui.invert_color(ugui.standard_styler.params.textbox.text[visual_state])
+            p:fill(ugui.internal.rgbaf_to_painter_color(inverted_text_color))
+            p:restore()
         end
     end,
 }
@@ -4383,14 +5222,11 @@ ugui.spinner = function(control)
     end
 
     if control.is_enabled ~= false
-        and (BreitbandGraphics.is_point_inside_rectangle(ugui.internal.environment.mouse_position, textbox_rect)
+        and (ugui.internal.point_in_rect(ugui.internal.environment.mouse_position, textbox_rect)
             or ugui.internal.mouse_captured_control == textbox_uid)
     then
-        if ugui.internal.is_mouse_wheel_up() then
-            value = clamp_value(value + increment)
-        end
-        if ugui.internal.is_mouse_wheel_down() then
-            value = clamp_value(value - increment)
+        if ugui.internal.environment._scroll_delta.y ~= 0 then
+            value = clamp_value(value + increment * ugui.internal.environment._scroll_delta.y)
         end
     end
 
@@ -4513,7 +5349,61 @@ local function scale_and_center(inner, outer, max_size, adjust_even_odd)
     }
 end
 
----@alias UguiNinesliceMetadataMap table<VisualState, { source: Rectangle, center: Rectangle }>
+local function _nineslice_fill_rectangle(rectangle, color)
+    local p = ugui.internal.painter
+    p:begin_path()
+    p:rect(ugui.internal.rect_to_painter_rect(rectangle))
+    p:fill(ugui.internal.color_source_to_painter_color(color))
+end
+
+
+local function _nineslice_draw_image(path, destination, source, center, sampling, color, round_rectangles)
+    if round_rectangles then
+        destination = {
+            x = math.floor(destination.x),
+            y = math.floor(destination.y),
+            width = math.ceil(destination.width),
+            height = math.ceil(destination.height),
+        }
+        source = {
+            x = math.floor(source.x),
+            y = math.floor(source.y),
+            width = math.ceil(source.width),
+            height = math.ceil(source.height),
+        }
+    end
+
+    local options = {
+        source = {
+            x = source.x,
+            y = source.y,
+            w = source.width,
+            h = source.height,
+        },
+        sampling = sampling,
+    }
+    if center then
+        options.center = {
+            x = center.x,
+            y = center.y,
+            w = center.width,
+            h = center.height,
+        }
+    end
+    if color then
+        local painter_color = ugui.internal.color_source_to_painter_color(color)
+        options.tint = {r = painter_color.r, g = painter_color.g, b = painter_color.b, a = 1}
+        options.opacity = painter_color.a
+    end
+
+    ugui.internal.painter:image(
+        ugui.internal.image_from_path(path),
+        ugui.internal.rect_to_painter_rect(destination),
+        options
+    )
+end
+
+---@alias UguiNinesliceMetadataMap table<VisualState, { source: UguiRect, center: UguiRect }>
 
 ---@class UguiNinesliceMetadata
 ---@field states UguiNinesliceMetadataMap Per-visual state nineslice metadata.
@@ -4521,12 +5411,12 @@ end
 ---Styling information for nineslice graphics.
 ---@class UguiNinesliceStyle
 ---@field path string The path to the nineslice atlas.
----@field icons table<string, table<VisualState, Rectangle>> Map of icon keys to their corresponding per-visual state source rects into the atlas.
+---@field icons table<string, table<VisualState, UguiRect>> Map of icon keys to their corresponding per-visual state source rects into the atlas.
 ---@field button UguiNinesliceMetadata Per-visual state nineslice metadata for raised frame graphics.
 ---@field textbox UguiNinesliceMetadata Per-visual state nineslice metadata for edit frame graphics.
 ---@field listbox UguiNinesliceMetadata Per-visual state nineslice metadata for list frame graphics.
 ---@field listbox_item UguiNinesliceMetadata Per-visual state nineslice metadata for list item graphics.
----@field scrollbar_rail Rectangle The source rectangle for the scrollbar rail.
+---@field scrollbar_rail UguiRect The source rectangle for the scrollbar rail.
 ---@field scrollbar_thumb UguiNinesliceMetadata Per-visual state nineslice metadata for scrollbar thumb graphics.
 
 ---Overrides the default `standard_styler` draw functions with nineslice-supporting ones.
@@ -4536,7 +5426,7 @@ ugui.apply_nineslice = function(style)
     ugui.free()
 
     local function draw_icon_placeholder(rectangle)
-        BreitbandGraphics.fill_rectangle(rectangle, BreitbandGraphics.colors.red)
+        _nineslice_fill_rectangle(rectangle, '#FF0000')
     end
 
     local original_draw_icon = ugui.standard_styler.draw_icon
@@ -4556,41 +5446,24 @@ ugui.apply_nineslice = function(style)
 
         local adjusted_rect = scale_and_center(rect, rectangle, ugui.standard_styler.params.icon_size, true)
         local source = rectangles[visual_state]
-        BreitbandGraphics.draw_image2({
-            path = style.path,
-            destx1 = adjusted_rect.x,
-            desty1 = adjusted_rect.y,
-            destx2 = adjusted_rect.x + adjusted_rect.width,
-            desty2 = adjusted_rect.y + adjusted_rect.height,
-            srcx1 = source.x,
-            srcy1 = source.y,
-            srcx2 = source.x + source.width,
-            srcy2 = source.y + source.height,
-            color = ugui.standard_styler.params.color_filter,
-            interpolation = 1,
-        })
+        _nineslice_draw_image(style.path, adjusted_rect, source, nil, 'linear',
+            ugui.standard_styler.params.color_filter, false)
     end
 
     ugui.standard_styler.draw_raised_frame = function(control, visual_state)
-        BreitbandGraphics.draw_image_nineslice(control.rectangle,
-            style.button.states[visual_state].source,
-            style.button.states[visual_state].center,
-            style.path, ugui.standard_styler.params.color_filter, 'nearest')
+        _nineslice_draw_image(style.path, control.rectangle, style.button.states[visual_state].source,
+            style.button.states[visual_state].center, 'nearest', ugui.standard_styler.params.color_filter, true)
     end
 
     ugui.standard_styler.draw_edit_frame = function(control, rectangle,
         visual_state)
-        BreitbandGraphics.draw_image_nineslice(rectangle,
-            style.textbox.states[visual_state].source,
-            style.textbox.states[visual_state].center,
-            style.path, ugui.standard_styler.params.color_filter, 'nearest')
+        _nineslice_draw_image(style.path, rectangle, style.textbox.states[visual_state].source,
+            style.textbox.states[visual_state].center, 'nearest', ugui.standard_styler.params.color_filter, true)
     end
 
     ugui.standard_styler.draw_list_frame = function(rectangle, visual_state)
-        BreitbandGraphics.draw_image_nineslice(rectangle,
-            style.listbox.states[visual_state].source,
-            style.listbox.states[visual_state].center,
-            style.path, ugui.standard_styler.params.color_filter, 'nearest')
+        _nineslice_draw_image(style.path, rectangle, style.listbox.states[visual_state].source,
+            style.listbox.states[visual_state].center, 'nearest', ugui.standard_styler.params.color_filter, true)
     end
 
     ugui.standard_styler.draw_list_item = function(control, item, rectangle, visual_state)
@@ -4598,12 +5471,10 @@ ugui.apply_nineslice = function(style)
             return
         end
 
-        local rect = BreitbandGraphics.inflate_rectangle(rectangle, -1)
+        local rect = ugui.internal.inflate_rect(rectangle, -1)
 
-        BreitbandGraphics.draw_image_nineslice(rect,
-            style.listbox_item.states[visual_state].source,
-            style.listbox_item.states[visual_state].center,
-            style.path, ugui.standard_styler.params.color_filter, 'nearest')
+        _nineslice_draw_image(style.path, rect, style.listbox_item.states[visual_state].source,
+            style.listbox_item.states[visual_state].center, 'nearest', ugui.standard_styler.params.color_filter, true)
 
         local text_rect = {
             x = rectangle.x + 2,
@@ -4612,30 +5483,17 @@ ugui.apply_nineslice = function(style)
             height = rectangle.height,
         }
 
-        ugui.standard_styler.draw_rich_text(text_rect, BreitbandGraphics.alignment.start, nil, item,
+        ugui.standard_styler.draw_rich_text(text_rect, ugui.alignment.start, nil, item,
             ugui.standard_styler.params.listbox_item.text[visual_state], visual_state, control.plaintext)
     end
 
     ugui.standard_styler.draw_scrollbar = function(control, thumb_rectangle)
         local visual_state = ugui.get_visual_state(control)
 
-        BreitbandGraphics.draw_image2({
-            path = style.path,
-            destx1 = control.rectangle.x,
-            desty1 = control.rectangle.y,
-            destx2 = control.rectangle.x + control.rectangle.width,
-            desty2 = control.rectangle.y + control.rectangle.height,
-            srcx1 = style.scrollbar_rail.x,
-            srcy1 = style.scrollbar_rail.y,
-            srcx2 = style.scrollbar_rail.x + style.scrollbar_rail.width,
-            srcy2 = style.scrollbar_rail.y + style.scrollbar_rail.height,
-            interpolation = 0,
-        })
+        _nineslice_draw_image(style.path, control.rectangle, style.scrollbar_rail, nil, 'nearest', nil, false)
 
-        BreitbandGraphics.draw_image_nineslice(thumb_rectangle,
-            style.scrollbar_thumb.states[visual_state].source,
-            style.scrollbar_thumb.states[visual_state].center,
-            style.path, ugui.standard_styler.params.color_filter, 'nearest')
+        _nineslice_draw_image(style.path, thumb_rectangle, style.scrollbar_thumb.states[visual_state].source,
+            style.scrollbar_thumb.states[visual_state].center, 'nearest', ugui.standard_styler.params.color_filter, true)
     end
 end
 

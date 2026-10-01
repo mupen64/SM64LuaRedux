@@ -25,7 +25,7 @@ MiniVisualizer.draw = function()
         return
     end
     ugui.standard_styler.draw_raised_frame({
-        rectangle = grid_rect_abs(3, 14, 5, 2),
+        rectangle = Drawing.map_rect(grid_rect_abs(3, 14, 5, 2)),
     }, ugui.visual_states.normal)
     
     ugui.joystick({
@@ -74,29 +74,29 @@ MiniVisualizer.draw = function()
         rectangle = grid_rect_abs(3, 15, 5, 1),
         text = VarWatch_compute_value('action').value,
         color = foreground_color,
-        font_size = theme.font_size * Drawing.scale,
+        font_size = theme.font_size,
         font_name = 'Consolas',
-        align_x = BreitbandGraphics.alignment.center,
-        align_y = BreitbandGraphics.alignment.center,
+        align_x = ugui.alignment.center,
+        align_y = ugui.alignment.center,
     })
     ugui.label({
         uid = UID.JoystickX,
         rectangle = grid_rect_abs(3, 14, 2.5, 1),
         text = 'X: ' .. Joypad.input.X,
         color = foreground_color,
-        font_size = theme.font_size * Drawing.scale * 1.25,
+        font_size = theme.font_size * 1.25,
         font_name = 'Consolas',
-        align_x = BreitbandGraphics.alignment.center,
-        align_y = BreitbandGraphics.alignment.center,
+        align_x = ugui.alignment.center,
+        align_y = ugui.alignment.center,
     })
     ugui.label({
         uid = UID.JoystickY,
         rectangle = grid_rect_abs(5.5, 14, 2.5, 1),
         text = 'Y: ' .. Joypad.input.Y,
         color = foreground_color,
-        font_size = theme.font_size * Drawing.scale * 1.25,
+        font_size = theme.font_size * 1.25,
         font_name = 'Consolas',
-        align_x = BreitbandGraphics.alignment.center,
-        align_y = BreitbandGraphics.alignment.center,
+        align_x = ugui.alignment.center,
+        align_y = ugui.alignment.center,
     })
 end

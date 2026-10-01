@@ -388,10 +388,10 @@ local function atan_controls(draw, sheet, new_values, top)
             rectangle = grid_rect(x, top + 1, width, 0.5),
             text = text .. tostring(table[field]),
             color = foreground_color,
-            font_size = theme.font_size * Drawing.scale,
+            font_size = theme.font_size,
             font_name = 'Consolas',
-            align_x = BreitbandGraphics.alignment.center,
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment.center,
+            align_y = ugui.alignment.center,
             fit = true
         })
 
