@@ -150,7 +150,7 @@ local function draw_setting_item(item, y, label_uid)
             rectangle = grid_rect(0, y, control_x, control_height),
             text = item.text(),
             color = foreground_color,
-            font_size = theme.font_size * Drawing.scale * 1.1,
+            font_size = theme.font_size * 1.1,
             font_name = theme.font_name,
             align_x = BreitbandGraphics.alignment.start,
             align_y = BreitbandGraphics.alignment.center,
@@ -174,7 +174,7 @@ local function draw_group(group, y)
         rectangle = grid_rect(1.1, y, 6.4, 1),
         text = group.text(),
         color = foreground_color,
-        font_size = theme.font_size * Drawing.scale * 1.1,
+        font_size = theme.font_size * 1.1,
         font_name = theme.font_name,
         align_x = BreitbandGraphics.alignment.start,
         align_y = BreitbandGraphics.alignment.center,
@@ -211,7 +211,7 @@ local varwatch_items = {
         row_height = 9.25,
         text = function() return '' end,
         func = function(rect)
-            local row = Settings.grid_size * Drawing.scale
+            local row = Settings.grid_size
             local list_rectangle = {
                 x = rect.x,
                 y = rect.y,
@@ -403,10 +403,10 @@ return {
         if Settings.navbar_visible then
             scrollbar_rectangle.height = grid_rect(0, 16, 0, 0).y - scrollbar_rectangle.y
         else
-            scrollbar_rectangle.height = Drawing.size.height - scrollbar_rectangle.y
+            scrollbar_rectangle.height = ugui.internal.environment.window_size.y - scrollbar_rectangle.y
         end
         local content_rectangle = grid_rect(0, 0, 7.5, VIEWPORT_HEIGHT)
-        local cell_height = Settings.grid_size * Drawing.scale
+        local cell_height = Settings.grid_size
         local max_scroll = math.max(0, (content_height - VIEWPORT_HEIGHT) * cell_height)
 
         if can_scroll() then
@@ -418,7 +418,7 @@ return {
             end
         end
 
-        BreitbandGraphics.push_clip(content_rectangle)
+        BreitbandGraphics.push_clip(Drawing.map_rect(content_rectangle))
         Drawing.push_offset(0, -Settings.settings_scroll_offset)
         draw_groups()
         Drawing.pop_offset()
@@ -454,7 +454,10 @@ return {
 
             -- HACK: Obscure the controls under the navbar too... :P
             defer_draw(function()
-                BreitbandGraphics.fill_rectangle(grid_rect(0, 16.85, 8, 30), Styles.theme().background_color)
+                BreitbandGraphics.fill_rectangle(
+                    Drawing.map_rect(grid_rect(0, 16.85, 8, 30)),
+                    Styles.theme().background_color
+                )
             end)
         end
     end,
