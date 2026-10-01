@@ -55,7 +55,7 @@ return {
             local y = ugui.internal.environment.window_size.y - 50
 
             BreitbandGraphics.fill_rectangle(
-                { x = x, y = y, width = size.width, height = size.height },
+                Drawing.map_rect({ x = x, y = y, width = size.width, height = size.height }),
                 theme.background_color)
 
             ugui.label({

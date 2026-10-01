@@ -81,6 +81,22 @@ function Drawing.pop_offset()
     table.remove(Drawing.offset_stack, #Drawing.offset_stack)
 end
 
+function Drawing.map_rect(rectangle)
+    return {
+        x = rectangle.x * Drawing.scale,
+        y = rectangle.y * Drawing.scale,
+        width = rectangle.width * Drawing.scale,
+        height = rectangle.height * Drawing.scale,
+    }
+end
+
+function Drawing.map_point(point)
+    return {
+        x = point.x * Drawing.scale,
+        y = point.y * Drawing.scale,
+    }
+end
+
 ---Draws a setting item list.
 ---@param items { text: fun(): string, func: fun(rect: Rectangle) }[] An array of setting items with their names and control spawning functions.
 ---@param pos Vector2 The initial position of the settings list in grid coordinates.

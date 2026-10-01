@@ -75,6 +75,7 @@ local BUTTON_COLORS <const> = {
 
 --#endregion
 
+
 --#region logic
 
 local scroll_offset = 0
@@ -127,7 +128,7 @@ end
 
 local function draw_headers(sheet, draw, button_draw_data)
     local background_color = interpolate_vectors_to_int(draw.background_color, { r = 127, g = 127, b = 127 }, 0.25)
-    BreitbandGraphics.fill_rectangle(grid_rect(0, ROW0, COL_BUTTONS_END, ROW2 - ROW0, 0), background_color)
+    BreitbandGraphics.fill_rectangle(Drawing.map_rect(grid_rect(0, ROW0, COL_BUTTONS_END, ROW2 - ROW0, 0)), background_color)
 
     draw:text(grid_rect(3, ROW0, 1, 0.5), 'start', Locales.str('SEMANTIC_WORKFLOW_INPUTLIST_NAME'))
     sheet.name = ugui.textbox({
@@ -194,7 +195,7 @@ local function draw_color_codes(baseline, scrollbar_rect, num_display_sections)
             i = i + 1
         end
         BreitbandGraphics.fill_rectangle(
-            { x = rect.x, y = rect.y, width = rect.width * amount, height = rect.height },
+            Drawing.map_rect({ x = rect.x, y = rect.y, width = rect.width * amount, height = rect.height }),
             BUTTON_COLORS[color_index].background
         )
         color_index = color_index + 1
@@ -215,8 +216,8 @@ end
 
 local placing = 0
 local function handle_scroll_and_buttons(section_rect, button_draw_data, num_rows)
-    local mouse_x = ugui_environment.mouse_position.x
-    local relative_y = ugui_environment.mouse_position.y - section_rect.y
+    local mouse_x = ugui.internal.environment.mouse_position.x
+    local relative_y = ugui.internal.environment.mouse_position.y - section_rect.y
     local in_range = mouse_x >= section_rect.x and mouse_x <= section_rect.x + section_rect.width and relative_y >= 0
     local unscrolled_hover_index = math.ceil(relative_y / section_rect.height)
     local hovering_index = unscrolled_hover_index + scroll_offset
@@ -310,7 +311,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
 
         if row_count > MAX_DISPLAYED_SECTIONS + scroll_offset then
             local extra_sections = #sheet.sections - section_index
-            BreitbandGraphics.fill_rectangle(span(0, COL_BUTTONS_END), '#8A948A42')
+            BreitbandGraphics.fill_rectangle(Drawing.map_rect(span(0, COL_BUTTONS_END)), '#8A948A42')
             draw:text(span(COL_ARRANGEMENT_END, COL_BUTTONS_END), 'start', '+ ' .. extra_sections .. ' sections')
             return true
         end
@@ -318,7 +319,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
         local uid_base = UID.Row(row_count - scroll_offset)
         if not input then
             -- section header
-            BreitbandGraphics.fill_rectangle(span(0, COL_BUTTONS_END), Drawing.IsLightMode() and '#BABABA' or '#5F5F5F')
+            BreitbandGraphics.fill_rectangle(Drawing.map_rect(span(0, COL_BUTTONS_END)), Drawing.IsLightMode() and '#BABABA' or '#5F5F5F')
 
             section.collapsed = not ugui.toggle_button({
                 uid = uid_base + 0,
@@ -393,7 +394,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
             })
         else
             -- input
-            BreitbandGraphics.fill_rectangle(section_rect, { r = shade, g = shade, b = shade * blue_multiplier, a = 66 })
+            BreitbandGraphics.fill_rectangle(Drawing.map_rect(section_rect), { r = shade, g = shade, b = shade * blue_multiplier, a = 66 })
 
             local tas_state = input.tas_state
 
@@ -466,7 +467,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
                 styler_mixin = mixin,
             })
 
-            if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, joystick_box) then
+            if BreitbandGraphics.is_point_inside_rectangle(ugui.internal.environment.mouse_position, joystick_box) then
                 if ugui.internal.is_mouse_just_down() and not G_KEYS['control'] then
                     for _, section in pairs(sheet.sections) do
                         for _, input in pairs(section.inputs) do
@@ -489,7 +490,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
                     tas_state.strain_left and '<' or (tas_state.strain_right and '>' or '-'))
             end
 
-            if BreitbandGraphics.is_point_inside_rectangle(ugui_environment.mouse_position, active_input_box) then
+            if BreitbandGraphics.is_point_inside_rectangle(ugui.internal.environment.mouse_position, active_input_box) then
                 if ugui.internal.is_mouse_just_down() then
                     if __impl.special_select_handler then
                         __impl.special_select_handler({ section_index = section_index, input_index = input_index })
@@ -511,9 +512,9 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
             for button_index, v in ipairs(BUTTONS) do
                 rect.x = button_draw_data[button_index].x + unit * (BUTTON_COLUMN_WIDTH - BUTTON_SIZE) * 0.5
                 if input.joy[v.input] then
-                    BreitbandGraphics.fill_ellipse(rect, BUTTON_COLORS[button_draw_data[button_index].color_index].button)
+                    BreitbandGraphics.fill_ellipse(Drawing.map_rect(rect), BUTTON_COLORS[button_draw_data[button_index].color_index].button)
                 end
-                BreitbandGraphics.draw_ellipse(rect, input.joy[v.input] and '#000000FF' or '#00000050', 1)
+                BreitbandGraphics.draw_ellipse(Drawing.map_rect(rect), input.joy[v.input] and '#000000FF' or '#00000050', 1)
             end
 
             local active = sheet.active_input
@@ -521,19 +522,19 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
                 and section.inputs[active.input_index]
                 and section.inputs[active.input_index].loop
                 and section.inputs[active.input_index].loop.jump_target == input_index then
-                BreitbandGraphics.draw_rectangle(section_rect, '#FF8000FF', 2)
+                BreitbandGraphics.draw_rectangle(Drawing.map_rect(section_rect), '#FF8000FF', 2)
             end
 
             if input.loop then
-                BreitbandGraphics.draw_rectangle(section_rect, '#0064FFFF', 2)
+                BreitbandGraphics.draw_rectangle(Drawing.map_rect(section_rect), '#0064FFFF', 2)
             end
 
             if section_index == sheet.preview_input.section_index and sheet.preview_input.input_index == input_index then
-                BreitbandGraphics.draw_rectangle(section_rect, '#FF0000FF', 1)
+                BreitbandGraphics.draw_rectangle(Drawing.map_rect(section_rect), '#FF0000FF', 1)
             end
 
             if section_index == sheet.active_input.section_index and sheet.active_input.input_index == input_index then
-                BreitbandGraphics.draw_rectangle(section_rect, '#64FF64FF', 1)
+                BreitbandGraphics.draw_rectangle(Drawing.map_rect(section_rect), '#64FF64FF', 1)
             end
         end
 

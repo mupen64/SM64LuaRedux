@@ -25,7 +25,7 @@ MiniVisualizer.draw = function()
         return
     end
     ugui.standard_styler.draw_raised_frame({
-        rectangle = grid_rect_abs(3, 14, 5, 2),
+        rectangle = Drawing.map_rect(grid_rect_abs(3, 14, 5, 2)),
     }, ugui.visual_states.normal)
     
     ugui.joystick({
