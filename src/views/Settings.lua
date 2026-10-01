@@ -40,7 +40,7 @@ local UID = UIDProvider.allocate_once('SettingsV5', function(enum_next)
     }
 end)
 
-local VIEWPORT_HEIGHT = 15
+local VIEWPORT_HEIGHT = 16
 local content_height = VIEWPORT_HEIGHT
 
 local visual_items = {
