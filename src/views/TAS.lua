@@ -187,10 +187,10 @@ return {
                     rectangle = grid_rect(x, 3, width, 0.5),
                     text = text,
                     color = foreground_color,
-                    font_size = theme.font_size * Drawing.scale,
+                    font_size = theme.font_size,
                     font_name = 'Consolas',
-                    align_x = BreitbandGraphics.alignment.center,
-                    align_y = BreitbandGraphics.alignment.center,
+                    align_x = ugui.alignment.center,
+                    align_y = ugui.alignment.center,
                     fit = true
                 })
 
@@ -297,10 +297,10 @@ return {
             rectangle = grid_rect(4, YORG, 2, 1),
             text = 'X: ' .. stick_x,
             color = foreground_color,
-            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_size = theme.font_size * 1.25,
             font_name = 'Consolas',
-            align_x = BreitbandGraphics.alignment.center,
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment.center,
+            align_y = ugui.alignment.center,
         })
 
         ugui.label({
@@ -308,10 +308,10 @@ return {
             rectangle = grid_rect(6, YORG, 2, 1),
             text = 'Y: ' .. stick_y,
             color = foreground_color,
-            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_size = theme.font_size * 1.25,
             font_name = 'Consolas',
-            align_x = BreitbandGraphics.alignment.center,
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment.center,
+            align_y = ugui.alignment.center,
         })
 
         ugui.label({
@@ -319,10 +319,10 @@ return {
             rectangle = grid_rect(4, YORG + 1, 4, 1),
             text = 'Mag: ' .. Formatter.u(Engine.get_magnitude_for_stick(stick_x, stick_y), 2),
             color = foreground_color,
-            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_size = theme.font_size * 1.25,
             font_name = 'Consolas',
-            align_x = BreitbandGraphics.alignment.center,
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment.center,
+            align_y = ugui.alignment.center,
         })
 
         Settings.tas.goal_mag = math.abs(ugui.numberbox({
@@ -339,7 +339,7 @@ return {
                 text = Locales.str('MAG_RESET'),
                 tooltip = Locales.str('TAS_MAG_RESET_TOOLTIP'),
                 styler_mixin = {
-                    font_size = theme.font_size * Drawing.scale * 0.9,
+                    font_size = theme.font_size * 0.9,
                 },
             }) then
             action.invoke(ACTION_RESET_MAGNITUDE)

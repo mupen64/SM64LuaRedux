@@ -48,10 +48,10 @@ return {
             rectangle = grid_rect(0, RNG_ROW - 1, 8, 1),
             text = Locales.str('TOOLS_RNG'),
             color = foreground_color,
-            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_size = theme.font_size * 1.25,
             font_name = theme.font_name,
-            align_x = BreitbandGraphics.alignment['start'],
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment['start'],
+            align_y = ugui.alignment.center,
         })
 
         Settings.override_rng = ugui.toggle_button({
@@ -84,10 +84,10 @@ return {
             rectangle = grid_rect(0, DUMPING_ROW - 1, 8, 1),
             text = Locales.str('TOOLS_DUMPING'),
             color = foreground_color,
-            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_size = theme.font_size * 1.25,
             font_name = theme.font_name,
-            align_x = BreitbandGraphics.alignment['start'],
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment['start'],
+            align_y = ugui.alignment.center,
         })
 
         local previous_dump_enabled = Settings.dump_enabled
@@ -113,10 +113,10 @@ return {
             rectangle = grid_rect(0, GHOST_ROW - 1, 8, 1),
             text = Locales.str('TOOLS_GHOST'),
             color = foreground_color,
-            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_size = theme.font_size * 1.25,
             font_name = theme.font_name,
-            align_x = BreitbandGraphics.alignment['start'],
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment['start'],
+            align_y = ugui.alignment.center,
         })
 
         Ghost.object_address = tonumber(ugui.textbox({
@@ -152,10 +152,10 @@ return {
             rectangle = grid_rect(0, TRACKERS_ROW - 1, 8, 1),
             text = Locales.str('TOOLS_TRACKERS'),
             color = foreground_color,
-            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_size = theme.font_size * 1.25,
             font_name = theme.font_name,
-            align_x = BreitbandGraphics.alignment['start'],
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment['start'],
+            align_y = ugui.alignment.center,
         })
 
         local track_moved_distance, meta = ugui.toggle_button({
@@ -203,10 +203,10 @@ return {
             rectangle = grid_rect(0, OVERLAYS_ROW - 1, 8, 1),
             text = Locales.str('TOOLS_OVERLAYS'),
             color = foreground_color,
-            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_size = theme.font_size * 1.25,
             font_name = theme.font_name,
-            align_x = BreitbandGraphics.alignment['start'],
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment['start'],
+            align_y = ugui.alignment.center,
         })
 
         Settings.worldviz_enabled = ugui.toggle_button({
@@ -229,10 +229,10 @@ return {
             rectangle = grid_rect(0, AUTOMATION_ROW - 1, 8, 1),
             text = Locales.str('TOOLS_AUTOMATION'),
             color = foreground_color,
-            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_size = theme.font_size * 1.25,
             font_name = theme.font_name,
-            align_x = BreitbandGraphics.alignment['start'],
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment['start'],
+            align_y = ugui.alignment.center,
         })
 
         local _, meta = ugui.toggle_button({

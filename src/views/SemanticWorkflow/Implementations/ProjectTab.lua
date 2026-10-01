@@ -49,10 +49,10 @@ local function create_confirm_dialog(prompt, on_confirmed)
             rectangle = grid_rect(0, top - 8, 8, 8),
             text = prompt,
             color = theme.button.text[1],
-            font_size = theme.font_size * 1.2 * Drawing.scale,
+            font_size = theme.font_size * 1.2,
             font_name = theme.font_name,
-            align_x = BreitbandGraphics.alignment.center,
-            align_y = BreitbandGraphics.alignment['end'],
+            align_x = ugui.alignment.center,
+            align_y = ugui.alignment['end'],
         })
 
         if ugui.button({
@@ -108,10 +108,10 @@ function __impl.render(draw)
             rectangle = grid_rect(0, 0, 8, 16),
             text = Locales.str('SEMANTIC_WORKFLOW_PROJECT_NO_SHEETS_AVAILABLE'),
             color = theme.button.text[1],
-            font_size = theme.font_size * 1.2 * Drawing.scale,
+            font_size = theme.font_size * 1.2,
             font_name = theme.font_name,
-            align_x = BreitbandGraphics.alignment.center,
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment.center,
+            align_y = ugui.alignment.center,
         })
     end
 

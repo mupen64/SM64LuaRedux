@@ -58,24 +58,16 @@ function grid(x, y, x_span, y_span, abs, gap)
         y_span = 1
     end
 
-    local baseline_x = abs and 0 or Drawing.initial_size.width
-
-    local base_x = baseline_x + (Settings.grid_size * x)
-    local base_y = (Settings.grid_size * y)
+    local baseline_x = abs and 0 or Drawing.initial_size.width / Drawing.scale
 
     local rect = {
-        base_x + gap,
-        base_y + gap,
+        baseline_x + (Settings.grid_size * x) + gap,
+        (Settings.grid_size * y) + gap,
         (Settings.grid_size * x_span) - gap * 2,
         (Settings.grid_size * y_span) - gap * 2,
     }
 
-    rect[1] = (baseline_x + (Settings.grid_size * x * Drawing.scale)) + gap
-    rect[2] = rect[2] * Drawing.scale
-    rect[3] = rect[3] * Drawing.scale
-    rect[4] = rect[4] * Drawing.scale
-
-    return adjust_raw_rect({ math.floor(rect[1]), math.floor(rect[2]), math.floor(rect[3]), math.floor(rect[4]) })
+    return adjust_raw_rect({ rect[1], rect[2], rect[3], rect[4] })
 end
 
 function Drawing.push_offset(x, y)
@@ -89,9 +81,25 @@ function Drawing.pop_offset()
     table.remove(Drawing.offset_stack, #Drawing.offset_stack)
 end
 
+function Drawing.map_rect(rectangle)
+    return {
+        x = rectangle.x * Drawing.scale,
+        y = rectangle.y * Drawing.scale,
+        width = rectangle.width * Drawing.scale,
+        height = rectangle.height * Drawing.scale,
+    }
+end
+
+function Drawing.map_point(point)
+    return {
+        x = point.x * Drawing.scale,
+        y = point.y * Drawing.scale,
+    }
+end
+
 ---Draws a setting item list.
----@param items { text: fun(): string, func: fun(rect: Rectangle) }[] An array of setting items with their names and control spawning functions.
----@param pos Vector2 The initial position of the settings list in grid coordinates.
+---@param items { text: fun(): string, func: fun(rect: UguiRect) }[] An array of setting items with their names and control spawning functions.
+---@param pos UguiVector2 The initial position of the settings list in grid coordinates.
 function Drawing.setting_list(items, pos)
     local theme = Styles.theme()
     local foreground_color = Drawing.foreground_color()
@@ -105,10 +113,10 @@ function Drawing.setting_list(items, pos)
             rectangle = grid_rect(pos.x, y, 8, 0.5),
             text = item.text(),
             color = foreground_color,
-            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_size = theme.font_size * 1.25,
             font_name = theme.font_name,
-            align_x = BreitbandGraphics.alignment['start'],
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment['start'],
+            align_y = ugui.alignment.center,
         })
 
         item.func(grid_rect(pos.x, y + 0.6, 4, 1))
@@ -126,10 +134,10 @@ function Drawing.is_light_color(background_color)
 end
 
 ---@param background_color ColorSource The background color, in any form BreitbandGraphics accepts.
----@return Color
+---@return UguiRGBA8
 function Drawing.foreground_color_for(background_color)
-    return Drawing.is_light_color(background_color) and BreitbandGraphics.hex_to_color('#000000') or
-        BreitbandGraphics.hex_to_color('#FFFFFF')
+    local foreground_color = Drawing.is_light_color(background_color) and '#000000' or '#FFFFFF'
+    return ugui.color_source_to_rgba8(foreground_color)
 end
 
 function Drawing.IsLightMode()

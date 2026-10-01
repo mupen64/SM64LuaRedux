@@ -79,7 +79,7 @@ local processors = {
 Notifications = dofile(views_path .. 'Notifications.lua')
 
 ugui_environment = {}
-local mouse_wheel = 0
+local stored_mouse_events = {}
 
 -- Flag keeping track of whether atinput has fired for one time
 local first_input = true
@@ -286,7 +286,7 @@ local function atdrawd2d()
             x = keys.xmouse,
             y = keys.ymouse,
         },
-        wheel = mouse_wheel,
+        mouse_events = stored_mouse_events,
         is_primary_down = keys.leftclick and focused,
         key_events = key_events,
         shift = keys.shift,
@@ -294,10 +294,9 @@ local function atdrawd2d()
             x = Drawing.size.width,
             y = Drawing.size.height - 23,
         },
+        scale = Drawing.scale,
     }
     ugui.begin_frame(ugui_environment)
-
-    mouse_wheel = 0
 
     WorldVisualizer.draw()
     MiniVisualizer.draw()
@@ -321,6 +320,7 @@ local function atdrawd2d()
 
     is_keyboard_captured = get_is_keyboard_captured()
     ugui.end_frame()
+    stored_mouse_events = {}
     key_events = {}
 
     execute_defer_queue()
@@ -343,16 +343,8 @@ emu.atstop(function()
     BreitbandGraphics.free()
     ugui.free()
 end)
-emu.atwindowmessage(function(hwnd, msg_id, wparam, lparam)
-    if msg_id == 522 then                         -- WM_MOUSEWHEEL
-        -- high word (most significant 16 bits) is scroll rotation in multiples of WHEEL_DELTA (120)
-        local scroll = math.floor(wparam / 65536) --(wparam & 0xFFFF0000) >> 16
-        if scroll == 120 then
-            mouse_wheel = 1
-        elseif scroll == 65416 then -- 65536 - 120
-            mouse_wheel = -1
-        end
-    end
+emu.atmouse(function(args)
+    stored_mouse_events[#stored_mouse_events + 1] = args
 end)
 
 emu.atkey(function(args)
