@@ -169,18 +169,44 @@ end
 local function draw_group(group, y)
     local theme = Styles.theme()
     local foreground_color = Drawing.foreground_color()
+    local label_text = group.text()
+    local label_font_size = theme.font_size * 1.1
+    local label_rectangle = grid_rect(1.1, y, 6.4, 1)
 
     ugui.label({
         uid = group.label_uid,
-        rectangle = grid_rect(1.1, y, 6.4, 1),
-        text = group.text(),
+        rectangle = label_rectangle,
+        text = label_text,
         color = foreground_color,
-        font_size = theme.font_size * 1.1,
+        font_size = label_font_size,
         font_name = theme.font_name,
-        align_x = BreitbandGraphics.alignment.start,
-        align_y = BreitbandGraphics.alignment.center,
+        align_x = ugui.alignment.start,
+        align_y = ugui.alignment.center,
         styler_mixin = { is_bold = true },
     })
+
+    local label_width = painter.measure_text(label_text, {
+        family = theme.font_name,
+        size = label_font_size,
+    }).w
+    local separator_x = label_rectangle.x + label_width + Settings.grid_gap * 2
+    local separator_end_x = label_rectangle.x + label_rectangle.width
+    if separator_x < separator_end_x then
+        local separator_y = label_rectangle.y + label_rectangle.height / 2
+        local from = Drawing.map_point({ x = separator_x, y = separator_y })
+        local to = Drawing.map_point({ x = separator_end_x, y = separator_y })
+        local separator_color = {
+            r = foreground_color.r / 255,
+            g = foreground_color.g / 255,
+            b = foreground_color.b / 255,
+            a = 0.3,
+        }
+
+        local p = painter.current()
+        p:begin_path()
+        p:line(from.x, from.y, to.x, to.y)
+        p:stroke(separator_color, { width = 1 })
+    end
 
     local expanded = Settings[group.expanded_setting]
     local new_expanded = ugui.toggle_button({
