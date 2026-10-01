@@ -223,11 +223,10 @@ local function handle_scroll_and_buttons(section_rect, button_draw_data, num_row
     local hovering_index = unscrolled_hover_index + scroll_offset
     local any_change = false
     in_range = in_range and unscrolled_hover_index <= MAX_DISPLAYED_SECTIONS
-    update_scroll(in_range and ugui_environment.wheel or 0, num_rows)
+    update_scroll(in_range and ugui.internal.environment._scroll_delta.y or 0, num_rows)
     if in_range then
         -- act as if the mouse wheel was not moved in order to prevent other controls from scrolling on accident
-        ugui_environment.wheel = 0
-        ugui.internal.environment.wheel = 0
+        ugui.internal.environment._scroll_delta.y = 0
     end
 
     if not button_draw_data then return end
