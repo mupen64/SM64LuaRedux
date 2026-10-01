@@ -76,8 +76,8 @@ MiniVisualizer.draw = function()
         color = foreground_color,
         font_size = theme.font_size,
         font_name = 'Consolas',
-        align_x = BreitbandGraphics.alignment.center,
-        align_y = BreitbandGraphics.alignment.center,
+        align_x = ugui.alignment.center,
+        align_y = ugui.alignment.center,
     })
     ugui.label({
         uid = UID.JoystickX,
@@ -86,8 +86,8 @@ MiniVisualizer.draw = function()
         color = foreground_color,
         font_size = theme.font_size * 1.25,
         font_name = 'Consolas',
-        align_x = BreitbandGraphics.alignment.center,
-        align_y = BreitbandGraphics.alignment.center,
+        align_x = ugui.alignment.center,
+        align_y = ugui.alignment.center,
     })
     ugui.label({
         uid = UID.JoystickY,
@@ -96,7 +96,7 @@ MiniVisualizer.draw = function()
         color = foreground_color,
         font_size = theme.font_size * 1.25,
         font_name = 'Consolas',
-        align_x = BreitbandGraphics.alignment.center,
-        align_y = BreitbandGraphics.alignment.center,
+        align_x = ugui.alignment.center,
+        align_y = ugui.alignment.center,
     })
 end

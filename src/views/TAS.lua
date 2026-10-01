@@ -189,8 +189,8 @@ return {
                     color = foreground_color,
                     font_size = theme.font_size,
                     font_name = 'Consolas',
-                    align_x = BreitbandGraphics.alignment.center,
-                    align_y = BreitbandGraphics.alignment.center,
+                    align_x = ugui.alignment.center,
+                    align_y = ugui.alignment.center,
                     fit = true
                 })
 
@@ -299,8 +299,8 @@ return {
             color = foreground_color,
             font_size = theme.font_size * 1.25,
             font_name = 'Consolas',
-            align_x = BreitbandGraphics.alignment.center,
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment.center,
+            align_y = ugui.alignment.center,
         })
 
         ugui.label({
@@ -310,8 +310,8 @@ return {
             color = foreground_color,
             font_size = theme.font_size * 1.25,
             font_name = 'Consolas',
-            align_x = BreitbandGraphics.alignment.center,
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment.center,
+            align_y = ugui.alignment.center,
         })
 
         ugui.label({
@@ -321,8 +321,8 @@ return {
             color = foreground_color,
             font_size = theme.font_size * 1.25,
             font_name = 'Consolas',
-            align_x = BreitbandGraphics.alignment.center,
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment.center,
+            align_y = ugui.alignment.center,
         })
 
         Settings.tas.goal_mag = math.abs(ugui.numberbox({

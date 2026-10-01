@@ -37,8 +37,8 @@ return {
                 color = foreground_color,
                 font_size = theme.font_size * 1.2,
                 font_name = theme.font_name,
-                align_x = BreitbandGraphics.alignment.start,
-                align_y = BreitbandGraphics.alignment.start,
+                align_x = ugui.alignment.start,
+                align_y = ugui.alignment.start,
             })
             ugui.label({
                 uid = UID.HelpPageHeading,
@@ -47,8 +47,8 @@ return {
                 color = foreground_color,
                 font_size = theme.font_size * 2,
                 font_name = theme.font_name,
-                align_x = BreitbandGraphics.alignment.start,
-                align_y = BreitbandGraphics.alignment.start,
+                align_x = ugui.alignment.start,
+                align_y = ugui.alignment.start,
             })
             ugui.label({
                 uid = UID.HelpPageText,
@@ -57,8 +57,8 @@ return {
                 color = foreground_color,
                 font_size = theme.font_size,
                 font_name = theme.font_name,
-                align_x = BreitbandGraphics.alignment.start,
-                align_y = BreitbandGraphics.alignment.start,
+                align_x = ugui.alignment.start,
+                align_y = ugui.alignment.start,
             })
 
             if ugui.button(

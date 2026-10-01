@@ -90,7 +90,7 @@ return {
                 color = text_color,
                 font_size = FONT_SMALL,
                 font_name = ugui.standard_styler.params.monospace_font_name,
-                align_x = BreitbandGraphics.alignment.start,
+                align_x = ugui.alignment.start,
             })
         end
 
@@ -130,7 +130,7 @@ return {
                 color = text_color,
                 font_size = size,
                 font_name = ugui.standard_styler.params.monospace_font_name,
-                align_x = BreitbandGraphics.alignment.start,
+                align_x = ugui.alignment.start,
             })
 
             ugui.label({
@@ -145,7 +145,7 @@ return {
                 color = text_color,
                 font_size = size,
                 font_name = ugui.standard_styler.params.monospace_font_name,
-                align_x = BreitbandGraphics.alignment['end'],
+                align_x = ugui.alignment['end'],
             })
             y = y + size + ENTRY_GAP
             return uid + 2

@@ -98,8 +98,8 @@ function Drawing.map_point(point)
 end
 
 ---Draws a setting item list.
----@param items { text: fun(): string, func: fun(rect: Rectangle) }[] An array of setting items with their names and control spawning functions.
----@param pos Vector2 The initial position of the settings list in grid coordinates.
+---@param items { text: fun(): string, func: fun(rect: UguiRect) }[] An array of setting items with their names and control spawning functions.
+---@param pos UguiVector2 The initial position of the settings list in grid coordinates.
 function Drawing.setting_list(items, pos)
     local theme = Styles.theme()
     local foreground_color = Drawing.foreground_color()
@@ -115,8 +115,8 @@ function Drawing.setting_list(items, pos)
             color = foreground_color,
             font_size = theme.font_size * 1.25,
             font_name = theme.font_name,
-            align_x = BreitbandGraphics.alignment['start'],
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment['start'],
+            align_y = ugui.alignment.center,
         })
 
         item.func(grid_rect(pos.x, y + 0.6, 4, 1))
@@ -134,10 +134,10 @@ function Drawing.is_light_color(background_color)
 end
 
 ---@param background_color ColorSource The background color, in any form BreitbandGraphics accepts.
----@return Color
+---@return UguiRGBA8
 function Drawing.foreground_color_for(background_color)
-    return Drawing.is_light_color(background_color) and BreitbandGraphics.hex_to_color('#000000') or
-        BreitbandGraphics.hex_to_color('#FFFFFF')
+    local foreground_color = Drawing.is_light_color(background_color) and '#000000' or '#FFFFFF'
+    return ugui.color_source_to_rgba8(foreground_color)
 end
 
 function Drawing.IsLightMode()

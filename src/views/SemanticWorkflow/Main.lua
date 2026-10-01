@@ -127,8 +127,8 @@ local function draw_factory(theme)
                 color = self.foreground_color,
                 font_size = self.font_size,
                 font_name = 'Consolas',
-                align_x = BreitbandGraphics.alignment[horizontal_alignment],
-                align_y = BreitbandGraphics.alignment.center,
+                align_x = ugui.alignment[horizontal_alignment],
+                align_y = ugui.alignment.center,
             })
         end,
 
@@ -140,8 +140,8 @@ local function draw_factory(theme)
                 color = self.foreground_color,
                 font_size = self.font_size * 0.75,
                 font_name = 'Consolas',
-                align_x = BreitbandGraphics.alignment[horizontal_alignment],
-                align_y = BreitbandGraphics.alignment.center,
+                align_x = ugui.alignment[horizontal_alignment],
+                align_y = ugui.alignment.center,
             })
         end,
     }

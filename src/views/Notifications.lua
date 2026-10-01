@@ -36,7 +36,7 @@ return {
         end
 
         local theme = Styles.theme()
-        local foreground_color = BreitbandGraphics.invert_color(theme.background_color)
+        local foreground_color = ugui.color_source_to_rgba8(ugui.invert_color(theme.background_color))
 
         local text_scale = 1.25
 
@@ -65,8 +65,8 @@ return {
                 color = foreground_color,
                 font_size = theme.font_size * text_scale,
                 font_name = theme.font_name,
-                align_x = BreitbandGraphics.alignment['start'],
-                align_y = BreitbandGraphics.alignment['start'],
+                align_x = ugui.alignment['start'],
+                align_y = ugui.alignment['start'],
             })
         end
 

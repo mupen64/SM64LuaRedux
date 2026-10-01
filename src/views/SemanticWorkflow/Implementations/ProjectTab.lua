@@ -51,8 +51,8 @@ local function create_confirm_dialog(prompt, on_confirmed)
             color = theme.button.text[1],
             font_size = theme.font_size * 1.2,
             font_name = theme.font_name,
-            align_x = BreitbandGraphics.alignment.center,
-            align_y = BreitbandGraphics.alignment['end'],
+            align_x = ugui.alignment.center,
+            align_y = ugui.alignment['end'],
         })
 
         if ugui.button({
@@ -110,8 +110,8 @@ function __impl.render(draw)
             color = theme.button.text[1],
             font_size = theme.font_size * 1.2,
             font_name = theme.font_name,
-            align_x = BreitbandGraphics.alignment.center,
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment.center,
+            align_y = ugui.alignment.center,
         })
     end
 
