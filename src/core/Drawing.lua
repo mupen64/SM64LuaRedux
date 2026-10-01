@@ -11,11 +11,7 @@ Drawing = {
     offset_stack = {},
 }
 
-local UID = UIDProvider.allocate_once('Drawing', function(enum_next)
-    return {
-        SettingListLabelBase = enum_next(UIDProvider.unknown),
-    }
-end)
+
 
 function Drawing.size_up()
     Drawing.initial_size = wgui.info()
@@ -107,6 +103,7 @@ function Drawing.setting_list(items, pos)
     local y = pos.y
     for i = 1, #items, 1 do
         local item = items[i]
+        ---@cast item { text: fun(): string, func: fun(rect: Rectangle) }
 
         ugui.label({
             uid = UID.SettingListLabelBase + i,
@@ -119,8 +116,8 @@ function Drawing.setting_list(items, pos)
             align_y = ugui.alignment.center,
         })
 
+        ---@diagnostic disable-next-line: undefined-field
         item.func(grid_rect(pos.x, y + 0.6, 4, 1))
-
         y = y + 1.75
     end
 end
