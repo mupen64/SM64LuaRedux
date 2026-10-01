@@ -36,6 +36,7 @@ local UID = UIDProvider.allocate_once('SettingsV5', function(enum_next)
         VarWatchGroupLabel = enum_next(ugui.registry.label.uids()),
         NavbarCoverLabel = enum_next(ugui.registry.label.uids()),
         VarWatchItemLabelBase = enum_next(UIDProvider.unknown),
+        HittestBlockHackPanel = enum_next(ugui.registry.panel.uids()),
     }
 end)
 
@@ -440,25 +441,15 @@ return {
 
         if Settings.navbar_visible then
             local cover_rectangle = grid_rect(0, 16, 8, 30)
+            cover_rectangle.x = cover_rectangle.x - 1
 
-            -- HACK: Block hittesting with a dummy label below the navbar because the controls scroll under it
-            defer_before_navbar(function()
-                ugui.label({
-                    uid = UID.NavbarCoverLabel,
-                    rectangle = cover_rectangle,
-                    text = '',
-                    color = BreitbandGraphics.colors.black,
-                    hittestable = true,
-                })
-            end)
-
-            -- HACK: Obscure the controls under the navbar too... :P
-            defer_draw(function()
-                BreitbandGraphics.fill_rectangle(
-                    Drawing.map_rect(grid_rect(0, 16.85, 8, 30)),
-                    Styles.theme().background_color
-                )
-            end)
+            -- HACK: Block hittesting with a dummy panel below the navbar because the controls scroll under it
+            ugui.panel({
+                uid = UID.HittestBlockHackPanel,
+                rectangle = cover_rectangle,
+                fill = Styles.theme().background_color,
+                hittestable = true
+            })
         end
     end,
 }
