@@ -14,7 +14,7 @@
 
 local BreitbandGraphics = {
     _VERSION = 'v2.0.1',
-    _URL = 'https://github.com/mupen64/ugui',
+    _URL = 'https://codeberg.org/mupen64/ugui',
     _DESCRIPTION = 'Powerful rendering abstraction layer',
     _LICENSE = 'GPL-3',
 }
@@ -452,115 +452,41 @@ BreitbandGraphics.draw_image_nineslice = function(destination_rectangle, source_
         width = math.ceil(source_rectangle.width),
         height = math.ceil(source_rectangle.height),
     }
-    local corner_size = {
-        x = math.abs(source_rectangle_center.x - source_rectangle.x),
-        y = math.abs(source_rectangle_center.y - source_rectangle.y),
+
+    local image = BreitbandGraphics.internal.image_from_path(path)
+    local options = {
+        source = {
+            x = source_rectangle.x,
+            y = source_rectangle.y,
+            w = source_rectangle.width,
+            h = source_rectangle.height,
+        },
+        center = {
+            x = source_rectangle_center.x,
+            y = source_rectangle_center.y,
+            w = source_rectangle_center.width,
+            h = source_rectangle_center.height,
+        },
+        sampling = filter == 'linear' and 'linear' or 'nearest',
     }
 
+    if color then
+        local painter_color = BreitbandGraphics.internal.color_source_to_painter_color(color)
+        options.tint = {
+            r = painter_color.r,
+            g = painter_color.g,
+            b = painter_color.b,
+            a = 1,
+        }
+        options.opacity = painter_color.a
+    end
 
-    local top_left = {
-        x = source_rectangle.x,
-        y = source_rectangle.y,
-        width = corner_size.x,
-        height = corner_size.y,
-    }
-    local bottom_left = {
-        x = source_rectangle.x,
-        y = source_rectangle_center.y + source_rectangle_center.height,
-        width = corner_size.x,
-        height = corner_size.y,
-    }
-    local left = {
-        x = source_rectangle.x,
-        y = source_rectangle_center.y,
-        width = corner_size.x,
-        height = source_rectangle.height - corner_size.y * 2,
-    }
-    local top_right = {
-        x = source_rectangle.x + source_rectangle.width - corner_size.x,
-        y = source_rectangle.y,
-        width = corner_size.x,
-        height = corner_size.y,
-    }
-    local bottom_right = {
-        x = source_rectangle.x + source_rectangle.width - corner_size.x,
-        y = source_rectangle_center.y + source_rectangle_center.height,
-        width = corner_size.x,
-        height = corner_size.y,
-    }
-    local top = {
-        x = source_rectangle_center.x,
-        y = source_rectangle.y,
-        width = source_rectangle.width - corner_size.x * 2,
-        height = corner_size.y,
-    }
-    local right = {
-        x = source_rectangle.x + source_rectangle.width - corner_size.x,
-        y = source_rectangle_center.y,
-        width = corner_size.x,
-        height = source_rectangle.height - corner_size.y * 2,
-    }
-    local bottom = {
-        x = source_rectangle_center.x,
-        y = source_rectangle.y + source_rectangle.height - corner_size.y,
-        width = source_rectangle.width - corner_size.x * 2,
-        height = corner_size.y,
-    }
-
-    BreitbandGraphics.draw_image({
+    painter.current():image(image, {
         x = destination_rectangle.x,
         y = destination_rectangle.y,
-        width = top_left.width,
-        height = top_left.height,
-    }, top_left, path, color, filter)
-    BreitbandGraphics.draw_image({
-        x = destination_rectangle.x + destination_rectangle.width - top_right.width,
-        y = destination_rectangle.y,
-        width = top_right.width,
-        height = top_right.height,
-    }, top_right, path, color, filter)
-    BreitbandGraphics.draw_image({
-        x = destination_rectangle.x,
-        y = destination_rectangle.y + destination_rectangle.height - bottom_left.height,
-        width = bottom_left.width,
-        height = bottom_left.height,
-    }, bottom_left, path, color, filter)
-    BreitbandGraphics.draw_image({
-        x = destination_rectangle.x + destination_rectangle.width - bottom_right.width,
-        y = destination_rectangle.y + destination_rectangle.height - bottom_right.height,
-        width = bottom_right.width,
-        height = bottom_right.height,
-    }, bottom_right, path, color, filter)
-    BreitbandGraphics.draw_image({
-        x = destination_rectangle.x + top_left.width,
-        y = destination_rectangle.y + top_left.height,
-        width = destination_rectangle.width - bottom_right.width * 2,
-        height = destination_rectangle.height - bottom_right.height * 2,
-    }, source_rectangle_center, path, color, filter)
-    BreitbandGraphics.draw_image({
-        x = destination_rectangle.x,
-        y = destination_rectangle.y + top_left.height,
-        width = left.width,
-        height = destination_rectangle.height - bottom_left.height * 2,
-    }, left, path, color, filter)
-    BreitbandGraphics.draw_image({
-        x = destination_rectangle.x + destination_rectangle.width - top_right.width,
-        y = destination_rectangle.y + top_right.height,
-        width = left.width,
-        height = destination_rectangle.height - bottom_right.height * 2,
-    }, right, path, color, filter)
-    BreitbandGraphics.draw_image({
-        x = destination_rectangle.x + top_left.width,
-        y = destination_rectangle.y,
-        width = destination_rectangle.width - top_right.width * 2,
-        height = top.height,
-    }, top, path, color, filter)
-    BreitbandGraphics.draw_image({
-        x = destination_rectangle.x + top_left.width,
-        y = destination_rectangle.y + destination_rectangle.height - bottom.height,
-        width = destination_rectangle.width - bottom_right.width * 2,
-        height = bottom.height,
-    }, bottom, path, color, filter)
+        w = destination_rectangle.width,
+        h = destination_rectangle.height,
+    }, options)
 end
 
 ---Computes the bounding box of a text string given a font size and font name.
