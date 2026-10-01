@@ -11,6 +11,7 @@ local UID = UIDProvider.allocate_once('TAS', function(enum_next)
         GoalMag = enum_next(ugui.registry.numberbox.uids()),
         HighMagnitude = enum_next(ugui.registry.toggle_button.uids()),
         ResetMag = enum_next(ugui.registry.button.uids()),
+        DustlessWalk = enum_next(ugui.registry.button.uids()),
         SpeedKick = enum_next(ugui.registry.button.uids()),
         D99Always = enum_next(ugui.registry.toggle_button.uids()),
         D99 = enum_next(ugui.registry.toggle_button.uids()),
@@ -334,7 +335,7 @@ return {
 
         if ugui.button({
                 uid = UID.ResetMag,
-                rectangle = grid_rect(4, YORG + 3, 4, 1),
+                rectangle = grid_rect(4, YORG + 3, 1.5, 1),
                 text = Locales.str('MAG_RESET'),
                 tooltip = Locales.str('TAS_MAG_RESET_TOOLTIP'),
                 styler_mixin = {
@@ -342,6 +343,16 @@ return {
                 },
             }) then
             action.invoke(ACTION_RESET_MAGNITUDE)
+        end
+
+        if ugui.button({
+                uid = UID.DustlessWalk,
+                rectangle = grid_rect(5.5, YORG + 3, 2.5, 1),
+                text = Locales.str('DUSTLESS_WALK'),
+                is_checked = Settings.tas.dustless_walk,
+                tooltip = Locales.str('TAS_DUSTLESS_WALK_TOOLTIP'),
+            }) then
+            action.invoke(ACTION_SET_DUSTLESS_WALK)
         end
 
         if ugui.button({
