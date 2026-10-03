@@ -70,7 +70,9 @@ Settings = {
     settings_interaction_expanded = true,
     settings_memory_expanded = true,
     settings_varwatch_expanded = true,
-
+    settings_tab_index = 1,
+    ghost_tab_index = 1,
+    ghosts_default_transparent = false,
     autodetect_address = true,
     auto_firsties = false,
     mini_visualizer = false,

@@ -353,9 +353,9 @@ local function atan_controls(draw, sheet, new_values, top)
 
     if not sheet.busy then
         if InputListGui.special_select_handler == select_atan_end then
-            atan_start = Memory.current.mario_global_timer - 1
+            atan_start = Memory.current.global_timer - 1
         elseif InputListGui.special_select_handler == noop then
-            local atan_end = Memory.current.mario_global_timer
+            local atan_end = Memory.current.global_timer
             new_values.atan_start = atan_start
             new_values.atan_n = atan_end - atan_start
             sheet.preview_input = previous_preview_input
