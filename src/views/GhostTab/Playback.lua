@@ -45,10 +45,10 @@ return {
                 rectangle = rect,
                 text = text,
                 color = foreground_color,
-                font_size = theme.font_size * Drawing.scale * 1.25,
+                font_size = theme.font_size * 1.25,
                 font_name = theme.font_name,
-                align_x = BreitbandGraphics.alignment['start'],
-                align_y = BreitbandGraphics.alignment.center,
+                align_x = ugui.alignment['start'],
+                align_y = ugui.alignment.center,
             })
         end
 
@@ -132,7 +132,7 @@ return {
             text = current_start .. '',
             tooltip = Locales.str('GHOST_TIMER_START_TOOLTIP'),
             styler_mixin = {
-                font_size = theme.font_size * Drawing.scale * 1.25,
+                font_size = theme.font_size * 1.25,
             },
             is_enabled = valid_ghost_selected
         })
@@ -149,7 +149,7 @@ return {
                 tooltip = Locales.str('GHOST_TIMER_START_DECREMENT_TOOLTIP'),
                 is_enabled = valid_ghost_selected,
                 styler_mixin = {
-                    font_size = theme.font_size * Drawing.scale * 1.25,
+                    font_size = theme.font_size * 1.25,
                 },
             }) then
             Ghost.set_global_timer_start(selected_ghost_id, math.max(0, current_start - 1))
@@ -162,7 +162,7 @@ return {
                 tooltip = Locales.str('GHOST_TIMER_START_INCREMENT_TOOLTIP'),
                 is_enabled = valid_ghost_selected,
                 styler_mixin = {
-                    font_size = theme.font_size * Drawing.scale * 1.25,
+                    font_size = theme.font_size * 1.25,
                 },
             }) then
             Ghost.set_global_timer_start(selected_ghost_id, current_start + 1)
@@ -189,7 +189,7 @@ return {
                     tooltip = Locales.str('GHOST_TRANSPARENT_TOOLTIP'),
                     is_enabled = valid_ghost_selected,
                     styler_mixin = {
-                        font_size = theme.font_size * Drawing.scale * 1.25,
+                        font_size = theme.font_size * 1.25,
                     },
                 }) then
                 Ghost.set_transparent(selected_ghost_id, not transparent)
@@ -205,7 +205,7 @@ return {
                 text = rgb_to_str(color),
                 tooltip = Locales.str('GHOST_COLOR_TOOLTIP'),
                 styler_mixin = {
-                    font_size = theme.font_size * Drawing.scale * 1.25,
+                    font_size = theme.font_size * 1.25,
                 },
                 is_enabled = hack_enabled
             }))

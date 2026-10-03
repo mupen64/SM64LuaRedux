@@ -76,10 +76,10 @@ return {
             rectangle = grid_rect(0, 1, 2.5, 1),
             text = status,
             color = foreground_color,
-            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_size = theme.font_size * 1.25,
             font_name = theme.font_name,
-            align_x = BreitbandGraphics.alignment['start'],
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment['start'],
+            align_y = ugui.alignment.center,
         })
 
         -- toggle_button returns the checked state rather than a click, so act only when it flips
@@ -131,16 +131,15 @@ return {
             end
         end
 
-
         ugui.label({
             uid = UID.ObjectLabel,
             rectangle = grid_rect(0, 3.8, 2.5, 1),
             text = Locales.str('GHOST_OBJECT_LABEL'),
             color = foreground_color,
-            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_size = theme.font_size * 1.25,
             font_name = theme.font_name,
-            align_x = BreitbandGraphics.alignment['start'],
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment['start'],
+            align_y = ugui.alignment.center,
         })
 
         if ugui.toggle_button({
@@ -171,10 +170,10 @@ return {
             rectangle = grid_rect(0.1, 5.6, 2, 1),
             text = Locales.str('GHOST_ADDRESS_LABEL'),
             color = foreground_color,
-            font_size = theme.font_size * Drawing.scale * 1.25,
+            font_size = theme.font_size * 1.25,
             font_name = theme.font_name,
-            align_x = BreitbandGraphics.alignment['start'],
-            align_y = BreitbandGraphics.alignment.center,
+            align_x = ugui.alignment['start'],
+            align_y = ugui.alignment.center,
         })
 
         local new_obj_addr = tonumber(ugui.textbox({
@@ -183,7 +182,7 @@ return {
             text = string.format("0x%X", Ghost.object_address),
             tooltip = Locales.str('GHOST_OBJECT_ADDRESS_TOOLTIP'),
             styler_mixin = {
-                font_size = theme.font_size * Drawing.scale * 1.25,
+                font_size = theme.font_size * 1.25,
             },
             is_enabled = (Ghost.recording_mode == GhostRecordingModes.object and
                 not select_object_by_name and not Ghost.is_recording())
