@@ -196,7 +196,7 @@ Cette action est irréversible.
     SETTINGS_MEMORY_REGION = 'Région du jeu',
     SETTINGS_MEMORY_DETECT_NOW_TOOLTIP = 'Détecte automatiquement la région du jeu en cours d\'exécution',
     SETTINGS_MEMORY_DETECT_ON_START = 'Détecter au démarrage',
-    SETTINGS_MEMORY_DETECT_ON_START_TOOLTIP = 'Détecte automatiquement la région du jeu au démarrage du script',
+    SETTINGS_MEMORY_DETECT_ON_START_TOOLTIP = 'Activé : détecte automatiquement la région du jeu au démarrage du script,\nen gardant la dernière sélectionnée si aucune ne correspond (p. ex. ROM hacks)\nDésactivé : garde toujours la dernière région sélectionnée',
     SETTINGS_MEMORY_REGION_TOOLTIP = 'La région du jeu actuelle',
     SETTINGS_HOTKEYS_NOTHING = '(rien)',
     SETTINGS_HOTKEYS_CONFIRMATION = 'Appuyer sur Entrée pour confirmer',
