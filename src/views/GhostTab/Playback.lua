@@ -7,11 +7,15 @@
 local UID = UIDProvider.allocate_once('GhostPlayback', function(enum_next)
     return {
         PlaybackStatus = enum_next(ugui.registry.label.uids()),
-        EnableHack = enum_next(ugui.registry.button.uids()),
+        EnableHack = enum_next(ugui.registry.toggle_button.uids()),
         GhostsLabel = enum_next(ugui.registry.label.uids()),
         AddGhost = enum_next(ugui.registry.button.uids()),
         RemoveGhost = enum_next(ugui.registry.button.uids()),
+        EnableGhost = enum_next(ugui.registry.button.uids()),
         GhostList = enum_next(ugui.registry.listbox.uids()),
+        FileLabel = enum_next(ugui.registry.label.uids()),
+        FileName = enum_next(ugui.registry.textbox.uids()),
+        SaveGhost = enum_next(ugui.registry.button.uids()),
         TimerStartLabel = enum_next(ugui.registry.label.uids()),
         TimerStart = enum_next(ugui.registry.textbox.uids()),
         TimerStartDecrement = enum_next(ugui.registry.button.uids()),
@@ -23,6 +27,7 @@ local UID = UIDProvider.allocate_once('GhostPlayback', function(enum_next)
         ColorLabel = enum_next(ugui.registry.label.uids()),
         Color = enum_next(ugui.registry.textbox.uids()),
         ColorPickerButton = enum_next(ugui.registry.button.uids()),
+        ColorSwatch = enum_next(ugui.registry.panel.uids()),
         ColorPickerOk = enum_next(ugui.registry.button.uids()),
         ColorPickerCancel = enum_next(ugui.registry.button.uids()),
         GhostData = enum_next(ugui.registry.listbox.uids()),
@@ -32,6 +37,8 @@ end)
 local picker = dofile(views_path .. 'GhostTab/ColorPicker.lua')
 
 local selected_ghost_id = 0
+-- names edited in the UI, by ghost ID; only displayed here, the ghost module keeps its filepath
+local display_names = {}
 
 return {
     name = function() return Locales.str('GHOST_PLAYBACK_TAB_NAME') end,
@@ -54,32 +61,34 @@ return {
 
         local hack_supported = Ghost.hack_is_supported()
         local hack_enabled = Ghost.hack_is_applied()
-        local valid_ghost_selected = hack_enabled and selected_ghost_id ~= 0
+        local valid_ghost_selected = selected_ghost_id ~= 0
 
-        local status = Locales.str('GHOST_STATUS_DISABLED')
+        local status = Locales.str('GHOST_STATUS')
         if not hack_supported then
-            status = Locales.str('GHOST_STATUS_UNSUPPORTED')
+            status = status .. Locales.str('GHOST_UNSUPPORTED')
         elseif hack_enabled then
-            status = Locales.str('GHOST_STATUS_ENABLED')
+            status = status .. Locales.str('GHOST_ENABLED')
+        else
+            status = status .. Locales.str('GHOST_DISABLED')
         end
-        section_label(UID.PlaybackStatus, grid_rect(0, 1, 8, 1), status)
+        section_label(UID.PlaybackStatus, grid_rect(0, 0.9, 8, 1), status)
 
-        if ugui.button({
-                uid = UID.EnableHack,
-                rectangle = grid_rect(0.1, 1.8, 7.8, 1),
-                text = Locales.str('GHOST_ENABLE_HACK'),
-                is_enabled = hack_supported
-            }) then
-            Ghost.apply_hack()
+        local auto_apply_hack = ugui.toggle_button({
+            uid = UID.EnableHack,
+            rectangle = grid_rect(0.1, 1.7, 7.8, 1),
+            text = Locales.str('GHOST_ENABLE_HACK'),
+            tooltip = Ghost.auto_apply_hack and Locales.str('GHOST_DISABLE_HACK_TOOLTIP') or Locales.str('GHOST_ENABLE_HACK_TOOLTIP'),
+            is_checked = Ghost.auto_apply_hack,
+            is_enabled = hack_supported
+        })
+        if auto_apply_hack ~= Ghost.auto_apply_hack then
+            Ghost.auto_apply_hack = auto_apply_hack
         end
-
-        section_label(UID.GhostsLabel, grid_rect(0, 2.8, 8, 1), Locales.str('GHOST_LIST'))
 
         if ugui.button({
                 uid = UID.AddGhost,
-                rectangle = grid_rect(0.1, 3.6, 2.8, 1),
+                rectangle = grid_rect(0.1, 2.7, 2.6, 1),
                 text = Locales.str('GHOST_ADD'),
-                is_enabled = hack_enabled
             }) then
             local path = iohelper.filediag("*.ghost", 0)
             if string.len(path) > 0 then
@@ -94,7 +103,7 @@ return {
 
         if ugui.button({
                 uid = UID.RemoveGhost,
-                rectangle = grid_rect(3, 3.6, 4.8, 1),
+                rectangle = grid_rect(2.7, 2.7, 2.6, 1),
                 text = Locales.str('GHOST_REMOVE'),
                 is_enabled = valid_ghost_selected
             }) then
@@ -102,24 +111,76 @@ return {
             selected_ghost_id = 0 -- go back to Mario
         end
 
+        local was_enabled = Ghost.is_enabled(selected_ghost_id)
+        if ugui.button({
+            uid = UID.EnableGhost,
+            rectangle = grid_rect(5.3, 2.7, 2.6, 1),
+            text = was_enabled and Locales.str('GHOST_DISABLE_GHOST') or Locales.str('GHOST_ENABLE_GHOST'),
+            tooltip = Locales.str('GHOST_ENABLE_GHOST_TOOLTIP'),
+            is_enabled = valid_ghost_selected
+        }) then
+            if was_enabled then
+                Ghost.disable_ghost(selected_ghost_id)
+            else
+                Ghost.enable_ghost(selected_ghost_id)
+            end
+        end
+
+
         -- ghost list
         local ghosts = Ghost.list_ghosts()
         local ghost_list = {}
         local selected_index = nil
         for i, ghost in ipairs(ghosts) do
-            ghost_list[#ghost_list + 1] = ghost.name
+            local enabled = Ghost.is_enabled(ghost.id) and '[✓] ' or '[  ] ' 
+            ghost.name = display_names[ghost.id] or ghost.name
+            ghost_list[#ghost_list + 1] = enabled .. ghost.name
             if ghost.id == selected_ghost_id then
                 selected_index = i
             end
         end
         local new_index = ugui.listbox({
             uid = UID.GhostList,
-            rectangle = grid_rect(0.1, 4.6, 7.8, 3.4),
+            rectangle = grid_rect(0.1, 3.7, 7.8, 3.4),
             selected_index = selected_index,
             items = ghost_list,
         })
         if new_index and ghosts[new_index] then
             selected_ghost_id = ghosts[new_index].id
+        end
+
+        -- file of the selected ghost
+        section_label(UID.FileLabel, grid_rect(0, 7.1, 1, 0.9), Locales.str('GHOST_FILE'))
+        
+        local name = ''
+        for _, ghost in ipairs(ghosts) do
+            if ghost.id == selected_ghost_id then name = ghost.name end
+        end
+        local new_name = ugui.textbox({
+            uid = UID.FileName,
+            rectangle = grid_rect(1.5, 7.15, 4.5, 0.8),
+            text = name,
+            tooltip = Locales.str('GHOST_NAME_TOOLTIP'),
+            styler_mixin = {
+                font_size = theme.font_size * 1.25,
+            },
+            is_enabled = valid_ghost_selected
+        })
+        if valid_ghost_selected and new_name ~= name then
+            display_names[selected_ghost_id] = new_name
+        end
+
+        if ugui.button({
+                uid = UID.SaveGhost,
+                rectangle = grid_rect(6, 7.15, 1.9, 0.75),
+                text = Locales.str('GHOST_SAVE_AS'),
+                tooltip = Locales.str('GHOST_SAVE_AS_TOOLTIP'),
+                is_enabled = valid_ghost_selected
+            }) then
+            local path = iohelper.filediag("*.ghost", 1)
+            if string.len(path) > 0 and not Ghost.save_ghost_file(selected_ghost_id, path) then
+                print(Locales.str('GHOST_SAVE_FAILED'))
+            end
         end
 
         -- editable ghost data
@@ -169,7 +230,7 @@ return {
         end
 
         -- close the picker (keeping the current color) if its target is no longer editable
-        if picker.open and (picker.ghost_id ~= selected_ghost_id or not hack_enabled) then
+        if picker.open and picker.ghost_id ~= selected_ghost_id then
             picker.open = false
         end
 
@@ -207,21 +268,31 @@ return {
                 styler_mixin = {
                     font_size = theme.font_size * 1.25,
                 },
-                is_enabled = hack_enabled
             }))
             if typed_color then
                 Ghost.set_color(selected_ghost_id, typed_color)
                 color = typed_color
             end
 
-            if ugui.control({
-                    uid = UID.ColorPickerButton,
-                    rectangle = grid_rect(3.4, 9.8, 0.8, 0.8),
-                    text = '',
-                    color = color,
-                    tooltip = Locales.str('GHOST_COLOR_PICKER_TOOLTIP'),
-                    is_enabled = hack_enabled,
-                }, 'color_button').primary then
+            local swatch_rect = grid_rect(3.4, 9.8, 0.8, 0.8)
+            local open_picker = ugui.button({
+                uid = UID.ColorPickerButton,
+                rectangle = swatch_rect,
+                text = '',
+                tooltip = Locales.str('GHOST_COLOR_PICKER_TOOLTIP'),
+            })
+            -- the panel isn't hittestable, so clicks still reach the button underneath
+            ugui.panel({
+                uid = UID.ColorSwatch,
+                rectangle = {
+                    x = swatch_rect.x + 4,
+                    y = swatch_rect.y + 4,
+                    width = swatch_rect.width - 8,
+                    height = swatch_rect.height - 8,
+                },
+                fill = rgb_to_str(color),
+            })
+            if open_picker then
                 picker.open = not picker.open
                 picker.ghost_id = selected_ghost_id
                 picker.original = { color[1], color[2], color[3] }

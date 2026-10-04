@@ -14,7 +14,8 @@ dofile(views_path .. 'GhostTab/VarWatch.lua')
 
 local tabs = {
     dofile(views_path .. 'GhostTab/Recording.lua'),
-    dofile(views_path .. 'GhostTab/Playback.lua')
+    dofile(views_path .. 'GhostTab/Playback.lua'),
+    dofile(views_path .. 'GhostTab/Settings.lua'),
 }
 
 return {

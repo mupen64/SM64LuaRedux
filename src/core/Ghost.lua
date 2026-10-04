@@ -1,5 +1,5 @@
 --
--- Copyright (c) 2025, Mupen64 maintainers.
+-- Copyright (c) 2026, Mupen64 maintainers.
 --
 -- SPDX-License-Identifier: GPL-2.0-or-later
 --
@@ -12,6 +12,8 @@ GhostRecordingModes = {
 Ghost = {
     recording_mode = GhostRecordingModes.mario,
 	object_address = 0x80330000,
+    auto_apply_hack = false,
+    base_offset = 0x8040
 }
 
 ---@class GhostFrame
@@ -45,6 +47,7 @@ local ghost_timer_offset = {}
 local ghost_is_transparent = {}
 local ghost_hat_color = {[0] = {0xFF, 0x00, 0x00}}
 local ghost_graphics = {} -- graphics pointer for object ghosts, 0 for Mario
+local ghost_enabled = {}
 local default_color_counter = 1
 
 local OBJ_POSITION_OFFSET <const> = 0x20
@@ -56,8 +59,6 @@ local OBJ_YAW_OFFSET <const> = 0x1C
 local OBJ_ROLL_OFFSET <const> = 0x1E
 
 local MAX_GHOSTS = 15
-local COLORED_HATS_CODE_TARGET_ADDR <const> = 0x80408200
-local COLORED_HATS_LIGHTS_ADDR <const> = 0x80408300
 local DEFAULT_COLORS = {
     {255, 0, 0},
     {255, 127, 0},
@@ -68,6 +69,26 @@ local DEFAULT_COLORS = {
     {255, 255, 255},
     {51, 51, 51}
 }
+
+-- the hack's tables are written for a region starting at 0x80400000 and moved to Ghost.base_offset
+local HACK_FILE_BASE <const> = 0x80400000
+local MIN_BASE_OFFSET <const> = 0x8040 -- below this is the game's own memory
+local MAX_BASE_OFFSET <const> = 0x806C -- the 15 animation buffers end at base + 0x13C000
+local BASE_LUIS <const> = {0x8044, 0x8078, 0x8190, 0x8270} -- lui base, incl. colored hats
+local BASE_PLUS_1_LUI <const> = 0x80F8 -- lui base + 1 (frame buffers)
+local ANIMATION_BUFFER_LUI <const> = 0x8050 -- lui base + 0x10
+
+local pending_base_offset = nil
+
+---@return integer # the RAM address `offset` bytes into the hack's region
+local function region(offset)
+    return (Ghost.base_offset << 16) + offset
+end
+
+-- jal ghost_loop, written into area_update_objects
+local function hook_instruction()
+    return 0x0C000000 | ((region(0x8000) & 0x03FFFFFF) >> 2)
+end
 
 local function writebytes32(f, x)
 	local b4 = string.char(x % 256)
@@ -201,12 +222,17 @@ function Ghost.stop_recording()
 	end
 
 	local result = flush()
+	local recorded_frames = #frames
 
 	is_recording = false
 	frames = {}
 	frame = 0
 	recording_base_frame = nil
 	last_global_timer = nil
+
+	if result and recorded_frames > 0 and Settings.ghost_recording_auto_load then
+		Ghost.load_ghost_file(Settings.ghost_path)
+	end
 
 	return result
 end
@@ -287,7 +313,7 @@ end
 -- Note: this is a guess based on if the first jump instruction is present
 function Ghost.hack_is_applied()
     local address_source = Addresses[Settings.address_source_index]
-    return memory.readdword(address_source.area_update_objects) == 0xC102000
+    return memory.readdword(address_source.area_update_objects) == hook_instruction()
 end
 
 -- Source: https://github.com/FramePerfection/STROOP/blob/Development/STROOP/Tabs/GhostTab/ColoredHats.cs
@@ -298,16 +324,16 @@ local function enable_colored_hats()
     local bank_location = memory.readdword(address_source.s_segment_table_offset + 0x10) -- GetInt32
 
     for addr = bank_location, bank_location + size, 4 do
-        if (memory.readdword(addr) & 0xFFFF0000) == 0x001B0000 then -- GetInt32
-            local found_pointer = memory.readdword(addr + 0x14) -- GetUInt32
-			-- check if it matches the original display list pointers
-			if (found_pointer == 0x40119A0 or
-					found_pointer == 0x4011A90 or
-					found_pointer == 0x4011B80 or
-					found_pointer == 0x4012030) then
-                memory.writedword(addr + 0x14, COLORED_HATS_CODE_TARGET_ADDR)
-                memory.writeword(addr, 0x12A)
-            end
+        local command = memory.readdword(addr) >> 16
+        local found_pointer = memory.readdword(addr + 0x14) -- GetUInt32
+        -- the original display list pointers, or ones already patched for a previous base offset
+        if (command == 0x001B and (found_pointer == 0x40119A0 or
+                found_pointer == 0x4011A90 or
+                found_pointer == 0x4011B80 or
+                found_pointer == 0x4012030)) or
+            (command == 0x012A and (found_pointer & 0xFF00FFFF) == 0x80008200) then
+            memory.writedword(addr + 0x14, region(0x8200))
+            memory.writeword(addr, 0x12A)
         end
     end
 
@@ -351,7 +377,7 @@ local function write_color_to_stream(ID, ghost_index)
         color = ghost_hat_color[ID]
     end
     local lights = color_to_lights(color)
-    writebytes(COLORED_HATS_LIGHTS_ADDR + ghost_index * 0x20, lights)
+    writebytes(region(0x8300) + ghost_index * 0x20, lights)
 end
 
 local function set_new_ghost_color(ID)
@@ -386,15 +412,16 @@ function Ghost.load_ghost_file(filepath)
 	end
     local ID = next_ghost_id
 	next_ghost_id = next_ghost_id + 1
-    ghost_filepath[ID] = filepath:match('[^\\/]+$')
+    ghost_filepath[ID] = filepath
     global_timer_start[ID] = read_int(file)
     local num_frames = read_int(file)
     ghost_data[ID] = {}
     for i = 1, num_frames do
         ghost_data[ID][i] = read_ghost_frame(file)
     end
-    Ghost.set_transparent(ID, Settings.ghosts_default_transparent)
+    Ghost.set_transparent(ID, Settings.ghost_transparent_default)
 	ghost_timer_offset[ID] = 0
+    ghost_enabled[ID] = true
 
 	-- optional object block: graphics pointer and animation pointers keyed by frame offset
 	ghost_graphics[ID] = 0
@@ -427,6 +454,47 @@ function Ghost.load_ghost_file(filepath)
 	return ID
 end
 
+---@param integer
+---@return string | nil # the file name of a loaded ghost
+function Ghost.get_file_name(ID)
+    if ID == 0 then
+        return 'Mario'
+    elseif not ghost_filepath[ID] then
+        return nil
+    end
+    return ghost_filepath[ID]:match('[^\\/]+$'):match("^(.*)%.[^%.]*$")
+end
+
+---Writes a loaded ghost to a .ghost file, starting on its current global timer start.
+---@return boolean # whether the file was written
+function Ghost.save_ghost_file(ID, filepath)
+    local data = ghost_data[ID]
+    local file = data and io.open(filepath, 'wb')
+    if not file then
+        return false
+    end
+    file:write(string.pack('<I4I4', Ghost.get_global_timer_offset(ID), #data))
+    for _, f in ipairs(data) do
+        file:write(string.pack('<I4fffI2I2I4I4I4', f.offset, f.position.x, f.position.y, f.position.z,
+            f.animation_index, f.animation_frame, f.pitch, f.yaw, f.roll))
+    end
+    -- object block: only the frames where the animation changes are stored
+    local graphics = ghost_graphics[ID] or 0
+    if graphics ~= 0 then
+        local switches, last = {}, nil
+        for _, f in ipairs(data) do
+            if f.animation ~= last then
+                switches[#switches + 1] = string.pack('<I4I4', f.offset, f.animation or 0)
+                last = f.animation
+            end
+        end
+        file:write(string.pack('<I4I4I4', OBJECT_EXTRA_MAGIC, graphics, #switches), table.concat(switches))
+    end
+    file:close()
+    ghost_filepath[ID] = filepath
+    return true
+end
+
 ---Clears the ghost with the given ID from memory (but not from game RAM)
 function Ghost.unload_ghost(ID)
     ghost_filepath[ID] = nil
@@ -436,6 +504,31 @@ function Ghost.unload_ghost(ID)
 	ghost_hat_color[ID] = nil
 	ghost_data[ID] = nil
 	ghost_graphics[ID] = nil
+    ghost_enabled[ID] = nil
+end
+
+---Prevents the ghost with the given ID from being displayed, while still being loaded.
+---@return boolean # whether the operation succeeds (if a ghost with such an ID exists)
+function Ghost.disable_ghost(ID)
+    if ghost_data[ID] == nil then
+        return nil
+    end
+    ghost_enabled[ID] = false
+end
+
+---Reallows teh ghost with the given ID to be displayed.
+---@return boolean # whether the operation succeeds (if a ghost with such an ID exists)
+function Ghost.enable_ghost(ID)
+    if ghost_data[ID] == nil then
+        return false
+    end
+    ghost_enabled[ID] = true
+    return true
+end
+
+---@return boolean | nil # whether the ghost is enabled (nil if doesn't exist) 
+function Ghost.is_enabled(ID)
+    return ID == 0 or ghost_enabled[ID]
 end
 
 -- ghost_loop's "no ghosts requested" branch (0x80408084) is retargeted from @CLEAN_UP_EARLY to
@@ -633,6 +726,28 @@ local HACKS_JP = {
     }
 }
 
+---Moves the hack's RAM region (e.g. 0x8060 for 0x80600000). While the hack is in RAM the move is
+---deferred until its ghosts are freed, otherwise they'd be orphaned in the scene graph.
+---@param base integer
+---@return boolean # whether the offset was valid
+function Ghost.set_base_offset(base)
+    if base < MIN_BASE_OFFSET or base > MAX_BASE_OFFSET then
+        return false
+    end
+    if base == Ghost.base_offset or not Ghost.hack_is_applied() then
+        Ghost.base_offset = base
+        pending_base_offset = nil
+    else
+        pending_base_offset = base -- Ghost.update finishes the move
+    end
+    return true
+end
+
+---@return integer | nil # the base offset the hack is moving to once its ghosts are freed
+function Ghost.get_pending_base_offset()
+    return pending_base_offset
+end
+
 ---Write the playback ghost hack to RAM.
 -- Details: https://github.com/FramePerfection/STROOP/tree/Development/HackSources/Ghosts
 function Ghost.apply_hack()
@@ -642,24 +757,40 @@ function Ghost.apply_hack()
 		HACKS = HACKS_JP
 	end
 
-    for addr,hck in pairs(HACKS) do
-        writebytes(addr, hck)
+    local hook_addr = Addresses[Settings.address_source_index].area_update_objects
+    for addr, hck in pairs(HACKS) do
+        if addr >= HACK_FILE_BASE and addr < HACK_FILE_BASE + 0x10000 then
+            writebytes(region(addr - HACK_FILE_BASE), hck)
+        elseif addr ~= hook_addr then
+            writebytes(addr, hck)
+        end
     end
+
+    -- point the moved code at its new region
+    for _, offset in ipairs(BASE_LUIS) do
+        memory.writeword(region(offset) + 2, Ghost.base_offset)
+    end
+    memory.writeword(region(BASE_PLUS_1_LUI) + 2, Ghost.base_offset + 1)
+    memory.writeword(region(ANIMATION_BUFFER_LUI) + 2, Ghost.base_offset + 0x10)
 
     -- clear some memory to prevent nonsensical data causing a game crash
     -- on the first ghost loop iteration
-    for addr = 0x80407000, 0x80407FFC, 4 do
+    for addr = region(0x7000), region(0x7FFC), 4 do
         memory.writedword(addr, 0)
     end
 
+    memory.writedword(hook_addr, hook_instruction())
+
     enable_colored_hats()
+
+    memory.recompilenextall()
 end
 
 -- write 1 frame of ghost playback data to RAM
 local function write_ghost_frame(offset, ghost, ghostidx, graphics)
     if ghost == nil then return end
     ghostidx = ghostidx - 1
-    local addr = 0x80409B00 + ghostidx * 0x1000 + offset * 0x20
+    local addr = region(0x9B00) + ghostidx * 0x1000 + offset * 0x20
     local animation = graphics ~= 0 and (ghost.animation or 0) or ghost.animation_index
     memory.writefloat(addr + 0x00, ghost.position.x)
     memory.writefloat(addr + 0x04, ghost.position.y)
@@ -690,11 +821,11 @@ end
 local function update_ghost_count(n)
 	-- ghost_loop.asm only frees one slot per frame. Match that behaviour here
 	-- to avoid dangling pointer bugs.
-	local last_n = memory.readbyte(0x80407FFF)
+	local last_n = memory.readbyte(region(0x7FFF))
 	if n < last_n - 1 then
 		n = last_n - 1
 	end
-    memory.writebyte(0x80407FFF, n)
+    memory.writebyte(region(0x7FFF), n)
 end
 
 local function update_ghost_playback()
@@ -703,7 +834,7 @@ local function update_ghost_playback()
 	local global_timer = memory.readdword(address_source.global_timer)
     local n = 0
 	for ID, _ in pairs(ghost_data) do
-        if #ghost_data[ID] > 0 then
+        if ghost_enabled[ID] and #ghost_data[ID] > 0 then
             n = n + 1
             for tm = 0, 0x7F do
                 local offset = (tm + global_timer) & 0x7F
@@ -711,7 +842,7 @@ local function update_ghost_playback()
                 write_ghost_frame(offset, last_valid_ghost_frame(ghost_data[ID], i + 1), n, ghost_graphics[ID] or 0)
             end
             write_color_to_stream(ID, n)
-            local obj = memory.readdword(0x80407FF8 - 0x68 * (n - 1))
+            local obj = memory.readdword(region(0x7FF8) - 0x68 * (n - 1))
 			if obj ~= 0 then
             	memory.writebyte(obj + 0x61, (ghost_is_transparent[ID] == 1) and 1 or 0)
 			end
@@ -725,7 +856,20 @@ function Ghost.update()
 	if is_recording then
 		update_recording()
 	end
-    if Ghost.hack_is_applied() then
+    local hack_applied = Ghost.hack_is_applied()
+    if Ghost.auto_apply_hack and not hack_applied then
+        Ghost.apply_hack()
+        hack_applied = true
+    end
+    if hack_applied and pending_base_offset then
+        -- moving: shrink to 0 ghosts (freed one per frame), then reapply at the new base
+        update_ghost_count(0)
+        if memory.readbyte(region(0x7FFF)) == 0 and memory.readdword(region(0x7FF8)) == 0 then
+            Ghost.base_offset = pending_base_offset
+            pending_base_offset = nil
+            Ghost.apply_hack()
+        end
+    elseif hack_applied then
         -- updating will always write Mario's hat to memory, so
         -- gate it behind a check to see if the RAM is hacked
         update_ghost_playback()
@@ -814,10 +958,10 @@ function Ghost.list_ghosts()
     local ghosts = {
         {id = 0, name = 'Mario', color = ghost_hat_color[0]}
     }
-    for ID, filepath in pairs(ghost_filepath) do
+    for ID, _ in pairs(ghost_data) do
         ghosts[#ghosts + 1] = {
             id = ID,
-            name = filepath:match('[^\\/]+$'):match("^(.*)%.[^%.]*$"),
+            name = Ghost.get_file_name(ID),
             color = ghost_hat_color[ID]
         }
     end

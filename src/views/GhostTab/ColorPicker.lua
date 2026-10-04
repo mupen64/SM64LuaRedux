@@ -4,21 +4,6 @@
 -- SPDX-License-Identifier: GPL-2.0-or-later
 --
 
--- A button filled with `control.color` ({r, g, b}). It's a registry entry rather than a
--- button with a rectangle drawn over it because ugui renders its scene at the end of the
--- frame, which would paint the button over anything drawn directly here.
-ugui.registry.color_button = {
-    uids = ugui.registry.button.uids,
-    validate = ugui.registry.button.validate,
-    logic = ugui.registry.button.logic,
-    draw = function(control)
-        ugui.standard_styler.draw_button(control)
-        local c = control.color
-        BreitbandGraphics.fill_rectangle(BreitbandGraphics.inflate_rectangle(control.rectangle, -4),
-            { r = c[1], g = c[2], b = c[3], a = control.is_enabled == false and 80 or 255 })
-    end,
-}
-
 function rgb_to_str(rgb)
     return string.format('#%02X%02X%02X', rgb[1], rgb[2], rgb[3])
 end
@@ -148,6 +133,14 @@ function picker.draw(rect, rgb)
         picker.last_color = rgb_to_str(result)
     end
 
+    -- rect and input are in logical units; direct draws are in pixels, so map them by Drawing.scale
+    local function fill_rect(r, color)
+        BreitbandGraphics.fill_rectangle(Drawing.map_rect(r), color)
+    end
+    local function outline_rect(r, color, thickness)
+        BreitbandGraphics.draw_rectangle(Drawing.map_rect(r), color, thickness * Drawing.scale)
+    end
+
     -- hue/saturation wheel, approximated with small filled cells at full value
     local cell = math.max(2, math.floor(wheel_size / 24))
     for gy = 0, wheel_size - 1, cell do
@@ -156,8 +149,7 @@ function picker.draw(rect, rgb)
             local dist = math.sqrt(dx * dx + dy * dy)
             if dist <= radius then
                 local c = hsv_to_rgb(math.deg(math.atan(-dy, dx)), dist / radius, 1)
-                BreitbandGraphics.fill_rectangle(
-                    { x = wheel_x + gx, y = rect.y + gy, width = cell, height = cell },
+                fill_rect({ x = wheel_x + gx, y = rect.y + gy, width = cell, height = cell },
                     { r = c[1], g = c[2], b = c[3] })
             end
         end
@@ -167,23 +159,22 @@ function picker.draw(rect, rgb)
     local top = hsv_to_rgb(picker.hue, picker.sat, 1)
     for gy = 0, bar_rect.height - 1, 2 do
         local t = 1 - gy / bar_rect.height
-        BreitbandGraphics.fill_rectangle(
-            { x = bar_rect.x, y = bar_rect.y + gy, width = bar_rect.width, height = 2 },
+        fill_rect({ x = bar_rect.x, y = bar_rect.y + gy, width = bar_rect.width, height = 2 },
             { r = math.floor(top[1] * t), g = math.floor(top[2] * t), b = math.floor(top[3] * t) })
     end
-    BreitbandGraphics.draw_rectangle(bar_rect, Drawing.foreground_color(), 1)
+    outline_rect(bar_rect, Drawing.foreground_color(), 1)
 
     -- markers for the current selection
     local rad = math.rad(picker.hue)
     local dot_x = cx + picker.sat * radius * math.cos(rad)
     local dot_y = cy - picker.sat * radius * math.sin(rad)
-    local dot = { x = dot_x - 4, y = dot_y - 4, width = 8, height = 8 }
+    local dot = Drawing.map_rect({ x = dot_x - 4, y = dot_y - 4, width = 8, height = 8 })
     BreitbandGraphics.fill_ellipse(dot, { r = 255, g = 255, b = 255 })
-    BreitbandGraphics.draw_ellipse(dot, { r = 0, g = 0, b = 0 }, 1)
+    BreitbandGraphics.draw_ellipse(dot, { r = 0, g = 0, b = 0 }, Drawing.scale)
 
     local marker = { x = bar_rect.x - 2, y = bar_rect.y + (1 - picker.val) * bar_rect.height - 2, width = bar_rect.width + 4, height = 4 }
-    BreitbandGraphics.fill_rectangle(marker, { r = 255, g = 255, b = 255 })
-    BreitbandGraphics.draw_rectangle(marker, { r = 0, g = 0, b = 0 }, 1)
+    fill_rect(marker, { r = 255, g = 255, b = 255 })
+    outline_rect(marker, { r = 0, g = 0, b = 0 }, 1)
 
     return result
 end
