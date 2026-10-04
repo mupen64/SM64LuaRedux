@@ -47,6 +47,7 @@ dofile(core_path .. 'Dumping.lua')
 Validators = dofile(core_path .. 'Validators.lua')
 dofile(core_path .. 'Actions.lua')
 Addresses = dofile(core_path .. 'Addresses.lua')
+Mapping = dofile(core_path .. 'Mapping.lua')
 
 apply_math_shim()
 

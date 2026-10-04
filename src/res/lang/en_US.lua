@@ -198,7 +198,7 @@ This action cannot be undone.
     SETTINGS_MEMORY_DETECT_ON_START = 'Autodetect on start',
     SETTINGS_MEMORY_FILE_SELECT_TOOLTIP = 'Choose a .map file to load addresses from',
     SETTINGS_MEMORY_DETECT_NOW_TOOLTIP = 'Autodetects the game region based on the currently running game',
-    SETTINGS_MEMORY_DETECT_ON_START_TOOLTIP = 'Autodetects the game region when starting the script',
+    SETTINGS_MEMORY_DETECT_ON_START_TOOLTIP = 'On: autodetects the game region when starting the script, keeping\nthe last selected one if no region matches (e.g. ROM hacks)\nOff: always keeps the last selected region',
     SETTINGS_MEMORY_REGION_TOOLTIP = 'The current game region',
     SETTINGS_HOTKEYS_NOTHING = '(nothing)',
     SETTINGS_HOTKEYS_CONFIRMATION = 'Press Enter to confirm',
