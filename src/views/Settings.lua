@@ -325,17 +325,9 @@ local memory_items = {
                     uid = UID.LoadMapFile,
                     rectangle = rect,
                     text = Locales.str('SETTINGS_MEMORY_FILE_SELECT'),
-                    is_enabled = false,
+                    tooltip = Locales.str('SETTINGS_MEMORY_FILE_SELECT_TOOLTIP'),
                 }) then
-                local path = iohelper.filediag('*.map', 0)
-                if string.len(path) > 0 then
-                    local file = io.open(path, 'r')
-                    if file then
-                        local text = file:read('a')
-                        io.close(file)
-                        -- TODO: Implement
-                    end
-                end
+                Mapping.load_map_file_dialog()
             end
         end,
     },

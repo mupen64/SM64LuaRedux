@@ -128,12 +128,13 @@ function Memory.update_previous()
 end
 
 ---Finds the entry from `Addresses` which best matches the region of the running game based on a pattern search.
+---If nothing matches (e.g. a ROM hack loaded from a map file), the current selection is kept.
 ---@return integer # The best-matching address set as an index into `Addresses`
 function Memory.find_matching_address_source_index()
-	for key, value in pairs(Addresses) do
+	for key, value in ipairs(Addresses) do
 		if memory.readdword(value.pattern) == value.pattern_value then
 			return key
 		end
 	end
-	return 1
+	return Addresses[Settings.address_source_index] and Settings.address_source_index or 1
 end

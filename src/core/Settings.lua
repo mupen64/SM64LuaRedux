@@ -167,5 +167,6 @@ Settings = {
         },
     },
     address_source_index = 1,
+    address_map_paths = {},
     tas = NewTASState(),
 }
