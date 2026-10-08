@@ -26,7 +26,7 @@ local UID = UIDProvider.allocate_once('SettingsV5', function(enum_next)
         MemoryGroupLabel = enum_next(ugui.label_uids()),
         MemoryItemLabelBase = enum_next(4 * ugui.label_uids()),
         Scrollbar = enum_next(ugui.scrollbar_uids()),
-        AngleFormat = enum_next(ugui.button_uids()),
+        AngleFormat = enum_next(ugui.carrousel_button_uids()),
         DecimalPlaces = enum_next(ugui.numberbox_uids()),
         SelectedVar = enum_next(ugui.listbox_uids()),
         MoveVarUp = enum_next(ugui.button_uids()),
@@ -47,29 +47,34 @@ local visual_items = {
     {
         text = function() return Locales.str('SETTINGS_VISUALS_STYLE') end,
         func = function(rect)
-            local new_active_style_index = ugui.combobox({
+            local new_active_style_index, meta = ugui.combobox({
                 uid = UID.ActiveStyle,
                 rectangle = rect,
                 items = Styles.theme_names(),
                 selected_index = Settings.active_style_index,
             })
 
-            if new_active_style_index ~= Settings.active_style_index then
-                Settings.active_style_index = new_active_style_index
-                Styles.update_style()
+            if meta.signal_change == ugui.signal_change_states.started then
+                action.invoke(ACTION_SETTINGS_SET_STYLE, nil, nil, {
+                    style = Styles.theme_names()[new_active_style_index],
+                })
             end
         end,
     },
     {
         text = function() return Locales.str('SETTINGS_VISUALS_LOCALE') end,
         func = function(rect)
-            local new_locale_index = ugui.combobox({
+            local new_locale_index, meta = ugui.combobox({
                 uid = UID.Locale,
                 rectangle = rect,
                 items = Locales.names(),
                 selected_index = Settings.locale_index,
             })
-            Settings.locale_index = new_locale_index
+            if meta.signal_change == ugui.signal_change_states.started then
+                action.invoke(ACTION_SETTINGS_SET_LANGUAGE, nil, nil, {
+                    language = Locales.names()[new_locale_index],
+                })
+            end
         end,
     },
     {
@@ -80,7 +85,7 @@ local visual_items = {
                 Locales.str('SETTINGS_VISUALS_NOTIFICATIONS_CONSOLE'),
             }
 
-            local index = ugui.carrousel_button({
+            local _, meta = ugui.carrousel_button({
                 uid = UID.NotificationStyle,
                 rectangle = rect,
                 items = notification_styles,
@@ -88,19 +93,26 @@ local visual_items = {
                 tooltip = Locales.str('SETTINGS_VISUALS_NOTIFICATIONS_TOOLTIP'),
             })
 
-            Settings.notification_style = index
+            if meta.signal_change == ugui.signal_change_states.started then
+                action.invoke(ACTION_SETTINGS_TOGGLE_CONSOLE_NOTIFICATIONS)
+            end
         end,
     },
     {
         text = function() return Locales.str('SETTINGS_VISUALS_FF_FPS') end,
         func = function(rect)
-            Settings.ff_fps = math.max(1, math.abs(ugui.numberbox({
+            local value, meta = ugui.numberbox({
                 uid = UID.RepaintThrottle,
                 rectangle = rect,
                 tooltip = Locales.str('SETTINGS_VISUALS_FF_FPS_TOOLTIP'),
                 value = Settings.ff_fps,
                 places = 2,
-            })))
+            })
+            local new_ff_fps = math.max(1, math.abs(value))
+            if meta.signal_change == ugui.signal_change_states.started or
+                meta.signal_change == ugui.signal_change_states.ongoing then
+                action.invoke(ACTION_SETTINGS_SET_FF_FPS, nil, nil, {fps = tostring(new_ff_fps)})
+            end
         end,
     },
 }
@@ -111,13 +123,16 @@ local interaction_items = {
         control_width = 7.5,
         text = function() return Locales.str('SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT') end,
         func = function(rect)
-            Settings.enable_manual_on_joystick_interact = ugui.toggle_button({
+            local _, meta = ugui.toggle_button({
                 uid = UID.EnableManualOnJoystickInteract,
                 rectangle = rect,
                 is_checked = Settings.enable_manual_on_joystick_interact,
                 text = Locales.str('SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT'),
                 tooltip = Locales.str('SETTINGS_INTERACTION_MANUAL_ON_JOYSTICK_INTERACT_TOOLTIP'),
             })
+            if meta.signal_change == ugui.signal_change_states.started then
+                action.invoke(ACTION_SETTINGS_TOGGLE_MANUAL_ON_JOYSTICK)
+            end
         end,
     },
     {
@@ -125,13 +140,16 @@ local interaction_items = {
         control_width = 7.5,
         text = function() return Locales.str('SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE') end,
         func = function(rect)
-            Settings.lock_hotkeys_when_control_active = ugui.toggle_button({
+            local _, meta = ugui.toggle_button({
                 uid = UID.LockHotkeysWhenControlActive,
                 rectangle = rect,
                 is_checked = Settings.lock_hotkeys_when_control_active,
                 text = Locales.str('SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE'),
                 tooltip = Locales.str('SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE_TOOLTIP'),
             })
+            if meta.signal_change == ugui.signal_change_states.started then
+                action.invoke(ACTION_SETTINGS_TOGGLE_LOCK_HOTKEYS)
+            end
         end,
     },
 }
@@ -292,26 +310,41 @@ local varwatch_items = {
     {
         text = function() return Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT') end,
         func = function(rect)
-            if ugui.button({
-                    uid = UID.AngleFormat,
-                    rectangle = rect,
-                    text = Settings.format_angles_degrees and Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT_DEGREE') or Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT_SHORT'),
-                    tooltip = Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT_TOOLTIP'),
-                }) then
-                Settings.format_angles_degrees = not Settings.format_angles_degrees
+            local formats = {
+                Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT_SHORT'),
+                Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT_DEGREE'),
+            }
+            local new_format_index, meta = ugui.carrousel_button({
+                uid = UID.AngleFormat,
+                rectangle = rect,
+                items = formats,
+                selected_index = Settings.format_angles_degrees and 2 or 1,
+                tooltip = Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT_TOOLTIP'),
+            })
+            if meta.signal_change == ugui.signal_change_states.started then
+                action.invoke(ACTION_SETTINGS_SET_ANGLE_FORMAT, nil, nil, {
+                    format = formats[new_format_index],
+                })
             end
         end,
     },
     {
         text = function() return Locales.str('SETTINGS_VARWATCH_DECIMAL_POINTS') end,
         func = function(rect)
-            Settings.format_decimal_points = math.abs(ugui.numberbox({
+            local value, meta = ugui.numberbox({
                 uid = UID.DecimalPlaces,
                 rectangle = rect,
                 value = Settings.format_decimal_points,
                 places = 1,
                 tooltip = Locales.str('SETTINGS_VARWATCH_DECIMAL_POINTS_TOOLTIP'),
-            }))
+            })
+            local new_decimal_points = math.abs(value)
+            if meta.signal_change == ugui.signal_change_states.started or
+                meta.signal_change == ugui.signal_change_states.ongoing then
+                action.invoke(ACTION_SETTINGS_SET_DECIMAL_POINTS, nil, nil, {
+                    points = tostring(new_decimal_points),
+                })
+            end
         end,
     },
 }
@@ -327,20 +360,26 @@ local memory_items = {
                     text = Locales.str('SETTINGS_MEMORY_FILE_SELECT'),
                     tooltip = Locales.str('SETTINGS_MEMORY_FILE_SELECT_TOOLTIP'),
                 }) then
-                Mapping.load_map_file_dialog()
+                action.invoke(ACTION_SETTINGS_SELECT_MAP_FILE)
             end
         end,
     },
     {
         text = function() return Locales.str('SETTINGS_MEMORY_REGION') end,
         func = function(rect)
-            Settings.address_source_index = ugui.combobox({
+            local region_names = lualinq.select(Addresses, function(addr) return addr.name() end)
+            local new_region_index, meta = ugui.combobox({
                 uid = UID.Region,
                 rectangle = rect,
-                items = lualinq.select(Addresses, function(addr) return addr.name() end),
+                items = region_names,
                 selected_index = Settings.address_source_index,
                 tooltip = Locales.str('SETTINGS_MEMORY_REGION_TOOLTIP'),
             })
+            if meta.signal_change == ugui.signal_change_states.started then
+                action.invoke(ACTION_SETTINGS_SET_REGION, nil, nil, {
+                    region = region_names[new_region_index],
+                })
+            end
         end,
     },
     {
@@ -353,7 +392,7 @@ local memory_items = {
                     text = Locales.str('SETTINGS_MEMORY_DETECT_NOW'),
                     tooltip = Locales.str('SETTINGS_MEMORY_DETECT_NOW_TOOLTIP'),
                 }) then
-                Settings.address_source_index = Memory.find_matching_address_source_index()
+                action.invoke(ACTION_SETTINGS_AUTODETECT_NOW)
             end
         end,
     },
@@ -361,13 +400,16 @@ local memory_items = {
         show_label = false,
         text = function() return Locales.str('SETTINGS_MEMORY_DETECT_ON_START') end,
         func = function(rect)
-            Settings.autodetect_address = ugui.toggle_button({
+            local _, meta = ugui.toggle_button({
                 uid = UID.DetectOnStart,
                 rectangle = rect,
                 text = Locales.str('SETTINGS_MEMORY_DETECT_ON_START'),
                 is_checked = Settings.autodetect_address,
                 tooltip = Locales.str('SETTINGS_MEMORY_DETECT_ON_START_TOOLTIP'),
             })
+            if meta.signal_change == ugui.signal_change_states.started then
+                action.invoke(ACTION_SETTINGS_TOGGLE_AUTODETECT)
+            end
         end,
     },
 }
