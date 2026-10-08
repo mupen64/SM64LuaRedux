@@ -28,17 +28,52 @@ local UID = UIDProvider.allocate_once('GhostPlayback', function(enum_next)
         Color = enum_next(ugui.textbox_uids()),
         ColorPickerButton = enum_next(ugui.button_uids()),
         ColorSwatch = enum_next(ugui.panel_uids()),
+        ColorPicker = enum_next(ugui.colorpicker_uids()),
         ColorPickerOk = enum_next(ugui.button_uids()),
         ColorPickerCancel = enum_next(ugui.button_uids()),
         GhostData = enum_next(ugui.listbox_uids()),
     }
 end)
 
-local picker = dofile(views_path .. 'GhostTab/ColorPicker.lua')
-
 local selected_ghost_id = 0
 -- names edited in the UI, by ghost ID; only displayed here, the ghost module keeps its filepath
 local display_names = {}
+local picker_open = false
+local picker_ghost_id = nil
+local picker_original = nil
+
+local function rgb_to_str(rgb)
+    return string.format('#%02X%02X%02X', rgb[1], rgb[2], rgb[3])
+end
+
+local function parse_hex_color(text)
+    if not text then
+        return nil
+    end
+    local hex = text:gsub('#', ''):gsub('%s', '')
+    if #hex ~= 6 or hex:match('%X') then
+        return nil
+    end
+    local r = tonumber(hex:sub(1, 2), 16)
+    local g = tonumber(hex:sub(3, 4), 16)
+    local b = tonumber(hex:sub(5, 6), 16)
+    if not r or not g or not b then
+        return nil
+    end
+    return {r, g, b}
+end
+
+local function rgb_to_ugui_color(rgb)
+    return {r = rgb[1] / 255, g = rgb[2] / 255, b = rgb[3] / 255, a = 1}
+end
+
+local function ugui_color_to_rgb(color)
+    return {
+        math.floor(color.r * 255 + 0.5),
+        math.floor(color.g * 255 + 0.5),
+        math.floor(color.b * 255 + 0.5),
+    }
+end
 
 return {
     name = function() return Locales.str('GHOST_PLAYBACK_TAB_NAME') end,
@@ -230,8 +265,8 @@ return {
         end
 
         -- close the picker (keeping the current color) if its target is no longer editable
-        if picker.open and picker.ghost_id ~= selected_ghost_id then
-            picker.open = false
+        if picker_open and picker_ghost_id ~= selected_ghost_id then
+            picker_open = false
         end
 
         -- display object's graphics instead of hat options
@@ -293,16 +328,27 @@ return {
                 fill = rgb_to_str(color),
             })
             if open_picker then
-                picker.open = not picker.open
-                picker.ghost_id = selected_ghost_id
-                picker.original = { color[1], color[2], color[3] }
-                picker.last_color = nil -- resync the wheel to the current color
+                if picker_open then
+                    picker_open = false
+                else
+                    picker_open = true
+                    picker_ghost_id = selected_ghost_id
+                    picker_original = { color[1], color[2], color[3] }
+                end
             end
 
-            if picker.open then
-                local picked_color = picker.draw(grid_rect(4.5, 9.2, 3, 3), color)
-                if picked_color then
-                    Ghost.set_color(selected_ghost_id, picked_color)
+            if picker_open then
+                local picked_color = ugui.colorpicker({
+                    uid = UID.ColorPicker,
+                    rectangle = grid_rect(4.5, 9.2, 3, 3),
+                    color = rgb_to_ugui_color(color),
+                    shape = 'circle',
+                    band_position = 'right',
+                })
+                local picked_rgb = ugui_color_to_rgb(picked_color)
+                if picked_rgb[1] ~= color[1] or picked_rgb[2] ~= color[2] or picked_rgb[3] ~= color[3] then
+                    Ghost.set_color(selected_ghost_id, picked_rgb)
+                    color = picked_rgb
                 end
 
                 if ugui.button({
@@ -311,7 +357,7 @@ return {
                         text = Locales.str('GHOST_COLOR_PICKER_OK'),
                         tooltip = Locales.str('GHOST_COLOR_PICKER_OK_TOOLTIP'),
                     }) then
-                    picker.open = false
+                    picker_open = false
                 end
 
                 if ugui.button({
@@ -320,8 +366,8 @@ return {
                         text = Locales.str('GHOST_COLOR_PICKER_CANCEL'),
                         tooltip = Locales.str('GHOST_COLOR_PICKER_CANCEL_TOOLTIP'),
                     }) then
-                    Ghost.set_color(picker.ghost_id, picker.original)
-                    picker.open = false
+                    Ghost.set_color(picker_ghost_id, picker_original)
+                    picker_open = false
                 end
             end
         end
