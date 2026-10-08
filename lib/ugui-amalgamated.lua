@@ -13,7 +13,7 @@
 --
 
 local ugui = {
-    _VERSION = 'v5.0.0',
+    _VERSION = 'next',
     _URL = 'https://codeberg.org/mupen64/ugui',
     _DESCRIPTION = 'Flexible immediate-mode GUI library for Mupen Lua',
     _LICENSE = 'GPL-3',
@@ -33,6 +33,7 @@ local ugui = {
 
 ---@alias UID number
 ---Unique identifier for a control. Must be unique within a frame.
+--- UID `-1` is reserved for the global context menu.
 
 ---@class Environment
 ---@field public mouse_position { x: number, y: number } The mouse position.
@@ -64,6 +65,7 @@ local ugui = {
 
 ---@class Meta
 ---@field public signal_change SignalChangeState The change state of the control's primary signal.
+---@field public context_menu_result MenuResult? The result of this control's context menu, when it is dismissed or an item is selected.
 ---Additional information about a placed control.
 
 ---@alias ControlReturnValue { primary: any, meta: Meta }
@@ -149,6 +151,7 @@ ugui.begin_frame = function(environment)
 
     ugui.internal.frame_in_progress = true
     ugui.internal.frame_index = ugui.internal.frame_index + 1
+    ugui.internal.context_menu_owner_seen = false
     ugui.internal.frame_start_time = os.clock()
     if ugui.DEBUG then
         ugui.internal.control_execution_times = {}
@@ -439,7 +442,7 @@ ugui.end_frame = function()
 
         if control.clip_children then
             current_painter:save()
-            current_painter:clip(ugui.internal.rect_to_painter_rect(ugui.internal.get_render_rect(control)))
+            current_painter:clip(ugui.internal.rect_to_painter_rect(control.render_rect))
         end
 
         local children = ugui.internal.get_sorted_scene_children(node)
@@ -545,6 +548,19 @@ ugui.internal = {
     ---@type table<UID, any>
     ---Map of control UIDs to their data.
     control_data = {},
+
+    ---@type { owner_uid: UID, items: MenuItem[], position: UguiVector2, opened_frame: integer }?
+    ---The single currently open control context menu.
+    context_menu_state = nil,
+
+    ---Whether the current context-menu owner has been placed in this frame.
+    context_menu_owner_seen = false,
+
+    ---Whether the internal control with UID -1 is being placed for a context menu.
+    context_menu_placing = false,
+
+    ---Reserved UID for the global context menu control.
+    context_menu_uid = -1,
 
     ---@type table<UID, number>
     ---Execution time, in seconds, accumulated for each control during the current frame.
@@ -657,6 +673,10 @@ ugui.internal = {
     ---@type table<string, PainterImage>
     image_cache = {},
 
+    ---@type PainterImage?
+    ---A full-brightness 256x256 color wheel, shared by all controls.
+    colorpicker_circle_image = nil,
+
     ---@return boolean # Whether LMB was just pressed.
     is_mouse_just_down = function()
         local value = ugui.internal.environment.is_primary_down and
@@ -709,11 +729,7 @@ ugui.internal = {
             return false
         end
         local node = ugui.internal.find_node(control.uid)
-        if node then
-            if not ugui.internal.is_point_inside_scene_node(point, node) then
-                return false
-            end
-        elseif not ugui.internal.point_in_rect(point, ugui.internal.get_render_rect(control)) then
+        if not node or not ugui.internal.hittest_node(point, node) then
             return false
         end
         if point.x < 0 or point.x > ugui.internal.environment.window_size.x
@@ -915,7 +931,7 @@ ugui.internal = {
             -- Determine the clicked control if we haven't already
             if clicked_control == nil and effective_hittestable then
                 if ugui.internal.is_mouse_just_down() then
-                    if ugui.internal.is_point_inside_scene_node(ugui.internal.mouse_down_position, entry) then
+                    if ugui.internal.hittest_node(ugui.internal.mouse_down_position, entry) then
                         clicked_control = control
                         keyboard_captured_control = entry
                         mouse_captured_control = entry
@@ -925,7 +941,7 @@ ugui.internal = {
 
             -- Determine the hovered control if we haven't already
             if ugui.internal.hovered_control == nil and effective_hittestable then
-                if ugui.internal.is_point_inside_scene_node(ugui.internal.environment.mouse_position, entry) then
+                if ugui.internal.hittest_node(ugui.internal.environment.mouse_position, entry) then
                     ugui.internal.hovered_control = control.uid
 
                     if ugui.internal.hovered_control ~= prev_hovered_control then
@@ -934,6 +950,42 @@ ugui.internal = {
                 end
             end
         end, true)
+
+        -- Context menu.
+        for i = 1, #ugui.internal.environment.mouse_events do
+            local mouse_event = ugui.internal.environment.mouse_events[i]
+            if mouse_event.button == 1 and mouse_event.pressed then
+                local point = {
+                    x = mouse_event.x / ugui.internal.scale,
+                    y = mouse_event.y / ugui.internal.scale,
+                }
+                local target_node
+                ugui.internal.foreach_scene_node(function(entry)
+                    if entry.control.hittestable ~= false and ugui.internal.hittest_node(point, entry) then
+                        target_node = entry
+                        return false
+                    end
+                end, true)
+
+                local target = target_node and target_node.control
+                if target and target_node.is_enabled and type(target.context_menu) == 'table'
+                    and #target.context_menu > 0 and target.uid ~= ugui.internal.context_menu_uid then
+                    ugui.internal.context_menu_state = {
+                        owner_uid = target.uid,
+                        items = target.context_menu,
+                        position = point,
+                        opened_frame = ugui.internal.frame_index,
+                    }
+                    local menu_data = ugui.internal.control_data[ugui.internal.context_menu_uid]
+                    if menu_data then
+                        menu_data.dismissed = 0
+                        menu_data.hovered_path = {}
+                    end
+                else
+                    ugui.internal.context_menu_state = nil
+                end
+            end
+        end
 
         -- Clear the mouse captured control if we released the mouse
         if not ugui.internal.environment.is_primary_down then
@@ -967,7 +1019,7 @@ ugui.internal = {
                 ugui.internal.foreach_scene_node(function(entry)
                     local effective_hittestable = entry.control.hittestable ~= false
                     if effective_hittestable and
-                        ugui.internal.is_point_inside_scene_node({x = mouse_event.x, y = mouse_event.y}, entry) then
+                        ugui.internal.hittest_node({x = mouse_event.x, y = mouse_event.y}, entry) then
                         if entry.is_enabled then
                             target = entry.control
                         end
@@ -1005,6 +1057,12 @@ ugui.internal = {
         ugui.internal.clicked_control = clicked_control and clicked_control.uid or nil
         ugui.internal.doubleclicked_control = doubleclicked_control and doubleclicked_control.uid or nil
         ugui.internal.tripleclicked_control = tripleclicked_control and tripleclicked_control.uid or nil
+
+        local context_menu_state = ugui.internal.context_menu_state
+        if context_menu_state and context_menu_state.opened_frame < ugui.internal.frame_index
+            and not ugui.internal.context_menu_owner_seen then
+            ugui.internal.context_menu_state = nil
+        end
     end,
 }
 
@@ -1016,6 +1074,9 @@ ugui.internal = {
 ---@return ControlReturnValue # The control's return value.
 local control_impl = function(control, control_type, fn, initialize_data)
     ugui.internal.assert(control_type ~= '', 'empty control_type is no longer allowed')
+    if control.uid == ugui.internal.context_menu_uid and not ugui.internal.context_menu_placing then
+        error('UID -1 is reserved for the global context menu.', 2)
+    end
 
     local get_return_value = control.get_return_value
     if get_return_value == nil then
@@ -1091,6 +1152,40 @@ local control_impl = function(control, control_type, fn, initialize_data)
         if not ok then
             revert_styler_mixin()
             error(error_message, 0)
+        end
+    end
+
+    local context_menu_state = ugui.internal.context_menu_state
+    if control.uid ~= ugui.internal.context_menu_uid and context_menu_state
+        and context_menu_state.owner_uid == control.uid then
+        local items = control.context_menu
+        if not ugui.internal.is_control_enabled(control) or type(items) ~= 'table' or #items == 0 then
+            ugui.internal.context_menu_state = nil
+        else
+            ugui.internal.context_menu_owner_seen = true
+            local previous_parent = ugui.internal.current_parent
+            ugui.internal.current_parent = ugui.internal.scene_root
+            ugui.internal.context_menu_placing = true
+            local ok, menu_result = pcall(ugui.menu, {
+                uid = ugui.internal.context_menu_uid,
+                rectangle = {
+                    x = context_menu_state.position.x,
+                    y = context_menu_state.position.y,
+                },
+                items = items,
+                z_index = math.huge,
+            })
+            ugui.internal.context_menu_placing = false
+            ugui.internal.current_parent = previous_parent
+            if not ok then
+                revert_styler_mixin()
+                error(menu_result, 0)
+            end
+
+            return_value.meta.context_menu_result = menu_result
+            if menu_result.item ~= nil or menu_result.dismissed then
+                ugui.internal.context_menu_state = nil
+            end
         end
     end
 
@@ -1317,6 +1412,16 @@ end
 ugui.internal.point_in_rect = function(point, rect)
     return point.x >= rect.x and point.x <= rect.x + rect.width and
         point.y >= rect.y and point.y <= rect.y + rect.height
+end
+
+---@param point UguiVector2
+---@param circle UguiRect
+---@return boolean inside
+ugui.internal.point_in_circle = function(point, circle)
+    local radius = circle.width / 2
+    local dx = point.x - (circle.x + radius)
+    local dy = point.y - (circle.y + radius)
+    return dx * dx + dy * dy <= radius * radius
 end
 
 ---Asserts that the specified condition is true, printing the stacktrace if it's false.
@@ -1591,7 +1696,7 @@ ugui.internal.is_point_inside_clip_ancestors = function(point, node)
         local control = ancestor.control
         if control.clip_children and not ugui.internal.point_in_rect(
                 point,
-                ugui.internal.get_render_rect(control)
+                control.render_rect
             ) then
             return false
         end
@@ -1604,8 +1709,8 @@ end
 ---@param point UguiVector2
 ---@param node SceneNode
 ---@return boolean
-ugui.internal.is_point_inside_scene_node = function(point, node)
-    return ugui.internal.point_in_rect(point, ugui.internal.get_render_rect(node.control))
+ugui.internal.hittest_node = function(point, node)
+    return ugui.internal.hittest(point, node.control)
         and ugui.internal.is_point_inside_clip_ancestors(point, node)
 end
 
@@ -1634,11 +1739,16 @@ ugui.internal.compute_render_rect = function(control)
     return render_rectangle_from_parent(control.rectangle, get_parent_render_rectangle(parent))
 end
 
----Gets the computed absolute rectangle of a placed control.
+
+---Checks whether a point is inside the control's custom hit region, or its render rectangle by default.
+---@param point UguiVector2
 ---@param control UguiControl
----@return UguiRect
-ugui.internal.get_render_rect = function(control)
-    return control.render_rect or control.rectangle
+---@return boolean
+ugui.internal.hittest = function(point, control)
+    if control.hittest then
+        return control.hittest(control, point)
+    end
+    return ugui.internal.point_in_rect(point, control.render_rect)
 end
 
 ---Recomputes a placed node and its descendants after a local rectangle changes.
@@ -2519,9 +2629,13 @@ ugui.standard_styler = {
     ---Draws a menu with the specified parameters.
     ---@param control Menu The menu control.
     ---@param rectangle UguiRect The control's bounds.
-    draw_menu = function(control, rectangle)
+    ---@param hovered_index integer? The item to highlight for this menu level.
+    draw_menu = function(control, rectangle, hovered_index)
         local visual_state = ugui.get_visual_state(control)
         ugui.standard_styler.draw_menu_frame(rectangle, visual_state)
+        if hovered_index == nil then
+            hovered_index = ugui.internal.control_data[control.uid].hovered_index
+        end
 
         local y = rectangle.y
 
@@ -2535,7 +2649,7 @@ ugui.standard_styler = {
             }, -1)
 
             local visual_state = ugui.visual_states.normal
-            if ugui.internal.control_data[control.uid].hovered_index and ugui.internal.control_data[control.uid].hovered_index == i then
+            if hovered_index == i then
                 visual_state = ugui.visual_states.hovered
             end
             if item.enabled == false then
@@ -2894,61 +3008,64 @@ ugui.standard_styler = {
     ---Draws a square saturation/value color picker with its hue band.
     ---@param control ColorPicker The control table.
     ---@param square UguiRect The square saturation/value field.
-    ---@param hue_bar UguiRect The hue band's bounds.
+    ---@param band UguiRect The band's bounds.
     ---@param hue number The selected hue in the range 0-1.
     ---@param hue_color UguiRGBAF The fully saturated color for the selected hue.
     ---@param saturation number The selected saturation in the range 0-1.
     ---@param value number The selected value in the range 0-1.
-    ---@param hue_bar_position string The side of the square occupied by the hue band.
-    draw_colorpicker = function(control, square, hue_bar, hue, hue_color, saturation, value, hue_bar_position)
+    ---@param band_position string The side of the square occupied by the band.
+    draw_colorpicker = function(control, square, band, hue, hue_color, saturation, value, band_position)
         local p = ugui.internal.painter
         local square_painter_rect = ugui.internal.rect_to_painter_rect(square)
-        local hue_bar_painter_rect = ugui.internal.rect_to_painter_rect(hue_bar)
-        local hue_is_horizontal = hue_bar_position == 'top' or hue_bar_position == 'bottom'
 
-        p:begin_path()
-        p:rect(hue_bar_painter_rect)
-        p:fill({
-            type = 'linear_gradient',
-            x0 = hue_is_horizontal and hue_bar.x or hue_bar.x + hue_bar.width / 2,
-            y0 = hue_is_horizontal and hue_bar.y + hue_bar.height / 2 or hue_bar.y,
-            x1 = hue_is_horizontal and hue_bar.x + hue_bar.width or hue_bar.x + hue_bar.width / 2,
-            y1 = hue_is_horizontal and hue_bar.y + hue_bar.height / 2 or hue_bar.y + hue_bar.height,
-            stops = {
-                {offset = 0, color = '#FF0000'},
-                {offset = 1 / 6, color = '#FFFF00'},
-                {offset = 2 / 6, color = '#00FF00'},
-                {offset = 3 / 6, color = '#00FFFF'},
-                {offset = 4 / 6, color = '#0000FF'},
-                {offset = 5 / 6, color = '#FF00FF'},
-                {offset = 1, color = '#FF0000'},
-            },
-        })
+        if band.width > 0 and band.height > 0 then
+            local band_painter_rect = ugui.internal.rect_to_painter_rect(band)
+            local band_is_horizontal = band_position == 'top' or band_position == 'bottom'
 
-        local hue_marker = hue_is_horizontal
-            and hue_bar.x + hue * hue_bar.width
-            or hue_bar.y + hue * hue_bar.height
-        p:save()
-        p:clip(hue_bar_painter_rect)
-        p:begin_path()
-        if hue_is_horizontal then
-            p:line(hue_marker, hue_bar.y, hue_marker, hue_bar.y + hue_bar.height)
-        else
-            p:line(hue_bar.x, hue_marker, hue_bar.x + hue_bar.width, hue_marker)
+            p:begin_path()
+            p:rect(band_painter_rect)
+            p:fill({
+                type = 'linear_gradient',
+                x0 = band_is_horizontal and band.x or band.x + band.width / 2,
+                y0 = band_is_horizontal and band.y + band.height / 2 or band.y,
+                x1 = band_is_horizontal and band.x + band.width or band.x + band.width / 2,
+                y1 = band_is_horizontal and band.y + band.height / 2 or band.y + band.height,
+                stops = {
+                    {offset = 0, color = '#FF0000'},
+                    {offset = 1 / 6, color = '#FFFF00'},
+                    {offset = 2 / 6, color = '#00FF00'},
+                    {offset = 3 / 6, color = '#00FFFF'},
+                    {offset = 4 / 6, color = '#0000FF'},
+                    {offset = 5 / 6, color = '#FF00FF'},
+                    {offset = 1, color = '#FF0000'},
+                },
+            })
+
+            local hue_marker = band_is_horizontal
+                and band.x + hue * band.width
+                or band.y + hue * band.height
+            p:save()
+            p:clip(band_painter_rect)
+            p:begin_path()
+            if band_is_horizontal then
+                p:line(hue_marker, band.y, hue_marker, band.y + band.height)
+            else
+                p:line(band.x, hue_marker, band.x + band.width, hue_marker)
+            end
+            p:stroke('#000000', {width = 3})
+            p:begin_path()
+            if band_is_horizontal then
+                p:line(hue_marker, band.y, hue_marker, band.y + band.height)
+            else
+                p:line(band.x, hue_marker, band.x + band.width, hue_marker)
+            end
+            p:stroke('#FFFFFFFF', {width = 1})
+            p:restore()
+
+            p:begin_path()
+            p:rect(band_painter_rect)
+            p:stroke('#000000', {width = 1})
         end
-        p:stroke('#000000', {width = 3})
-        p:begin_path()
-        if hue_is_horizontal then
-            p:line(hue_marker, hue_bar.y, hue_marker, hue_bar.y + hue_bar.height)
-        else
-            p:line(hue_bar.x, hue_marker, hue_bar.x + hue_bar.width, hue_marker)
-        end
-        p:stroke('#FFFFFFFF', {width = 1})
-        p:restore()
-
-        p:begin_path()
-        p:rect(hue_bar_painter_rect)
-        p:stroke('#000000', {width = 1})
 
         p:begin_path()
         p:rect(square_painter_rect)
@@ -2996,6 +3113,123 @@ ugui.standard_styler = {
 
         p:begin_path()
         p:rect(square_painter_rect)
+        p:stroke(control.is_enabled == false and '#808080' or '#000000', {width = 1})
+    end,
+
+    ---Draws a hue/saturation color wheel with a value band.
+    ---@param control ColorPicker The control table.
+    ---@param circle UguiRect The square bounds of the color wheel.
+    ---@param band UguiRect The value band's bounds.
+    ---@param hue number The selected hue in the range 0-1.
+    ---@param saturation number The selected saturation in the range 0-1.
+    ---@param value number The selected value in the range 0-1.
+    ---@param band_position string The side of the wheel occupied by the value band.
+    draw_colorpicker_circle = function(control, circle, band, hue, saturation, value, band_position)
+        local p = ugui.internal.painter
+        local painter_rect = ugui.internal.rect_to_painter_rect(circle)
+        local center_x = circle.x + circle.width / 2
+        local center_y = circle.y + circle.height / 2
+        local radius = circle.width / 2
+        if circle.width > 0 and circle.height > 0 then
+            local image_width = 256
+            local image_height = 256
+            local image = ugui.internal.colorpicker_circle_image
+            if not image then
+                image = painter.new_image(image_width, image_height)
+                image:paint(function(wheel_painter)
+                    local wheel_center_x = image_width / 2
+                    local wheel_center_y = image_height / 2
+                    local wheel_radius = image_width / 2
+                    local segment_count = 120
+                    local angle_step = 2 * math.pi / segment_count
+                    local overlap = angle_step / 2
+
+                    for i = 0, segment_count - 1 do
+                        local angle_start = i * angle_step - overlap
+                        local angle_end = (i + 1) * angle_step + overlap
+                        wheel_painter:begin_path()
+                        wheel_painter:move_to(wheel_center_x, wheel_center_y)
+                        wheel_painter:arc(wheel_center_x, wheel_center_y, wheel_radius,
+                            angle_start, angle_end)
+                        wheel_painter:close_path()
+                        wheel_painter:fill(ugui.internal.rgbaf_to_painter_color(
+                            ugui.internal.hsv_to_rgbaf((i + 0.5) / segment_count, 1, 1)))
+                    end
+
+                    wheel_painter:begin_path()
+                    wheel_painter:rect({x = 0, y = 0, w = image_width, h = image_height})
+                    wheel_painter:fill({
+                        type = 'radial_gradient',
+                        center_x = wheel_center_x,
+                        center_y = wheel_center_y,
+                        radius_x = wheel_radius,
+                        radius_y = wheel_radius,
+                        stops = {
+                            {offset = 0, color = {r = 1, g = 1, b = 1, a = 1}},
+                            {offset = 1, color = {r = 1, g = 1, b = 1, a = 0}},
+                        },
+                    })
+                end)
+                ugui.internal.colorpicker_circle_image = image
+            end
+
+            p:image(image, painter_rect, {
+                sampling = 'linear',
+                tint = {r = value, g = value, b = value, a = 1},
+            })
+        end
+
+        if band.width > 0 and band.height > 0 then
+            local band_is_horizontal = band_position == 'top' or band_position == 'bottom'
+            local band_painter_rect = ugui.internal.rect_to_painter_rect(band)
+            local value_color = ugui.internal.rgbaf_to_painter_color(ugui.internal.hsv_to_rgbaf(hue, saturation, 1))
+            local dark_color = {r = 0, g = 0, b = 0, a = 1}
+            p:begin_path()
+            p:rect(band_painter_rect)
+            p:fill({
+                type = 'linear_gradient',
+                x0 = band_is_horizontal and band.x or band.x + band.width / 2,
+                y0 = band_is_horizontal and band.y + band.height / 2 or band.y,
+                x1 = band_is_horizontal and band.x + band.width or band.x + band.width / 2,
+                y1 = band_is_horizontal and band.y + band.height / 2 or band.y + band.height,
+                stops = band_is_horizontal
+                    and {{offset = 0, color = dark_color}, {offset = 1, color = value_color}}
+                    or {{offset = 0, color = value_color}, {offset = 1, color = dark_color}},
+            })
+
+            local value_marker = band_is_horizontal
+                and band.x + value * band.width
+                or band.y + (1 - value) * band.height
+            p:save()
+            p:clip(band_painter_rect)
+            p:begin_path()
+            if band_is_horizontal then
+                p:line(value_marker, band.y, value_marker, band.y + band.height)
+            else
+                p:line(band.x, value_marker, band.x + band.width, value_marker)
+            end
+            p:stroke('#000000', {width = 3})
+            p:stroke('#FFFFFFFF', {width = 1})
+            p:restore()
+            p:begin_path()
+            p:rect(band_painter_rect)
+            p:stroke('#000000', {width = 1})
+        end
+
+        local marker_x = center_x + math.cos(hue * 2 * math.pi) * saturation * radius
+        local marker_y = center_y + math.sin(hue * 2 * math.pi) * saturation * radius
+        p:save()
+        p:clip(painter_rect)
+        p:begin_path()
+        p:circle({x = marker_x - 5, y = marker_y - 5, w = 10, h = 10})
+        p:stroke('#000000', {width = 2})
+        p:begin_path()
+        p:circle({x = marker_x - 3, y = marker_y - 3, w = 6, h = 6})
+        p:stroke('#FFFFFFFF', {width = 1})
+        p:restore()
+
+        p:begin_path()
+        p:circle(painter_rect)
         p:stroke(control.is_enabled == false and '#808080' or '#000000', {width = 1})
     end,
 
@@ -3857,6 +4091,7 @@ end
 ---@class UguiControl
 ---@field public uid UID The unique identifier of the control.
 ---@field public draw (fun(control: UguiControl))? Draws the control. Use `control.render_rect` instead of `control.rectangle`.
+---@field public hittest (fun(control: UguiControl, point: UguiVector2): boolean)? Provides hittesting for the control. By default, the check is whether the point is inside `control.render_rect`.
 ---@field public get_return_value (fun(control: UguiControl, data: any): ControlReturnValue)? Computes the control's current return value and updates its data; use `render_rect` for absolute bounds.
 ---@field public hittestable boolean? Whether this control instance participates in hit-testing. Defaults to `true`, except controls with a different placement default, such as labels and panels. Set this to `true` or `false` to override the default.
 ---@field public styler_mixin any? An optional styler mixin table which can override specific styler parameters for this control. Inherited by children.
@@ -3864,6 +4099,7 @@ end
 ---@field public clip_children boolean? Whether to clip child controls to this control's rectangle. Defaults to false.
 ---@field public is_enabled boolean? Whether the control is enabled. If nil or true, the control is enabled. A disabled ancestor disables this control too.
 ---@field public tooltip string? The control's tooltip. If nil, no tooltip will be shown.
+---@field public context_menu MenuItem[]? Items shown in a context menu when this control is right-clicked.
 ---@field public plaintext boolean? Whether the control's text content is drawn as plain text without rich rendering.
 ---@field public z_index integer? The control's Z-index. If nil, `0` is assumed.
 ---@field public opacity number? The control's opacity, normally in [0, 1]. Defaults to 1.
@@ -5631,8 +5867,9 @@ end
 
 ---@class ColorPicker : UguiControl
 ---@field public color UguiRGBAF The current color and initial selection.
----@field public hue_bar_position "right"|"top"|"left"|"bottom"? Where the hue band is placed. Defaults to "right".
----A square saturation/value picker with an adjacent hue band.
+---@field public shape "square"|"circle"? The picker shape. Defaults to "square".
+---@field public band_position "right"|"top"|"left"|"bottom"|"none"? Where the hue/value band is placed. Defaults to "right".
+---A color picker with either a square saturation/value field and hue band, or a circular hue/saturation picker with a value band.
 
 ---Gets the number of UID slots reserved by a ColorPicker.
 ---@return integer
@@ -5640,44 +5877,65 @@ ugui.colorpicker_uids = function()
     return 1
 end
 
-local valid_hue_bar_positions = {right = true, top = true, left = true, bottom = true}
-
+local valid_band_positions = {right = true, top = true, left = true, bottom = true, none = true}
+local valid_shapes = {square = true, circle = true}
 
 ---@param rectangle UguiRect
----@param hue_bar_position string
----@return UguiRect square
----@return UguiRect hue_bar
-local function get_picker_geometry(rectangle, hue_bar_position)
+---@param band_position string
+---@return UguiRect picker
+---@return UguiRect band
+local function colorpicker_get_geometry(rectangle, band_position)
     local shortest_side = math.min(rectangle.width, rectangle.height)
-    local hue_bar_thickness = math.min(16, shortest_side * 0.12)
-    local gap = math.min(4, shortest_side * 0.04)
-    local square_side
-    local square
-    local hue_bar
+    if band_position == 'none' then
+        local x = rectangle.x + (rectangle.width - shortest_side) / 2
+        local y = rectangle.y + (rectangle.height - shortest_side) / 2
+        return {x = x, y = y, width = shortest_side, height = shortest_side},
+            {x = x + shortest_side / 2, y = y + shortest_side / 2, width = 0, height = 0}
+    end
 
-    if hue_bar_position == 'left' or hue_bar_position == 'right' then
-        square_side = math.max(0, math.min(rectangle.height, rectangle.width - hue_bar_thickness - gap))
-        local y = rectangle.y + (rectangle.height - square_side) / 2
-        if hue_bar_position == 'left' then
-            hue_bar = {x = rectangle.x, y = y, width = hue_bar_thickness, height = square_side}
-            square = {x = rectangle.x + hue_bar_thickness + gap, y = y, width = square_side, height = square_side}
+    local band_thickness = math.min(16, shortest_side * 0.12)
+    local gap = math.min(4, shortest_side * 0.04)
+    local picker_side
+    local picker
+    local band
+
+    if band_position == 'left' or band_position == 'right' then
+        picker_side = math.max(0, math.min(rectangle.height, rectangle.width - band_thickness - gap))
+        local y = rectangle.y + (rectangle.height - picker_side) / 2
+        if band_position == 'left' then
+            band = {x = rectangle.x, y = y, width = band_thickness, height = picker_side}
+            picker = {x = rectangle.x + band_thickness + gap, y = y, width = picker_side, height = picker_side}
         else
-            square = {x = rectangle.x, y = y, width = square_side, height = square_side}
-            hue_bar = {x = rectangle.x + square_side + gap, y = y, width = hue_bar_thickness, height = square_side}
+            picker = {x = rectangle.x, y = y, width = picker_side, height = picker_side}
+            band = {x = rectangle.x + picker_side + gap, y = y, width = band_thickness, height = picker_side}
         end
     else
-        square_side = math.max(0, math.min(rectangle.width, rectangle.height - hue_bar_thickness - gap))
-        local x = rectangle.x + (rectangle.width - square_side) / 2
-        if hue_bar_position == 'top' then
-            hue_bar = {x = x, y = rectangle.y, width = square_side, height = hue_bar_thickness}
-            square = {x = x, y = rectangle.y + hue_bar_thickness + gap, width = square_side, height = square_side}
+        picker_side = math.max(0, math.min(rectangle.width, rectangle.height - band_thickness - gap))
+        local x = rectangle.x + (rectangle.width - picker_side) / 2
+        if band_position == 'top' then
+            band = {x = x, y = rectangle.y, width = picker_side, height = band_thickness}
+            picker = {x = x, y = rectangle.y + band_thickness + gap, width = picker_side, height = picker_side}
         else
-            square = {x = x, y = rectangle.y, width = square_side, height = square_side}
-            hue_bar = {x = x, y = rectangle.y + square_side + gap, width = square_side, height = hue_bar_thickness}
+            picker = {x = x, y = rectangle.y, width = picker_side, height = picker_side}
+            band = {x = x, y = rectangle.y + picker_side + gap, width = picker_side, height = band_thickness}
         end
     end
 
-    return square, hue_bar
+    return picker, band
+end
+
+---@param control ColorPicker
+---@param point UguiVector2
+---@return boolean
+local function colorpicker_hittest(control, point)
+    local rectangle = control.render_rect
+    if (control.shape or 'square') ~= 'circle' then
+        return ugui.internal.point_in_rect(point, rectangle)
+    end
+
+    local circle, band = colorpicker_get_geometry(rectangle, control.band_position or 'right')
+    return ugui.internal.point_in_circle(point, circle) or
+        (band.width > 0 and band.height > 0 and ugui.internal.point_in_rect(point, band))
 end
 
 ---@param control ColorPicker
@@ -5687,16 +5945,25 @@ local function colorpicker_get_return_value(control, data)
     local input_color = control.color
     local hue, saturation, value = ugui.internal.rgbaf_to_hsv(input_color)
     local color = ugui.internal.copy_color(input_color)
-    local hue_bar_position = control.hue_bar_position or 'right'
-    local square, hue_bar = get_picker_geometry(control.render_rect, hue_bar_position)
+    local shape = control.shape or 'square'
+    local band_position = control.band_position or 'right'
+    local square, band = colorpicker_get_geometry(control.render_rect, band_position)
 
     local selection_changed = false
     if ugui.internal.clicked_control == control.uid then
         local mouse_down_position = ugui.internal.mouse_down_position
-        if square.width > 0 and ugui.internal.point_in_rect(mouse_down_position, square) then
+        if shape == 'circle' then
+            if square.width > 0 and ugui.internal.point_in_circle(mouse_down_position, square) then
+                data.drag_mode = 'circle'
+            elseif band.width > 0 and ugui.internal.point_in_rect(mouse_down_position, band) then
+                data.drag_mode = 'value'
+            else
+                data.drag_mode = nil
+            end
+        elseif square.width > 0 and ugui.internal.point_in_rect(mouse_down_position, square) then
             data.drag_mode = 'square'
-        elseif hue_bar.width > 0 and ugui.internal.point_in_rect(mouse_down_position, hue_bar) then
-            data.drag_mode = 'hue'
+        elseif band.width > 0 and ugui.internal.point_in_rect(mouse_down_position, band) then
+            data.drag_mode = 'band'
         else
             data.drag_mode = nil
         end
@@ -5704,18 +5971,39 @@ local function colorpicker_get_return_value(control, data)
 
     if ugui.internal.mouse_captured_control == control.uid then
         local mouse_position = ugui.internal.environment.mouse_position
-        if data.drag_mode == 'square' and square.width > 0 then
+        if data.drag_mode == 'circle' and square.width > 0 then
+            local center_x = square.x + square.width / 2
+            local center_y = square.y + square.height / 2
+            local dx = mouse_position.x - center_x
+            local dy = mouse_position.y - center_y
+            local distance = math.sqrt(dx * dx + dy * dy)
+            local new_saturation = ugui.internal.clamp(distance / (square.width / 2), 0, 1)
+            local new_hue = distance == 0 and hue or (math.atan(dy, dx) / (2 * math.pi)) % 1
+            selection_changed = new_saturation ~= saturation or new_hue ~= hue
+            saturation = new_saturation
+            hue = new_hue
+        elseif shape == 'circle' and data.drag_mode == 'value' and band.width > 0 then
+            local new_value
+            if band_position == 'left' or band_position == 'right' then
+                new_value = 1 - (mouse_position.y - band.y) / band.height
+            else
+                new_value = (mouse_position.x - band.x) / band.width
+            end
+            new_value = ugui.internal.clamp(new_value, 0, 1)
+            selection_changed = new_value ~= value
+            value = new_value
+        elseif data.drag_mode == 'square' and square.width > 0 then
             local new_saturation = ugui.internal.clamp((mouse_position.x - square.x) / square.width, 0, 1)
             local new_value = 1 - ugui.internal.clamp((mouse_position.y - square.y) / square.height, 0, 1)
             selection_changed = new_saturation ~= saturation or new_value ~= value
             saturation = new_saturation
             value = new_value
-        elseif data.drag_mode == 'hue' and hue_bar.width > 0 then
+        elseif shape == 'square' and data.drag_mode == 'band' and band.width > 0 then
             local new_hue
-            if hue_bar_position == 'left' or hue_bar_position == 'right' then
-                new_hue = (mouse_position.y - hue_bar.y) / hue_bar.height
+            if band_position == 'left' or band_position == 'right' then
+                new_hue = (mouse_position.y - band.y) / band.height
             else
-                new_hue = (mouse_position.x - hue_bar.x) / hue_bar.width
+                new_hue = (mouse_position.x - band.x) / band.width
             end
             new_hue = ugui.internal.clamp(new_hue, 0, 1)
             selection_changed = new_hue ~= hue
@@ -5726,18 +6014,61 @@ local function colorpicker_get_return_value(control, data)
     end
 
     local mouse_position = ugui.internal.environment.mouse_position
-    local hue_is_active = ugui.internal.mouse_captured_control == control.uid and data.drag_mode == 'hue' or
+    local circle_is_active = shape == 'circle' and (
+        ugui.internal.mouse_captured_control == control.uid and data.drag_mode == 'circle' or
         ugui.internal.mouse_captured_control ~= control.uid and ugui.internal.hovered_control == control.uid and
-        ugui.internal.point_in_rect(mouse_position, hue_bar)
+        ugui.internal.point_in_circle(mouse_position, square))
+    local band_is_active = band.width > 0 and band.height > 0 and (
+        ugui.internal.mouse_captured_control == control.uid and
+        (data.drag_mode == 'band' or data.drag_mode == 'value') or
+        ugui.internal.mouse_captured_control ~= control.uid and ugui.internal.hovered_control == control.uid and
+        ugui.internal.point_in_rect(mouse_position, band))
 
     if ugui.internal.keyboard_captured_control == control.uid then
         for i = 1, #ugui.internal.environment.key_events do
             local event = ugui.internal.environment.key_events[i]
             if event.keycode2 and event.pressed then
                 local nudge = 0.01
-                if hue_is_active then
+                if shape == 'circle' then
+                    if band_is_active then
+                        local new_value = value
+                        if band_position == 'left' or band_position == 'right' then
+                            if event.keycode2 == Mupen.keycode.SDLK_UP then
+                                new_value = value + nudge
+                            elseif event.keycode2 == Mupen.keycode.SDLK_DOWN then
+                                new_value = value - nudge
+                            end
+                        else
+                            if event.keycode2 == Mupen.keycode.SDLK_LEFT then
+                                new_value = value - nudge
+                            elseif event.keycode2 == Mupen.keycode.SDLK_RIGHT then
+                                new_value = value + nudge
+                            end
+                        end
+                        new_value = ugui.internal.clamp(new_value, 0, 1)
+                        selection_changed = selection_changed or new_value ~= value
+                        value = new_value
+                    elseif circle_is_active then
+                        local new_hue = hue
+                        local new_saturation = saturation
+                        if event.keycode2 == Mupen.keycode.SDLK_LEFT then
+                            new_hue = hue - nudge
+                        elseif event.keycode2 == Mupen.keycode.SDLK_RIGHT then
+                            new_hue = hue + nudge
+                        elseif event.keycode2 == Mupen.keycode.SDLK_UP then
+                            new_saturation = saturation - nudge
+                        elseif event.keycode2 == Mupen.keycode.SDLK_DOWN then
+                            new_saturation = saturation + nudge
+                        end
+                        new_hue = ugui.internal.clamp(new_hue, 0, 1)
+                        new_saturation = ugui.internal.clamp(new_saturation, 0, 1)
+                        selection_changed = selection_changed or new_hue ~= hue or new_saturation ~= saturation
+                        hue = new_hue
+                        saturation = new_saturation
+                    end
+                elseif band_is_active then
                     local new_hue = hue
-                    if hue_bar_position == 'left' or hue_bar_position == 'right' then
+                    if band_position == 'left' or band_position == 'right' then
                         if event.keycode2 == Mupen.keycode.SDLK_UP then
                             new_hue = hue - nudge
                         elseif event.keycode2 == Mupen.keycode.SDLK_DOWN then
@@ -5781,10 +6112,28 @@ local function colorpicker_get_return_value(control, data)
         local scroll_delta = ugui.internal.environment._scroll_delta.y
         if scroll_delta ~= 0 then
             local nudge = scroll_delta * 0.01
-            if hue_is_active then
-                local new_hue = ugui.internal.clamp(hue - nudge, 0, 1)
-                selection_changed = selection_changed or new_hue ~= hue
-                hue = new_hue
+            if band_is_active then
+                if shape == 'circle' then
+                    local new_value = ugui.internal.clamp(value + nudge, 0, 1)
+                    selection_changed = selection_changed or new_value ~= value
+                    value = new_value
+                else
+                    local new_hue = ugui.internal.clamp(hue - nudge, 0, 1)
+                    selection_changed = selection_changed or new_hue ~= hue
+                    hue = new_hue
+                end
+            elseif shape == 'circle' then
+                if circle_is_active then
+                    if ugui.internal.environment.shift then
+                        local new_hue = ugui.internal.clamp(hue - nudge, 0, 1)
+                        selection_changed = selection_changed or new_hue ~= hue
+                        hue = new_hue
+                    else
+                        local new_saturation = ugui.internal.clamp(saturation + nudge, 0, 1)
+                        selection_changed = selection_changed or new_saturation ~= saturation
+                        saturation = new_saturation
+                    end
+                end
             elseif ugui.internal.environment.shift then
                 local new_saturation = ugui.internal.clamp(saturation + nudge, 0, 1)
                 selection_changed = selection_changed or new_saturation ~= saturation
@@ -5814,11 +6163,16 @@ end
 
 local colorpicker_draw = function(control)
     local hue, saturation, value = ugui.internal.rgbaf_to_hsv(control.color)
-    local hue_bar_position = control.hue_bar_position or 'right'
-    local square, hue_bar = get_picker_geometry(control.render_rect, hue_bar_position)
+    local shape = control.shape or 'square'
+    local band_position = control.band_position or 'right'
+    local square, band = colorpicker_get_geometry(control.render_rect, band_position)
 
-    ugui.standard_styler.draw_colorpicker(control, square, hue_bar, hue, ugui.internal.hsv_to_rgbaf(hue, 1, 1),
-        saturation, value, hue_bar_position)
+    if shape == 'circle' then
+        ugui.standard_styler.draw_colorpicker_circle(control, square, band, hue, saturation, value, band_position)
+    else
+        ugui.standard_styler.draw_colorpicker(control, square, band, hue,
+            ugui.internal.hsv_to_rgbaf(hue, 1, 1), saturation, value, band_position)
+    end
 end
 
 ---Places a ColorPicker.
@@ -5827,19 +6181,19 @@ end
 ---@return UguiRGBAF, Meta The selected color and its change metadata.
 ugui.colorpicker = function(control, fn)
     ugui.internal.assert(type(control.color) == 'table', 'expected color to be table')
-    ugui.internal.assert(type(control.color.r) == 'number' and control.color.r >= 0 and control.color.r <= 1,
-        'expected color.r to be a number in the range 0-1')
-    ugui.internal.assert(type(control.color.g) == 'number' and control.color.g >= 0 and control.color.g <= 1,
-        'expected color.g to be a number in the range 0-1')
-    ugui.internal.assert(type(control.color.b) == 'number' and control.color.b >= 0 and control.color.b <= 1,
-        'expected color.b to be a number in the range 0-1')
-    ugui.internal.assert(control.color.a == nil or
-        (type(control.color.a) == 'number' and control.color.a >= 0 and control.color.a <= 1),
-        'expected color.a to be nil or a number in the range 0-1')
-    ugui.internal.assert(control.hue_bar_position == nil or
-        (type(control.hue_bar_position) == 'string' and valid_hue_bar_positions[control.hue_bar_position]),
-        'expected hue_bar_position to be nil, right, top, left, or bottom')
+    ugui.internal.assert(type(control.color.r) == 'number', 'expected color.r to be a number')
+    ugui.internal.assert(type(control.color.g) == 'number', 'expected color.g to be a number')
+    ugui.internal.assert(type(control.color.b) == 'number', 'expected color.b to be a number')
+    ugui.internal.assert(control.color.a == nil or type(control.color.a) == 'number',
+        'expected color.a to be nil or a number')
+    ugui.internal.assert(control.shape == nil or
+        (type(control.shape) == 'string' and valid_shapes[control.shape]),
+        'expected shape to be nil, square, or circle')
+    ugui.internal.assert(control.band_position == nil or
+        (type(control.band_position) == 'string' and valid_band_positions[control.band_position]),
+        'expected band_position to be nil, right, top, left, bottom, or none')
 
+    control.hittest = control.hittest or colorpicker_hittest
     control.draw = control.draw or colorpicker_draw
     control.get_return_value = control.get_return_value or colorpicker_get_return_value
     local result = ugui.internal.control(control, 'colorpicker', fn)
@@ -5937,174 +6291,201 @@ end
 ---@param control Menu The menu instance.
 ---@return integer
 ugui.menu_uids = function(control)
-    local function max_depth(items)
-        local depth = 0
-        for i = 1, #items do
-            local item = items[i]
-            if item.items and #item.items > 0 then
-                depth = math.max(depth, max_depth(item.items) + 1)
-            end
-        end
-        return depth
-    end
-    return 1 + max_depth(control.items)
+    return 1
 end
 
-local function initialize_menu_data(control, data)
+local function menu_init(_, data)
     data.dismissed = 0
+    data.hovered_path = {}
+end
+
+local function menu_size(items)
+    local max_text_width = 0
+    for i = 1, #items do
+        local size = painter.measure_text(items[i].text, {
+            family = ugui.standard_styler.params.font_name,
+            size = ugui.standard_styler.params.font_size,
+        })
+        max_text_width = math.max(max_text_width, size.w)
+    end
+    return {
+        width = max_text_width + ugui.standard_styler.params.menu_item.left_padding +
+            ugui.standard_styler.params.menu_item.right_padding,
+        height = #items * ugui.standard_styler.params.menu_item.height,
+    }
+end
+
+local function menu_fit(rectangle, parent_rectangle)
+    local window_size = ugui.internal.environment.window_size or {x = math.maxinteger, y = math.maxinteger}
+    local overlap = ugui.standard_styler.params.menu.overlap_size
+    if rectangle.x + rectangle.width > window_size.x then
+        if parent_rectangle then
+            rectangle.x = parent_rectangle.x - rectangle.width + overlap
+        else
+            rectangle.x = rectangle.x - (rectangle.x + rectangle.width - window_size.x)
+        end
+    end
+    if rectangle.y + rectangle.height > window_size.y then
+        rectangle.y = rectangle.y - (rectangle.y + rectangle.height - window_size.y)
+    end
+    return rectangle
+end
+
+---@param control Menu
+---@param hovered_path integer[]
+---@return {items: MenuItem[], rectangle: UguiRect, depth: integer}[]
+local function menu_get_visible(control, hovered_path)
+    local visible = {}
+    local rectangle = ugui.internal.deep_clone(assert(control.render_rect))
+    visible[1] = {items = control.items, rectangle = rectangle, depth = 1}
+
+    for depth = 1, #hovered_path do
+        local item_index = hovered_path[depth]
+        local parent = visible[depth]
+        local item = parent and parent.items[item_index]
+        if not item or item.enabled == false or not item.items or #item.items == 0 then
+            break
+        end
+
+        local size = menu_size(item.items)
+        local item_height = ugui.standard_styler.params.menu_item.height
+        local overlap = ugui.standard_styler.params.menu.overlap_size
+        local child_rectangle = {
+            x = parent.rectangle.x + parent.rectangle.width - overlap,
+            y = parent.rectangle.y + (item_index - 1) * item_height,
+            width = size.width,
+            height = size.height,
+        }
+        menu_fit(child_rectangle, parent.rectangle)
+        visible[#visible + 1] = {
+            items = item.items,
+            rectangle = child_rectangle,
+            depth = depth + 1,
+        }
+    end
+    return visible
+end
+
+---@param control Menu
+---@param point UguiVector2
+---@return boolean
+local function menu_hittest(control, point)
+    local data = ugui.internal.control_data[control.uid]
+    local hovered_path = data and data.hovered_path or {}
+    local visible_menus = menu_get_visible(control, hovered_path)
+    for i = 1, #visible_menus do
+        if ugui.internal.point_in_rect(point, visible_menus[i].rectangle) then
+            return true
+        end
+    end
+    return false
 end
 
 ---@param control Menu
 ---@param data any
 ---@return ControlReturnValue
 local function menu_get_return_value(control, data)
-    local rectangle = control.render_rect
-    local function reset_hovered_index_for_all_child_menus(uid, items)
-        if ugui.internal.control_data[uid] then
-            ugui.internal.control_data[uid].hovered_index = nil
-        end
-        for i = 1, #items do
-            local item = items[i]
-            if item.items then
-                reset_hovered_index_for_all_child_menus(uid + 1, item.items)
-            end
-        end
-    end
+    data.hovered_path = data.hovered_path or {}
+    local result = {item = nil, dismissed = false}
+    local visible_menus = menu_get_visible(control, data.hovered_path)
+    local mouse_position = ugui.internal.environment.mouse_position
 
-    local result = {
-        item = nil,
-        dismissed = false,
-    }
-
-    -- We want to delay returning the dismissed state by a frame because we don't get to handle inputs otherwise,
-    -- so we turn the dismissed flag into a tristate.
     if data.dismissed == 2 then
         data.dismissed = 0
         result.dismissed = true
-    end
-
-    if data.dismissed == 1 then
+    elseif data.dismissed == 1 then
         data.dismissed = 2
     end
 
-    if ugui.internal.is_mouse_just_down() and not ugui.internal.point_in_rect(ugui.internal.mouse_down_position, rectangle) then
-        data.dismissed = 1
+    local mouse_down_position = ugui.internal.mouse_down_position
+    if ugui.internal.is_mouse_just_down() then
+        local inside_menu = false
+        for i = 1, #visible_menus do
+            if ugui.internal.point_in_rect(mouse_down_position, visible_menus[i].rectangle) then
+                inside_menu = true
+                break
+            end
+        end
+        if not inside_menu then
+            data.dismissed = 1
+        end
     end
 
-    if ugui.internal.hovered_control == control.uid then
-        reset_hovered_index_for_all_child_menus(control.uid, control.items)
-
-        local i = math.floor((ugui.internal.environment.mouse_position.y - rectangle.y) /
-            ugui.standard_styler.params.menu_item.height) + 1
-        data.hovered_index = ugui.internal.clamp(i, 1, #control.items)
+    local hovered_menu
+    for i = #visible_menus, 1, -1 do
+        if ugui.internal.point_in_rect(mouse_position, visible_menus[i].rectangle) then
+            hovered_menu = visible_menus[i]
+            break
+        end
     end
 
-    if ugui.internal.clicked_control == control.uid then
-        local item = control.items[data.hovered_index]
+    local hovered_item_index
+    if hovered_menu then
+        local item_height = ugui.standard_styler.params.menu_item.height
+        local item_index = math.floor((mouse_position.y - hovered_menu.rectangle.y) / item_height) + 1
+        if item_index >= 1 and item_index <= #hovered_menu.items then
+            local hovered_path = {}
+            for depth = 1, hovered_menu.depth - 1 do
+                hovered_path[depth] = data.hovered_path[depth]
+            end
+            hovered_path[hovered_menu.depth] = item_index
+            data.hovered_path = hovered_path
+            hovered_item_index = item_index
+        end
+    end
 
-        -- Only child-less items can be clicked
-        if item.enabled ~= false and (item.items == nil or #item.items == 0) then
+    if ugui.internal.clicked_control == control.uid and hovered_menu and hovered_item_index then
+        local item = hovered_menu.items[hovered_item_index]
+        if item.enabled ~= false and (not item.items or #item.items == 0) then
             result.item = item
         end
     end
 
     if result.dismissed or result.item then
-        reset_hovered_index_for_all_child_menus(control.uid, control.items)
+        data.hovered_path = {}
     end
 
-    -- FIXME: Cursed flag... does this make sense?
     data.signal_change = ugui.internal.process_signal_changes(data.signal_change,
         result.item ~= nil or result.dismissed)
-
     return {
         primary = result,
-        meta = { signal_change = data.signal_change },
+        meta = {signal_change = data.signal_change},
     }
 end
 
-
 local menu_draw = function(control)
-    ugui.standard_styler.draw_menu(control, control.render_rect)
+    local data = ugui.internal.control_data[control.uid]
+    local visible_menus = menu_get_visible(control, data.hovered_path or {})
+    for i = 1, #visible_menus do
+        local menu = visible_menus[i]
+        ugui.standard_styler.draw_menu(control, menu.rectangle, data.hovered_path[menu.depth])
+    end
 end
 
 ---Places a Menu.
 ---@param control Menu The control table.
----@param fn fun()? A callback whose placed controls become children of the menu.
 ---@return MenuResult, Meta # The menu result.
-ugui.menu = function(control, fn)
+ugui.menu = function(control)
     ugui.internal.assert(type(control.items) == 'table', 'expected items to be table')
     control.z_index = control.z_index or 1000
 
-    -- We adjust the dimensions with what should fit the content
-    local max_text_width = 0
-    for i = 1, #control.items do
-        local item = control.items[i]
-        local size = painter.measure_text(item.text, { family = ugui.standard_styler.params.font_name, size = ugui.standard_styler.params.font_size})
-        if size.w > max_text_width then
-            max_text_width = size.w
-        end
-    end
-
-    control.rectangle.width = max_text_width + ugui.standard_styler.params.menu_item.left_padding +
-        ugui.standard_styler.params.menu_item.right_padding
-    control.rectangle.height = #control.items * ugui.standard_styler.params.menu_item.height
+    local size = menu_size(control.items)
+    local rectangle = assert(control.rectangle)
+    rectangle.width = size.width
+    rectangle.height = size.height
     control.draw = control.draw or menu_draw
-
-    -- Overflow avoidance: shift the X/Y position to avoid going out of bounds.
-    local render_rect = ugui.internal.compute_render_rect(control)
-    local parent_offset_x = render_rect.x - control.rectangle.x
-    local parent_offset_y = render_rect.y - control.rectangle.y
-    if render_rect.x + render_rect.width > ugui.internal.environment.window_size.x then
-        -- If the menu has a parent and there's an overflow on the X axis, try snaking out of the situation by moving left of the menu.
-        local parent_rectangle = rawget(control, '_parent_rectangle')
-        if parent_rectangle then
-            render_rect.x = parent_rectangle.x - control.rectangle.width +
-                ugui.standard_styler.params.menu.overlap_size
-        else
-            render_rect.x = render_rect.x -
-                (render_rect.x + render_rect.width - ugui.internal.environment.window_size.x)
-        end
-        control.rectangle.x = render_rect.x - parent_offset_x
-    end
-    if render_rect.y + render_rect.height > ugui.internal.environment.window_size.y then
-        render_rect.y = render_rect.y -
-            (render_rect.y + render_rect.height - ugui.internal.environment.window_size.y)
-        control.rectangle.y = render_rect.y - parent_offset_y
-    end
-
+    control.hittest = control.hittest or menu_hittest
     control.get_return_value = control.get_return_value or menu_get_return_value
-    local result = ugui.internal.control(control, 'menu', fn, initialize_menu_data)
-    local data = ugui.internal.control_data[control.uid]
 
-    -- Show child menu if there's any hovered one
-    if data.hovered_index ~= nil then
-        local i = data.hovered_index
-        local item = control.items[i]
+    local render_rect = ugui.internal.compute_render_rect(control)
+    local parent_offset_x = render_rect.x - rectangle.x
+    local parent_offset_y = render_rect.y - rectangle.y
+    menu_fit(render_rect, rawget(control, '_parent_rectangle'))
+    rectangle.x = render_rect.x - parent_offset_x
+    rectangle.y = render_rect.y - parent_offset_y
 
-        if item.items and item.enabled ~= false then
-            local submenu_control = {
-                uid = control.uid + 1,
-                rectangle = {
-                    x = control.rectangle.x + control.rectangle.width - ugui.standard_styler.params.menu.overlap_size,
-                    y = control.rectangle.y + ((i - 1) * ugui.standard_styler.params.menu_item.height),
-                    width = 0,
-                    height = 0,
-                },
-                items = item.items,
-                opacity = control.opacity,
-                z_index = (control.z_index or 0) + 1,
-            }
-            rawset(submenu_control, '_parent_rectangle', ugui.internal.deep_clone(control.render_rect))
-            local submenu_result = ugui.menu(submenu_control)
-
-            if submenu_result.item then
-                result.dismissed = false
-                result.item = submenu_result.item
-            end
-        end
-    end
-
-    return result, result.meta
+    local result = ugui.internal.control(control, 'menu', nil, menu_init)
+    return result.primary, result.meta
 end
 
 -- ------------------------------------------------------------
