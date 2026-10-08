@@ -175,9 +175,11 @@ return {
             -- show only the project page if no project was loaded
             selected_tab_index = 1
         end
+
+        local select_tab_uid = project_loaded and UID.SelectTabProjectLoaded or UID.SelectTab
         -- TODO: consider respecting valid bounding 'rectangle' result from this control
         selected_tab_index = ugui.tabcontrol({
-            uid = UID.SelectTab,
+            uid = select_tab_uid,
             rectangle = grid_rect(0, 0, 6, 1),
             items = project_loaded and lualinq.select(Tabs, function(e) return e.name() end) or { Tabs[1].name() },
             selected_index = selected_tab_index,

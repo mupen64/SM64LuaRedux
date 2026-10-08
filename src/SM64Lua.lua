@@ -97,9 +97,9 @@ G_KEYS = {}
 
 local UID = UIDProvider.allocate_once('SM64Lua', function(enum_next)
     return {
-        TabIndex = enum_next(ugui.registry.carrousel_button.uids()),
+        TabIndex = enum_next(ugui.carrousel_button_uids()),
         ResetPreset = enum_next(UIDProvider.unknown),
-        PresetIndex = enum_next(ugui.registry.carrousel_button.uids()),
+        PresetIndex = enum_next(ugui.carrousel_button_uids()),
     }
 end)
 
@@ -144,15 +144,7 @@ function get_is_keyboard_captured()
         return false
     end
 
-    ---@type SceneEntry?
-    local keyboard_captured_control = nil
-    for i = 1, #ugui.internal.scene, 1 do
-        local entry = ugui.internal.scene[i]
-        if entry.control.uid == ugui.internal.keyboard_captured_control then
-            keyboard_captured_control = entry
-        end
-    end
-
+    local keyboard_captured_control = ugui.internal.find_node(ugui.internal.keyboard_captured_control)
     if not keyboard_captured_control then
         return false
     end

@@ -19,17 +19,17 @@ local Gui = dofile(views_path .. 'SemanticWorkflow/Definitions/Gui.lua')
 
 local UID = UIDProvider.allocate_once('ProjectTab', function(enum_next)
     return {
-        NewProject = enum_next(ugui.registry.button.uids()),
-        OpenProject = enum_next(ugui.registry.button.uids()),
-        SaveProject = enum_next(ugui.registry.button.uids()),
-        PurgeProject = enum_next(ugui.registry.button.uids()),
+        NewProject = enum_next(ugui.button_uids()),
+        OpenProject = enum_next(ugui.button_uids()),
+        SaveProject = enum_next(ugui.button_uids()),
+        PurgeProject = enum_next(ugui.button_uids()),
         DisableProjectSheets = enum_next(),
         ProjectSheetBase = enum_next(UIDProvider.unknown),
         AddSheet = enum_next(),
-        ConfirmationYes = enum_next(ugui.registry.button.uids()),
-        ConfirmationNo = enum_next(ugui.registry.button.uids()),
-        ConfirmationText = enum_next(ugui.registry.label.uids()),
-        NoSheetsLabel = enum_next(ugui.registry.label.uids()),
+        ConfirmationYes = enum_next(ugui.button_uids()),
+        ConfirmationNo = enum_next(ugui.button_uids()),
+        ConfirmationText = enum_next(ugui.label_uids()),
+        NoSheetsLabel = enum_next(ugui.label_uids()),
     }
 end)
 
@@ -247,7 +247,7 @@ function __impl.render(draw)
                 SemanticWorkflowProject.current = nil
             end
         end
-        uid = uid + 1
+        uid = uid + ugui.toggle_button_uids()
 
         -- prevent rendering options for the "add..." button
         if sheet == nil then break end
@@ -263,7 +263,7 @@ function __impl.render(draw)
                 is_enabled = main_gui_enabled() and args.enabled,
                 styler_mixin = args.styler_mixin,
             })
-            uid = uid + 1
+            uid = uid + ugui.button_uids()
             x = x + width
             return result
         end
@@ -279,7 +279,7 @@ function __impl.render(draw)
                 is_enabled = args.override_enable or main_gui_enabled(),
                 styler_mixin = args.styler_mixin,
             })
-            uid = uid + 1
+            uid = uid + ugui.toggle_button_uids()
             x = x + width
             return result ~= args.toggled
         end

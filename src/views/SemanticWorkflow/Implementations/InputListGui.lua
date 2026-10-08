@@ -62,7 +62,10 @@ local SCROLLBAR_WIDTH <const> = 0.3
 
 local MAX_DISPLAYED_SECTIONS <const> = 15
 
-local NUM_UIDS_PER_ROW <const> = 20
+local SECTION_UIDS_PER_ROW <const> = 12
+local INPUT_UIDS_PER_ROW <const> = 11
+local INPUT_ROW_UID_OFFSET <const> = SECTION_UIDS_PER_ROW
+local NUM_UIDS_PER_ROW <const> = SECTION_UIDS_PER_ROW + INPUT_UIDS_PER_ROW
 local BUTTON_COLORS <const> = {
     { background = '#0000FF64', button = '#0000BEFF' }, -- A
     { background = '#00B11664', button = '#00E62CFF' }, -- B
@@ -83,8 +86,8 @@ local scroll_offset = 0
 local UID = UIDProvider.allocate_once('InputListGui', function(enum_next)
     local base = enum_next(MAX_DISPLAYED_SECTIONS * NUM_UIDS_PER_ROW)
     return {
-        SheetName = enum_next(ugui.registry.textbox.uids()),
-        Scrollbar = enum_next(ugui.registry.scrollbar.uids()),
+        SheetName = enum_next(ugui.textbox_uids()),
+        Scrollbar = enum_next(ugui.scrollbar_uids()),
         Row = function(index)
             return base + (index - 1) * NUM_UIDS_PER_ROW
         end,
@@ -337,7 +340,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
             end
 
             if ugui.button({
-                uid = uid_base + 1,
+                uid = uid_base + 2,
                 rectangle = span(COL_ARRANGEMENT_2, COL_ARRANGEMENT_3),
                 text = '[icon:clone_up]',
                 tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_PREPEND_SECTION_TOOL_TIP")
@@ -346,7 +349,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
             end
 
             if ugui.button({
-                uid = uid_base + 2,
+                uid = uid_base + 4,
                 rectangle = span(COL_ARRANGEMENT_3, COL_ARRANGEMENT_4),
                 text = '[icon:clone_down]',
                 tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_APPEND_SECTION_TOOL_TIP")
@@ -355,7 +358,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
             end
 
             if ugui.button({
-                uid = uid_base + 3,
+                uid = uid_base + 6,
                 rectangle = span(COL_ARRANGEMENT_4, COL_ARRANGEMENT_END),
                 text = '[icon:delete]',
                 tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_SECTION_TOOL_TIP"),
@@ -366,7 +369,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
 
             local index = IndexOf(sheet.sections, section)
             if ugui.button({
-                uid = uid_base + 4,
+                uid = uid_base + 8,
                 rectangle = span(COL_ARRANGEMENT_END, COL_MERGE_SECTION_UP_END),
                 text = '[icon:merge_up]',
                 tooltip = Locales.str('SEMANTIC_WORKFLOW_INPUTS_MERGE_SECTION_UP_TOOL_TIP'),
@@ -380,13 +383,13 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
             end
 
             section.name = ugui.textbox({
-                uid = uid_base + 5,
+                uid = uid_base + 10,
                 rectangle = span(COL_MERGE_SECTION_UP_END, COL_SECTION_NAME_END),
                 text = section.name or '',
             })
 
             ugui.label({
-                uid = uid_base + 6,
+                uid = uid_base + 11,
                 rectangle = span(COL_SECTION_NAME_END, COL_SECTION_LENGTH_END),
                 text = (SemanticWorkflowProject.current.measured_section_lengths[section] or '?') .. 'f',
                 color = ugui.standard_styler.params.textbox.text[1],
@@ -398,7 +401,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
             local tas_state = input.tas_state
 
             if ugui.button({
-                uid = uid_base + 10,
+                uid = uid_base + INPUT_ROW_UID_OFFSET,
                 rectangle = span(COL_COLLAPSE_OR_PREVIEW_1, COL_COLLAPSE_OR_PREVIEW_END),
                 text = '[icon:next_page]',
                 tooltip = Locales.str('SEMANTIC_WORKFLOW_INPUTS_RUN_TO_INPUT_TOOL_TIP'),
@@ -409,7 +412,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
 
 
             if ugui.button({
-                uid = uid_base + 11,
+                uid = uid_base + INPUT_ROW_UID_OFFSET + 2,
                 rectangle = span(COL_ARRANGEMENT_2, COL_ARRANGEMENT_3),
                 text = '[icon:clone_up]',
                 tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_PREPEND_INPUT_TOOL_TIP")
@@ -418,7 +421,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
             end
 
             if ugui.button({
-                uid = uid_base + 12,
+                uid = uid_base + INPUT_ROW_UID_OFFSET + 4,
                 rectangle = span(COL_ARRANGEMENT_3, COL_ARRANGEMENT_4),
                 text = '[icon:clone_down]',
                 tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_APPEND_INPUT_TOOL_TIP")
@@ -427,7 +430,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
             end
 
             if ugui.button({
-                uid = uid_base + 13,
+                uid = uid_base + INPUT_ROW_UID_OFFSET + 6,
                 rectangle = span(COL_ARRANGEMENT_4, COL_ARRANGEMENT_END),
                 text = '[icon:delete]',
                 tooltip = Locales.str("SEMANTIC_WORKFLOW_INPUTS_DELETE_INPUT_TOOL_TIP"),
@@ -443,7 +446,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
                     or ''
                 ) .. Locales.str('SEMANTIC_WORKFLOW_INPUTS_TERMINATION_TOOL_TIP_2') .. input.timeout
             if ugui.button({
-                uid = uid_base + 14,
+                uid = uid_base + INPUT_ROW_UID_OFFSET + 8,
                 rectangle = span(COL_TERMINATION_1, COL_TERMINATION_END),
                 text = input.end_action ~= 0 and '[icon:action]' or input.timeout < 100 and '' .. input.timeout or '99+',
                 tooltip = termination_tool_tip,
@@ -460,7 +463,7 @@ local function draw_sections_gui(sheet, draw, section_rect, button_draw_data)
                 mixin.joystick.back = { [1] = '#00C80064' }
             end
             ugui.joystick({
-                uid = uid_base + 15,
+                uid = uid_base + INPUT_ROW_UID_OFFSET + 10,
                 rectangle = span(COL_JOYSTICK_1, COL_JOYSTICK_2, FRAME_COLUMN_HEIGHT),
                 position = { x = input.joy.X, y = -input.joy.Y },
                 styler_mixin = mixin,

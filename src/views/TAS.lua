@@ -6,30 +6,30 @@
 
 local UID = UIDProvider.allocate_once('TAS', function(enum_next)
     return {
-        ProcessedValues = enum_next(ugui.registry.listbox.uids()),
-        GoalAngle = enum_next(ugui.registry.numberbox.uids()),
-        GoalMag = enum_next(ugui.registry.numberbox.uids()),
-        HighMagnitude = enum_next(ugui.registry.toggle_button.uids()),
-        ResetMag = enum_next(ugui.registry.button.uids()),
-        DustlessWalk = enum_next(ugui.registry.button.uids()),
-        SpeedKick = enum_next(ugui.registry.button.uids()),
-        D99Always = enum_next(ugui.registry.toggle_button.uids()),
-        D99 = enum_next(ugui.registry.toggle_button.uids()),
-        DYaw = enum_next(ugui.registry.toggle_button.uids()),
-        StrainLeft = enum_next(ugui.registry.toggle_button.uids()),
-        StrainRight = enum_next(ugui.registry.toggle_button.uids()),
-        Joystick = enum_next(ugui.registry.joystick.uids()),
-        AtanStrain = enum_next(ugui.registry.toggle_button.uids()),
-        AtanStrainReverse = enum_next(ugui.registry.toggle_button.uids()),
-        AtanButtons = enum_next(10 * ugui.registry.button.uids()),
-        AtanFieldLabels = enum_next(5 * ugui.registry.label.uids()),
+        ProcessedValues = enum_next(ugui.listbox_uids()),
+        GoalAngle = enum_next(ugui.numberbox_uids()),
+        GoalMag = enum_next(ugui.numberbox_uids()),
+        HighMagnitude = enum_next(ugui.toggle_button_uids()),
+        ResetMag = enum_next(ugui.button_uids()),
+        DustlessWalk = enum_next(ugui.button_uids()),
+        SpeedKick = enum_next(ugui.button_uids()),
+        D99Always = enum_next(ugui.toggle_button_uids()),
+        D99 = enum_next(ugui.toggle_button_uids()),
+        DYaw = enum_next(ugui.toggle_button_uids()),
+        StrainLeft = enum_next(ugui.toggle_button_uids()),
+        StrainRight = enum_next(ugui.toggle_button_uids()),
+        Joystick = enum_next(ugui.joystick_uids()),
+        AtanStrain = enum_next(ugui.toggle_button_uids()),
+        AtanStrainReverse = enum_next(ugui.toggle_button_uids()),
+        AtanButtons = enum_next(10 * ugui.button_uids()),
+        AtanFieldLabels = enum_next(5 * ugui.label_uids()),
         MovementModeDisabled = enum_next(),
-        MovementModeMatchYaw = enum_next(ugui.registry.toggle_button.uids()),
-        MovementModeReverseYaw = enum_next(ugui.registry.toggle_button.uids()),
-        MovementModeMatchAngle = enum_next(ugui.registry.toggle_button.uids()),
-        StickX = enum_next(ugui.registry.label.uids()),
-        StickY = enum_next(ugui.registry.label.uids()),
-        StickMag = enum_next(ugui.registry.label.uids()),
+        MovementModeMatchYaw = enum_next(ugui.toggle_button_uids()),
+        MovementModeReverseYaw = enum_next(ugui.toggle_button_uids()),
+        MovementModeMatchAngle = enum_next(ugui.toggle_button_uids()),
+        StickX = enum_next(ugui.label_uids()),
+        StickY = enum_next(ugui.label_uids()),
+        StickMag = enum_next(ugui.label_uids()),
     }
 end)
 
@@ -195,7 +195,7 @@ return {
                 })
 
                 if ugui.button({
-                        uid = UID.AtanButtons + index * 2,
+                        uid = UID.AtanButtons + index * 2 * ugui.button_uids(),
                         rectangle = grid_rect(x, 3.5, width / 2, 0.5),
                         text = '-',
                         tooltip = Locales.str(tooltip_key),
@@ -204,7 +204,7 @@ return {
                 end
 
                 if ugui.button({
-                        uid = UID.AtanButtons + index * 2 + 1,
+                        uid = UID.AtanButtons + (index * 2 + 1) * ugui.button_uids(),
                         rectangle = grid_rect(x + width / 2, 3.5, width / 2, 0.5),
                         text = '+',
                         tooltip = Locales.str(tooltip_key),
