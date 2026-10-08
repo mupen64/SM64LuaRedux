@@ -63,6 +63,7 @@ local views = {
     dofile(views_path .. 'SemanticWorkflow/Main.lua'),
     dofile(views_path .. 'Settings.lua'),
     dofile(views_path .. 'Tools.lua'),
+    dofile(views_path .. 'GhostTab/Main.lua'),
     dofile(views_path .. 'Timer.lua'),
     dofile(views_path .. 'Visualizer.lua'),
 }
