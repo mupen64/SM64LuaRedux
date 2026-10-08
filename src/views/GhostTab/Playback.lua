@@ -41,6 +41,8 @@ local display_names = {}
 local picker_open = false
 local picker_ghost_id = nil
 local picker_original = nil
+local color_text = nil
+local color_text_ghost_id = nil
 
 local function rgb_to_str(rgb)
     return string.format('#%02X%02X%02X', rgb[1], rgb[2], rgb[3])
@@ -295,15 +297,21 @@ return {
 
             -- editable without a ghost selected, since ID 0 is Mario's hat
             local color = Ghost.get_color(selected_ghost_id)
-            local typed_color = parse_hex_color(ugui.textbox({
+            local color_text_is_focused = ugui.internal.keyboard_captured_control == UID.Color
+            if color_text == nil or not color_text_is_focused or color_text_ghost_id ~= selected_ghost_id then
+                color_text = rgb_to_str(color)
+                color_text_ghost_id = selected_ghost_id
+            end
+            color_text = ugui.textbox({
                 uid = UID.Color,
                 rectangle = grid_rect(1.3, 9.8, 2, 0.8),
-                text = rgb_to_str(color),
+                text = color_text,
                 tooltip = Locales.str('GHOST_COLOR_TOOLTIP'),
                 styler_mixin = {
                     font_size = theme.font_size * 1.25,
                 },
-            }))
+            })
+            local typed_color = parse_hex_color(color_text)
             if typed_color then
                 Ghost.set_color(selected_ghost_id, typed_color)
                 color = typed_color
