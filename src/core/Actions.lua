@@ -37,7 +37,7 @@ ACTION_TOGGLE_REMEMBER_TAS_STATE = ACTION_PRESET .. 'Remember TAS State'
 ACTION_RESET_PRESET = ACTION_PRESET .. 'Reset to Default'
 ACTION_DELETE_ALL_PRESETS = ACTION_PRESET .. 'Delete All'
 ACTION_TOGGLE_NAVBAR = ROOT .. 'Navigation Bar'
-ACTION_TOGGLE_DEBUG_MODE = ROOT .. 'Toggle debug mode'
+ACTION_TOGGLE_DEBUG_MODE = ROOT .. 'Debug Mode'
 
 ---@class ActionParamsWithDefaultHotkey : ActionAddParams
 ---@field hotkey Hotkey?
@@ -383,6 +383,10 @@ actions[#actions + 1] = wrap_params({
     path = ACTION_TOGGLE_DEBUG_MODE,
     on_press = function()
         ugui.DEBUG = not ugui.DEBUG
+        action.notify_active_changed(ACTION_TOGGLE_DEBUG_MODE)
+    end,
+    get_active = function()
+        return ugui.DEBUG
     end,
 })
 
