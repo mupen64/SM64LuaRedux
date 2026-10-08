@@ -20,7 +20,9 @@ Presets.persistent.presets[1] = ugui.internal.deep_clone(DEFAULT_PRESET)
 ---@param i integer
 function Presets.apply(i)
     Presets.persistent.current_index = ugui.internal.clamp(i, 1, #Presets.persistent.presets)
-    Settings = Presets.persistent.presets[Presets.persistent.current_index]
+    local preset = deep_merge(DEFAULT_PRESET, Presets.persistent.presets[Presets.persistent.current_index])
+    Presets.persistent.presets[Presets.persistent.current_index] = preset
+    Settings = preset
     Mapping.restore_map_files()
     if Settings.autodetect_address then
         Settings.address_source_index = Memory.find_matching_address_source_index()
