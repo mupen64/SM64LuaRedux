@@ -6857,7 +6857,7 @@ ugui.numberbox = function(control, fn)
         'expected show_negative to be boolean or nil')
     control.draw = control.draw or numberbox_draw
     control.get_return_value = control.get_return_value or numberbox_get_return_value
-    local _ = ugui.internal.control(control, 'numberbox', fn, initialize_numberbox_data)
+    local result = ugui.internal.control(control, 'numberbox', fn, initialize_numberbox_data)
     local data = ugui.internal.control_data[control.uid]
 
     if control.show_negative then
@@ -6887,7 +6887,7 @@ ugui.numberbox = function(control, fn)
         ugui.internal.update_render_rect(control)
     end
 
-    return math.floor(data.value), data.meta
+    return math.floor(data.value), result.meta
 end
 
 -- ------------------------------------------------------------
