@@ -37,38 +37,38 @@ local UID = UIDProvider.allocate_once('InputsTab', function(enum_next)
         ViewCarrousel = enum_next(),
 
         -- Joystick Controls
-        Joypad = enum_next(ugui.registry.joystick.uids()),
-        JoypadSpinnerX = enum_next(ugui.registry.spinner.uids()),
-        JoypadSpinnerY = enum_next(ugui.registry.spinner.uids()),
-        GoalAngle = enum_next(ugui.registry.numberbox.uids()),
-        GoalMag = enum_next(ugui.registry.numberbox.uids()),
-        HighMag = enum_next(ugui.registry.toggle_button.uids()),
-        StrainLeft = enum_next(ugui.registry.toggle_button.uids()),
-        StrainRight = enum_next(ugui.registry.toggle_button.uids()),
-        StrainAlways = enum_next(ugui.registry.toggle_button.uids()),
-        StrainSpeedTarget = enum_next(ugui.registry.toggle_button.uids()),
+        Joypad = enum_next(ugui.joystick_uids()),
+        JoypadSpinnerX = enum_next(ugui.spinner_uids()),
+        JoypadSpinnerY = enum_next(ugui.spinner_uids()),
+        GoalAngle = enum_next(ugui.numberbox_uids()),
+        GoalMag = enum_next(ugui.numberbox_uids()),
+        HighMag = enum_next(ugui.toggle_button_uids()),
+        StrainLeft = enum_next(ugui.toggle_button_uids()),
+        StrainRight = enum_next(ugui.toggle_button_uids()),
+        StrainAlways = enum_next(ugui.toggle_button_uids()),
+        StrainSpeedTarget = enum_next(ugui.toggle_button_uids()),
         MovementModeManual = enum_next(),
-        MovementModeMatchYaw = enum_next(ugui.registry.toggle_button.uids()),
-        MovementModeMatchAngle = enum_next(ugui.registry.toggle_button.uids()),
-        MovementModeReverseYaw = enum_next(ugui.registry.toggle_button.uids()),
-        DYaw = enum_next(ugui.registry.toggle_button.uids()),
-        Atan = enum_next(ugui.registry.toggle_button.uids()),
-        AtanReverse = enum_next(ugui.registry.toggle_button.uids()),
-        AtanRetime = enum_next(ugui.registry.button.uids()),
-        AtanButtons = enum_next(10 * ugui.registry.button.uids()),
-        AtanFieldLabels = enum_next(5 * ugui.registry.label.uids()),
-        SpeedKick = enum_next(ugui.registry.button.uids()),
-        ResetMag = enum_next(ugui.registry.button.uids()),
-        Swim = enum_next(ugui.registry.toggle_button.uids()),
+        MovementModeMatchYaw = enum_next(ugui.toggle_button_uids()),
+        MovementModeMatchAngle = enum_next(ugui.toggle_button_uids()),
+        MovementModeReverseYaw = enum_next(ugui.toggle_button_uids()),
+        DYaw = enum_next(ugui.toggle_button_uids()),
+        Atan = enum_next(ugui.toggle_button_uids()),
+        AtanReverse = enum_next(ugui.toggle_button_uids()),
+        AtanRetime = enum_next(ugui.button_uids()),
+        AtanButtons = enum_next(10 * ugui.button_uids()),
+        AtanFieldLabels = enum_next(5 * ugui.label_uids()),
+        SpeedKick = enum_next(ugui.button_uids()),
+        ResetMag = enum_next(ugui.button_uids()),
+        Swim = enum_next(ugui.toggle_button_uids()),
 
         -- Section Controls
-        Timeout = enum_next(ugui.registry.numberbox.uids()),
-        EndAction = enum_next(ugui.registry.button.uids()),
-        EndActionTextbox = enum_next(ugui.registry.textbox.uids()),
-        AvailableActions = enum_next(MAX_ACTION_GUESSES * ugui.registry.button.uids()),
-        LoopToggle = enum_next(ugui.registry.toggle_button.uids()),
-        LoopSelectTarget = enum_next(ugui.registry.button.uids()),
-        LoopCount = enum_next(ugui.registry.numberbox.uids()),
+        Timeout = enum_next(ugui.numberbox_uids()),
+        EndAction = enum_next(ugui.button_uids()),
+        EndActionTextbox = enum_next(ugui.textbox_uids()),
+        AvailableActions = enum_next(MAX_ACTION_GUESSES * ugui.button_uids()),
+        LoopToggle = enum_next(ugui.toggle_button_uids()),
+        LoopSelectTarget = enum_next(ugui.button_uids()),
+        LoopCount = enum_next(ugui.numberbox_uids()),
     }
 end)
 
@@ -109,7 +109,7 @@ local function controls_for_end_action(input, draw, column, top)
         for action, action_name in pairs(Locales.raw().ACTIONS) do
             if action_name:find(match_pattern) ~= nil then
                 if ugui.button({
-                        uid = UID.AvailableActions + i,
+                        uid = UID.AvailableActions + i * ugui.button_uids(),
                         rectangle = grid_rect(column, top + LABEL_HEIGHT + Gui.MEDIUM_CONTROL_HEIGHT + i * Gui.SMALL_CONTROL_HEIGHT, 4, Gui.SMALL_CONTROL_HEIGHT),
                         text = action_name,
                     }) then
@@ -396,7 +396,7 @@ local function atan_controls(draw, sheet, new_values, top)
         })
 
         if ugui.button({
-            uid = UID.AtanButtons + index * 2,
+            uid = UID.AtanButtons + index * 2 * ugui.button_uids(),
             rectangle = grid_rect(x, top + 1.5, width / 2, 0.5),
             text = '-',
             tooltip = Locales.str(tooltip_key),
@@ -405,7 +405,7 @@ local function atan_controls(draw, sheet, new_values, top)
         end
 
         if ugui.button({
-            uid = UID.AtanButtons + index * 2 + 1,
+            uid = UID.AtanButtons + (index * 2 + 1) * ugui.button_uids(),
             rectangle = grid_rect(x + width / 2, top + 1.5, width / 2, 0.5),
             text = '+',
             tooltip = Locales.str(tooltip_key),

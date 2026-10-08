@@ -8,15 +8,15 @@ MiniVisualizer = {}
 
 local UID = UIDProvider.allocate_once('MiniVisualizer', function(enum_next)
     return {
-        Joystick = enum_next(ugui.registry.joystick.uids()),
-        A = enum_next(ugui.registry.toggle_button.uids()),
-        B = enum_next(ugui.registry.toggle_button.uids()),
-        Z = enum_next(ugui.registry.toggle_button.uids()),
-        S = enum_next(ugui.registry.toggle_button.uids()),
-        R = enum_next(ugui.registry.toggle_button.uids()),
-        Action = enum_next(ugui.registry.label.uids()),
-        JoystickX = enum_next(ugui.registry.label.uids()),
-        JoystickY = enum_next(ugui.registry.label.uids()),
+        Joystick = enum_next(ugui.joystick_uids()),
+        A = enum_next(ugui.toggle_button_uids()),
+        B = enum_next(ugui.toggle_button_uids()),
+        Z = enum_next(ugui.toggle_button_uids()),
+        S = enum_next(ugui.toggle_button_uids()),
+        R = enum_next(ugui.toggle_button_uids()),
+        Action = enum_next(ugui.label_uids()),
+        JoystickX = enum_next(ugui.label_uids()),
+        JoystickY = enum_next(ugui.label_uids()),
     }
 end)
 

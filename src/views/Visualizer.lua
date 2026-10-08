@@ -6,9 +6,9 @@
 
 local UID = UIDProvider.allocate_once('Visualizer', function(enum_next)
     return {
-        Joystick = enum_next(ugui.registry.joystick.uids()),
-        JoystickX = enum_next(ugui.registry.label.uids()),
-        JoystickY = enum_next(ugui.registry.label.uids()),
+        Joystick = enum_next(ugui.joystick_uids()),
+        JoystickX = enum_next(ugui.label_uids()),
+        JoystickY = enum_next(ugui.label_uids()),
         Labels = enum_next(UIDProvider.unknown),
     }
 end)
@@ -117,14 +117,14 @@ return {
 
         y = rc2.y
 
-        local function place_entry(uid, label, value, size)
+        local function place_entry(uid, label, value, size, line_height)
             ugui.label({
                 uid = uid,
                 rectangle = {
                     x = rc2.x,
-                    y = y,
+                    y = y - line_height / 2,
                     width = available_width,
-                    height = 0,
+                    height = line_height,
                 },
                 text = label,
                 color = text_color,
@@ -137,9 +137,9 @@ return {
                 uid = uid + 1,
                 rectangle = {
                     x = rc2.x,
-                    y = y,
+                    y = y - line_height / 2,
                     width = available_width,
-                    height = 0,
+                    height = line_height,
                 },
                 text = value,
                 color = text_color,
@@ -238,7 +238,7 @@ return {
             prev_center = y
             prev_line_height = line_height
 
-            current_uid = place_entry(current_uid, entry.label, entry.value, size)
+            current_uid = place_entry(current_uid, entry.label, entry.value, size, line_height)
         end
     end,
 }

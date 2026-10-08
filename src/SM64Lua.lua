@@ -86,10 +86,7 @@ local stored_mouse_events = {}
 -- Flag keeping track of whether atinput has fired for one time
 local first_input = true
 
-local reset_preset_menu_open = false
-local last_rmb_down_position = { x = 0, y = 0 }
 local keys = input.get()
-local last_keys = input.get()
 local defer_draw_queue = {}
 local defer_before_navbar_queue = {}
 local key_events = {}
@@ -98,9 +95,8 @@ G_KEYS = {}
 
 local UID = UIDProvider.allocate_once('SM64Lua', function(enum_next)
     return {
-        TabIndex = enum_next(ugui.registry.carrousel_button.uids()),
-        ResetPreset = enum_next(UIDProvider.unknown),
-        PresetIndex = enum_next(ugui.registry.carrousel_button.uids()),
+        TabIndex = enum_next(ugui.carrousel_button_uids()),
+        PresetIndex = enum_next(ugui.carrousel_button_uids()),
     }
 end)
 
@@ -145,15 +141,7 @@ function get_is_keyboard_captured()
         return false
     end
 
-    ---@type SceneEntry?
-    local keyboard_captured_control = nil
-    for i = 1, #ugui.internal.scene, 1 do
-        local entry = ugui.internal.scene[i]
-        if entry.control.uid == ugui.internal.keyboard_captured_control then
-            keyboard_captured_control = entry
-        end
-    end
-
+    local keyboard_captured_control = ugui.internal.find_node(ugui.internal.keyboard_captured_control)
     if not keyboard_captured_control then
         return false
     end
@@ -229,55 +217,30 @@ local function draw_navbar()
 
     local preset_picker_rect = grid_rect(5.5, 16, 2.5, 1)
 
-    if reset_preset_menu_open then
-        local result = ugui.menu({
-            uid = UID.ResetPreset,
-            rectangle = ugui.internal.deep_clone(last_rmb_down_position),
-            items = {
-                {
-                    text = Locales.str('GENERIC_RESET'),
-                    callback = function()
-                        action.invoke(ACTION_RESET_PRESET)
-                    end,
-                },
-                {
-                    text = Locales.str('PRESET_CONTEXT_MENU_DELETE_ALL'),
-                    callback = function()
-                        action.invoke(ACTION_DELETE_ALL_PRESETS)
-                    end,
-                },
-            },
-        }).primary
-
-        if result.dismissed then
-            reset_preset_menu_open = false
-        else
-            if result.item then
-                result.item.callback()
-                reset_preset_menu_open = false
-            end
-        end
-    end
-
-    if (keys.rightclick and not last_keys.rightclick)
-        and BreitbandGraphics.is_point_inside_rectangle(ugui.internal.environment.mouse_position, preset_picker_rect)
-        and not Settings.hotkeys_assigning then
-        reset_preset_menu_open = true
-    end
-
     local preset_items = lualinq.select(Presets.persistent.presets, function(_, i)
         return Locales.str('PRESET') .. i
     end)
     preset_items[#preset_items + 1] = Locales.str('PRESET') .. (#Presets.persistent.presets + 1)
 
-    local preset_index = Presets.persistent.current_index
-    preset_index = ugui.carrousel_button({
+    local preset_context_menu = {
+        { text = Locales.str('GENERIC_RESET') },
+        { text = Locales.str('PRESET_CONTEXT_MENU_DELETE_ALL') },
+    }
+    local preset_index, preset_meta = ugui.carrousel_button({
         uid = UID.PresetIndex,
         rectangle = preset_picker_rect,
         is_enabled = not Settings.hotkeys_assigning,
         items = preset_items,
-        selected_index = preset_index,
+        selected_index = Presets.persistent.current_index,
+        context_menu = preset_context_menu,
     })
+
+    local context_menu_result = preset_meta.context_menu_result
+    if context_menu_result and context_menu_result.item == preset_context_menu[1] then
+        action.invoke(ACTION_RESET_PRESET)
+    elseif context_menu_result and context_menu_result.item == preset_context_menu[2] then
+        action.invoke(ACTION_DELETE_ALL_PRESETS)
+    end
 
     if preset_index ~= Presets.persistent.current_index then
         Presets.change_index(preset_index)
@@ -292,16 +255,8 @@ local function atdrawd2d()
         d2d.clear(0, 0, 0, 0)
     end
 
-    last_keys = ugui.internal.deep_clone(keys)
     keys = input.get()
     G_KEYS = ugui.internal.deep_clone(keys)
-
-    if keys.rightclick and not last_keys.rightclick then
-        last_rmb_down_position = {
-            x = keys.xmouse,
-            y = keys.ymouse,
-        }
-    end
 
     -- HACK: We turn off hotkeys while a control is capturing inputs
     action.lock_hotkeys(Settings.lock_hotkeys_when_control_active and is_keyboard_captured or false)
@@ -373,6 +328,7 @@ emu.atstop(function()
     BreitbandGraphics.free()
     ugui.free()
 end)
+
 emu.atmouse(function(args)
     stored_mouse_events[#stored_mouse_events + 1] = args
 end)

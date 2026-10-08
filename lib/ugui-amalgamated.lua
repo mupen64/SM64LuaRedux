@@ -13,7 +13,7 @@
 --
 
 local ugui = {
-    _VERSION = 'v4.0.0',
+    _VERSION = 'next',
     _URL = 'https://codeberg.org/mupen64/ugui',
     _DESCRIPTION = 'Flexible immediate-mode GUI library for Mupen Lua',
     _LICENSE = 'GPL-3',
@@ -30,21 +30,10 @@ local ugui = {
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
----@class ControlRegistryEntry
----@field public uids fun(control: Control?): integer Gets the amount of UID slots reserved by an instance of this control type. Most controls don't require the `control` parameter, but some do and will assert it is not `nil`. If a control doesn't require an instance, the returned value is static across the program's lifetime.
----@field public validate fun(control: Control) Verifies that a control instance matches the desired type.
----@field public setup fun(control: Control, data: any)? Sets up the initial control data to be used in `logic` and `draw`.
----@field public added fun(control: Control, data: any)? Notifies about a control being added to a scene.
----@field public logic fun(control: Control, data: any): ControlReturnValue Executes control logic.
----@field public draw fun(control: Control) Draws the control.
----@field public hittestable (fun(control: Control): boolean)? A function returning whether a control instance of this type should participate in hit-testing. If `nil`, the instance-level `hittestable` field is used. If both are `nil`, the control is hittestable.
----Represents an entry in the control registry.
-
----@class Control
----@field public hittestable boolean? Whether this control instance participates in hit-testing. Overrides the registry-level `hittestable` function if specified. Defaults to `true` if neither this nor the registry function is set.
 
 ---@alias UID number
 ---Unique identifier for a control. Must be unique within a frame.
+--- UID `-1` is reserved for the global context menu.
 
 ---@class Environment
 ---@field public mouse_position { x: number, y: number } The mouse position.
@@ -76,11 +65,11 @@ local ugui = {
 
 ---@class Meta
 ---@field public signal_change SignalChangeState The change state of the control's primary signal.
+---@field public context_menu_result MenuResult? The result of this control's context menu, when it is dismissed or an item is selected.
 ---Additional information about a placed control.
 
 ---@alias ControlReturnValue { primary: any, meta: Meta }
 
----@alias ControlType "label" | "button" | "toggle_button" | "carrousel_button" | "textbox" | "joystick" | "trackbar" | "listbox" | "scrollbar" | "combobox" | "menu" | "tabcontrol" | "numberbox" | "spinner" | "panel"
 
 ---@enum VisualState
 -- The possible states of a control, which are used by the styler for drawing.
@@ -121,14 +110,12 @@ ugui.alignment = {
     stretch = 4,
 }
 
----@type { [string]: ControlRegistryEntry }
-ugui.registry = {}
 
 ---Gets the basic visual state of a control.
----@param control Control The control.
+---@param control UguiControl The control.
 ---@return VisualState # The control's visual state.
 ugui.get_visual_state = function(control)
-    if control.is_enabled == false then
+    if not ugui.internal.is_control_enabled(control) then
         return ugui.visual_states.disabled
     end
 
@@ -164,7 +151,12 @@ ugui.begin_frame = function(environment)
 
     ugui.internal.frame_in_progress = true
     ugui.internal.frame_index = ugui.internal.frame_index + 1
+    ugui.internal.context_menu_owner_seen = false
     ugui.internal.frame_start_time = os.clock()
+    if ugui.DEBUG then
+        ugui.internal.control_execution_times = {}
+        ugui.internal.control_draw_times = {}
+    end
 
     if not environment.window_size then
         -- Assume unbounded window size if user is too lazy to provide one
@@ -196,7 +188,8 @@ ugui.begin_frame = function(environment)
 
     -- Replace paste operations with synthetic type events.
     local clipboard_text
-    for i, e in ipairs(environment.key_events) do
+    for i = 1, #environment.key_events do
+        local e = environment.key_events[i]
         if e.pressed and e.keycode2 == Mupen.keycode.SDLK_V and e.ctrl then
             if not clipboard_text then
                 clipboard_text = clipboard.get('text')
@@ -237,6 +230,11 @@ ugui.begin_frame = function(environment)
     if ugui.internal.is_mouse_just_down() then
         ugui.internal.mouse_down_position = ugui.internal.environment.mouse_position
     end
+
+    ugui.internal.scene_root.children = {}
+    ugui.internal.scene_root.sorted_children = nil
+    ugui.internal.current_parent = ugui.internal.scene_root
+    ugui.internal.scene_node_order = 0
 end
 
 --- Ends the current frame.
@@ -246,29 +244,33 @@ ugui.end_frame = function()
             "Tried to call end_frame() while a frame wasn't already in progress. Start a frame with begin_frame() before ending an in-progress one.")
     end
 
-    -- 1. Z-Sorting pass
-    ugui.internal.sort_scene()
+    if ugui.DEBUG then
+        ugui.internal.add_debug_overlay_controls()
+    end
 
-    -- 2. Input processing pass
+    -- 1. Input processing pass
+    local section_start = ugui.DEBUG and os.clock()
     ugui.internal.do_input_processing()
+    if section_start then
+        ugui.internal.record_debug_end_frame_time('Input processing', os.clock() - section_start)
+    end
 
-    -- 3. Event dispatching pass
-    ugui.internal.dispatch_events()
-
-    -- 4. Rendering pass
+    -- 2. Rendering pass
+    section_start = ugui.DEBUG and os.clock()
     local current_painter = painter.current()
     current_painter:save()
     current_painter:scale(ugui.internal.scale, ugui.internal.scale)
 
-    ---@param control Control
+    ---@param control UguiControl
     local function begin_control_rectangle_path(control)
         current_painter:begin_path()
 
+        local render_rectangle = control.render_rect
         local rectangle = {
-            x = control.rectangle.x,
-            y = control.rectangle.y,
-            w = control.rectangle.width,
-            h = control.rectangle.height,
+            x = render_rectangle.x,
+            y = render_rectangle.y,
+            w = render_rectangle.width,
+            h = render_rectangle.height,
         }
 
         if control.border_radius then
@@ -278,9 +280,9 @@ ugui.end_frame = function()
         end
     end
 
-    ---@param control Control
+    ---@param control UguiControl
     local function draw_control_background(control)
-        local rectangle = control.rectangle
+        local rectangle = control.render_rect
         local fill_color = control.fill
 
         if fill_color then
@@ -405,7 +407,7 @@ ugui.end_frame = function()
         current_painter:restore()
     end
 
-    ---@param control Control
+    ---@param control UguiControl
     local function draw_control_stroke(control)
         if not control.stroke then return end
         begin_control_rectangle_path(control)
@@ -415,122 +417,82 @@ ugui.end_frame = function()
         )
     end
 
-    for i = 1, #ugui.internal.scene, 1 do
-        local control = ugui.internal.scene[i].control
-        local type = ugui.internal.scene[i].type
+    ---@param node SceneNode
+    local function draw_scene_node(node)
+        local control = node.control
+        local revert_styler_mixin
 
-        local entry = ugui.registry[type]
+        revert_styler_mixin = ugui.internal.apply_styler_mixin(control)
 
-        local revert_styler_mixin = ugui.internal.apply_styler_mixin(control)
+        local draw_start = ugui.DEBUG and os.clock()
 
-        local draw_start = os.clock()
-
+        current_painter:save()
+        current_painter:set_alpha(control.opacity or 1)
         draw_control_background(control)
-        entry.draw(control)
+        if control.draw then
+            control.draw(control)
+        end
         draw_control_stroke(control)
+        current_painter:restore()
 
-        ugui.internal.record_control_draw_time(control.uid, draw_start)
+        if draw_start then
+            ugui.internal.record_control_draw_time(control.uid, draw_start)
+            ugui.internal.draw_debug_control_state(control)
+        end
+
+        if control.clip_children then
+            current_painter:save()
+            current_painter:clip(ugui.internal.rect_to_painter_rect(control.render_rect))
+        end
+
+        local children = ugui.internal.get_sorted_scene_children(node)
+        for i = 1, #children do
+            draw_scene_node(children[i])
+        end
+
+        if control.clip_children then
+            current_painter:restore()
+        end
 
         revert_styler_mixin()
-
-        ugui.internal.draw_debug_control_state(control)
     end
 
-    ugui.internal.tooltip()
+    local scene_nodes = ugui.internal.get_sorted_scene_children(ugui.internal.scene_root)
+    for i = 1, #scene_nodes do
+        draw_scene_node(scene_nodes[i])
+    end
+    if section_start then
+        ugui.internal.record_debug_end_frame_time('Rendering', os.clock() - section_start)
+    end
 
-    ugui.internal.draw_debug_overlay()
+    section_start = ugui.DEBUG and os.clock()
+    ugui.internal.tooltip()
+    if section_start then
+        ugui.internal.record_debug_end_frame_time('Tooltip', os.clock() - section_start)
+    end
+
+    if ugui.DEBUG then
+        section_start = os.clock()
+        ugui.internal.draw_debug_overlay()
+        ugui.internal.record_debug_end_frame_time('Debug overlay', os.clock() - section_start)
+    end
 
     current_painter:restore()
 
 
-    ugui.internal.scene = {}
+    ugui.internal.scene_root.children = {}
+    ugui.internal.scene_root.sorted_children = nil
+    ugui.internal.scene_nodes_by_uid = {}
+    ugui.internal.current_parent = nil
     ugui.internal.last_control_rectangle = nil
 
     local frame_end_time = os.clock()
     ugui.internal.delta_time = frame_end_time - ugui.internal.frame_start_time
-    ugui.internal.update_debug_frame_time(frame_end_time)
+    if ugui.DEBUG then
+        ugui.internal.update_debug_frame_time(frame_end_time)
+    end
     ugui.internal.painter = nil
     ugui.internal.frame_in_progress = false
-end
-
----Places a Control of the specified type.
----@param control Control The control.
----@param type ControlType | "" The control's type. If the type is `""`, no control will be placed, but the control data entry will be initialized.
----@return ControlReturnValue # The control's return value, or `nil` if the type is `""`.
-ugui.control = function(control, type)
-    local function init_control_data(uid)
-        ugui.internal.control_data[uid] = {
-            signal_change = ugui.signal_change_states.none,
-        }
-    end
-
-    if type == '' then
-        init_control_data(control.uid)
-        return nil
-    end
-    ---@cast type ControlType
-
-    ---@type ControlRegistryEntry?
-    local registry_entry = ugui.registry[type]
-
-    if registry_entry == nil then
-        error(string.format("Unknown control type '%s'", type))
-    end
-
-    local execution_start = os.clock()
-    local return_value
-
-    local revert_styler_mixin = ugui.internal.apply_styler_mixin(control)
-
-    -- If the control has only just been added, we run its setup.
-    if ugui.internal.control_data[control.uid] == nil then
-        init_control_data(control.uid)
-
-        if registry_entry.setup then
-            registry_entry.setup(control, ugui.internal.control_data[control.uid])
-        end
-
-        -- Run logic once to stabilize the return value for the first state
-        return_value = registry_entry.logic(control, ugui.internal.control_data[control.uid])
-    end
-
-    local stored_control_type = ugui.internal.control_types[control.uid]
-    if stored_control_type then
-        if stored_control_type.frame == ugui.internal.frame_index then
-            error(string.format(
-                'Attempted to show a control with uid %d, which is already in use! Note that some controls reserve more than one uid slot after them.',
-                control.uid))
-        elseif stored_control_type.type ~= type then
-            error(string.format('Attempted to reuse UID %d of %s for %s.', control.uid,
-                stored_control_type.type, type))
-        end
-    end
-
-    registry_entry.validate(control)
-
-    -- Run logic pass immediately for the current frame so callers receive an up-to-date value instead of the previous frame's result.
-    return_value = registry_entry.logic(control, ugui.internal.control_data[control.uid])
-
-    ugui.internal.record_control_execution_time(control.uid, execution_start)
-
-    local scene_entry = {
-        control = control,
-        type = type,
-        order = #ugui.internal.scene + 1,
-    }
-    ugui.internal.scene[#ugui.internal.scene + 1] = scene_entry
-    ugui.internal.control_types[control.uid] = {
-        type = type,
-        frame = ugui.internal.frame_index,
-    }
-
-    if (not stored_control_type or stored_control_type.frame ~= ugui.internal.frame_index - 1) and registry_entry.added then
-        ugui.internal.pending_added[#ugui.internal.pending_added + 1] = scene_entry
-    end
-
-    revert_styler_mixin()
-
-    return return_value
 end
 
 -- ------------------------------------------------------------
@@ -543,24 +505,42 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
----@alias SceneEntry { control: Control, type: ControlType, order: integer }
+---@class SceneNode
+---@field public control UguiControl
+---@field public type string
+---@field public parent SceneNode|SceneRoot
+---@field public children SceneNode[]
+---@field public sorted_children SceneNode[]?
+---@field public order integer
+---@field public is_enabled boolean The control's effective enabled state, including its ancestors.
 
----@class ControlTypeState
----@field public type ControlType The type last used with this UID.
+---@class SceneRoot
+---@field public children SceneNode[]
+---@field public sorted_children SceneNode[]?
+
+---@class ControlState
+---@field public type string The type last used with this UID.
 ---@field public frame integer The most recent frame in which this UID was placed.
 
 ugui.internal = {
-    ---@type SceneEntry[]
-    scene = {},
+    ---@type SceneRoot
+    scene_root = {children = {}},
+
+    ---@type table<UID, SceneNode>
+    ---Current scene nodes indexed by their control UID.
+    scene_nodes_by_uid = {},
+
+    ---@type (SceneNode|SceneRoot)?
+    current_parent = nil,
+
+    ---@type integer
+    scene_node_order = 0,
 
     ---@type Painter
     painter = nil,
 
-    ---@type table<UID, ControlTypeState>
+    ---@type table<UID, ControlState>
     control_types = {},
-
-    ---@type SceneEntry[]
-    pending_added = {},
 
     ---@type integer
     frame_index = 0,
@@ -568,6 +548,19 @@ ugui.internal = {
     ---@type table<UID, any>
     ---Map of control UIDs to their data.
     control_data = {},
+
+    ---@type { owner_uid: UID, items: MenuItem[], position: UguiVector2, opened_frame: integer }?
+    ---The single currently open control context menu.
+    context_menu_state = nil,
+
+    ---Whether the current context-menu owner has been placed in this frame.
+    context_menu_owner_seen = false,
+
+    ---Whether the internal control with UID -1 is being placed for a context menu.
+    context_menu_placing = false,
+
+    ---Reserved UID for the global context menu control.
+    context_menu_uid = -1,
 
     ---@type table<UID, number>
     ---Execution time, in seconds, accumulated for each control during the current frame.
@@ -638,6 +631,41 @@ ugui.internal = {
     ---Average frame duration over the most recent second, in seconds.
     average_frame_time = 0,
 
+    ---@type { t: number, sections: table<string, number> }[]
+    ---Recent end_frame section durations used by the debug overlay.
+    debug_end_frame_times = {},
+
+    ---@type table<string, number>
+    ---Current end_frame section durations, in seconds.
+    debug_end_frame_sample = {},
+
+    ---@type table<string, number>
+    ---Smoothed one-second rolling averages of end_frame section durations, in seconds.
+    average_debug_end_frame_times = {},
+
+    ---@type { t: number, controls: table<UID, { execution_time: number, draw_time: number }> }[]
+    ---Recent control timing samples used by the debug overlay.
+    debug_control_time_samples = {},
+
+    ---@type table<UID, { execution_time: number, draw_time: number }>
+    ---Smoothed one-second rolling averages of per-control timings, in seconds.
+    average_debug_control_times = {},
+
+    ---The timestamp of the most recent debug timing smoothing update.
+    debug_timing_average_updated_at = nil,
+
+    ---The section selected in the debug timing pie, or nil for the Internals overview.
+    debug_timing_view = nil,
+
+    ---Whether debug control timing charts aggregate controls by type instead of UID.
+    debug_control_time_group_by_type = true,
+
+    ---Whether the debug timing panel is minimized.
+    debug_panel_collapsed = false,
+
+    ---UIDs reserved for the debug panel's scene controls.
+    debug_overlay_control_uids = nil,
+
     ---@type table<string, integer>
     ---Cache of nineslice drawings. Only used after calling `ugui.apply_nineslice`.
     nineslice_draw_cache = {},
@@ -645,31 +673,9 @@ ugui.internal = {
     ---@type table<string, PainterImage>
     image_cache = {},
 
-    ---Sorts controls stably in the scene by their Z-index.
-    sort_scene = function()
-        table.sort(ugui.internal.scene, function(a, b)
-            local a_z_index = a.control.z_index or 0
-            local b_z_index = b.control.z_index or 0
-            if a_z_index == b_z_index then
-                return a.order < b.order
-            end
-            return a_z_index < b_z_index
-        end)
-    end,
-
-    ---Dispatches events related to controls in the scene.
-    dispatch_events = function()
-        local pending_added = ugui.internal.pending_added
-        ugui.internal.pending_added = {}
-
-        for _, value in ipairs(pending_added) do
-            local registry_entry = ugui.registry[value.type]
-            if registry_entry.added then
-                registry_entry.added(value.control, ugui.internal.control_data[value.control.uid])
-            end
-        end
-    end,
-
+    ---@type PainterImage?
+    ---A full-brightness 256x256 color wheel, shared by all controls.
+    colorpicker_circle_image = nil,
 
     ---@return boolean # Whether LMB was just pressed.
     is_mouse_just_down = function()
@@ -697,15 +703,33 @@ ugui.internal = {
         return ugui.internal.environment._scroll_delta.y < 0
     end,
 
-    ---Checks whether the specified point lies inside the control's bounds, considering special cases such as the enabled state, hittest-free and offscreen regions.
-    ---@param point UguiVector2 A point.
-    ---@param control Control A control.
-    ---@return boolean # Whether the point lies inside the control.
-    is_point_inside_control = function(point, control)
+    ---Checks whether the control is enabled, including its enabled ancestors.
+    ---@param control UguiControl A control.
+    ---@return boolean # Whether the control is effectively enabled.
+    is_control_enabled = function(control)
         if control.is_enabled == false then
             return false
         end
-        if not ugui.internal.point_in_rect(point, control.rectangle) then
+
+        local node = ugui.internal.find_node(control.uid)
+        if node then
+            return node.is_enabled ~= false
+        end
+
+        local parent = ugui.internal.current_parent
+        return parent == nil or parent == ugui.internal.scene_root or parent.is_enabled ~= false
+    end,
+
+    ---Checks whether the specified point lies inside the control's bounds, considering special cases such as the enabled state, hittest-free and offscreen regions.
+    ---@param point UguiVector2 A point.
+    ---@param control UguiControl A control.
+    ---@return boolean # Whether the point lies inside the control.
+    is_point_inside_control = function(point, control)
+        if not ugui.internal.is_control_enabled(control) then
+            return false
+        end
+        local node = ugui.internal.find_node(control.uid)
+        if not node or not ugui.internal.hittest_node(point, node) then
             return false
         end
         if point.x < 0 or point.x > ugui.internal.environment.window_size.x
@@ -771,7 +795,7 @@ ugui.internal = {
     end,
 
     ---Applies a control's styler mixin if it has one.
-    ---@param control Control The control.
+    ---@param control UguiControl The control.
     ---@return function # A function which reverts the styler mixin application when called.
     apply_styler_mixin = function(control)
         if not control.styler_mixin then
@@ -828,14 +852,12 @@ ugui.internal = {
             return
         end
 
-        -- Find hovered control
-        for _, entry in pairs(ugui.internal.scene) do
-            if entry.control.uid == ugui.internal.hovered_control then
-                ugui.standard_styler.draw_tooltip(entry.control, {
-                    x = ugui.internal.environment.mouse_position.x,
-                    y = ugui.internal.environment.mouse_position.y,
-                })
-            end
+        local hovered_node = ugui.internal.find_node(ugui.internal.hovered_control)
+        if hovered_node then
+            ugui.standard_styler.draw_tooltip(hovered_node.control, {
+                x = ugui.internal.environment.mouse_position.x,
+                y = ugui.internal.environment.mouse_position.y,
+            })
         end
     end,
 
@@ -879,64 +901,37 @@ ugui.internal = {
         return segments
     end,
 
-    ---Computes the effective value of a control property, respecting instance-level
-    ---overrides, registry-level defaults, and a fallback default.
-    ---@param control Control
-    ---@param registry_entry ControlRegistryEntry
-    ---@param prop_name string
-    ---@param get_default fun(): any
-    ---@return any
-    compute_prop = function(control, registry_entry, prop_name, get_default)
-        if control[prop_name] ~= nil then
-            return control[prop_name]
-        elseif registry_entry[prop_name] ~= nil then
-            return registry_entry[prop_name](control)
-        end
-        return get_default()
-    end,
 
     ---Does core input processing work, such as control capture/hover/click state management.
     do_input_processing = function()
-        ---@type Control?
+        ---@type UguiControl?
         local clicked_control = nil
-        ---@type Control?
+        ---@type UguiControl?
         local doubleclicked_control = nil
-        ---@type Control?
+        ---@type UguiControl?
         local tripleclicked_control = nil
 
-        ---@type SceneEntry?
-        local mouse_captured_control = nil
-        for i = 1, #ugui.internal.scene, 1 do
-            local entry = ugui.internal.scene[i]
-            if entry.control.uid == ugui.internal.mouse_captured_control then
-                mouse_captured_control = entry
-            end
-        end
+        local mouse_captured_control = ugui.internal.find_node(ugui.internal.mouse_captured_control)
+        local keyboard_captured_control = ugui.internal.find_node(ugui.internal.keyboard_captured_control)
 
-        ---@type SceneEntry?
-        local keyboard_captured_control = nil
-        for i = 1, #ugui.internal.scene, 1 do
-            local entry = ugui.internal.scene[i]
-            if entry.control.uid == ugui.internal.keyboard_captured_control then
-                keyboard_captured_control = entry
-            end
+        if mouse_captured_control and not mouse_captured_control.is_enabled then
+            mouse_captured_control = nil
         end
-
+        if keyboard_captured_control and not keyboard_captured_control.is_enabled then
+            keyboard_captured_control = nil
+        end
 
         local prev_hovered_control = ugui.internal.hovered_control
         ugui.internal.hovered_control = nil
 
-        for i = #ugui.internal.scene, 1, -1 do
-            local entry = ugui.internal.scene[i]
+        ugui.internal.foreach_scene_node(function(entry)
             local control = entry.control
-            local registry_entry = ugui.registry[entry.type]
-
-            local effective_hittestable = ugui.internal.compute_prop(control, registry_entry, 'hittestable', function() return true end)
+            local effective_hittestable = control.hittestable ~= false
 
             -- Determine the clicked control if we haven't already
             if clicked_control == nil and effective_hittestable then
                 if ugui.internal.is_mouse_just_down() then
-                    if ugui.internal.point_in_rect(ugui.internal.mouse_down_position, control.rectangle) then
+                    if ugui.internal.hittest_node(ugui.internal.mouse_down_position, entry) then
                         clicked_control = control
                         keyboard_captured_control = entry
                         mouse_captured_control = entry
@@ -946,12 +941,48 @@ ugui.internal = {
 
             -- Determine the hovered control if we haven't already
             if ugui.internal.hovered_control == nil and effective_hittestable then
-                if ugui.internal.point_in_rect(ugui.internal.environment.mouse_position, control.rectangle) then
+                if ugui.internal.hittest_node(ugui.internal.environment.mouse_position, entry) then
                     ugui.internal.hovered_control = control.uid
 
                     if ugui.internal.hovered_control ~= prev_hovered_control then
                         ugui.internal.hover_start_time = os.clock()
                     end
+                end
+            end
+        end, true)
+
+        -- Context menu.
+        for i = 1, #ugui.internal.environment.mouse_events do
+            local mouse_event = ugui.internal.environment.mouse_events[i]
+            if mouse_event.button == 1 and mouse_event.pressed then
+                local point = {
+                    x = mouse_event.x / ugui.internal.scale,
+                    y = mouse_event.y / ugui.internal.scale,
+                }
+                local target_node
+                ugui.internal.foreach_scene_node(function(entry)
+                    if entry.control.hittestable ~= false and ugui.internal.hittest_node(point, entry) then
+                        target_node = entry
+                        return false
+                    end
+                end, true)
+
+                local target = target_node and target_node.control
+                if target and target_node.is_enabled and type(target.context_menu) == 'table'
+                    and #target.context_menu > 0 and target.uid ~= ugui.internal.context_menu_uid then
+                    ugui.internal.context_menu_state = {
+                        owner_uid = target.uid,
+                        items = target.context_menu,
+                        position = point,
+                        opened_frame = ugui.internal.frame_index,
+                    }
+                    local menu_data = ugui.internal.control_data[ugui.internal.context_menu_uid]
+                    if menu_data then
+                        menu_data.dismissed = 0
+                        menu_data.hovered_path = {}
+                    end
+                else
+                    ugui.internal.context_menu_state = nil
                 end
             end
         end
@@ -967,8 +998,11 @@ ugui.internal = {
         end
 
         -- If the clicked control is disabled, we clear it now at the end of input processing, effectively "swallowing" the click.
-        if clicked_control and clicked_control.is_enabled == false then
-            clicked_control = nil
+        if clicked_control then
+            local clicked_node = ugui.internal.find_node(clicked_control.uid)
+            if clicked_node and not clicked_node.is_enabled then
+                clicked_control = nil
+            end
         end
 
         -- If we click outside of any control, we reset mouse and keyboard capture.
@@ -978,23 +1012,20 @@ ugui.internal = {
         end
 
         -- Resolve double- and triple-click events against the topmost hit-testable control.
-        for _, mouse_event in ipairs(ugui.internal.environment.mouse_events) do
+        for i = 1, #ugui.internal.environment.mouse_events do
+            local mouse_event = ugui.internal.environment.mouse_events[i]
             local target
             if mouse_event.double_click or mouse_event.triple_click then
-                for i = #ugui.internal.scene, 1, -1 do
-                    local entry = ugui.internal.scene[i]
-                    local effective_hittestable = ugui.internal.compute_prop(
-                        entry.control,
-                        ugui.registry[entry.type],
-                        'hittestable',
-                        function() return true end
-                    )
-                    if effective_hittestable and entry.control.is_enabled ~= false and
-                        ugui.internal.point_in_rect({x = mouse_event.x, y = mouse_event.y}, entry.control.rectangle) then
-                        target = entry.control
-                        break
+                ugui.internal.foreach_scene_node(function(entry)
+                    local effective_hittestable = entry.control.hittestable ~= false
+                    if effective_hittestable and
+                        ugui.internal.hittest_node({x = mouse_event.x, y = mouse_event.y}, entry) then
+                        if entry.is_enabled then
+                            target = entry.control
+                        end
+                        return false
                     end
-                end
+                end, true)
             end
             if mouse_event.double_click and target then
                 doubleclicked_control = target
@@ -1005,21 +1036,18 @@ ugui.internal = {
         end
 
         -- Clear hovered control if it's disabled
-        for i = 1, #ugui.internal.scene, 1 do
-            local control = ugui.internal.scene[i].control
-            if control.uid == ugui.internal.hovered_control
-                and control.is_enabled == false then
-                ugui.internal.hovered_control = nil
-            end
+        local hovered_node = ugui.internal.find_node(ugui.internal.hovered_control)
+        if hovered_node and not hovered_node.is_enabled then
+            ugui.internal.hovered_control = nil
         end
 
         -- Clear mouse captured control if it's disabled
-        if mouse_captured_control and mouse_captured_control.control.is_enabled == false then
+        if mouse_captured_control and not mouse_captured_control.is_enabled then
             mouse_captured_control = nil
         end
 
         -- Clear keyboard captured control if it's disabled
-        if keyboard_captured_control and keyboard_captured_control.control.is_enabled == false then
+        if keyboard_captured_control and not keyboard_captured_control.is_enabled then
             keyboard_captured_control = nil
         end
 
@@ -1029,8 +1057,144 @@ ugui.internal = {
         ugui.internal.clicked_control = clicked_control and clicked_control.uid or nil
         ugui.internal.doubleclicked_control = doubleclicked_control and doubleclicked_control.uid or nil
         ugui.internal.tripleclicked_control = tripleclicked_control and tripleclicked_control.uid or nil
+
+        local context_menu_state = ugui.internal.context_menu_state
+        if context_menu_state and context_menu_state.opened_frame < ugui.internal.frame_index
+            and not ugui.internal.context_menu_owner_seen then
+            ugui.internal.context_menu_state = nil
+        end
     end,
 }
+
+---Places a control internally.
+---@param control UguiControl The control.
+---@param control_type string The control's type.
+---@param fn fun()? A callback invoked after placement. Controls placed by the callback become children of this control.
+---@param initialize_data fun(control: UguiControl, data: any)? Initializes control-specific data on first placement.
+---@return ControlReturnValue # The control's return value.
+local control_impl = function(control, control_type, fn, initialize_data)
+    ugui.internal.assert(control_type ~= '', 'empty control_type is no longer allowed')
+    if control.uid == ugui.internal.context_menu_uid and not ugui.internal.context_menu_placing then
+        error('UID -1 is reserved for the global context menu.', 2)
+    end
+
+    local get_return_value = control.get_return_value
+    if get_return_value == nil then
+        error(string.format("Control type '%s' has no get_return_value function", control_type))
+    end
+
+    local execution_start = ugui.DEBUG and os.clock()
+    local return_value
+    local render_rect = ugui.internal.compute_render_rect(control)
+    control.render_rect = render_rect
+    local revert_styler_mixin = ugui.internal.apply_styler_mixin(control)
+
+    local is_new_control = ugui.internal.control_data[control.uid] == nil
+    if is_new_control then
+        ugui.internal.control_data[control.uid] = {
+            signal_change = ugui.signal_change_states.none,
+        }
+    end
+
+    local control_data = ugui.internal.control_data[control.uid]
+    if is_new_control and initialize_data then
+        initialize_data(control, control_data)
+    end
+
+    -- Run the control callback once to stabilize the return value for the first state.
+    if is_new_control then
+        return_value = get_return_value(control, control_data)
+    end
+
+    local stored_control_type = ugui.internal.control_types[control.uid]
+    if stored_control_type then
+        if stored_control_type.frame == ugui.internal.frame_index then
+            error(string.format(
+                'Attempted to show a control with uid %d, which is already in use! Note that some controls reserve more than one uid slot after them.',
+                control.uid))
+        elseif stored_control_type.type ~= control_type then
+            error(string.format('Attempted to reuse UID %d of %s for %s.', control.uid,
+                stored_control_type.type, control_type))
+        end
+    end
+
+    -- Run the control callback immediately so callers receive an up-to-date value instead of the previous frame's result.
+    return_value = get_return_value(control, control_data)
+
+    if execution_start then
+        ugui.internal.record_control_execution_time(control.uid, execution_start)
+    end
+
+    ugui.internal.scene_node_order = ugui.internal.scene_node_order + 1
+    local parent_node = ugui.internal.current_parent or ugui.internal.scene_root
+    local scene_node = {
+        control = control,
+        type = control_type,
+        parent = parent_node,
+        children = {},
+        order = ugui.internal.scene_node_order,
+        is_enabled = control.is_enabled ~= false
+            and (parent_node == ugui.internal.scene_root or parent_node.is_enabled ~= false),
+    }
+    parent_node.children[#parent_node.children + 1] = scene_node
+    parent_node.sorted_children = nil
+    ugui.internal.scene_nodes_by_uid[control.uid] = scene_node
+    ugui.internal.control_types[control.uid] = {
+        type = control_type,
+        frame = ugui.internal.frame_index,
+    }
+
+    if fn then
+        local previous_parent = ugui.internal.current_parent
+        ugui.internal.current_parent = scene_node
+        local ok, error_message = pcall(fn)
+        ugui.internal.current_parent = previous_parent
+        if not ok then
+            revert_styler_mixin()
+            error(error_message, 0)
+        end
+    end
+
+    local context_menu_state = ugui.internal.context_menu_state
+    if control.uid ~= ugui.internal.context_menu_uid and context_menu_state
+        and context_menu_state.owner_uid == control.uid then
+        local items = control.context_menu
+        if not ugui.internal.is_control_enabled(control) or type(items) ~= 'table' or #items == 0 then
+            ugui.internal.context_menu_state = nil
+        else
+            ugui.internal.context_menu_owner_seen = true
+            local previous_parent = ugui.internal.current_parent
+            ugui.internal.current_parent = ugui.internal.scene_root
+            ugui.internal.context_menu_placing = true
+            local ok, menu_result = pcall(ugui.menu, {
+                uid = ugui.internal.context_menu_uid,
+                rectangle = {
+                    x = context_menu_state.position.x,
+                    y = context_menu_state.position.y,
+                },
+                items = items,
+                z_index = math.huge,
+            })
+            ugui.internal.context_menu_placing = false
+            ugui.internal.current_parent = previous_parent
+            if not ok then
+                revert_styler_mixin()
+                error(menu_result, 0)
+            end
+
+            return_value.meta.context_menu_result = menu_result
+            if menu_result.item ~= nil or menu_result.dismissed then
+                ugui.internal.context_menu_state = nil
+            end
+        end
+    end
+
+    revert_styler_mixin()
+
+    return return_value
+end
+
+ugui.internal.control = control_impl
 
 -- ------------------------------------------------------------
 --   src/ugui/helpers.lua
@@ -1162,6 +1326,73 @@ ugui.internal.rgbaf_to_painter_color = function(color)
     }
 end
 
+---Converts an RGBA float color to HSV components.
+---@param color UguiRGBAF
+---@return number hue
+---@return number saturation
+---@return number value
+ugui.internal.rgbaf_to_hsv = function(color)
+    local max_channel = math.max(color.r, color.g, color.b)
+    local min_channel = math.min(color.r, color.g, color.b)
+    local delta = max_channel - min_channel
+    local hue = 0
+
+    if delta > 0 then
+        if max_channel == color.r then
+            hue = ((color.g - color.b) / delta) % 6
+        elseif max_channel == color.g then
+            hue = (color.b - color.r) / delta + 2
+        else
+            hue = (color.r - color.g) / delta + 4
+        end
+        hue = hue / 6
+    end
+
+    local saturation = max_channel == 0 and 0 or delta / max_channel
+    return hue, saturation, max_channel
+end
+
+---Converts HSV components to an RGBA float color without alpha.
+---@param hue number
+---@param saturation number
+---@param value number
+---@return UguiRGBAF
+ugui.internal.hsv_to_rgbaf = function(hue, saturation, value)
+    local sector = (hue % 1) * 6
+    local chroma = value * saturation
+    local secondary = chroma * (1 - math.abs(sector % 2 - 1))
+    local offset = value - chroma
+    local r, g, b
+
+    if sector < 1 then
+        r, g, b = chroma, secondary, 0
+    elseif sector < 2 then
+        r, g, b = secondary, chroma, 0
+    elseif sector < 3 then
+        r, g, b = 0, chroma, secondary
+    elseif sector < 4 then
+        r, g, b = 0, secondary, chroma
+    elseif sector < 5 then
+        r, g, b = secondary, 0, chroma
+    else
+        r, g, b = chroma, 0, secondary
+    end
+
+    return {r = r + offset, g = g + offset, b = b + offset}
+end
+
+---Copies an RGBA float color and defaults its alpha to 1.
+---@param color UguiRGBAF
+---@return UguiRGBAF
+ugui.internal.copy_color = function(color)
+    return {
+        r = color.r,
+        g = color.g,
+        b = color.b,
+        a = color.a or 1,
+    }
+end
+
 ---Inflates a rectangle around its center by the specified amount.
 ---@param rectangle UguiRect The rectangle.
 ---@param amount number The amount to inflate the rectangle by.
@@ -1181,6 +1412,16 @@ end
 ugui.internal.point_in_rect = function(point, rect)
     return point.x >= rect.x and point.x <= rect.x + rect.width and
         point.y >= rect.y and point.y <= rect.y + rect.height
+end
+
+---@param point UguiVector2
+---@param circle UguiRect
+---@return boolean inside
+ugui.internal.point_in_circle = function(point, circle)
+    local radius = circle.width / 2
+    local dx = point.x - (circle.x + radius)
+    local dy = point.y - (circle.y + radius)
+    return dx * dx + dy * dy <= radius * radius
 end
 
 ---Asserts that the specified condition is true, printing the stacktrace if it's false.
@@ -1346,6 +1587,194 @@ ugui.internal.remap = function(value, from1, to1, from2, to2)
     return (value - from1) / (to1 - from1) * (to2 - from2) + from2
 end
 
+---Returns scene children in stable z-index order without reordering the placement array.
+---@param node SceneNode|SceneRoot
+---@return SceneNode[]
+ugui.internal.get_sorted_scene_children = function(node)
+    if not node.sorted_children then
+        local children = node.children
+        local sorted = true
+        for i = 2, #children do
+            local previous = children[i - 1]
+            local current = children[i]
+            local previous_z_index = previous.control.z_index or 0
+            local current_z_index = current.control.z_index or 0
+            if current_z_index < previous_z_index
+                or (current_z_index == previous_z_index and current.order < previous.order) then
+                sorted = false
+                break
+            end
+        end
+
+        if sorted then
+            node.sorted_children = children
+        else
+            local sorted_children = {}
+            for i = 1, #children do
+                sorted_children[i] = children[i]
+            end
+            table.sort(sorted_children, function(a, b)
+                local a_z_index = a.control.z_index or 0
+                local b_z_index = b.control.z_index or 0
+                if a_z_index == b_z_index then
+                    return a.order < b.order
+                end
+                return a_z_index < b_z_index
+            end)
+            node.sorted_children = sorted_children
+        end
+    end
+    return node.sorted_children
+end
+
+---Traverses a scene tree depth-first.
+---@param node SceneNode
+---@param callback fun(node: SceneNode): boolean? Return false to stop traversal early.
+---@param reverse boolean? Traverse in reverse draw order.
+---@return boolean completed Whether the traversal completed without being stopped.
+ugui.internal.foreach_node = function(node, callback, reverse)
+    local children = ugui.internal.get_sorted_scene_children(node)
+    if reverse then
+        for i = #children, 1, -1 do
+            if not ugui.internal.foreach_node(children[i], callback, reverse) then
+                return false
+            end
+        end
+        return callback(node) ~= false
+    end
+
+    if callback(node) == false then
+        return false
+    end
+    for i = 1, #children do
+        if not ugui.internal.foreach_node(children[i], callback, false) then
+            return false
+        end
+    end
+    return true
+end
+
+---Traverses all nodes in the current scene, excluding the virtual root.
+---@param callback fun(node: SceneNode): boolean? Return false to stop traversal early.
+---@param reverse boolean? Traverse in reverse draw order.
+---@return boolean completed Whether the traversal completed without being stopped.
+ugui.internal.foreach_scene_node = function(callback, reverse)
+    local children = ugui.internal.get_sorted_scene_children(ugui.internal.scene_root)
+    if reverse then
+        for i = #children, 1, -1 do
+            if not ugui.internal.foreach_node(children[i], callback, true) then
+                return false
+            end
+        end
+    else
+        for i = 1, #children do
+            if not ugui.internal.foreach_node(children[i], callback, false) then
+                return false
+            end
+        end
+    end
+    return true
+end
+
+---Finds a scene node by the UID of its control.
+---@param uid UID?
+---@return SceneNode?
+ugui.internal.find_node = function(uid)
+    if uid == nil then
+        return nil
+    end
+    return ugui.internal.scene_nodes_by_uid[uid]
+end
+
+---Checks whether a point is inside every clipping ancestor of a node.
+---@param point UguiVector2
+---@param node SceneNode
+---@return boolean
+ugui.internal.is_point_inside_clip_ancestors = function(point, node)
+    local ancestor = node.parent
+    while ancestor and ancestor ~= ugui.internal.scene_root do
+        local control = ancestor.control
+        if control.clip_children and not ugui.internal.point_in_rect(
+                point,
+                control.render_rect
+            ) then
+            return false
+        end
+        ancestor = ancestor.parent
+    end
+    return true
+end
+
+---Checks a scene node's own bounds and all clipping ancestor bounds.
+---@param point UguiVector2
+---@param node SceneNode
+---@return boolean
+ugui.internal.hittest_node = function(point, node)
+    return ugui.internal.hittest(point, node.control)
+        and ugui.internal.is_point_inside_clip_ancestors(point, node)
+end
+
+
+local function render_rectangle_from_parent(rectangle, parent_rectangle)
+    return {
+        x = parent_rectangle.x + rectangle.x,
+        y = parent_rectangle.y + rectangle.y,
+        width = rectangle.width,
+        height = rectangle.height,
+    }
+end
+
+local function get_parent_render_rectangle(parent)
+    if parent == nil or parent == ugui.internal.scene_root then
+        return {x = 0, y = 0, width = 0, height = 0}
+    end
+    return assert(parent.control.render_rect)
+end
+
+---Computes a control's absolute rectangle using its current parent.
+---@param control UguiControl
+---@return UguiRect
+ugui.internal.compute_render_rect = function(control)
+    local parent = ugui.internal.current_parent
+    return render_rectangle_from_parent(control.rectangle, get_parent_render_rectangle(parent))
+end
+
+
+---Checks whether a point is inside the control's custom hit region, or its render rectangle by default.
+---@param point UguiVector2
+---@param control UguiControl
+---@return boolean
+ugui.internal.hittest = function(point, control)
+    if control.hittest then
+        return control.hittest(control, point)
+    end
+    return ugui.internal.point_in_rect(point, control.render_rect)
+end
+
+---Recomputes a placed node and its descendants after a local rectangle changes.
+---@param control UguiControl
+ugui.internal.update_render_rect = function(control)
+    local node = ugui.internal.find_node(control.uid)
+    if not node then
+        return
+    end
+
+    local function update_node(current_node, parent_rectangle)
+        local current_control = current_node.control
+        local render_rect = render_rectangle_from_parent(
+            current_control.rectangle,
+            parent_rectangle
+        )
+        current_control.render_rect = render_rect
+        for i = 1, #current_node.children do
+            update_node(current_node.children[i], render_rect)
+        end
+    end
+
+    update_node(node, get_parent_render_rectangle(node.parent))
+end
+
+
 ---Limits a value to a range.
 ---@param value number The value.
 ---@param min number The lower bound.
@@ -1364,6 +1793,20 @@ end
 --
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
+
+---@class UguiDrawRichTextParams
+---@field rectangle UguiRect The rich text's bounds.
+---@field align_x UguiAlignment? The rich text's horizontal alignment inside the rectangle. If nil, the default is assumed.
+---@field align_y UguiAlignment? The rich text's vertical alignment inside the rectangle. If nil, the default is assumed.
+---@field text RichText The rich text.
+---@field color UguiRGBA8 The rich text's color. If a rich text segment contains a color, it is used instead.
+---@field visual_state VisualState The visual state for rich icons.
+---@field plaintext boolean? Whether the text is drawn without rich formatting. If nil, false is assumed.
+---@field font_name string? The font name to use for the text. If nil, the default is assumed.
+---@field font_size number? The font size to use for the text. If nil, the default is assumed.
+---@field wrap boolean? Whether the text wraps at the rectangle's edges. If nil, false is assumed.
+---@field fit boolean? Whether the rich text is scaled down to fit the rectangle. If nil, false is assumed.
+---@field clip boolean? Whether the rich text is clipped to the rectangle. If nil, false is assumed.
 
 --- The standard style implementation, which is responsible for drawing controls.
 ugui.standard_styler = {
@@ -1759,163 +2202,57 @@ ugui.standard_styler = {
     end,
 
     ---Draws rich text with the specified parameters.
-    ---@param rectangle UguiRect The rich text's bounds.
-    ---@param align_x UguiAlignment? The rich text's horizontal alignment inside the rectangle. If nil, the default is assumed.
-    ---@param align_y UguiAlignment? The rich text's vertical alignment inside the rectangle. If nil, the default is assumed.
-    ---@param text RichText The rich text.
-    ---@param color UguiRGBA8 The rich text's color. If a rich text segment contains a color, it is used instead.
-    ---@param visual_state VisualState The visual state for rich icons.
-    ---@param plaintext boolean? Whether the text is drawn without rich formatting. If nil, false is assumed.
-    ---@param font_name string? The font name to use for the text. If nil, the default is assumed.
-    ---@param font_size number? The font size to use for the text. If nil, the default is assumed.
-    ---@param wrap boolean? Whether the text wraps at the rectangle's edges. If nil, false is assumed.
-    ---@param fit boolean? Whether the rich text is scaled down to fit the rectangle. If nil, false is assumed.
-    draw_rich_text = function(rectangle, align_x, align_y, text, color, visual_state, plaintext, font_name, font_size, wrap, fit)
+    ---@param params UguiDrawRichTextParams
+    draw_rich_text = function(params)
+        local rectangle = params.rectangle
+        local align_x = params.align_x
+        local align_y = params.align_y
+        local text = params.text
+        local color = params.color
+        local visual_state = params.visual_state
+        local plaintext = params.plaintext
+        local font_name = params.font_name
+        local font_size = params.font_size
+        local wrap = params.wrap
+        local fit = params.fit
+        local clip = params.clip
+
         align_x = align_x or ugui.alignment.center
         align_y = align_y or ugui.alignment.center
         font_name = font_name or ugui.standard_styler.params.font_name
         font_size = font_size or ugui.standard_styler.params.font_size
 
-        -- Fast-ish path: explicit plaintext.
-        if plaintext then
-            if wrap then
-                local wrapped_lines = {}
-                for line in (text .. '\n'):gmatch('(.-)\n') do
-                    local current_line = ''
-                    for word in line:gmatch('%S+%s*') do
-                        local candidate = current_line .. word
-                        local size = painter.measure_text(candidate, {family = font_name, size = font_size})
-                        if current_line ~= '' and size.w > rectangle.width then
-                            wrapped_lines[#wrapped_lines + 1] = current_line
-                            current_line = word
-                        else
-                            current_line = candidate
-                        end
-                    end
-                    wrapped_lines[#wrapped_lines + 1] = current_line
-                end
-                text = table.concat(wrapped_lines, '\n')
-            end
-            local text_x, text_y = rectangle.x, rectangle.y
-            local text_width, text_height = rectangle.width, rectangle.height
-            local text_align_x, text_align_y = align_x, align_y
-            if fit then
-                local metrics = painter.measure_text(text, {family = font_name, size = font_size})
-                if metrics.w > text_width then
-                    font_size = font_size / math.max(0.01, metrics.w / text_width)
-                end
-                if metrics.h > text_height then
-                    font_size = font_size / math.max(0.01, metrics.h / text_height)
-                end
-                metrics = painter.measure_text(text, {family = font_name, size = font_size})
-                if text_align_x == ugui.alignment.center or text_align_x == ugui.alignment.stretch then
-                    text_x = text_x + text_width / 2 - metrics.w / 2
-                elseif text_align_x == ugui.alignment['end'] then
-                    text_x = text_x + text_width - metrics.w
-                end
-                if text_align_y == ugui.alignment.center or text_align_y == ugui.alignment.stretch then
-                    text_y = text_y + text_height / 2 - metrics.h / 2
-                elseif text_align_y == ugui.alignment['end'] then
-                    text_y = text_y + text_height - metrics.h
-                end
-                text_width = metrics.w + 1
-                text_height = metrics.h + 1
-                text_align_x = ugui.alignment.start
-                text_align_y = ugui.alignment.start
-            end
+        local clip_painter
+        if clip then
+            clip_painter = ugui.internal.painter
+            clip_painter:save()
+            clip_painter:clip(ugui.internal.rect_to_painter_rect(rectangle))
+        end
 
+        -- Plain text does not need rich-text parsing, whether forced or inferred from the content.
+        if plaintext or text:find('[', 1, true) == nil then
             local p = ugui.internal.painter
             p:begin_path()
-            p:text(text, {x = text_x, y = text_y, w = text_width, h = text_height}, {
+            p:text(text, ugui.internal.rect_to_painter_rect(rectangle), {
                 family = font_name,
                 size = font_size,
                 weight = 400,
                 slant = 'normal',
-                align_x = text_align_x == ugui.alignment.center and 'center' or
-                    text_align_x == ugui.alignment['end'] and 'right' or
-                    text_align_x == ugui.alignment.stretch and 'justify' or 'left',
-                align_y = text_align_y == ugui.alignment.center and 'center' or
-                    text_align_y == ugui.alignment['end'] and 'bottom' or 'top',
+                fit = fit or false,
+                wrap = wrap and 'word' or 'none',
+                align_x = align_x == ugui.alignment.center and 'center' or
+                    align_x == ugui.alignment['end'] and 'right' or
+                    align_x == ugui.alignment.stretch and 'justify' or 'left',
+                align_y = align_y == ugui.alignment.center and 'center' or
+                    align_y == ugui.alignment['end'] and 'bottom' or 'top',
                 antialiased = ugui.standard_styler.params.cleartype,
                 overflow = 'visible',
                 clip = false,
             })
             p:fill(ugui.internal.color_source_to_painter_color(color))
-            return
-        end
-
-        -- Fast-ish path: no rich text.
-        -- COMPAT: We intentionally retain a bug here that makes text rendering not be constrained by `rectangle`.
-        if text:find('[', 1, true) == nil then
-            if fit then
-                local metrics = painter.measure_text(text, {family = font_name, size = font_size})
-                if metrics.w > rectangle.width then
-                    font_size = font_size / math.max(0.01, metrics.w / rectangle.width)
-                end
-                if metrics.h > rectangle.height then
-                    font_size = font_size / math.max(0.01, metrics.h / rectangle.height)
-                end
-                metrics = painter.measure_text(text, {family = font_name, size = font_size})
-
-                local text_x, text_y = rectangle.x, rectangle.y
-                if align_x == ugui.alignment.center or align_x == ugui.alignment.stretch then
-                    text_x = text_x + rectangle.width / 2 - metrics.w / 2
-                elseif align_x == ugui.alignment['end'] then
-                    text_x = text_x + rectangle.width - metrics.w
-                end
-                if align_y == ugui.alignment.center or align_y == ugui.alignment.stretch then
-                    text_y = text_y + rectangle.height / 2 - metrics.h / 2
-                elseif align_y == ugui.alignment['end'] then
-                    text_y = text_y + rectangle.height - metrics.h
-                end
-
-                local p = ugui.internal.painter
-                p:begin_path()
-                p:text(text, {x = text_x, y = text_y, w = metrics.w + 1, h = metrics.h + 1}, {
-                    family = font_name,
-                    size = font_size,
-                    weight = 400,
-                    slant = 'normal',
-                    align_x = 'left',
-                    align_y = 'top',
-                    antialiased = ugui.standard_styler.params.cleartype,
-                    overflow = 'visible',
-                    clip = false,
-                })
-                p:fill(ugui.internal.color_source_to_painter_color(color))
-                return
+            if clip_painter then
+                clip_painter:restore()
             end
-
-            local size = painter.measure_text(text, {family = font_name, size = font_size})
-            local text_x = rectangle.x
-            local text_y = rectangle.y
-
-            if align_x == ugui.alignment.center then
-                text_x = text_x + (rectangle.width - size.w) / 2
-            elseif align_x == ugui.alignment['end'] then
-                text_x = text_x + rectangle.width - size.w
-            end
-
-            if align_y == ugui.alignment.center then
-                text_y = text_y + rectangle.height / 2 - size.h / 2
-            elseif align_y == ugui.alignment['end'] then
-                text_y = text_y + rectangle.height - size.h
-            end
-
-            local p = ugui.internal.painter
-            p:begin_path()
-            p:text(text, {x = text_x, y = text_y - 1, w = size.w + 1, h = size.h + 1}, {
-                family = font_name,
-                size = font_size,
-                weight = 400,
-                slant = 'normal',
-                align_x = 'left',
-                align_y = 'top',
-                antialiased = ugui.standard_styler.params.cleartype,
-                overflow = 'clip',
-                clip = true,
-            })
-            p:fill(ugui.internal.color_source_to_painter_color(color))
             return
         end
 
@@ -1929,7 +2266,8 @@ ugui.standard_styler = {
             if scale < 1 then
                 font_size = font_size * scale
                 total_width = total_width * scale
-                for _, data in pairs(segment_data) do
+                for i = 1, #segment_data do
+                    local data = segment_data[i]
                     data.rectangle.x = data.rectangle.x * scale
                     data.rectangle.width = data.rectangle.width * scale
                     data.rectangle.height = data.rectangle.height * scale
@@ -1939,37 +2277,44 @@ ugui.standard_styler = {
 
         -- 2. Translate all segments to match the specified alignments
         if align_x == ugui.alignment.start then
-            for _, data in pairs(segment_data) do
+            for i = 1, #segment_data do
+                local data = segment_data[i]
                 data.rectangle.x = data.rectangle.x + rectangle.x
             end
         elseif align_x == ugui.alignment.center then
             local x_offset = rectangle.x + (rectangle.width - total_width) / 2
-            for _, data in pairs(segment_data) do
+            for i = 1, #segment_data do
+                local data = segment_data[i]
                 data.rectangle.x = data.rectangle.x + x_offset
             end
         elseif align_x == ugui.alignment['end'] then
             local x_offset = rectangle.x + rectangle.width - total_width
-            for _, data in pairs(segment_data) do
+            for i = 1, #segment_data do
+                local data = segment_data[i]
                 data.rectangle.x = data.rectangle.x + x_offset
             end
         end
 
         if align_y == ugui.alignment.start then
-            for _, data in pairs(segment_data) do
+            for i = 1, #segment_data do
+                local data = segment_data[i]
                 data.rectangle.y = data.rectangle.y + rectangle.y
             end
         elseif align_y == ugui.alignment.center then
-            for _, data in pairs(segment_data) do
+            for i = 1, #segment_data do
+                local data = segment_data[i]
                 data.rectangle.y = data.rectangle.y + rectangle.y + rectangle.height / 2 - data.rectangle.height / 2
             end
         elseif align_y == ugui.alignment['end'] then
-            for _, data in pairs(segment_data) do
+            for i = 1, #segment_data do
+                local data = segment_data[i]
                 data.rectangle.y = data.rectangle.y + rectangle.y + rectangle.height - data.rectangle.height
             end
         end
 
         -- 3. Draw the segments
-        for _, data in pairs(segment_data) do
+        for i = 1, #segment_data do
+            local data = segment_data[i]
             if data.segment.type == 'icon' then
                 ugui.standard_styler.draw_icon(data.rectangle, data.segment.color or color, visual_state,
                     data.segment.value)
@@ -1996,31 +2341,35 @@ ugui.standard_styler = {
                 p:fill(ugui.internal.color_source_to_painter_color(color))
             end
         end
+        if clip_painter then
+            clip_painter:restore()
+        end
     end,
 
     ---Draws a raised frame with the specified parameters.
-    ---@param control Control The control table.
+    ---@param control UguiControl The control table.
     ---@param visual_state VisualState The control's visual state.
     draw_raised_frame = function(control, visual_state)
+        local rectangle = control.render_rect
         local p = ugui.internal.painter
         p:begin_path()
-        p:rect(ugui.internal.rect_to_painter_rect(control.rectangle))
+        p:rect(ugui.internal.rect_to_painter_rect(rectangle))
         p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.button.border[visual_state]))
         p:begin_path()
-        p:rect(ugui.internal.rect_to_painter_rect(ugui.internal.inflate_rect(control.rectangle, -1)))
+        p:rect(ugui.internal.rect_to_painter_rect(ugui.internal.inflate_rect(rectangle, -1)))
         p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.button.back[visual_state]))
     end,
 
     ---Draws an edit frame with the specified parameters.
-    ---@param control Control The control table.
+    ---@param control UguiControl The control table.
     ---@param visual_state VisualState The control's visual state.
     draw_edit_frame = function(control, rectangle, visual_state)
         local p = ugui.internal.painter
         p:begin_path()
-        p:rect(ugui.internal.rect_to_painter_rect(control.rectangle))
+        p:rect(ugui.internal.rect_to_painter_rect(rectangle))
         p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.textbox.border[visual_state]))
         p:begin_path()
-        p:rect(ugui.internal.rect_to_painter_rect(ugui.internal.inflate_rect(control.rectangle, -1)))
+        p:rect(ugui.internal.rect_to_painter_rect(ugui.internal.inflate_rect(rectangle, -1)))
         p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.textbox.back[visual_state]))
     end,
 
@@ -2111,9 +2460,10 @@ ugui.standard_styler = {
     ---@param thumb_rectangle UguiRect The scrollbar thumb's bounds.
     draw_scrollbar = function(control, thumb_rectangle)
         local visual_state = ugui.get_visual_state(control)
+        local rectangle = control.render_rect
         local p = ugui.internal.painter
         p:begin_path()
-        p:rect(ugui.internal.rect_to_painter_rect(control.rectangle))
+        p:rect(ugui.internal.rect_to_painter_rect(rectangle))
         p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.scrollbar.back[visual_state]))
         p:begin_path()
         p:rect(ugui.internal.rect_to_painter_rect(thumb_rectangle))
@@ -2121,7 +2471,7 @@ ugui.standard_styler = {
     end,
 
     ---Draws a list item with the specified parameters.
-    ---@param control Control The associated list control.
+    ---@param control UguiControl The associated list control.
     ---@param item string The list item's text.
     ---@param rectangle UguiRect The list item's bounds.
     ---@param visual_state VisualState The control's visual state.
@@ -2140,8 +2490,15 @@ ugui.standard_styler = {
             width = rectangle.width - 4,
             height = rectangle.height,
         }
-        ugui.standard_styler.draw_rich_text(rect, ugui.alignment.start, nil, item,
-            ugui.standard_styler.params.listbox_item.text[visual_state], visual_state, control.plaintext)
+        ugui.standard_styler.draw_rich_text({
+            rectangle = rect,
+            align_x = ugui.alignment.start,
+            text = item,
+            color = ugui.standard_styler.params.listbox_item.text[visual_state],
+            visual_state = visual_state,
+            plaintext = control.plaintext,
+            wrap = false,
+        })
     end,
 
     ---Draws a list with the specified parameters.
@@ -2155,7 +2512,7 @@ ugui.standard_styler = {
 
         local content_bounds = ugui.standard_styler.get_desired_listbox_content_bounds(control)
         -- item y position:
-        -- y = (20 * (i - 1)) - (scroll_y * ((20 * #control.items) - control.rectangle.height))
+        -- y = (20 * (i - 1)) - (scroll_y * ((20 * #control.items) - rectangle.height))
         local scroll_x = data.scroll_x and data.scroll_x or 0
         local scroll_y = data.scroll_y and data.scroll_y or 0
 
@@ -2170,7 +2527,7 @@ ugui.standard_styler = {
         index_begin = ugui.internal.clamp(math.floor(index_begin), 1, #control.items)
         index_end = ugui.internal.clamp(math.ceil(index_end), 1, #control.items)
 
-        local x_offset = math.max((content_bounds.width - control.rectangle.width) * scroll_x, 0)
+        local x_offset = math.max((content_bounds.width - rectangle.width) * scroll_x, 0)
 
         local p = ugui.internal.painter
         p:save()
@@ -2181,18 +2538,18 @@ ugui.standard_styler = {
                 (scroll_y * (content_bounds.height - rectangle.height))
 
             local item_visual_state = ugui.visual_states.normal
-            if control.is_enabled == false then
+            if not ugui.internal.is_control_enabled(control) then
                 item_visual_state = ugui.visual_states.disabled
             end
 
-            if data.selected_index == i then
+            if data.selected_index == i and ugui.internal.is_control_enabled(control) then
                 item_visual_state = ugui.visual_states.active
             end
 
             ugui.standard_styler.draw_list_item(control, control.items[i], {
                 x = rectangle.x - x_offset,
                 y = rectangle.y + y_offset,
-                width = math.max(content_bounds.width, control.rectangle.width),
+                width = math.max(content_bounds.width, rectangle.width),
                 height = ugui.standard_styler.params.listbox_item.height,
             }, item_visual_state)
         end
@@ -2272,13 +2629,18 @@ ugui.standard_styler = {
     ---Draws a menu with the specified parameters.
     ---@param control Menu The menu control.
     ---@param rectangle UguiRect The control's bounds.
-    draw_menu = function(control, rectangle)
+    ---@param hovered_index integer? The item to highlight for this menu level.
+    draw_menu = function(control, rectangle, hovered_index)
         local visual_state = ugui.get_visual_state(control)
         ugui.standard_styler.draw_menu_frame(rectangle, visual_state)
+        if hovered_index == nil then
+            hovered_index = ugui.internal.control_data[control.uid].hovered_index
+        end
 
         local y = rectangle.y
 
-        for i, item in pairs(control.items) do
+        for i = 1, #control.items do
+            local item = control.items[i]
             local rectangle = ugui.internal.inflate_rect({
                 x = rectangle.x,
                 y = y,
@@ -2287,7 +2649,7 @@ ugui.standard_styler = {
             }, -1)
 
             local visual_state = ugui.visual_states.normal
-            if ugui.internal.control_data[control.uid].hovered_index and ugui.internal.control_data[control.uid].hovered_index == i then
+            if hovered_index == i then
                 visual_state = ugui.visual_states.hovered
             end
             if item.enabled == false then
@@ -2300,7 +2662,7 @@ ugui.standard_styler = {
     end,
 
     ---Draws a tooltip with the specified parameters.
-    ---@param control Control The tooltip's parent control.
+    ---@param control UguiControl The tooltip's parent control.
     ---@param position UguiVector2 The tooltip's position.
     draw_tooltip = function(control, position)
         local text = control.tooltip
@@ -2350,9 +2712,14 @@ ugui.standard_styler = {
             rectangle.width = 99999
         end
 
-        ugui.standard_styler.draw_rich_text(rectangle, ugui.alignment.start, nil, text,
-            ugui.standard_styler.params.menu_item.text[ugui.visual_states.normal], ugui.visual_states.normal,
-            control.plaintext)
+        ugui.standard_styler.draw_rich_text({
+            rectangle = rectangle,
+            align_x = ugui.alignment.start,
+            text = text,
+            color = ugui.standard_styler.params.menu_item.text[ugui.visual_states.normal],
+            visual_state = ugui.visual_states.normal,
+            plaintext = control.plaintext,
+        })
     end,
 
     ---Draws a Button with the specified parameters.
@@ -2362,13 +2729,11 @@ ugui.standard_styler = {
 
         -- NOTE: Avoids duplicating code for ToggleButton in this implementation by putting it here
         ---@diagnostic disable-next-line: undefined-field
-        if control.is_checked and control.is_enabled ~= false then
+        if control.is_checked and ugui.internal.is_control_enabled(control) then
             visual_state = ugui.visual_states.active
         end
 
         ugui.standard_styler.draw_raised_frame(control, visual_state)
-        ugui.standard_styler.draw_rich_text(control.rectangle, nil, nil, control.text,
-            ugui.standard_styler.params.button.text[visual_state], visual_state, control.plaintext)
     end,
 
     ---Draws a ToggleButton with the specified parameters.
@@ -2387,18 +2752,19 @@ ugui.standard_styler = {
         local visual_state = ugui.get_visual_state(control)
 
         -- draw the arrows
+        local rectangle = control.render_rect
         ugui.standard_styler.draw_icon({
-            x = control.rectangle.x + ugui.standard_styler.params.textbox.padding.x,
-            y = control.rectangle.y,
+            x = rectangle.x + ugui.standard_styler.params.textbox.padding.x,
+            y = rectangle.y,
             width = ugui.standard_styler.params.icon_size,
-            height = control.rectangle.height,
+            height = rectangle.height,
         }, ugui.standard_styler.params.button.text[visual_state], visual_state, 'arrow_left')
         ugui.standard_styler.draw_icon({
-            x = control.rectangle.x + control.rectangle.width - ugui.standard_styler.params.textbox.padding.x -
+            x = rectangle.x + rectangle.width - ugui.standard_styler.params.textbox.padding.x -
                 ugui.standard_styler.params.icon_size,
-            y = control.rectangle.y,
+            y = rectangle.y,
             width = ugui.standard_styler.params.icon_size,
-            height = control.rectangle.height,
+            height = rectangle.height,
         }, ugui.standard_styler.params.button.text[visual_state], visual_state, 'arrow_right')
     end,
 
@@ -2406,6 +2772,7 @@ ugui.standard_styler = {
     ---@param control TextBox The control table.
     draw_textbox = function(control)
         local data = ugui.internal.control_data[control.uid]
+        local rectangle = control.render_rect
         local visual_state = ugui.get_visual_state(control)
         local text<const> = data.text
         local scroll_offset = data.scroll_offset
@@ -2418,23 +2785,23 @@ ugui.standard_styler = {
             visual_state = ugui.visual_states.active
         end
 
-        ugui.standard_styler.draw_edit_frame(control, control.rectangle, visual_state)
+        ugui.standard_styler.draw_edit_frame(control, rectangle, visual_state)
         local p = ugui.internal.painter
         p:save()
 
         local should_visualize_selection =
-            control.is_enabled ~= false
+            ugui.internal.is_control_enabled(control)
             and data.selection_start ~= data.selection_end
             and keyboard_captured
 
         local padding_x = ugui.standard_styler.params.textbox.padding.x
-        local text_x = control.rectangle.x + padding_x
-        local available_width = math.max(0, control.rectangle.width - padding_x * 2)
+        local text_x = rectangle.x + padding_x
+        local available_width = math.max(0, rectangle.width - padding_x * 2)
         p:clip(ugui.internal.rect_to_painter_rect({
             x = text_x,
-            y = control.rectangle.y,
+            y = rectangle.y,
             width = available_width,
-            height = control.rectangle.height,
+            height = rectangle.height,
         }))
         local text_style = {
             family = ugui.standard_styler.params.font_name,
@@ -2451,9 +2818,9 @@ ugui.standard_styler = {
         end
         local text_rect = ugui.internal.rect_to_painter_rect({
             x = text_x,
-            y = control.rectangle.y,
+            y = rectangle.y,
             width = 9999,
-            height = control.rectangle.height,
+            height = rectangle.height,
         })
         local draw_text_style = {
             family = text_style.family,
@@ -2496,7 +2863,7 @@ ugui.standard_styler = {
             p:begin_path()
             p:rect(ugui.internal.rect_to_painter_rect({
                 x = selection_start_x,
-                y = control.rectangle.y,
+                y = rectangle.y,
                 width = selection_width,
                 height = caret_height,
             }))
@@ -2510,9 +2877,9 @@ ugui.standard_styler = {
             p:save()
             p:clip(ugui.internal.rect_to_painter_rect({
                 x = selection_start_x,
-                y = control.rectangle.y,
+                y = rectangle.y,
                 width = selection_width,
-                height = control.rectangle.height,
+                height = rectangle.height,
             }))
 
             p:begin_path()
@@ -2524,7 +2891,7 @@ ugui.standard_styler = {
 
         if should_draw_caret then
             p:begin_path()
-            p:line(caret_x, control.rectangle.y + 3, caret_x, control.rectangle.y + caret_height - 3)
+            p:line(caret_x, rectangle.y + 3, caret_x, rectangle.y + caret_height - 3)
             p:stroke(ugui.internal.color_source_to_painter_color({r = 0, g = 0, b = 0}), {width = 1})
         end
 
@@ -2534,6 +2901,7 @@ ugui.standard_styler = {
     ---Draws a Joystick with the specified parameters.
     ---@param control Joystick The control table.
     draw_joystick = function(control)
+        local rectangle = control.render_rect
         local visual_state = ugui.get_visual_state(control)
         local x = control.position and control.position.x or 0
         local y = control.position and control.position.y or 0
@@ -2545,31 +2913,32 @@ ugui.standard_styler = {
         end
 
         ugui.standard_styler.draw_raised_frame(control, visual_state)
-        ugui.standard_styler.draw_joystick_inner(control.rectangle, visual_state, {
+        ugui.standard_styler.draw_joystick_inner(rectangle, visual_state, {
             x = ugui.internal.remap(ugui.internal.clamp(x, -128, 128), -128, 128,
-                control.rectangle.x, control.rectangle.x + control.rectangle.width),
+                rectangle.x, rectangle.x + rectangle.width),
             y = ugui.internal.remap(ugui.internal.clamp(y, -128, 128), -128, 128,
-                control.rectangle.y, control.rectangle.y + control.rectangle.height),
+                rectangle.y, rectangle.y + rectangle.height),
             r = ugui.internal.remap(ugui.internal.clamp(mag, 0, 128), 0, 128, 0,
-                math.min(control.rectangle.width, control.rectangle.height)),
+                math.min(rectangle.width, rectangle.height)),
         })
     end,
     draw_track = function(control, visual_state, is_horizontal)
+        local rectangle = control.render_rect
         local track_rectangle = {}
         if not is_horizontal then
             track_rectangle = {
-                x = control.rectangle.x + control.rectangle.width / 2 -
+                x = rectangle.x + rectangle.width / 2 -
                     ugui.standard_styler.params.trackbar.track_thickness / 2,
-                y = control.rectangle.y,
+                y = rectangle.y,
                 width = ugui.standard_styler.params.trackbar.track_thickness,
-                height = control.rectangle.height,
+                height = rectangle.height,
             }
         else
             track_rectangle = {
-                x = control.rectangle.x,
-                y = control.rectangle.y + control.rectangle.height / 2 -
+                x = rectangle.x,
+                y = rectangle.y + rectangle.height / 2 -
                     ugui.standard_styler.params.trackbar.track_thickness / 2,
-                width = control.rectangle.width,
+                width = rectangle.width,
                 height = ugui.standard_styler.params.trackbar.track_thickness,
             }
         end
@@ -2589,24 +2958,25 @@ ugui.standard_styler = {
     ---@param is_horizontal boolean Whether the trackbar is horizontal.
     ---@param value number The trackbar's value.
     draw_thumb = function(control, visual_state, is_horizontal, value)
+        local rectangle = control.render_rect
         local head_rectangle = {}
         local effective_bar_height = math.min(
-            (is_horizontal and control.rectangle.height or control.rectangle.width) * 2,
+            (is_horizontal and rectangle.height or rectangle.width) * 2,
             ugui.standard_styler.params.trackbar.bar_height)
         if not is_horizontal then
             head_rectangle = {
-                x = control.rectangle.x + control.rectangle.width / 2 -
+                x = rectangle.x + rectangle.width / 2 -
                     effective_bar_height / 2,
-                y = control.rectangle.y + (value * control.rectangle.height) -
+                y = rectangle.y + (value * rectangle.height) -
                     ugui.standard_styler.params.trackbar.bar_width / 2,
                 width = effective_bar_height,
                 height = ugui.standard_styler.params.trackbar.bar_width,
             }
         else
             head_rectangle = {
-                x = control.rectangle.x + (value * control.rectangle.width) -
+                x = rectangle.x + (value * rectangle.width) -
                     ugui.standard_styler.params.trackbar.bar_width / 2,
-                y = control.rectangle.y + control.rectangle.height / 2 -
+                y = rectangle.y + rectangle.height / 2 -
                     effective_bar_height / 2,
                 width = ugui.standard_styler.params.trackbar.bar_width,
                 height = effective_bar_height,
@@ -2621,17 +2991,246 @@ ugui.standard_styler = {
     ---Draws a Trackbar with the specified parameters.
     ---@param control Trackbar The control table.
     draw_trackbar = function(control)
+        local rectangle = control.render_rect
         local visual_state = ugui.get_visual_state(control)
         local data = ugui.internal.control_data[control.uid]
 
-        if ugui.internal.mouse_captured_control == control.uid and control.is_enabled ~= false then
+        if ugui.internal.mouse_captured_control == control.uid and ugui.internal.is_control_enabled(control) then
             visual_state = ugui.visual_states.active
         end
 
-        local is_horizontal = control.rectangle.width > control.rectangle.height
+        local is_horizontal = rectangle.width > rectangle.height
 
         ugui.standard_styler.draw_track(control, visual_state, is_horizontal)
         ugui.standard_styler.draw_thumb(control, visual_state, is_horizontal, data.value)
+    end,
+
+    ---Draws a square saturation/value color picker with its hue band.
+    ---@param control ColorPicker The control table.
+    ---@param square UguiRect The square saturation/value field.
+    ---@param band UguiRect The band's bounds.
+    ---@param hue number The selected hue in the range 0-1.
+    ---@param hue_color UguiRGBAF The fully saturated color for the selected hue.
+    ---@param saturation number The selected saturation in the range 0-1.
+    ---@param value number The selected value in the range 0-1.
+    ---@param band_position string The side of the square occupied by the band.
+    draw_colorpicker = function(control, square, band, hue, hue_color, saturation, value, band_position)
+        local p = ugui.internal.painter
+        local square_painter_rect = ugui.internal.rect_to_painter_rect(square)
+
+        if band.width > 0 and band.height > 0 then
+            local band_painter_rect = ugui.internal.rect_to_painter_rect(band)
+            local band_is_horizontal = band_position == 'top' or band_position == 'bottom'
+
+            p:begin_path()
+            p:rect(band_painter_rect)
+            p:fill({
+                type = 'linear_gradient',
+                x0 = band_is_horizontal and band.x or band.x + band.width / 2,
+                y0 = band_is_horizontal and band.y + band.height / 2 or band.y,
+                x1 = band_is_horizontal and band.x + band.width or band.x + band.width / 2,
+                y1 = band_is_horizontal and band.y + band.height / 2 or band.y + band.height,
+                stops = {
+                    {offset = 0, color = '#FF0000'},
+                    {offset = 1 / 6, color = '#FFFF00'},
+                    {offset = 2 / 6, color = '#00FF00'},
+                    {offset = 3 / 6, color = '#00FFFF'},
+                    {offset = 4 / 6, color = '#0000FF'},
+                    {offset = 5 / 6, color = '#FF00FF'},
+                    {offset = 1, color = '#FF0000'},
+                },
+            })
+
+            local hue_marker = band_is_horizontal
+                and band.x + hue * band.width
+                or band.y + hue * band.height
+            p:save()
+            p:clip(band_painter_rect)
+            p:begin_path()
+            if band_is_horizontal then
+                p:line(hue_marker, band.y, hue_marker, band.y + band.height)
+            else
+                p:line(band.x, hue_marker, band.x + band.width, hue_marker)
+            end
+            p:stroke('#000000', {width = 3})
+            p:begin_path()
+            if band_is_horizontal then
+                p:line(hue_marker, band.y, hue_marker, band.y + band.height)
+            else
+                p:line(band.x, hue_marker, band.x + band.width, hue_marker)
+            end
+            p:stroke('#FFFFFFFF', {width = 1})
+            p:restore()
+
+            p:begin_path()
+            p:rect(band_painter_rect)
+            p:stroke('#000000', {width = 1})
+        end
+
+        p:begin_path()
+        p:rect(square_painter_rect)
+        p:fill(ugui.internal.rgbaf_to_painter_color(hue_color))
+
+        p:begin_path()
+        p:rect(square_painter_rect)
+        p:fill({
+            type = 'linear_gradient',
+            x0 = square.x,
+            y0 = square.y,
+            x1 = square.x + square.width,
+            y1 = square.y,
+            stops = {
+                {offset = 0, color = {r = 1, g = 1, b = 1, a = 1}},
+                {offset = 1, color = {r = 1, g = 1, b = 1, a = 0}},
+            },
+        })
+
+        p:begin_path()
+        p:rect(square_painter_rect)
+        p:fill({
+            type = 'linear_gradient',
+            x0 = square.x,
+            y0 = square.y,
+            x1 = square.x,
+            y1 = square.y + square.height,
+            stops = {
+                {offset = 0, color = {r = 0, g = 0, b = 0, a = 0}},
+                {offset = 1, color = {r = 0, g = 0, b = 0, a = 1}},
+            },
+        })
+
+        local marker_x = square.x + saturation * square.width
+        local marker_y = square.y + (1 - value) * square.height
+        p:save()
+        p:clip(square_painter_rect)
+        p:begin_path()
+        p:circle({x = marker_x - 5, y = marker_y - 5, w = 10, h = 10})
+        p:stroke('#000000', {width = 2})
+        p:begin_path()
+        p:circle({x = marker_x - 3, y = marker_y - 3, w = 6, h = 6})
+        p:stroke('#FFFFFFFF', {width = 1})
+        p:restore()
+
+        p:begin_path()
+        p:rect(square_painter_rect)
+        p:stroke(control.is_enabled == false and '#808080' or '#000000', {width = 1})
+    end,
+
+    ---Draws a hue/saturation color wheel with a value band.
+    ---@param control ColorPicker The control table.
+    ---@param circle UguiRect The square bounds of the color wheel.
+    ---@param band UguiRect The value band's bounds.
+    ---@param hue number The selected hue in the range 0-1.
+    ---@param saturation number The selected saturation in the range 0-1.
+    ---@param value number The selected value in the range 0-1.
+    ---@param band_position string The side of the wheel occupied by the value band.
+    draw_colorpicker_circle = function(control, circle, band, hue, saturation, value, band_position)
+        local p = ugui.internal.painter
+        local painter_rect = ugui.internal.rect_to_painter_rect(circle)
+        local center_x = circle.x + circle.width / 2
+        local center_y = circle.y + circle.height / 2
+        local radius = circle.width / 2
+        if circle.width > 0 and circle.height > 0 then
+            local image_width = 256
+            local image_height = 256
+            local image = ugui.internal.colorpicker_circle_image
+            if not image then
+                image = painter.new_image(image_width, image_height)
+                image:paint(function(wheel_painter)
+                    local wheel_center_x = image_width / 2
+                    local wheel_center_y = image_height / 2
+                    local wheel_radius = image_width / 2
+                    local segment_count = 120
+                    local angle_step = 2 * math.pi / segment_count
+                    local overlap = angle_step / 2
+
+                    for i = 0, segment_count - 1 do
+                        local angle_start = i * angle_step - overlap
+                        local angle_end = (i + 1) * angle_step + overlap
+                        wheel_painter:begin_path()
+                        wheel_painter:move_to(wheel_center_x, wheel_center_y)
+                        wheel_painter:arc(wheel_center_x, wheel_center_y, wheel_radius,
+                            angle_start, angle_end)
+                        wheel_painter:close_path()
+                        wheel_painter:fill(ugui.internal.rgbaf_to_painter_color(
+                            ugui.internal.hsv_to_rgbaf((i + 0.5) / segment_count, 1, 1)))
+                    end
+
+                    wheel_painter:begin_path()
+                    wheel_painter:rect({x = 0, y = 0, w = image_width, h = image_height})
+                    wheel_painter:fill({
+                        type = 'radial_gradient',
+                        center_x = wheel_center_x,
+                        center_y = wheel_center_y,
+                        radius_x = wheel_radius,
+                        radius_y = wheel_radius,
+                        stops = {
+                            {offset = 0, color = {r = 1, g = 1, b = 1, a = 1}},
+                            {offset = 1, color = {r = 1, g = 1, b = 1, a = 0}},
+                        },
+                    })
+                end)
+                ugui.internal.colorpicker_circle_image = image
+            end
+
+            p:image(image, painter_rect, {
+                sampling = 'linear',
+                tint = {r = value, g = value, b = value, a = 1},
+            })
+        end
+
+        if band.width > 0 and band.height > 0 then
+            local band_is_horizontal = band_position == 'top' or band_position == 'bottom'
+            local band_painter_rect = ugui.internal.rect_to_painter_rect(band)
+            local value_color = ugui.internal.rgbaf_to_painter_color(ugui.internal.hsv_to_rgbaf(hue, saturation, 1))
+            local dark_color = {r = 0, g = 0, b = 0, a = 1}
+            p:begin_path()
+            p:rect(band_painter_rect)
+            p:fill({
+                type = 'linear_gradient',
+                x0 = band_is_horizontal and band.x or band.x + band.width / 2,
+                y0 = band_is_horizontal and band.y + band.height / 2 or band.y,
+                x1 = band_is_horizontal and band.x + band.width or band.x + band.width / 2,
+                y1 = band_is_horizontal and band.y + band.height / 2 or band.y + band.height,
+                stops = band_is_horizontal
+                    and {{offset = 0, color = dark_color}, {offset = 1, color = value_color}}
+                    or {{offset = 0, color = value_color}, {offset = 1, color = dark_color}},
+            })
+
+            local value_marker = band_is_horizontal
+                and band.x + value * band.width
+                or band.y + (1 - value) * band.height
+            p:save()
+            p:clip(band_painter_rect)
+            p:begin_path()
+            if band_is_horizontal then
+                p:line(value_marker, band.y, value_marker, band.y + band.height)
+            else
+                p:line(band.x, value_marker, band.x + band.width, value_marker)
+            end
+            p:stroke('#000000', {width = 3})
+            p:stroke('#FFFFFFFF', {width = 1})
+            p:restore()
+            p:begin_path()
+            p:rect(band_painter_rect)
+            p:stroke('#000000', {width = 1})
+        end
+
+        local marker_x = center_x + math.cos(hue * 2 * math.pi) * saturation * radius
+        local marker_y = center_y + math.sin(hue * 2 * math.pi) * saturation * radius
+        p:save()
+        p:clip(painter_rect)
+        p:begin_path()
+        p:circle({x = marker_x - 5, y = marker_y - 5, w = 10, h = 10})
+        p:stroke('#000000', {width = 2})
+        p:begin_path()
+        p:circle({x = marker_x - 3, y = marker_y - 3, w = 6, h = 6})
+        p:stroke('#FFFFFFFF', {width = 1})
+        p:restore()
+
+        p:begin_path()
+        p:circle(painter_rect)
+        p:stroke(control.is_enabled == false and '#808080' or '#000000', {width = 1})
     end,
 
     ---Draws a ComboBox with the specified parameters.
@@ -2640,42 +3239,17 @@ ugui.standard_styler = {
         local visual_state = ugui.get_visual_state(control)
         local data = ugui.internal.control_data[control.uid]
 
-        local selected_index = data.selected_index
-        if selected_index ~= nil and data.filtered_to_original then
-            selected_index = data.filtered_to_original[selected_index] or selected_index
-        end
-        local selected_item = selected_index == nil and '' or control.items[selected_index]
-
-        if data.open and control.is_enabled ~= false then
+        if data.open and ugui.internal.is_control_enabled(control) then
             visual_state = ugui.visual_states.active
         end
 
         ugui.standard_styler.draw_raised_frame(control, visual_state)
-
-        local text_color = ugui.standard_styler.params.button.text[visual_state]
-
-        local text_rect = {
-            x = control.rectangle.x + ugui.standard_styler.params.textbox.padding.x * 2,
-            y = control.rectangle.y,
-            width = control.rectangle.width,
-            height = control.rectangle.height,
-        }
-
-        ugui.standard_styler.draw_rich_text(text_rect, ugui.alignment.start, nil, selected_item, text_color,
-            visual_state, control.plaintext)
-        ugui.standard_styler.draw_icon({
-            x = control.rectangle.x + control.rectangle.width - ugui.standard_styler.params.icon_size -
-                ugui.standard_styler.params.textbox.padding.x * 2,
-            y = control.rectangle.y,
-            width = ugui.standard_styler.params.icon_size,
-            height = control.rectangle.height,
-        }, text_color, visual_state, 'arrow_down')
     end,
 
     ---Draws a ListBox with the specified parameters.
     ---@param control ListBox The control table.
     draw_listbox = function(control)
-        ugui.standard_styler.draw_list(control, control.rectangle)
+        ugui.standard_styler.draw_list(control, control.render_rect)
     end,
 
     ---Gets the desired bounds of a listbox's content.
@@ -2685,7 +3259,8 @@ ugui.standard_styler = {
         -- Since horizontal content bounds measuring is expensive, we only do this if explicitly enabled.
         local max_width = 0
         if control.horizontal_scroll == true then
-            for _, value in pairs(control.items) do
+            for i = 1, #control.items do
+                local value = control.items[i]
                 local width = painter.measure_text(value, {
                     family = ugui.standard_styler.params.font_name,
                     size = ugui.standard_styler.params.font_size,
@@ -2717,7 +3292,29 @@ ugui.standard_styler = {
 --
 
 
----Updates the debug scale in response to Ctrl+Up/Down.
+local debug_timing_smoothing_seconds = 0.5
+
+local debug_uid_provider = (function()
+    local uid_enumerator = math.mininteger
+    local allocated = {}
+
+    local function enum_next(count)
+        local current = uid_enumerator
+        uid_enumerator = uid_enumerator + (count or 1)
+        return current
+    end
+
+    local function allocate_once(key, allocator)
+        if not allocated[key] then
+            allocated[key] = allocator(enum_next)
+        end
+        return allocated[key]
+    end
+
+    return {allocate_once = allocate_once}
+end)()
+
+---Updates debug overlay options in response to keyboard shortcuts.
 ---@param environment Environment The environment for the current frame.
 ---@return number scale The scale to use for the current frame.
 ugui.internal.update_debug_scale = function(environment)
@@ -2727,12 +3324,21 @@ ugui.internal.update_debug_scale = function(environment)
     end
 
     local scale = ugui.internal.debug_scale or environment.scale or 1
-    for _, e in ipairs(environment.key_events) do
-        if e.pressed and not e['repeat'] and e.ctrl then
-            if e.keycode2 == Mupen.keycode.SDLK_UP then
-                scale = scale + 0.05
-            elseif e.keycode2 == Mupen.keycode.SDLK_DOWN then
-                scale = math.max(0.05, scale - 0.05)
+    for i = 1, #environment.key_events do
+        local e = environment.key_events[i]
+        if e.pressed and not e['repeat'] then
+            if e.ctrl then
+                if e.keycode2 == Mupen.keycode.SDLK_UP then
+                    scale = scale + 0.05
+                elseif e.keycode2 == Mupen.keycode.SDLK_DOWN then
+                    scale = math.max(0.05, scale - 0.05)
+                elseif e.keycode2 == Mupen.keycode.SDLK_G then
+                    ugui.internal.debug_control_time_group_by_type =
+                        not ugui.internal.debug_control_time_group_by_type
+                end
+            end
+            if e.keycode2 == Mupen.keycode.SDLK_ESCAPE then
+                ugui.internal.debug_timing_view = nil
             end
         end
     end
@@ -2741,9 +3347,198 @@ ugui.internal.update_debug_scale = function(environment)
     return scale
 end
 
----Updates the rolling one-second frametime average used by the debug overlay.
+---Computes the debug window layout in device-independent coordinates.
+---@return table layout
+ugui.internal.get_debug_overlay_layout = function()
+    local window_size = ugui.internal.environment.window_size or {x = math.maxinteger, y = math.maxinteger}
+    local debug_font_size = ugui.standard_styler.params.font_size + 2
+    local available_width = math.max(1, window_size.x - 16)
+    local desired_radius = math.max(1, math.min(48, (available_width - 40) / 2))
+    local panel_width = math.min(available_width, math.max(256, desired_radius * 2 + 40))
+    local radius = math.max(1, math.min(48, (panel_width - 40) / 2))
+    local panel_y = 8
+    local panel_x = math.max(0, window_size.x - panel_width - 8)
+    return {
+        panel_x = panel_x,
+        panel_y = panel_y,
+        panel_width = panel_width,
+        panel_height = debug_font_size * 2 + radius * 2 + 106,
+        collapsed_height = 30,
+        chart_center_x = panel_x + panel_width / 2,
+        chart_top = panel_y + 90,
+        chart_radius = radius,
+    }
+end
+
+---Places the debug panel and its real scene controls.
+ugui.internal.add_debug_overlay_controls = function()
+    if not ugui.DEBUG then
+        return
+    end
+
+    if not ugui.internal.debug_overlay_control_uids then
+        ugui.internal.debug_overlay_control_uids = debug_uid_provider.allocate_once('DebugOverlay', function(enum_next)
+            local panel = enum_next(ugui.panel_uids())
+            local title = enum_next(ugui.label_uids())
+            local frame = enum_next(ugui.label_uids())
+            local scale = enum_next(ugui.label_uids())
+            local grouping_button = enum_next(ugui.button_uids())
+            local button = enum_next(ugui.button_uids())
+            return {
+                panel = panel,
+                title = title,
+                frame = frame,
+                scale = scale,
+                grouping_button = grouping_button,
+                grouping_button_label = grouping_button + 1,
+                button = button,
+                button_label = button + 1,
+            }
+        end)
+    end
+
+    local uids = assert(ugui.internal.debug_overlay_control_uids)
+    local layout = ugui.internal.get_debug_overlay_layout()
+    local collapsed = ugui.internal.debug_panel_collapsed
+    ugui.panel({
+        uid = uids.panel,
+        rectangle = {
+            x = layout.panel_x,
+            y = layout.panel_y,
+            width = layout.panel_width,
+            height = collapsed and layout.collapsed_height or layout.panel_height,
+        },
+        fill = '#F5F7FA',
+        stroke = '#526273',
+        stroke_style = {width = 1},
+        border_radius = {x = 6, y = 6},
+        hittestable = true,
+        z_index = math.maxinteger,
+    }, function()
+        ugui.label({
+            uid = uids.title,
+            rectangle = {x = 10, y = 2, width = layout.panel_width - 54, height = 26},
+            text = 'Control timings',
+            color = {r = 38, g = 48, b = 60, a = 255},
+            font_size = ugui.standard_styler.params.font_size + 2,
+            align_x = ugui.alignment.start,
+            align_y = ugui.alignment.center,
+            plaintext = true,
+            z_index = 1,
+        })
+
+        if not collapsed then
+            local average_frame_time = ugui.internal.average_frame_time
+            local frame_text = #ugui.internal.frame_times == 0
+                and 'Frame: waiting for samples'
+                or string.format('Frame: %.2f ms | %.1f FPS', average_frame_time * 1000,
+                    average_frame_time > 0 and 1 / average_frame_time or 0)
+            local scale_text = string.format('Scale: %.0f%% | Ctrl+Up/Down', ugui.internal.scale * 100)
+            local function add_status_label(uid, text, y)
+                ugui.label({
+                    uid = uid,
+                    rectangle = {x = 12, y = y, width = layout.panel_width - 24, height = 18},
+                    text = text,
+                    color = {r = 62, g = 72, b = 84, a = 255},
+                    font_size = ugui.standard_styler.params.font_size,
+                    align_x = ugui.alignment.start,
+                    align_y = ugui.alignment.center,
+                    plaintext = true,
+                    z_index = 1,
+                })
+            end
+            add_status_label(uids.frame, frame_text, 30)
+            add_status_label(uids.scale, scale_text, 48)
+
+            local timing_view = ugui.internal.debug_timing_view
+            if timing_view == 'Logic' or timing_view == 'Rendering' then
+                if ugui.button({
+                        uid = uids.grouping_button,
+                        rectangle = {x = layout.panel_width - 72, y = 90, width = 58, height = 14},
+                        text = ugui.internal.debug_control_time_group_by_type and 'Type' or 'UID',
+                        tooltip = 'Toggle grouping (Ctrl+G)',
+                        z_index = 2,
+                    }) then
+                    ugui.internal.debug_control_time_group_by_type =
+                        not ugui.internal.debug_control_time_group_by_type
+                end
+            end
+        end
+
+        if ugui.button({
+                uid = uids.button,
+                rectangle = {x = layout.panel_width - 36, y = 3, width = 30, height = 24},
+                text = collapsed and '+' or '-',
+                tooltip = collapsed and 'Maximize control timings' or 'Minimize control timings',
+                z_index = 2,
+            }) then
+            ugui.internal.debug_panel_collapsed = not collapsed
+        end
+    end)
+end
+
+---Records time spent in an end_frame section for the current frame.
+---@param section string The section being measured.
+---@param duration number The elapsed time, in seconds.
+ugui.internal.record_debug_end_frame_time = function(section, duration)
+    if not ugui.DEBUG then
+        return
+    end
+
+    ugui.internal.debug_end_frame_sample[section] =
+        (ugui.internal.debug_end_frame_sample[section] or 0) + duration
+end
+
+local function debug_smooth_timing_map(previous, current, alpha)
+    local smoothed = {}
+    for key, value in pairs(current) do
+        local previous_value = previous[key]
+        smoothed[key] = previous_value and previous_value + (value - previous_value) * alpha or value
+    end
+    for key, previous_value in pairs(previous) do
+        if current[key] == nil then
+            local value = previous_value * (1 - alpha)
+            if value > 1e-12 then
+                smoothed[key] = value
+            end
+        end
+    end
+    return smoothed
+end
+
+local function debug_smooth_control_timing_map(previous, current, alpha)
+    local smoothed = {}
+    for uid, timing in pairs(current) do
+        local previous_timing = previous[uid]
+        if previous_timing then
+            smoothed[uid] = {
+                execution_time = previous_timing.execution_time
+                    + (timing.execution_time - previous_timing.execution_time) * alpha,
+                draw_time = previous_timing.draw_time + (timing.draw_time - previous_timing.draw_time) * alpha,
+            }
+        else
+            smoothed[uid] = timing
+        end
+    end
+    for uid, previous_timing in pairs(previous) do
+        if current[uid] == nil then
+            local execution_time = previous_timing.execution_time * (1 - alpha)
+            local draw_time = previous_timing.draw_time * (1 - alpha)
+            if execution_time > 1e-12 or draw_time > 1e-12 then
+                smoothed[uid] = {execution_time = execution_time, draw_time = draw_time}
+            end
+        end
+    end
+    return smoothed
+end
+
+---Updates rolling timing averages and their time-based smoothing.
 ---@param current_time number The current os.clock time.
 ugui.internal.update_debug_frame_time = function(current_time)
+    if not ugui.DEBUG then
+        return
+    end
+
     if ugui.internal.delta_time > 0 then
         ugui.internal.frame_times[#ugui.internal.frame_times + 1] = {
             t = current_time,
@@ -2777,12 +3572,124 @@ ugui.internal.update_debug_frame_time = function(current_time)
     else
         ugui.internal.average_frame_time = 0
     end
+
+    if ugui.DEBUG then
+        local previous_update_time = ugui.internal.debug_timing_average_updated_at
+        local elapsed = previous_update_time and math.max(0, current_time - previous_update_time) or 0
+        local smoothing = previous_update_time and
+            (1 - math.exp(-elapsed / debug_timing_smoothing_seconds)) or 1
+        ugui.internal.debug_timing_average_updated_at = current_time
+
+        ugui.internal.debug_end_frame_times[#ugui.internal.debug_end_frame_times + 1] = {
+            t = current_time,
+            sections = ugui.internal.debug_end_frame_sample,
+        }
+        ugui.internal.debug_end_frame_sample = {}
+
+        local first_section_time = 1
+        while first_section_time <= #ugui.internal.debug_end_frame_times
+            and ugui.internal.debug_end_frame_times[first_section_time].t < cutoff do
+            first_section_time = first_section_time + 1
+        end
+        if first_section_time > 1 then
+            for i = first_section_time, #ugui.internal.debug_end_frame_times do
+                ugui.internal.debug_end_frame_times[i - first_section_time + 1] =
+                    ugui.internal.debug_end_frame_times[i]
+            end
+            for i = #ugui.internal.debug_end_frame_times,
+                #ugui.internal.debug_end_frame_times - first_section_time + 2, -1 do
+                ugui.internal.debug_end_frame_times[i] = nil
+            end
+        end
+
+        local section_totals = {}
+        for i = 1, #ugui.internal.debug_end_frame_times do
+            local sample = ugui.internal.debug_end_frame_times[i]
+            for section, duration in pairs(sample.sections) do
+                section_totals[section] = (section_totals[section] or 0) + duration
+            end
+        end
+        local section_count = #ugui.internal.debug_end_frame_times
+        local section_averages = {}
+        if section_count > 0 then
+            for section, duration in pairs(section_totals) do
+                section_averages[section] = duration / section_count
+            end
+        end
+        ugui.internal.average_debug_end_frame_times = debug_smooth_timing_map(
+            ugui.internal.average_debug_end_frame_times, section_averages, smoothing)
+
+        local control_sample = {}
+        for uid, duration in pairs(ugui.internal.control_execution_times) do
+            control_sample[uid] = {execution_time = duration, draw_time = 0}
+        end
+        for uid, duration in pairs(ugui.internal.control_draw_times) do
+            local control = control_sample[uid]
+            if not control then
+                control = {execution_time = 0, draw_time = 0}
+                control_sample[uid] = control
+            end
+            control.draw_time = duration
+        end
+        ugui.internal.debug_control_time_samples[#ugui.internal.debug_control_time_samples + 1] = {
+            t = current_time,
+            controls = control_sample,
+        }
+
+        local first_control_sample = 1
+        while first_control_sample <= #ugui.internal.debug_control_time_samples
+            and ugui.internal.debug_control_time_samples[first_control_sample].t < cutoff do
+            first_control_sample = first_control_sample + 1
+        end
+        if first_control_sample > 1 then
+            for i = first_control_sample, #ugui.internal.debug_control_time_samples do
+                ugui.internal.debug_control_time_samples[i - first_control_sample + 1] =
+                    ugui.internal.debug_control_time_samples[i]
+            end
+            for i = #ugui.internal.debug_control_time_samples,
+                #ugui.internal.debug_control_time_samples - first_control_sample + 2, -1 do
+                ugui.internal.debug_control_time_samples[i] = nil
+            end
+        end
+
+        local control_totals = {}
+        for i = 1, #ugui.internal.debug_control_time_samples do
+            local sample = ugui.internal.debug_control_time_samples[i]
+            for uid, control in pairs(sample.controls) do
+                local total = control_totals[uid]
+                if not total then
+                    total = {execution_time = 0, draw_time = 0}
+                    control_totals[uid] = total
+                end
+                total.execution_time = total.execution_time + control.execution_time
+                total.draw_time = total.draw_time + control.draw_time
+            end
+        end
+        local control_sample_count = #ugui.internal.debug_control_time_samples
+        local control_averages = {}
+        if control_sample_count > 0 then
+            for uid, control in pairs(control_totals) do
+                control_averages[uid] = {
+                    execution_time = control.execution_time / control_sample_count,
+                    draw_time = control.draw_time / control_sample_count,
+                }
+            end
+        end
+        ugui.internal.average_debug_control_times = debug_smooth_control_timing_map(
+            ugui.internal.average_debug_control_times, control_averages, smoothing)
+    else
+        ugui.internal.debug_end_frame_sample = {}
+    end
 end
 
 ---Records time spent executing a control.
 ---@param uid UID The control's UID.
 ---@param start_time number The os.clock time before execution began.
 ugui.internal.record_control_execution_time = function(uid, start_time)
+    if not ugui.DEBUG then
+        return
+    end
+
     ugui.internal.control_execution_times[uid] =
         (ugui.internal.control_execution_times[uid] or 0) + os.clock() - start_time
 end
@@ -2791,24 +3698,29 @@ end
 ---@param uid UID The control's UID.
 ---@param start_time number The os.clock time before drawing began.
 ugui.internal.record_control_draw_time = function(uid, start_time)
+    if not ugui.DEBUG then
+        return
+    end
+
     ugui.internal.control_draw_times[uid] =
         (ugui.internal.control_draw_times[uid] or 0) + os.clock() - start_time
 end
 
 ---Draws debug markers for a control's input state.
----@param control Control The control to mark.
+---@param control UguiControl The control to mark.
 ugui.internal.draw_debug_control_state = function(control)
     if not ugui.DEBUG then
         return
     end
 
     local p = ugui.internal.painter
+    local render_rect = control.render_rect
     if ugui.internal.keyboard_captured_control == control.uid then
         local rectangle = {
-            x = control.rectangle.x - 4,
-            y = control.rectangle.y - 4,
-            width = control.rectangle.width + 8,
-            height = control.rectangle.height + 8,
+            x = render_rect.x - 4,
+            y = render_rect.y - 4,
+            width = render_rect.width + 8,
+            height = render_rect.height + 8,
         }
         p:begin_path()
         p:rect(ugui.internal.rect_to_painter_rect(rectangle))
@@ -2816,10 +3728,10 @@ ugui.internal.draw_debug_control_state = function(control)
     end
     if ugui.internal.mouse_captured_control == control.uid then
         local rectangle = {
-            x = control.rectangle.x - 8,
-            y = control.rectangle.y - 8,
-            width = control.rectangle.width + 16,
-            height = control.rectangle.height + 16,
+            x = render_rect.x - 8,
+            y = render_rect.y - 8,
+            width = render_rect.width + 16,
+            height = render_rect.height + 16,
         }
         p:begin_path()
         p:rect(ugui.internal.rect_to_painter_rect(rectangle))
@@ -2835,88 +3747,299 @@ ugui.internal.draw_debug_overlay = function()
 
     local p = ugui.internal.painter
     local debug_font_size = ugui.standard_styler.params.font_size + 2
-    local debug_text_rectangle = {
-        x = 0,
-        y = 0,
-        width = ugui.internal.environment.window_size.x,
-        height = debug_font_size + 2,
-    }
+    local layout = ugui.internal.get_debug_overlay_layout()
 
-    local average_frame_time = ugui.internal.average_frame_time
-    local frames_per_second = average_frame_time > 0 and 1 / average_frame_time or 0
-    local frame_time_text
-    if #ugui.internal.frame_times == 0 then
-        frame_time_text = 'wait...'
-    else
-        frame_time_text = string.format('took %.2f ms (~%.2f FPS)', average_frame_time * 1000, frames_per_second)
-    end
-    frame_time_text = string.format(
-        '%s | Ctrl + Up/Down: scale +/- 5%% (%.0f%%)',
-        frame_time_text,
-        ugui.internal.scale * 100
-    )
-
-    p:begin_path()
-    p:text(frame_time_text, ugui.internal.rect_to_painter_rect(debug_text_rectangle), {
-        family = ugui.standard_styler.params.font_name,
-        size = debug_font_size,
-        align_x = 'right',
-        align_y = 'top',
-        antialiased = ugui.standard_styler.params.cleartype,
-        overflow = 'visible',
-        clip = false,
-    })
-    p:fill(ugui.internal.color_source_to_painter_color('#000000'))
-
-    local execution_entries = {}
-    for i = 1, #ugui.internal.scene, 1 do
-        local entry = ugui.internal.scene[i]
-        local execution_time = ugui.internal.control_execution_times[entry.control.uid] or 0
-        local draw_time = ugui.internal.control_draw_times[entry.control.uid] or 0
-        execution_entries[#execution_entries + 1] = {
-            uid = entry.control.uid,
-            max_time = math.max(execution_time, draw_time),
-            text = string.format(
-                '%s (%d) - %.2fms - %.2fms',
-                entry.type,
-                entry.control.uid,
-                execution_time * 1000,
-                draw_time * 1000
-            ),
-        }
+    if ugui.internal.debug_panel_collapsed then
+        return
     end
 
-    table.sort(execution_entries, function(a, b)
-        if a.max_time == b.max_time then
-            return a.uid < b.uid
+    local debug_uids = ugui.internal.debug_overlay_control_uids
+    local control_entries = {}
+    ugui.internal.foreach_scene_node(function(node)
+        local uid = node.control.uid
+        local is_debug_control = debug_uids and
+            (uid == debug_uids.panel or uid == debug_uids.title or uid == debug_uids.frame
+                or uid == debug_uids.scale or uid == debug_uids.grouping_button
+                or uid == debug_uids.grouping_button_label or uid == debug_uids.button
+                or uid == debug_uids.button_label)
+        if not is_debug_control then
+            local timing = ugui.internal.average_debug_control_times[uid] or {}
+            control_entries[#control_entries + 1] = {
+                uid = uid,
+                type = node.type,
+                control_count = 1,
+                execution_time = timing.execution_time or 0,
+                draw_time = timing.draw_time or 0,
+            }
         end
-        return a.max_time > b.max_time
     end)
 
-    local execution_lines = {}
-    for i = 1, #execution_entries, 1 do
-        execution_lines[i] = execution_entries[i].text
+    local group_by_type = ugui.internal.debug_control_time_group_by_type
+    local breakdown_entries = control_entries
+    if group_by_type then
+        local grouped_entries = {}
+        local grouped_entry_indices = {}
+        for i = 1, #control_entries do
+            local entry = control_entries[i]
+            local grouped_entry_index = grouped_entry_indices[entry.type]
+            local grouped_entry
+            if grouped_entry_index then
+                grouped_entry = grouped_entries[grouped_entry_index]
+            else
+                grouped_entry = {
+                    type = entry.type,
+                    control_count = 0,
+                    execution_time = 0,
+                    draw_time = 0,
+                }
+                grouped_entries[#grouped_entries + 1] = grouped_entry
+                grouped_entry_indices[entry.type] = #grouped_entries
+            end
+            grouped_entry.control_count = grouped_entry.control_count + 1
+            grouped_entry.execution_time = grouped_entry.execution_time + entry.execution_time
+            grouped_entry.draw_time = grouped_entry.draw_time + entry.draw_time
+        end
+
+        breakdown_entries = grouped_entries
     end
 
-    if #execution_lines > 0 then
-        local execution_text_rectangle = {
-            x = 0,
-            y = debug_font_size + 4,
-            width = ugui.internal.environment.window_size.x,
-            height = ugui.internal.environment.window_size.y - debug_font_size - 4,
+    local palette = {
+        '#4E79A7', '#F28E2B', '#E15759', '#76B7B2', '#59A14F',
+        '#EDC949', '#AF7AA1', '#FF9DA7', '#9C755F', '#BAB0AC',
+    }
+    local mouse_position = ugui.internal.environment.mouse_position
+    local window_width = ugui.internal.environment.window_size.x
+    local radius = layout.chart_radius
+    local chart_top = layout.chart_top
+
+    local function draw_debug_text(text, rectangle, align_x, align_y, color)
+        p:begin_path()
+        p:text(text, ugui.internal.rect_to_painter_rect(rectangle), {
+            family = ugui.standard_styler.params.font_name,
+            size = debug_font_size,
+            align_x = align_x or 'center',
+            align_y = align_y or 'top',
+            antialiased = ugui.standard_styler.params.cleartype,
+            overflow = 'visible',
+            clip = false,
+        })
+        p:fill(ugui.internal.color_source_to_painter_color(color or '#000000'))
+    end
+
+    ---Draws the current timing pie and returns hovered and clicked slices.
+    ---@param metric string
+    ---@param title string
+    ---@param center_x number
+    ---@param source_entries table[]
+    ---@param title_rectangle table?
+    ---@param title_align string?
+    ---@return table? hovered_entry
+    ---@return table? clicked_entry
+    local function draw_debug_pie_chart(metric, title, center_x, source_entries, title_rectangle, title_align)
+        local entries = {}
+        local total_time = 0
+        for i = 1, #source_entries do
+            local entry = source_entries[i]
+            local value = entry[metric]
+            if value > 0 then
+                entries[#entries + 1] = entry
+                total_time = total_time + value
+            end
+        end
+
+        table.sort(entries, function(a, b)
+            if a.type == b.type then
+                return (a.uid or 0) < (b.uid or 0)
+            end
+            return a.type < b.type
+        end)
+
+        local total_text = string.format('%.2f ms', total_time * 1000)
+        draw_debug_text(title, title_rectangle or {
+            x = center_x - radius - 8,
+            y = chart_top,
+            width = radius * 2 + 16,
+            height = debug_font_size + 2,
+        }, title_align)
+        draw_debug_text(total_text, {
+            x = center_x - radius - 8,
+            y = chart_top + debug_font_size,
+            width = radius * 2 + 16,
+            height = debug_font_size + 2,
+        }, 'center', 'top', '#444444')
+
+        local center_y = chart_top + debug_font_size * 2 + radius + 4
+        if #entries == 0 then
+            p:begin_path()
+            p:arc(center_x, center_y, radius, 0, 2 * math.pi)
+            p:fill(ugui.internal.color_source_to_painter_color('#D8DDE3'))
+            draw_debug_text('no data', {
+                x = center_x - radius,
+                y = center_y - debug_font_size / 2,
+                width = radius * 2,
+                height = debug_font_size + 2,
+            }, 'center', 'center', '#555555')
+            return nil
+        end
+
+        local start_angle = -math.pi / 2
+        local mouse_dx = mouse_position.x - center_x
+        local mouse_dy = mouse_position.y - center_y
+        local mouse_distance = math.sqrt(mouse_dx * mouse_dx + mouse_dy * mouse_dy)
+        local hovered_entry = nil
+        local angle_from_start = (math.atan2(mouse_dy, mouse_dx) + math.pi / 2) % (2 * math.pi)
+        local elapsed_angle = 0
+
+        for i = 1, #entries do
+            local entry = entries[i]
+            local sweep = entry[metric] / total_time * 2 * math.pi
+            local end_angle = start_angle + sweep
+            p:begin_path()
+            p:move_to(center_x, center_y)
+            p:line_to(center_x + radius * math.cos(start_angle), center_y + radius * math.sin(start_angle))
+            p:arc(center_x, center_y, radius, start_angle, end_angle)
+            p:close_path()
+
+            local color_index
+            if entry.uid then
+                color_index = (entry.uid % #palette) + 1
+            else
+                local type_hash = 0
+                for i = 1, #entry.type do
+                    type_hash = (type_hash + string.byte(entry.type, i)) % #palette
+                end
+                color_index = type_hash + 1
+            end
+            local slice_hovered = mouse_distance <= radius and angle_from_start >= elapsed_angle
+                and angle_from_start < elapsed_angle + sweep
+            if slice_hovered and not hovered_entry then
+                hovered_entry = entry
+            end
+
+            local slice_color = ugui.color_source_to_rgbaf(palette[color_index])
+            if slice_hovered then
+                local highlight = 0.4
+                slice_color.r = slice_color.r + (1 - slice_color.r) * highlight
+                slice_color.g = slice_color.g + (1 - slice_color.g) * highlight
+                slice_color.b = slice_color.b + (1 - slice_color.b) * highlight
+            end
+            p:fill(ugui.internal.rgbaf_to_painter_color(slice_color))
+
+            elapsed_angle = elapsed_angle + sweep
+            start_angle = end_angle
+        end
+
+        p:begin_path()
+        p:arc(center_x, center_y, radius, 0, 2 * math.pi)
+        p:stroke({r = 0.16, g = 0.18, b = 0.21, a = 0.8}, {width = 1})
+
+        local clicked_entry = ugui.internal.is_mouse_just_down() and hovered_entry or nil
+        return hovered_entry, clicked_entry
+    end
+
+    local internal_entries = {}
+    local logic_total = 0
+    for i = 1, #control_entries do
+        logic_total = logic_total + control_entries[i].execution_time
+    end
+    for section, duration in pairs(ugui.internal.average_debug_end_frame_times) do
+        internal_entries[#internal_entries + 1] = {
+            type = section,
+            internal_time = duration,
+        }
+    end
+    internal_entries[#internal_entries + 1] = {type = 'Logic', internal_time = logic_total}
+
+    local view = ugui.internal.debug_timing_view
+    local chart_entries = internal_entries
+    local chart_metric = 'internal_time'
+    local chart_title = 'internals'
+    if view then
+        chart_entries = breakdown_entries
+        chart_metric = view == 'Logic' and 'execution_time' or 'draw_time'
+        chart_title = string.format('< internals / %s', string.lower(view))
+    end
+
+    local chart_center_x = layout.chart_center_x
+    local title_rectangle
+    local title_align = 'center'
+    if view == 'Logic' or view == 'Rendering' then
+        title_rectangle = {
+            x = layout.panel_x + 12,
+            y = chart_top,
+            width = layout.panel_width - 92,
+            height = debug_font_size + 2,
+        }
+        title_align = 'left'
+    end
+    local hovered_slice, clicked_slice = draw_debug_pie_chart(
+        chart_metric, chart_title, chart_center_x, chart_entries, title_rectangle, title_align)
+    local hovered_metric_key = chart_metric
+
+    if view and ugui.internal.is_mouse_just_down()
+        and mouse_position.x >= chart_center_x - radius - 8
+        and mouse_position.x <= chart_center_x + radius + 8
+        and mouse_position.y >= chart_top
+        and mouse_position.y <= chart_top + debug_font_size + 2 then
+        ugui.internal.debug_timing_view = nil
+    elseif not view and clicked_slice
+        and (clicked_slice.type == 'Logic' or clicked_slice.type == 'Rendering') then
+        ugui.internal.debug_timing_view = clicked_slice.type
+    end
+
+    if hovered_slice then
+        local hovered_time = hovered_slice[hovered_metric_key]
+        local hovered_share = 0
+        for i = 1, #chart_entries do
+            hovered_share = hovered_share + chart_entries[i][hovered_metric_key]
+        end
+        local percentage = hovered_share > 0 and hovered_time / hovered_share * 100 or 0
+        local tooltip_text
+        if view then
+            local control_label
+            if group_by_type then
+                control_label = string.format('%s (%d controls)', hovered_slice.type, hovered_slice.control_count)
+            else
+                control_label = string.format('%s (%d)', hovered_slice.type, hovered_slice.uid)
+            end
+            tooltip_text = string.format('%s\n%s: %.3f ms\n%.1f%% of total',
+                control_label, view, hovered_time * 1000, percentage)
+        elseif hovered_slice.type == 'Logic' or hovered_slice.type == 'Rendering' then
+            tooltip_text = string.format('%s: %.3f ms\n%.1f%% of total\nClick to inspect controls',
+                hovered_slice.type, hovered_time * 1000, percentage)
+        else
+            tooltip_text = string.format('%s: %.3f ms\n%.1f%% of total',
+                hovered_slice.type, hovered_time * 1000, percentage)
+        end
+        local tooltip_width = 260
+        local tooltip_height = debug_font_size * 5 + 20
+        local tooltip_x = mouse_position.x + 14
+        local tooltip_y = mouse_position.y + 14
+        if tooltip_x + tooltip_width > window_width then
+            tooltip_x = mouse_position.x - tooltip_width - 14
+        end
+        if tooltip_y + tooltip_height > ugui.internal.environment.window_size.y then
+            tooltip_y = mouse_position.y - tooltip_height - 14
+        end
+        tooltip_x = math.max(4, math.min(tooltip_x, window_width - tooltip_width - 4))
+        tooltip_y = math.max(4, math.min(tooltip_y,
+            ugui.internal.environment.window_size.y - tooltip_height - 4))
+        local tooltip_rectangle = {
+            x = tooltip_x,
+            y = tooltip_y,
+            width = tooltip_width,
+            height = tooltip_height,
         }
         p:begin_path()
-        p:text(table.concat(execution_lines, '\n'),
-            ugui.internal.rect_to_painter_rect(execution_text_rectangle), {
-                family = ugui.standard_styler.params.font_name,
-                size = debug_font_size,
-                align_x = 'right',
-                align_y = 'top',
-                antialiased = ugui.standard_styler.params.cleartype,
-                overflow = 'visible',
-                clip = false,
-            })
-        p:fill(ugui.internal.color_source_to_painter_color('#000000'))
+        p:rect(ugui.internal.rect_to_painter_rect(tooltip_rectangle))
+        p:fill({r = 0.08, g = 0.09, b = 0.11, a = 0.94})
+        p:stroke({r = 0.75, g = 0.78, b = 0.82, a = 1}, {width = 1})
+        draw_debug_text(tooltip_text, {
+            x = tooltip_x + 8,
+            y = tooltip_y + 6,
+            width = tooltip_width - 16,
+            height = tooltip_height - 12,
+        }, 'left', 'top', '#FFFFFF')
     end
 end
 
@@ -2965,14 +4088,21 @@ end
 
 ---@alias UguiBackgroundSize "auto" | "cover" | "contain" | UguiVector2
 
----@class Control
+---@class UguiControl
 ---@field public uid UID The unique identifier of the control.
----@field public styler_mixin any? An optional styler mixin table which can override specific styler parameters for this control.
----@field public rectangle UguiRect The rectangle in which the control is drawn.
----@field public is_enabled boolean? Whether the control is enabled. If nil or true, the control is enabled.
+---@field public draw (fun(control: UguiControl))? Draws the control. Use `control.render_rect` instead of `control.rectangle`.
+---@field public hittest (fun(control: UguiControl, point: UguiVector2): boolean)? Provides hittesting for the control. By default, the check is whether the point is inside `control.render_rect`.
+---@field public get_return_value (fun(control: UguiControl, data: any): ControlReturnValue)? Computes the control's current return value and updates its data; use `render_rect` for absolute bounds.
+---@field public hittestable boolean? Whether this control instance participates in hit-testing. Defaults to `true`, except controls with a different placement default, such as labels and panels. Set this to `true` or `false` to override the default.
+---@field public styler_mixin any? An optional styler mixin table which can override specific styler parameters for this control. Inherited by children.
+---@field public rectangle UguiRect The control's rectangle relative to its parent's origin. Top-level controls are relative to the scene origin.
+---@field public clip_children boolean? Whether to clip child controls to this control's rectangle. Defaults to false.
+---@field public is_enabled boolean? Whether the control is enabled. If nil or true, the control is enabled. A disabled ancestor disables this control too.
 ---@field public tooltip string? The control's tooltip. If nil, no tooltip will be shown.
+---@field public context_menu MenuItem[]? Items shown in a context menu when this control is right-clicked.
 ---@field public plaintext boolean? Whether the control's text content is drawn as plain text without rich rendering.
 ---@field public z_index integer? The control's Z-index. If nil, `0` is assumed.
+---@field public opacity number? The control's opacity, normally in [0, 1]. Defaults to 1.
 ---@field public fill UguiColorSource? The control's fill color. The fill is drawn before the control graphics. If nil, no fill will be drawn.
 ---@field public stroke UguiColorSource? The control's stroke color. The stroke is drawn after the control graphics. If nil, no stroke will be drawn.
 ---@field public stroke_style PainterStrokeStyle? The control's stroke style. Requires `stroke`. If nil, the default stroke style will be used.
@@ -2996,36 +4126,38 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
----@class Panel : Control
+---@class Panel : UguiControl
 ---A non-interactive surface.
 
----@type ControlRegistryEntry
-ugui.registry.panel = {
-    uids = function() return 1 end,
-    hittestable = function() return false end,
-    ---@param control Panel
-    validate = function(control)
-    end,
-    ---@param control Panel
-    ---@return ControlReturnValue
-    logic = function(control, data)
-        return {
-            primary = nil,
-            meta = {
-                signal_change = ugui.signal_change_states.none,
-            },
-        }
-    end,
-    ---@param control Panel
-    draw = function(control)
-    end,
-}
+---Gets the number of UID slots reserved by a Panel.
+---@return integer
+ugui.panel_uids = function()
+    return 1
+end
+
+---@param control Panel
+---@param data any
+---@return ControlReturnValue
+local function panel_get_return_value(control, data)
+    return {
+        primary = nil,
+        meta = {
+            signal_change = ugui.signal_change_states.none,
+        },
+    }
+end
+
 
 ---Places a Panel.
 ---@param control Panel The control table.
+---@param fn fun()? A callback whose placed controls become children of the panel.
 ---@return nil, Meta # Nothing.
-ugui.panel = function(control)
-    local result = ugui.control(control, 'panel')
+ugui.panel = function(control, fn)
+    if control.hittestable == nil then
+        control.hittestable = false
+    end
+    control.get_return_value = control.get_return_value or panel_get_return_value
+    local result = ugui.internal.control(control, 'panel', fn)
     return result.primary, result.meta
 end
 
@@ -3039,7 +4171,7 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
----@class Label : Control
+---@class Label : UguiControl
 ---@field public text RichText The text.
 ---@field public color UguiRGBA8 The color of the text.
 ---@field public font_size number? The font size of the text. If `nil`, the default font size is used.
@@ -3051,53 +4183,63 @@ end
 ---@field public fit boolean? Whether the text is scaled to fit the control rectangle. If `nil`, false is assumed.
 ---A label that contains text.
 
----@type ControlRegistryEntry
-ugui.registry.label = {
-    uids = function() return 1 end,
-    hittestable = function(control)
-        return false
-    end,
-    ---@param control Label
-    validate = function(control)
-        ugui.internal.assert(type(control.text) == 'string', 'expected text to be string')
-        ugui.internal.assert(type(control.color) == 'table', 'expected color to be table')
-        ugui.internal.assert(type(control.font_size) == 'number' or control.font_size == nil, 'expected font_size to be number or nil')
-        ugui.internal.assert(type(control.font_name) == 'string' or control.font_name == nil, 'expected font_name to be string or nil')
-        ugui.internal.assert(type(control.align_x) == 'number' or control.align_x == nil, 'expected align_x to be number or nil')
-        ugui.internal.assert(type(control.align_y) == 'number' or control.align_y == nil, 'expected align_y to be number or nil')
-        ugui.internal.assert(type(control.wrap) == 'boolean' or control.wrap == nil, 'expected wrap to be boolean or nil')
-        ugui.internal.assert(type(control.clip) == 'boolean' or control.clip == nil, 'expected clip to be boolean or nil')
-        ugui.internal.assert(type(control.fit) == 'boolean' or control.fit == nil, 'expected fit to be boolean or nil')
-    end,
-    ---@param control Label
-    ---@return ControlReturnValue
-    logic = function(control, data)
-        return {
-            primary = nil,
-            meta = {
-                signal_change = ugui.signal_change_states.none,
-            },
-        }
-    end,
-    ---@param control Label
-    draw = function(control)
-        if control.clip then
-            ugui.internal.painter:save()
-            ugui.internal.painter:clip(ugui.internal.rect_to_painter_rect(control.rectangle))
-        end
-        local visual_state = ugui.get_visual_state(control)
-        ugui.standard_styler.draw_rich_text(control.rectangle, control.align_x, control.align_y, control.text, control.color, visual_state, control.plaintext, control.font_name, control.font_size, control.wrap, control.fit)
-        if control.clip then
-            ugui.internal.painter:restore()
-        end
-    end,
-}
+---Gets the number of UID slots reserved by a Label.
+---@return integer
+ugui.label_uids = function()
+    return 1
+end
+
+---@param control Label
+---@param data any
+---@return ControlReturnValue
+local function label_get_return_value(control, data)
+    return {
+        primary = nil,
+        meta = {
+            signal_change = ugui.signal_change_states.none,
+        },
+    }
+end
+
+
+local label_draw = function(control)
+    local visual_state = ugui.get_visual_state(control)
+    ugui.standard_styler.draw_rich_text({
+        rectangle = control.render_rect,
+        align_x = control.align_x,
+        align_y = control.align_y,
+        text = control.text,
+        color = control.color,
+        visual_state = visual_state,
+        plaintext = control.plaintext,
+        font_name = control.font_name,
+        font_size = control.font_size,
+        wrap = control.wrap,
+        fit = control.fit,
+        clip = control.clip,
+    })
+end
 
 ---Places a Label.
 ---@param control Label The control table.
+---@param fn fun()? A callback whose placed controls become children of the label.
 ---@return nil, Meta # Nothing.
-ugui.label = function(control)
-    local result = ugui.control(control, 'label')
+ugui.label = function(control, fn)
+    ugui.internal.assert(type(control.text) == 'string', 'expected text to be string')
+    ugui.internal.assert(type(control.color) == 'table', 'expected color to be table')
+    ugui.internal.assert(type(control.font_size) == 'number' or control.font_size == nil, 'expected font_size to be number or nil')
+    ugui.internal.assert(type(control.font_name) == 'string' or control.font_name == nil, 'expected font_name to be string or nil')
+    ugui.internal.assert(type(control.align_x) == 'number' or control.align_x == nil, 'expected align_x to be number or nil')
+    ugui.internal.assert(type(control.align_y) == 'number' or control.align_y == nil, 'expected align_y to be number or nil')
+    ugui.internal.assert(type(control.wrap) == 'boolean' or control.wrap == nil, 'expected wrap to be boolean or nil')
+    ugui.internal.assert(type(control.clip) == 'boolean' or control.clip == nil, 'expected clip to be boolean or nil')
+    ugui.internal.assert(type(control.fit) == 'boolean' or control.fit == nil, 'expected fit to be boolean or nil')
+    if control.hittestable == nil then
+        control.hittestable = false
+    end
+    control.draw = control.draw or label_draw
+    control.get_return_value = control.get_return_value or label_get_return_value
+    local result = ugui.internal.control(control, 'label', fn)
     return result.primary, result.meta
 end
 
@@ -3111,42 +4253,71 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
----@class Button : Control
+---@class Button : UguiControl
 ---@field public text RichText The text displayed on the button.
 ---A button which can be clicked.
 
----@type ControlRegistryEntry
-ugui.registry.button = {
-    uids = function() return 1 end,
-    ---@param control Button
-    validate = function(control)
-        ugui.internal.assert(type(control.text) == 'string', 'expected text to be string')
-    end,
-    ---@param control Button
-    ---@return ControlReturnValue
-    logic = function(control, data)
-        local pressed = ugui.internal.clicked_control == control.uid
+local function button_get_uids()
+    local n = 1
 
-        data.signal_change = ugui.internal.process_signal_changes(data.signal_change, pressed)
+    local label<const> = n
+    n = n + ugui.label_uids()
 
-        return {
-            primary = pressed,
-            meta = {
-                signal_change = data.signal_change,
-            },
-        }
-    end,
-    ---@param control Button
-    draw = function(control)
-        ugui.standard_styler.draw_button(control)
-    end,
-}
+
+    return {total = n, label = label}
+end
+local button_uids<const> = button_get_uids()
+
+---Gets the number of UID slots reserved by a Button.
+---@return integer
+ugui.button_uids = function()
+    return button_uids.total
+end
+
+---@param control Button
+---@param data any
+---@return ControlReturnValue
+local function button_get_return_value(control, data)
+    local pressed = ugui.internal.clicked_control == control.uid
+
+    data.signal_change = ugui.internal.process_signal_changes(data.signal_change, pressed)
+
+    return {
+        primary = pressed,
+        meta = {
+            signal_change = data.signal_change,
+        },
+    }
+end
+
+
+local button_draw = function(control)
+    ugui.standard_styler.draw_button(control)
+end
 
 ---Places a Button.
 ---@param control Button The control table.
+---@param fn fun()? A callback whose placed controls become children of the button.
 ---@return boolean, Meta # Whether the button has been pressed.
-ugui.button = function(control)
-    local result = ugui.control(control, 'button')
+ugui.button = function(control, fn)
+    ugui.internal.assert(type(control.text) == 'string', 'expected text to be string')
+    control.draw = control.draw or button_draw
+    control.get_return_value = control.get_return_value or button_get_return_value
+    local result = ugui.internal.control(control, 'button', function()
+        local visual_state = ugui.get_visual_state(control)
+        ugui.label({
+            uid = control.uid + button_uids.label,
+            text = control.text,
+            color = ugui.standard_styler.params.button.text[visual_state],
+            rectangle = {x = 0, y = 0, width = control.rectangle.width, height = control.rectangle.height},
+            wrap = false,
+            clip = true,
+        })
+        if fn then
+            fn()
+        end
+    end)
+
     return result.primary, result.meta
 end
 
@@ -3164,45 +4335,78 @@ end
 ---@field public is_checked boolean? Whether the button is checked. If nil, the ToggleButton is considered unchecked.
 ---A button which can be toggled on and off.
 
----@type ControlRegistryEntry
-ugui.registry.toggle_button = {
-    uids = function() return 1 end,
-    ---@param control ToggleButton
-    validate = function(control)
-        ugui.registry.button.validate(control)
-        ugui.internal.assert(type(control.is_checked) == 'boolean', 'expected is_checked to be boolean')
-    end,
-    ---@param control ToggleButton
-    ---@return ControlReturnValue
-    logic = function(control, data)
-        data.is_checked = control.is_checked
+local function toggle_button_get_uids()
+    local n = 1
 
-        local pressed = ugui.internal.clicked_control == control.uid
+    local label<const> = n
+    n = n + ugui.label_uids()
 
-        if pressed then
-            data.is_checked = not data.is_checked
-        end
+    return {total = n, label = label}
+end
+local toggle_button_uids<const> = toggle_button_get_uids()
 
-        data.signal_change = ugui.internal.process_signal_changes(data.signal_change, pressed)
+---Gets the number of UID slots reserved by a ToggleButton.
+---@return integer
+ugui.toggle_button_uids = function()
+    return toggle_button_uids.total
+end
 
-        return {
-            primary = data.is_checked,
-            meta = {
-                signal_change = data.signal_change,
-            },
-        }
-    end,
-    ---@param control ToggleButton
-    draw = function(control)
-        ugui.standard_styler.draw_togglebutton(control)
-    end,
-}
+---@param control ToggleButton
+---@param data any
+---@return ControlReturnValue
+local function toggle_button_get_return_value(control, data)
+    data.is_checked = control.is_checked
+
+    local pressed = ugui.internal.clicked_control == control.uid
+
+    if pressed then
+        data.is_checked = not data.is_checked
+    end
+
+    data.signal_change = ugui.internal.process_signal_changes(data.signal_change, pressed)
+
+    return {
+        primary = data.is_checked,
+        meta = {
+            signal_change = data.signal_change,
+        },
+    }
+end
+
+
+local toggle_button_draw = function(control)
+    ugui.standard_styler.draw_button(control)
+end
 
 ---Places a ToggleButton.
 ---@param control ToggleButton The control table.
+---@param fn fun()? A callback whose placed controls become children of the toggle button.
 ---@return boolean, Meta # The new check state.
-ugui.toggle_button = function(control)
-    local result = ugui.control(control, 'toggle_button')
+ugui.toggle_button = function(control, fn)
+    ugui.internal.assert(type(control.text) == 'string', 'expected text to be string')
+    ugui.internal.assert(type(control.is_checked) == 'boolean', 'expected is_checked to be boolean')
+    control.draw = control.draw or toggle_button_draw
+    control.get_return_value = control.get_return_value or toggle_button_get_return_value
+    local result = ugui.internal.control(control, 'toggle_button', function()
+        local visual_state = ugui.get_visual_state(control)
+        if control.is_checked and control.is_enabled ~= false then
+            visual_state = ugui.visual_states.active
+        end
+
+        ugui.label({
+            uid = control.uid + toggle_button_uids.label,
+            text = control.text,
+            color = ugui.standard_styler.params.button.text[visual_state],
+            rectangle = {x = 0, y = 0, width = control.rectangle.width, height = control.rectangle.height},
+            wrap = false,
+            clip = true,
+        })
+        if fn then
+            fn()
+        end
+    end)
+    ---@cast result ControlReturnValue
+
     return result.primary, result.meta
 end
 
@@ -3216,63 +4420,142 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
----@class CarrouselButton : Control
+---@class CarrouselButton : UguiControl
 ---@field public items string[] The items contained in the carrousel button.
 ---@field public selected_index integer The index of the currently selected item into the items array.
 ---A button which can be toggled on and off.
 ---TODO: Make wraparound optional
 
----@type ControlRegistryEntry
-ugui.registry.carrousel_button = {
-    uids = function() return 1 end,
-    ---@param control CarrouselButton
-    validate = function(control)
-        ugui.internal.assert(type(control.items) == 'table', 'expected items to be string[]')
-        ugui.internal.assert(type(control.selected_index) == 'number', 'expected selected_index to be number')
-    end,
-    ---@param control CarrouselButton
-    ---@return ControlReturnValue
-    logic = function(control, data)
-        data.selected_index = control.selected_index
+local function carrousel_button_get_uids()
+    local n = 1
 
-        if ugui.internal.clicked_control == control.uid then
-            local relative_x = ugui.internal.environment.mouse_position.x - control.rectangle.x
-            if relative_x > control.rectangle.width / 2 then
-                data.selected_index = data.selected_index + 1
-                if data.selected_index > #control.items then
-                    data.selected_index = 1
-                end
-            else
-                data.selected_index = data.selected_index - 1
-                if data.selected_index < 1 then
-                    data.selected_index = #control.items
-                end
+    local label_left<const> = n
+    n = n + ugui.label_uids()
+
+    local label_text<const> = n
+    n = n + ugui.label_uids()
+
+    local label_right<const> = n
+    n = n + ugui.label_uids()
+
+    return {total = n, label_left = label_left, label_text = label_text, label_right = label_right}
+end
+local carrousel_button_uids<const> = carrousel_button_get_uids()
+
+---Gets the number of UID slots reserved by a CarrouselButton.
+---@return integer
+ugui.carrousel_button_uids = function()
+    return carrousel_button_uids.total
+end
+
+---@param control CarrouselButton
+---@param data any
+---@return ControlReturnValue
+local function carrousel_button_get_return_value(control, data)
+    data.selected_index = control.selected_index
+    local rectangle = control.render_rect
+
+    if ugui.internal.clicked_control == control.uid then
+        local relative_x = ugui.internal.environment.mouse_position.x - rectangle.x
+        if relative_x > rectangle.width / 2 then
+            data.selected_index = data.selected_index + 1
+            if data.selected_index > #control.items then
+                data.selected_index = 1
+            end
+        else
+            data.selected_index = data.selected_index - 1
+            if data.selected_index < 1 then
+                data.selected_index = #control.items
             end
         end
+    end
 
-        local selected_index = (control.items and ugui.internal.clamp(data.selected_index, 1, #control.items) or nil)
+    local selected_index = (control.items and ugui.internal.clamp(data.selected_index, 1, #control.items) or nil)
+    data.selected_index = selected_index
 
-        data.signal_change = ugui.internal.process_signal_changes(data.signal_change,
-            selected_index ~= control.selected_index)
+    data.signal_change = ugui.internal.process_signal_changes(data.signal_change,
+        selected_index ~= control.selected_index)
 
-        return {
-            primary = selected_index,
-            meta = {
-                signal_change = data.signal_change,
-            },
-        }
-    end,
-    ---@param control CarrouselButton
-    draw = function(control)
-        ugui.standard_styler.draw_carrousel_button(control)
-    end,
-}
+    return {
+        primary = selected_index,
+        meta = {
+            signal_change = data.signal_change,
+        },
+    }
+end
+
+
+local carrousel_button_draw = function(control)
+    local visual_state = ugui.get_visual_state(control)
+    ugui.standard_styler.draw_raised_frame(control, visual_state)
+end
 
 ---Places a CarrouselButton.
 ---@param control CarrouselButton The control table.
+---@param fn fun()? A callback whose placed controls become children of the control.
 ---@return integer, Meta # The new selected index.
-ugui.carrousel_button = function(control)
-    local result = ugui.control(control, 'carrousel_button')
+ugui.carrousel_button = function(control, fn)
+    ugui.internal.assert(type(control.items) == 'table', 'expected items to be string[]')
+    ugui.internal.assert(type(control.selected_index) == 'number', 'expected selected_index to be number')
+    control.draw = control.draw or carrousel_button_draw
+
+    local label_left_uid<const> = control.uid + carrousel_button_uids.label_left
+    local label_text_uid<const> = control.uid + carrousel_button_uids.label_text
+    local label_right_uid<const> = control.uid + carrousel_button_uids.label_right
+
+    control.get_return_value = control.get_return_value or carrousel_button_get_return_value
+    local result = ugui.internal.control(control, 'carrousel_button', function()
+        local visual_state = ugui.get_visual_state(control)
+        local color = ugui.standard_styler.params.button.text[visual_state]
+        local icon_size = ugui.standard_styler.params.icon_size
+        local padding = ugui.standard_styler.params.textbox.padding.x
+        local height = control.rectangle.height
+        local data = ugui.internal.control_data[control.uid]
+
+        ugui.label({
+            uid = label_left_uid,
+            rectangle = {x = padding, y = 0, width = icon_size, height = height},
+            text = '[icon:arrow_left]',
+            color = color,
+            wrap = false,
+            clip = true,
+        })
+
+        ugui.label({
+            uid = label_text_uid,
+            rectangle = {
+                x = padding + icon_size,
+                y = 0,
+                width = math.max(0, control.rectangle.width - (padding + icon_size) * 2),
+                height = height,
+            },
+            text = data.selected_index and control.items[data.selected_index] or '',
+            color = color,
+            plaintext = control.plaintext,
+            wrap = false,
+            clip = true,
+        })
+
+        ugui.label({
+            uid = label_right_uid,
+            rectangle = {
+                x = control.rectangle.width - padding - icon_size,
+                y = 0,
+                width = icon_size,
+                height = height,
+            },
+            text = '[icon:arrow_right]',
+            color = color,
+            wrap = false,
+            clip = true,
+        })
+
+        if fn then
+            fn()
+        end
+    end)
+    ---@cast result ControlReturnValue
+
     return result.primary, result.meta
 end
 
@@ -3286,107 +4569,110 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
----@class ScrollBar : Control
+---@class ScrollBar : UguiControl
 ---@field public value number The scroll proportion in the range 0-1.
 ---@field public ratio number The overflow ratio, which is calculated by dividing the desired content dimensions by the relevant attached control's (e.g.: a listbox's) dimensions.
 ---A scrollbar which allows scrolling horizontally or vertically, depending on the control's dimensions.
 
----@type ControlRegistryEntry
-ugui.registry.scrollbar = {
-    uids = function() return 1 end,
-    ---@param control ScrollBar
-    validate = function(control)
-        ugui.internal.assert(type(control.value) == 'number', 'expected value to be number')
-        ugui.internal.assert(type(control.ratio) == 'number', 'expected ratio to be number')
-    end,
-    ---@param control ScrollBar
-    setup = function(control, data)
-        data.drag_offset = nil
-    end,
-    ---@param control ScrollBar
-    ---@return ControlReturnValue
-    logic = function(control, data)
-        data.value = control.value
+---Gets the number of UID slots reserved by a ScrollBar.
+---@return integer
+ugui.scrollbar_uids = function()
+    return 1
+end
 
-        local is_horizontal = control.rectangle.width > control.rectangle.height
+---@param control ScrollBar
+---@param data any
+---@return ControlReturnValue
+local function scrollbar_get_return_value(control, data)
+    data.value = control.value
+    local rectangle = control.render_rect
 
-        local thumb_size = is_horizontal
-            and control.rectangle.width * control.ratio
-            or control.rectangle.height * control.ratio
+    local is_horizontal = rectangle.width > rectangle.height
 
-        if ugui.internal.clicked_control == control.uid and ugui.internal.environment.shift then
+    local thumb_size = is_horizontal
+        and rectangle.width * control.ratio
+        or rectangle.height * control.ratio
+
+    if ugui.internal.clicked_control == control.uid and ugui.internal.environment.shift then
+        local mouse_pos = ugui.internal.environment.mouse_position
+        local current_pos = is_horizontal and (mouse_pos.x - rectangle.x) or (mouse_pos.y - rectangle.y)
+        local track_length = (is_horizontal and rectangle.width or rectangle.height) - thumb_size
+        data.value = ugui.internal.clamp(current_pos / track_length, 0, 1)
+    else
+        if ugui.internal.mouse_captured_control == control.uid then
             local mouse_pos = ugui.internal.environment.mouse_position
-            local current_pos = is_horizontal and (mouse_pos.x - control.rectangle.x) or (mouse_pos.y - control.rectangle.y)
-            local track_length = (is_horizontal and control.rectangle.width or control.rectangle.height) - thumb_size
+            local mouse_down = ugui.internal.mouse_down_position
+
+            if data.drag_offset == nil then
+                if is_horizontal then
+                    local thumb_start = ugui.internal.remap(data.value, 0, 1, 0, rectangle.width - thumb_size)
+                    data.drag_offset = mouse_down.x - (rectangle.x + thumb_start)
+                else
+                    local thumb_start = ugui.internal.remap(data.value, 0, 1, 0, rectangle.height - thumb_size)
+                    data.drag_offset = mouse_down.y - (rectangle.y + thumb_start)
+                end
+            end
+
+            local current_pos = is_horizontal and (mouse_pos.x - rectangle.x - data.drag_offset)
+                or (mouse_pos.y - rectangle.y - data.drag_offset)
+            local track_length = (is_horizontal and rectangle.width or rectangle.height) - thumb_size
+
             data.value = ugui.internal.clamp(current_pos / track_length, 0, 1)
         else
-            if ugui.internal.mouse_captured_control == control.uid then
-                local mouse_pos = ugui.internal.environment.mouse_position
-                local mouse_down = ugui.internal.mouse_down_position
-
-                if data.drag_offset == nil then
-                    if is_horizontal then
-                        local thumb_start = ugui.internal.remap(data.value, 0, 1, 0, control.rectangle.width - thumb_size)
-                        data.drag_offset = mouse_down.x - (control.rectangle.x + thumb_start)
-                    else
-                        local thumb_start = ugui.internal.remap(data.value, 0, 1, 0, control.rectangle.height - thumb_size)
-                        data.drag_offset = mouse_down.y - (control.rectangle.y + thumb_start)
-                    end
-                end
-
-                local current_pos = is_horizontal and (mouse_pos.x - control.rectangle.x - data.drag_offset) or (mouse_pos.y - control.rectangle.y - data.drag_offset)
-                local track_length = (is_horizontal and control.rectangle.width or control.rectangle.height) - thumb_size
-
-                data.value = ugui.internal.clamp(current_pos / track_length, 0, 1)
-            else
-                data.drag_offset = nil
-            end
+            data.drag_offset = nil
         end
+    end
 
-        data.signal_change = ugui.internal.process_signal_changes(data.signal_change, control.value ~= data.value)
+    data.signal_change = ugui.internal.process_signal_changes(data.signal_change, control.value ~= data.value)
 
-        return {
-            primary = data.value,
-            meta = {signal_change = data.signal_change},
+    return {
+        primary = data.value,
+        meta = {signal_change = data.signal_change},
+    }
+end
+
+
+local scrollbar_draw = function(control)
+    local data = ugui.internal.control_data[control.uid]
+    local rectangle = control.render_rect
+    local is_horizontal = rectangle.width > rectangle.height
+
+    ---@type UguiRect
+    local thumb_rectangle
+
+    if is_horizontal then
+        local scrollbar_width = rectangle.width * control.ratio
+        local scrollbar_x = ugui.internal.remap(data.value, 0, 1, 0, rectangle.width - scrollbar_width)
+        thumb_rectangle = {
+            x = rectangle.x + scrollbar_x,
+            y = rectangle.y,
+            width = scrollbar_width,
+            height = rectangle.height,
         }
-    end,
-    ---@param control ScrollBar
-    draw = function(control)
-        local data = ugui.internal.control_data[control.uid]
-        local is_horizontal = control.rectangle.width > control.rectangle.height
+    else
+        local scrollbar_height = rectangle.height * control.ratio
+        local scrollbar_y = ugui.internal.remap(data.value, 0, 1, 0, rectangle.height - scrollbar_height)
+        thumb_rectangle = {
+            x = rectangle.x,
+            y = rectangle.y + scrollbar_y,
+            width = rectangle.width,
+            height = scrollbar_height,
+        }
+    end
 
-        ---@type UguiRect
-        local thumb_rectangle
-
-        if is_horizontal then
-            local scrollbar_width = control.rectangle.width * control.ratio
-            local scrollbar_x = ugui.internal.remap(data.value, 0, 1, 0, control.rectangle.width - scrollbar_width)
-            thumb_rectangle = {
-                x = control.rectangle.x + scrollbar_x,
-                y = control.rectangle.y,
-                width = scrollbar_width,
-                height = control.rectangle.height,
-            }
-        else
-            local scrollbar_height = control.rectangle.height * control.ratio
-            local scrollbar_y = ugui.internal.remap(data.value, 0, 1, 0, control.rectangle.height - scrollbar_height)
-            thumb_rectangle = {
-                x = control.rectangle.x,
-                y = control.rectangle.y + scrollbar_y,
-                width = control.rectangle.width,
-                height = scrollbar_height,
-            }
-        end
-
-        ugui.standard_styler.draw_scrollbar(control, thumb_rectangle)
-    end,
-}
+    ugui.standard_styler.draw_scrollbar(control, thumb_rectangle)
+end
 
 ---Places a ScrollBar.
 ---@param control ScrollBar The control table.
+---@param fn fun()? A callback whose placed controls become children of the scrollbar.
 ---@return number, Meta # The new value.
-ugui.scrollbar = function(control)
-    local result = ugui.control(control, 'scrollbar')
+ugui.scrollbar = function(control, fn)
+    ugui.internal.assert(type(control.value) == 'number', 'expected value to be number')
+    ugui.internal.assert(type(control.ratio) == 'number', 'expected ratio to be number')
+    control.draw = control.draw or scrollbar_draw
+    control.get_return_value = control.get_return_value or scrollbar_get_return_value
+    local result = ugui.internal.control(control, 'scrollbar', fn)
     ---@cast result ControlReturnValue
     return result.primary, result.meta
 end
@@ -3401,7 +4687,7 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
----@class ListBox : Control
+---@class ListBox : UguiControl
 ---@field public items RichText[] The items contained in the control.
 ---@field public selected_index integer? The index of the currently selected item into the items array. If `nil`, no item is selected.
 ---@field public horizontal_scroll boolean? Whether horizontal scrolling will be enabled when items go beyond the width of the control. Will impact performance greatly, use with care.
@@ -3414,183 +4700,190 @@ local function listbox_get_uids()
     local n = 1
 
     local scrollbar_1<const> = n
-    n = n + ugui.registry.scrollbar.uids()
+    n = n + ugui.scrollbar_uids()
 
     local scrollbar_2<const> = n
-    n = n + ugui.registry.scrollbar.uids()
+    n = n + ugui.scrollbar_uids()
 
     return {total = n, scrollbar_1 = scrollbar_1, scrollbar_2 = scrollbar_2}
 end
 local listbox_uids<const> = listbox_get_uids()
 
----@type ControlRegistryEntry
-ugui.registry.listbox = {
-    uids = function() return listbox_uids.total end,
-    ---@param control ListBox
-    validate = function(control)
-        ugui.internal.assert(type(control.items) == 'table', 'expected items to be table')
-        ugui.internal.assert(type(control.selected_index) == 'number' or type(control.selected_index) == 'nil',
-            'expected selected_index to be number or nil')
-        ugui.internal.assert(type(control.horizontal_scroll) == 'nil' or type(control.horizontal_scroll) == 'boolean',
-            'expected horizontal_scroll to be boolean or nil')
-    end,
-    ---@param control ListBox
-    setup = function(control, data)
-        if data.scroll_x == nil then
-            data.scroll_x = 0
-        end
-        if data.scroll_y == nil then
-            data.scroll_y = 0
-        end
-    end,
-    ---@param control ListBox
-    ---@return ControlReturnValue
-    logic = function(control, data)
-        data.selected_index = control.selected_index
+---Gets the number of UID slots reserved by a ListBox.
+---@return integer
+ugui.listbox_uids = function()
+    return listbox_uids.total
+end
 
-        local prev_rect = ugui.internal.deep_clone(control.rectangle)
-        local content_bounds = ugui.standard_styler.get_desired_listbox_content_bounds(control)
-        local x_overflow = content_bounds.width > control.rectangle.width
-        local y_overflow = content_bounds.height > control.rectangle.height
+local function initialize_listbox_data(control, data)
+    if data.scroll_x == nil then
+        data.scroll_x = 0
+    end
+    if data.scroll_y == nil then
+        data.scroll_y = 0
+    end
+end
 
-        if x_overflow then
-            control.rectangle.height = control.rectangle.height - ugui.standard_styler.params.scrollbar.thickness
-        end
-        if y_overflow then
-            control.rectangle.width = control.rectangle.width - ugui.standard_styler.params.scrollbar.thickness
+---@param control ListBox
+---@param data any
+---@return ControlReturnValue
+local function listbox_get_return_value(control, data)
+    data.selected_index = control.selected_index
+
+    local render_rect = control.render_rect
+    local rectangle = {
+        x = render_rect.x,
+        y = render_rect.y,
+        width = render_rect.width,
+        height = render_rect.height,
+    }
+    local content_bounds = ugui.standard_styler.get_desired_listbox_content_bounds(control)
+    local x_overflow = content_bounds.width > rectangle.width
+    local y_overflow = content_bounds.height > rectangle.height
+
+    if x_overflow then
+        rectangle.height = rectangle.height - ugui.standard_styler.params.scrollbar.thickness
+    end
+    if y_overflow then
+        rectangle.width = rectangle.width - ugui.standard_styler.params.scrollbar.thickness
+    end
+
+    local one_item_scroll_y<const> = 1 / #control.items
+    local items_per_page<const> = math.floor(rectangle.height / ugui.standard_styler.params.listbox_item.height)
+
+    -- FIXME: This is pretty weird... we should have a mechanism at the ugui core level for this
+    local can_mouse_scroll = false
+    if ugui.internal.mouse_captured_control == nil then
+        can_mouse_scroll = ugui.internal.hovered_control == control.uid
+    end
+    if ugui.internal.mouse_captured_control == control.uid then
+        can_mouse_scroll = true
+    end
+
+    local function index_from_y(y)
+        return math.ceil((y + (data.scroll_y *
+                ((ugui.standard_styler.params.listbox_item.height * #control.items) - rectangle.height))) /
+            ugui.standard_styler.params.listbox_item.height)
+    end
+
+    local function scroll_selected_index_into_view()
+        if data.selected_index == nil then
+            return
         end
 
-        local one_item_scroll_y<const> = 1 / #control.items
-        local items_per_page<const> = math.floor(control.rectangle.height / ugui.standard_styler.params.listbox_item.height)
+        local item_height = ugui.standard_styler.params.listbox_item.height
+        local scroll_range = (item_height * #control.items) - rectangle.height
 
-        -- FIXME: This is pretty weird... we should have a mechanism at the ugui core level for this
-        local can_mouse_scroll = false
-        if ugui.internal.mouse_captured_control == nil then
-            can_mouse_scroll = ugui.internal.hovered_control == control.uid
-        end
-        if ugui.internal.mouse_captured_control == control.uid then
-            can_mouse_scroll = true
+        if scroll_range <= 0 then
+            return
         end
 
-        local function index_from_y(y)
-            return math.ceil((y + (data.scroll_y *
-                    ((ugui.standard_styler.params.listbox_item.height * #control.items) - control.rectangle.height))) /
-                ugui.standard_styler.params.listbox_item.height)
-        end
+        local scroll_offset_px = data.scroll_y * scroll_range
+        local first_visible = math.floor(scroll_offset_px / item_height) + 1
+        local last_visible = math.floor((scroll_offset_px + rectangle.height) / item_height)
 
-        local function scroll_selected_index_into_view()
-            if data.selected_index == nil then
-                return
+        if data.selected_index < first_visible then
+            data.scroll_y = (data.selected_index - 1) * item_height / scroll_range
+        elseif data.selected_index > last_visible then
+            data.scroll_y = (data.selected_index * item_height - rectangle.height) / scroll_range
+        end
+    end
+
+    if ugui.internal.mouse_captured_control == control.uid then
+        local relative_y = ugui.internal.environment.mouse_position.y - rectangle.y
+        local new_index = index_from_y(relative_y)
+        data.selected_index = new_index
+
+        local overshoot = nil
+        if relative_y > rectangle.height then
+            overshoot = relative_y - rectangle.height
+        end
+        if relative_y < 0 then
+            overshoot = relative_y
+        end
+        if overshoot ~= nil then
+            overshoot = ugui.internal.clamp(overshoot, -50, 50)
+            data.scroll_y = data.scroll_y + one_item_scroll_y * ugui.internal.delta_time * overshoot * 2
+        end
+    end
+
+    if can_mouse_scroll then
+        data.scroll_y = data.scroll_y - ugui.internal.environment._scroll_delta.y * one_item_scroll_y
+    end
+
+    if ugui.internal.keyboard_captured_control == control.uid then
+        for i = 1, #ugui.internal.environment.key_events do
+            local e = ugui.internal.environment.key_events[i]
+            if not e.keycode2 or not e.pressed then
+                goto continue
             end
 
-            local item_height = ugui.standard_styler.params.listbox_item.height
-            local scroll_range = (item_height * #control.items) - control.rectangle.height
-
-            if scroll_range <= 0 then
-                return
+            if e.keycode2 == Mupen.keycode.SDLK_UP and data.selected_index ~= nil then
+                data.selected_index = ugui.internal.clamp(data.selected_index - 1, 1, #control.items)
+                scroll_selected_index_into_view()
+            end
+            if e.keycode2 == Mupen.keycode.SDLK_DOWN and data.selected_index ~= nil then
+                data.selected_index = ugui.internal.clamp(data.selected_index + 1, 1, #control.items)
+                scroll_selected_index_into_view()
+            end
+            if e.keycode2 == Mupen.keycode.SDLK_C and e.ctrl and data.selected_index ~= nil then
+                local item = control.items[data.selected_index]
+                clipboard.set('text', item)
+            end
+            if e.keycode2 == Mupen.keycode.SDLK_PAGEUP and data.selected_index ~= nil then
+                data.selected_index = data.selected_index - items_per_page
+                scroll_selected_index_into_view()
+            end
+            if e.keycode2 == Mupen.keycode.SDLK_PAGEDOWN and data.selected_index ~= nil then
+                data.selected_index = data.selected_index + items_per_page
+                scroll_selected_index_into_view()
+            end
+            if e.keycode2 == Mupen.keycode.SDLK_HOME then
+                data.selected_index = 1
+                scroll_selected_index_into_view()
+            end
+            if e.keycode2 == Mupen.keycode.SDLK_END then
+                data.selected_index = #control.items
+                scroll_selected_index_into_view()
             end
 
-            local scroll_offset_px = data.scroll_y * scroll_range
-            local first_visible = math.floor(scroll_offset_px / item_height) + 1
-            local last_visible = math.floor((scroll_offset_px + control.rectangle.height) / item_height)
-
-            if data.selected_index < first_visible then
-                data.scroll_y = (data.selected_index - 1) * item_height / scroll_range
-            elseif data.selected_index > last_visible then
-                data.scroll_y = (data.selected_index * item_height - control.rectangle.height) / scroll_range
-            end
+            ::continue::
         end
+    end
 
-        if ugui.internal.mouse_captured_control == control.uid then
-            local relative_y = ugui.internal.environment.mouse_position.y - control.rectangle.y
-            local new_index = index_from_y(relative_y)
-            data.selected_index = new_index
+    data.scroll_y = ugui.internal.clamp(data.scroll_y, 0, 1)
+    if not y_overflow then
+        data.scroll_y = 0
+    end
+    if data.selected_index ~= nil then
+        data.selected_index = ugui.internal.clamp(data.selected_index, 1, #control.items)
+    end
 
-            local overshoot = nil
-            if relative_y > control.rectangle.height then
-                overshoot = relative_y - control.rectangle.height
-            end
-            if relative_y < 0 then
-                overshoot = relative_y
-            end
-            if overshoot ~= nil then
-                overshoot = ugui.internal.clamp(overshoot, -50, 50)
-                data.scroll_y = data.scroll_y + one_item_scroll_y * ugui.internal.delta_time * overshoot * 2
-            end
-        end
+    data.signal_change = ugui.internal.process_signal_changes(data.signal_change,
+        control.selected_index ~= data.selected_index)
 
-        if can_mouse_scroll then
-            data.scroll_y = data.scroll_y - ugui.internal.environment._scroll_delta.y * one_item_scroll_y
-        end
-
-        if ugui.internal.keyboard_captured_control == control.uid then
-            for _, e in ipairs(ugui.internal.environment.key_events) do
-                if not e.keycode2 or not e.pressed then
-                    goto continue
-                end
-
-                if e.keycode2 == Mupen.keycode.SDLK_UP and data.selected_index ~= nil then
-                    data.selected_index = ugui.internal.clamp(data.selected_index - 1, 1, #control.items)
-                    scroll_selected_index_into_view()
-                end
-                if e.keycode2 == Mupen.keycode.SDLK_DOWN and data.selected_index ~= nil then
-                    data.selected_index = ugui.internal.clamp(data.selected_index + 1, 1, #control.items)
-                    scroll_selected_index_into_view()
-                end
-                if e.keycode2 == Mupen.keycode.SDLK_C and e.ctrl and data.selected_index ~= nil then
-                    local item = control.items[data.selected_index]
-                    clipboard.set('text', item)
-                end
-                if e.keycode2 == Mupen.keycode.SDLK_PAGEUP and data.selected_index ~= nil then
-                    data.selected_index = data.selected_index - items_per_page
-                    scroll_selected_index_into_view()
-                end
-                if e.keycode2 == Mupen.keycode.SDLK_PAGEDOWN and data.selected_index ~= nil then
-                    data.selected_index = data.selected_index + items_per_page
-                    scroll_selected_index_into_view()
-                end
-                if e.keycode2 == Mupen.keycode.SDLK_HOME then
-                    data.selected_index = 1
-                    scroll_selected_index_into_view()
-                end
-                if e.keycode2 == Mupen.keycode.SDLK_END then
-                    data.selected_index = #control.items
-                    scroll_selected_index_into_view()
-                end
-
-                ::continue::
-            end
-        end
+    return {
+        primary = data.selected_index,
+        meta = {signal_change = data.signal_change},
+    }
+end
 
 
-        data.scroll_y = ugui.internal.clamp(data.scroll_y, 0, 1)
-        if not y_overflow then
-            data.scroll_y = 0
-        end
-        if data.selected_index ~= nil then
-            data.selected_index = ugui.internal.clamp(data.selected_index, 1, #control.items)
-        end
-
-        control.rectangle = prev_rect
-
-        data.signal_change = ugui.internal.process_signal_changes(data.signal_change,
-            control.selected_index ~= data.selected_index)
-
-        return {
-            primary = data.selected_index,
-            meta = {signal_change = data.signal_change},
-        }
-    end,
-    ---@param control ListBox
-    draw = function(control)
-        ugui.standard_styler.draw_listbox(control)
-    end,
-}
+local listbox_draw = function(control)
+    ugui.standard_styler.draw_listbox(control)
+end
 
 ---Places a ListBox.
 ---@param control ListBox The control table.
+---@param fn fun()? A callback whose placed controls become children of the listbox.
 ---@return integer, Meta # The new selected index.
-ugui.listbox = function(control)
+ugui.listbox = function(control, fn)
+    ugui.internal.assert(type(control.items) == 'table', 'expected items to be table')
+    ugui.internal.assert(type(control.selected_index) == 'number' or type(control.selected_index) == 'nil',
+        'expected selected_index to be number or nil')
+    ugui.internal.assert(type(control.horizontal_scroll) == 'nil' or type(control.horizontal_scroll) == 'boolean',
+        'expected horizontal_scroll to be boolean or nil')
+    control.draw = control.draw or listbox_draw
     local content_bounds = ugui.standard_styler.get_desired_listbox_content_bounds(control)
     local x_overflow = content_bounds.width > control.rectangle.width
     local y_overflow = content_bounds.height > control.rectangle.height
@@ -3603,7 +4896,8 @@ ugui.listbox = function(control)
         control.rectangle.width = control.rectangle.width - ugui.standard_styler.params.scrollbar.thickness
     end
 
-    local result = ugui.control(control, 'listbox')
+    control.get_return_value = control.get_return_value or listbox_get_return_value
+    local result = ugui.internal.control(control, 'listbox', fn, initialize_listbox_data)
     local data = ugui.internal.control_data[control.uid]
 
     local scrollbar_1_uid<const> = control.uid + listbox_uids.scrollbar_1
@@ -3612,7 +4906,8 @@ ugui.listbox = function(control)
     if x_overflow then
         data.scroll_x = ugui.scrollbar({
             uid = scrollbar_1_uid,
-            is_enabled = control.is_enabled,
+            is_enabled = ugui.internal.is_control_enabled(control),
+            opacity = control.opacity,
             rectangle = {
                 x = control.rectangle.x,
                 y = control.rectangle.y + control.rectangle.height,
@@ -3628,7 +4923,8 @@ ugui.listbox = function(control)
     if y_overflow then
         data.scroll_y = ugui.scrollbar({
             uid = scrollbar_2_uid,
-            is_enabled = control.is_enabled,
+            is_enabled = ugui.internal.is_control_enabled(control),
+            opacity = control.opacity,
             rectangle = {
                 x = control.rectangle.x + control.rectangle.width,
                 y = control.rectangle.y,
@@ -3654,7 +4950,7 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
----@class TextBox : Control
+---@class TextBox : UguiControl
 ---@field public text string The text contained in the textbox.
 ---@field public text_x_align Alignment? The text's horizontal alignment. Defaults to `alignment.start`.
 ---@field public history_size integer? The maximum history size. Defaults to `64`.
@@ -3701,456 +4997,462 @@ local function surrounding_word_index(text, from)
     return lo, hi
 end
 
----@type ControlRegistryEntry
-ugui.registry.textbox = {
-    uids = function() return 1 end,
-    ---@param control TextBox
-    validate = function(control)
-        ugui.internal.assert(type(control.text) == 'string', 'expected text to be string')
-        ugui.internal.assert(type(control.text_x_align) == 'number' or control.text_x_align == nil,
-            'expected text_x_align to be number or nil')
-        ugui.internal.assert(control.history_size == nil or
-            (type(control.history_size) == 'number' and control.history_size >= 0 and control.history_size % 1 == 0),
-            'expected history_size to be a non-negative integer or nil')
-    end,
-    ---@param control TextBox
-    setup = function(control, data)
-        if data.caret_index == nil then
-            data.caret_index = 1
-        end
-        if data.selection_start == nil then
-            data.selection_start = 1
-        end
-        if data.selection_end == nil then
-            data.selection_end = 1
-        end
-        if data.scroll_offset == nil then
-            data.scroll_offset = 1
-        end
-        if data.last_changed_anchor == nil then
-            data.last_changed_anchor = 'caret'
-        end
-        if data.caret_blink_start == nil then
-            data.caret_blink_start = os.clock()
-        end
-        if data.undo_stack == nil then
-            data.undo_stack = {}
-        end
-        if data.redo_stack == nil then
-            data.redo_stack = {}
-        end
-    end,
-    ---@param control TextBox
-    ---@return ControlReturnValue
-    logic = function(control, data)
-        data.text = control.text
-        local previous_caret_index<const> = data.caret_index
+---Gets the number of UID slots reserved by a TextBox.
+---@return integer
+ugui.textbox_uids = function()
+    return 1
+end
 
-        local padding_x<const> = ugui.standard_styler.params.textbox.padding.x
-        local visible_width<const> = math.max(0, control.rectangle.width - padding_x * 2)
-        local scroll_width<const> = math.max(0, visible_width - 1) -- Leave room for the caret stroke.
-        local font_name<const> = ugui.standard_styler.params.font_name
-        local font_size<const> = ugui.standard_styler.params.font_size
-        local clicked<const> = ugui.internal.clicked_control == control.uid
-        local double_clicked<const> = ugui.internal.doubleclicked_control == control.uid
-        local triple_clicked<const> = ugui.internal.tripleclicked_control == control.uid
-        local mouse_position<const> = ugui.internal.environment.mouse_position
-        local mouse_down_position<const> = ugui.internal.mouse_down_position
-        local mouse_moved_since_press<const> = mouse_position.x ~= mouse_down_position.x or
-            mouse_position.y ~= mouse_down_position.y
-        local dragging<const> = ugui.internal.mouse_captured_control == control.uid and mouse_moved_since_press and
-            data.selection_mode ~= 'all' and not clicked and not triple_clicked
-        local scroll_target = data.caret_index
-        if data.last_changed_anchor == 'selection_start' then
-            scroll_target = data.selection_start
-        elseif data.last_changed_anchor == 'selection_end' then
-            scroll_target = data.selection_end
-        end
-        local scroll_state = data.scroll_state
-        local scroll_dirty<const> = not scroll_state or scroll_state.text ~= data.text or
-            scroll_state.width ~= scroll_width or scroll_state.font_name ~= font_name or
-            scroll_state.font_size ~= font_size or scroll_state.target ~= scroll_target or
-            scroll_state.offset ~= data.scroll_offset
-        local keyboard_input<const> = ugui.internal.keyboard_captured_control == control.uid and
-            #ugui.internal.environment.key_events > 0
+local function initialize_textbox_data(control, data)
+    if data.caret_index == nil then
+        data.caret_index = 1
+    end
+    if data.selection_start == nil then
+        data.selection_start = 1
+    end
+    if data.selection_end == nil then
+        data.selection_end = 1
+    end
+    if data.scroll_offset == nil then
+        data.scroll_offset = 1
+    end
+    if data.last_changed_anchor == nil then
+        data.last_changed_anchor = 'caret'
+    end
+    if data.caret_blink_start == nil then
+        data.caret_blink_start = os.clock()
+    end
+    if data.undo_stack == nil then
+        data.undo_stack = {}
+    end
+    if data.redo_stack == nil then
+        data.redo_stack = {}
+    end
+end
 
-        -- Idle frames need no text shaping, measurement, or mouse hit-testing.
-        if not scroll_dirty and not clicked and not double_clicked and not triple_clicked and
-            not dragging and not keyboard_input then
-            data.next_drag_scroll_time = nil
-            data.signal_change = ugui.internal.process_signal_changes(data.signal_change, false)
-            return {
-                primary = data.text,
-                meta = {signal_change = data.signal_change},
-            }
-        end
+---@param control TextBox
+---@param data any
+---@return ControlReturnValue
+local function textbox_get_return_value(control, data)
+    local rectangle = control.render_rect
+    data.text = control.text
+    local previous_caret_index<const> = data.caret_index
 
-        local text_style<const> = {
-            family = ugui.standard_styler.params.font_name,
-            size = ugui.standard_styler.params.font_size,
-        }
-        local function width_from_offset(offset, target_index)
-            if target_index <= offset then
-                return 0
-            end
-            local position<const> = painter.hittest_text_index(data.text:sub(offset), target_index - offset + 1,
-                text_style, {wrap = 'none', clip = false})
-            return position.x
-        end
+    local padding_x<const> = ugui.standard_styler.params.textbox.padding.x
+    local visible_width<const> = math.max(0, rectangle.width - padding_x * 2)
+    local scroll_width<const> = math.max(0, visible_width - 1) -- Leave room for the caret stroke.
+    local font_name<const> = ugui.standard_styler.params.font_name
+    local font_size<const> = ugui.standard_styler.params.font_size
+    local clicked<const> = ugui.internal.clicked_control == control.uid
+    local double_clicked<const> = ugui.internal.doubleclicked_control == control.uid
+    local triple_clicked<const> = ugui.internal.tripleclicked_control == control.uid
+    local mouse_position<const> = ugui.internal.environment.mouse_position
+    local mouse_down_position<const> = ugui.internal.mouse_down_position
+    local mouse_moved_since_press<const> = mouse_position.x ~= mouse_down_position.x or
+        mouse_position.y ~= mouse_down_position.y
+    local dragging<const> = ugui.internal.mouse_captured_control == control.uid and mouse_moved_since_press and
+        data.selection_mode ~= 'all' and not clicked and not triple_clicked
+    local scroll_target = data.caret_index
+    if data.last_changed_anchor == 'selection_start' then
+        scroll_target = data.selection_start
+    elseif data.last_changed_anchor == 'selection_end' then
+        scroll_target = data.selection_end
+    end
+    local scroll_state = data.scroll_state
+    local scroll_dirty<const> = not scroll_state or scroll_state.text ~= data.text or
+        scroll_state.width ~= scroll_width or scroll_state.font_name ~= font_name or
+        scroll_state.font_size ~= font_size or scroll_state.target ~= scroll_target or
+        scroll_state.offset ~= data.scroll_offset
+    local keyboard_input<const> = ugui.internal.keyboard_captured_control == control.uid and
+        #ugui.internal.environment.key_events > 0
 
-        data.scroll_offset = ugui.internal.clamp(data.scroll_offset, 1, #data.text + 1)
-
-        local outside_left<const> = mouse_position.x < control.rectangle.x
-        local outside_right<const> = mouse_position.x > control.rectangle.x + control.rectangle.width
-        if dragging and (outside_left or outside_right) then
-            local now<const> = os.clock()
-            if now >= (data.next_drag_scroll_time or 0) then
-                local distance<const> = outside_left and (control.rectangle.x - mouse_position.x) or
-                    (mouse_position.x - control.rectangle.x - control.rectangle.width)
-                local step<const> = math.min(10, 1 + math.floor(distance / math.max(1, text_style.size)))
-                if outside_left then
-                    data.scroll_offset = math.max(1, data.scroll_offset - step)
-                elseif width_from_offset(data.scroll_offset, #data.text + 1) > scroll_width then
-                    data.scroll_offset = math.min(#data.text + 1, data.scroll_offset + step)
-                end
-                data.next_drag_scroll_time = now + 0.05
-            end
-        else
-            data.next_drag_scroll_time = nil
-        end
-
-        local index_at_mouse
-        if not triple_clicked and (clicked or double_clicked or dragging) then
-            local text_x_align<const> = control.text_x_align or ugui.alignment.start
-            local text_x_align_offset = 0
-            if data.scroll_offset == 1 and text_x_align ~= ugui.alignment.start then
-                local text_width<const> = painter.measure_text(data.text, text_style).w
-                if text_width < visible_width then
-                    if text_x_align == ugui.alignment.center then
-                        text_x_align_offset = (visible_width - text_width) / 2
-                    elseif text_x_align == ugui.alignment['end'] then
-                        text_x_align_offset = visible_width - text_width
-                    end
-                end
-            end
-            local mouse_x = mouse_position.x
-            if dragging then
-                mouse_x = ugui.internal.clamp(mouse_x, control.rectangle.x + padding_x,
-                    control.rectangle.x + padding_x + visible_width)
-            end
-            index_at_mouse = ugui.internal.get_caret_index(data.text, data.scroll_offset,
-                mouse_x - control.rectangle.x - text_x_align_offset)
-        end
-
-        if triple_clicked then
-            data.selection_mode = 'all'
-            data.selection_start = 1
-            data.selection_end = #data.text + 1
-            data.caret_index = data.selection_end
-            data.last_changed_anchor = 'selection_end'
-        elseif double_clicked then
-            local word_start<const>, word_end<const> = surrounding_word_index(data.text, index_at_mouse)
-            data.selection_mode = 'word'
-            data.selection_word_start = word_start
-            data.selection_word_end = word_end
-            data.selection_start = word_start
-            data.selection_end = word_end
-            data.caret_index = word_end
-            data.last_changed_anchor = 'selection_end'
-        elseif clicked then
-            data.selection_mode = 'character'
-            if ugui.internal.environment.shift then
-                local anchor<const> = (data.caret_index == data.selection_end) and data.selection_start or data.selection_end
-                data.selection_start = anchor
-                data.selection_end = index_at_mouse
-                data.caret_index = index_at_mouse
-                data.last_changed_anchor = 'selection_end'
-            else
-                data.caret_index = index_at_mouse
-                data.selection_start = index_at_mouse
-                data.selection_end = index_at_mouse
-                data.last_changed_anchor = 'caret'
-            end
-        end
-
-        -- If we're dragging the control, extend the existing selection.
-        if dragging then
-            if data.selection_mode == 'word' then
-                if index_at_mouse < data.selection_word_start then
-                    local word_start<const> = surrounding_word_index(data.text, index_at_mouse + 1)
-                    data.selection_start = data.selection_word_end
-                    data.selection_end = word_start
-                elseif index_at_mouse > data.selection_word_end then
-                    local _, word_end<const> = surrounding_word_index(data.text, index_at_mouse)
-                    data.selection_start = data.selection_word_start
-                    data.selection_end = word_end
-                else
-                    data.selection_start = data.selection_word_start
-                    data.selection_end = data.selection_word_end
-                end
-                data.caret_index = data.selection_end
-            else
-                data.selection_end = index_at_mouse
-            end
-            data.last_changed_anchor = 'selection_end'
-        end
-
-        -- If we're capturing the keyboard, we process all the key presses.
-        if ugui.internal.keyboard_captured_control == control.uid then
-            for _, e in ipairs(ugui.internal.environment.key_events) do
-                local before_edit<const> = {
-                    text = data.text,
-                    caret_index = data.caret_index,
-                    selection_start = data.selection_start,
-                    selection_end = data.selection_end,
-                }
-                local is_undo<const> = e.keycode2 == Mupen.keycode.SDLK_Z and e.ctrl and not e.shift
-                local is_redo<const> = e.keycode2 == Mupen.keycode.SDLK_Y and e.ctrl or
-                    e.keycode2 == Mupen.keycode.SDLK_Z and e.ctrl and e.shift
-
-                if e.keycode2 and e.pressed and is_undo then
-                    if #data.undo_stack > 0 then
-                        table.insert(data.redo_stack, before_edit)
-                        local previous<const> = table.remove(data.undo_stack)
-                        data.text = previous.text
-                        data.caret_index = previous.caret_index
-                        data.selection_start = previous.selection_start
-                        data.selection_end = previous.selection_end
-                        data.last_changed_anchor = 'caret'
-                    end
-                elseif e.keycode2 and e.pressed and is_redo then
-                    if #data.redo_stack > 0 then
-                        table.insert(data.undo_stack, before_edit)
-                        local next_state<const> = table.remove(data.redo_stack)
-                        data.text = next_state.text
-                        data.caret_index = next_state.caret_index
-                        data.selection_start = next_state.selection_start
-                        data.selection_end = next_state.selection_end
-                        data.last_changed_anchor = 'caret'
-                    end
-                else
-                    local has_selection<const> = data.selection_start ~= data.selection_end
-                    if e.keycode2 and e.pressed then
-                        local lower_selection<const> = math.min(data.selection_start, data.selection_end)
-                        local higher_selection<const> = math.max(data.selection_start, data.selection_end)
-                        local anchor<const> = has_selection
-                            and ((data.caret_index == data.selection_end) and data.selection_start or data.selection_end)
-                            or data.caret_index
-
-                        if e.keycode2 == Mupen.keycode.SDLK_BACKSPACE then
-                            if e.ctrl then
-                                -- Ctrl+Backspace with a selection is REALLY weird and unintuitive, but this is what EDIT does:
-                                -- 1. collapse selection to lower bound 2. delete backwards word from there (we already have that so we just fall through to it)
-                                if has_selection then
-                                    data.caret_index = lower_selection
-                                    data.selection_start = lower_selection
-                                    data.selection_end = lower_selection
-                                    data.last_changed_anchor = 'caret'
-                                end
-
-                                local prev_word<const>, _ = surrounding_word_index(data.text, data.caret_index)
-                                data.text = ugui.internal.remove_range(data.text, prev_word, data.caret_index)
-                                data.caret_index = prev_word
-                                data.selection_start = prev_word
-                                data.selection_end = prev_word
-                                data.last_changed_anchor = 'caret'
-                            else
-                                if has_selection then
-                                    data.text = ugui.internal.remove_range(data.text, lower_selection, higher_selection)
-
-                                    data.caret_index = lower_selection
-                                    data.selection_start = lower_selection
-                                    data.selection_end = lower_selection
-                                    data.last_changed_anchor = 'caret'
-                                else
-                                    local delete_index<const> = data.caret_index - 1
-                                    data.text = ugui.internal.remove_at(data.text, delete_index)
-                                    data.caret_index = delete_index
-                                    data.last_changed_anchor = 'caret'
-                                end
-                            end
-                        elseif e.keycode2 == Mupen.keycode.SDLK_DELETE then
-                            if has_selection then
-                                data.text = ugui.internal.remove_range(data.text, lower_selection, higher_selection)
-                                data.caret_index = lower_selection
-                                data.selection_start = lower_selection
-                                data.selection_end = lower_selection
-                            else
-                                data.text = ugui.internal.remove_at(data.text, data.caret_index)
-                                data.selection_start = data.caret_index
-                                data.selection_end = data.caret_index
-                            end
-                            data.last_changed_anchor = 'caret'
-                        elseif e.keycode2 == Mupen.keycode.SDLK_LEFT then
-                            if e.ctrl then
-                                if e.shift then
-                                    local prev_word<const>, _ = surrounding_word_index(data.text, data.caret_index)
-                                    data.caret_index = prev_word
-                                    data.selection_start = math.min(anchor, prev_word)
-                                    data.selection_end = math.max(anchor, prev_word)
-                                    data.last_changed_anchor = 'caret'
-                                else
-                                    local prev_word<const>, _ = surrounding_word_index(data.text, lower_selection)
-                                    data.selection_start = prev_word
-                                    data.selection_end = prev_word
-                                    data.caret_index = prev_word
-                                    data.last_changed_anchor = 'caret'
-                                end
-                            else
-                                if e.shift then
-                                    local prev_index<const> = data.caret_index - 1
-                                    data.caret_index = prev_index
-                                    data.selection_start = math.min(anchor, prev_index)
-                                    data.selection_end = math.max(anchor, prev_index)
-                                    data.last_changed_anchor = 'caret'
-                                else
-                                    if has_selection then
-                                        data.selection_start = lower_selection
-                                        data.selection_end = lower_selection
-                                        data.caret_index = lower_selection
-                                        data.last_changed_anchor = 'caret'
-                                    else
-                                        data.caret_index = data.caret_index - 1
-                                        data.last_changed_anchor = 'caret'
-                                    end
-                                end
-                            end
-                        elseif e.keycode2 == Mupen.keycode.SDLK_RIGHT then
-                            if e.ctrl then
-                                if e.shift then
-                                    local _, next_word<const> = surrounding_word_index(data.text, data.caret_index)
-                                    data.caret_index = next_word
-                                    data.selection_start = math.min(anchor, next_word)
-                                    data.selection_end = math.max(anchor, next_word)
-                                    data.last_changed_anchor = 'caret'
-                                else
-                                    local _, next_word<const> = surrounding_word_index(data.text, higher_selection)
-                                    data.selection_start = next_word
-                                    data.selection_end = next_word
-                                    data.caret_index = next_word
-                                    data.last_changed_anchor = 'caret'
-                                end
-                            else
-                                if e.shift then
-                                    local next_index<const> = data.caret_index + 1
-                                    data.caret_index = next_index
-                                    data.selection_start = math.min(anchor, next_index)
-                                    data.selection_end = math.max(anchor, next_index)
-                                    data.last_changed_anchor = 'caret'
-                                else
-                                    if has_selection then
-                                        data.selection_start = higher_selection
-                                        data.selection_end = higher_selection
-                                        data.caret_index = higher_selection
-                                        data.last_changed_anchor = 'caret'
-                                    else
-                                        data.caret_index = data.caret_index + 1
-                                        data.last_changed_anchor = 'caret'
-                                    end
-                                end
-                            end
-                        end
-
-                        if e.keycode2 == Mupen.keycode.SDLK_C and e.ctrl and has_selection then
-                            local selected_text<const> = data.text:sub(lower_selection, higher_selection - 1)
-                            clipboard.set('text', selected_text)
-                        end
-
-                        if e.keycode2 == Mupen.keycode.SDLK_A and e.ctrl then
-                            data.selection_start = 1
-                            data.selection_end = #data.text + 1
-                            data.caret_index = data.selection_end
-                            data.last_changed_anchor = 'selection_end'
-                        end
-                    end
-
-                    if e.text then
-                        if has_selection then
-                            local lower_selection<const> = math.min(data.selection_start, data.selection_end)
-                            local higher_selection<const> = math.max(data.selection_start, data.selection_end)
-
-                            data.text = ugui.internal.remove_range(data.text, lower_selection, higher_selection)
-
-                            data.caret_index = lower_selection
-                            data.selection_start = lower_selection
-                            data.selection_end = lower_selection
-
-                            data.last_changed_anchor = 'caret'
-                        end
-                        data.text = ugui.internal.insert_at(data.text, e.text, data.caret_index)
-                        data.caret_index = data.caret_index + #e.text
-                        data.last_changed_anchor = 'caret'
-                    end
-                end
-
-                if not is_undo and not is_redo and data.text ~= before_edit.text then
-                    table.insert(data.undo_stack, before_edit)
-                    local history_size<const> = control.history_size or 64
-                    while #data.undo_stack > history_size do
-                        table.remove(data.undo_stack, 1)
-                    end
-                    data.redo_stack = {}
-                end
-            end
-        end
-
-        -- Clamp indices to valid ranges.
-        data.caret_index = ugui.internal.clamp(data.caret_index, 1, #data.text + 1)
-        data.selection_start = ugui.internal.clamp(data.selection_start, 1, #data.text + 1)
-        data.selection_end = ugui.internal.clamp(data.selection_end, 1, #data.text + 1)
-
-        if data.caret_index ~= previous_caret_index then
-            data.caret_blink_start = os.clock()
-        end
-
-        scroll_target = data.caret_index
-        if data.last_changed_anchor == 'selection_start' then
-            scroll_target = data.selection_start
-        elseif data.last_changed_anchor == 'selection_end' then
-            scroll_target = data.selection_end
-        end
-
-        if scroll_dirty or scroll_state.text ~= data.text or scroll_state.target ~= scroll_target or
-            scroll_state.offset ~= data.scroll_offset then
-            data.scroll_offset = ugui.internal.clamp(data.scroll_offset, 1, scroll_target)
-            while data.scroll_offset < scroll_target and
-                width_from_offset(data.scroll_offset, scroll_target) > scroll_width do
-                data.scroll_offset = data.scroll_offset + 1
-            end
-
-            while data.scroll_offset > 1 and
-                width_from_offset(data.scroll_offset - 1, #data.text + 1) <= scroll_width do
-                data.scroll_offset = data.scroll_offset - 1
-            end
-
-            scroll_state = scroll_state or {}
-            scroll_state.text = data.text
-            scroll_state.width = scroll_width
-            scroll_state.font_name = font_name
-            scroll_state.font_size = font_size
-            scroll_state.target = scroll_target
-            scroll_state.offset = data.scroll_offset
-            data.scroll_state = scroll_state
-        end
-
-        data.signal_change = ugui.internal.process_signal_changes(data.signal_change, control.text ~= data.text)
-
+    -- Idle frames need no text shaping, measurement, or mouse hit-testing.
+    if not scroll_dirty and not clicked and not double_clicked and not triple_clicked and
+        not dragging and not keyboard_input then
+        data.next_drag_scroll_time = nil
+        data.signal_change = ugui.internal.process_signal_changes(data.signal_change, false)
         return {
             primary = data.text,
             meta = {signal_change = data.signal_change},
         }
-    end,
-    ---@param control TextBox
-    draw = function(control)
-        ugui.standard_styler.draw_textbox(control)
-    end,
-}
+    end
+
+    local text_style<const> = {
+        family = ugui.standard_styler.params.font_name,
+        size = ugui.standard_styler.params.font_size,
+    }
+    local function width_from_offset(offset, target_index)
+        if target_index <= offset then
+            return 0
+        end
+        local position<const> = painter.hittest_text_index(data.text:sub(offset), target_index - offset + 1,
+            text_style, {wrap = 'none', clip = false})
+        return position.x
+    end
+
+    data.scroll_offset = ugui.internal.clamp(data.scroll_offset, 1, #data.text + 1)
+
+    local outside_left<const> = mouse_position.x < rectangle.x
+    local outside_right<const> = mouse_position.x > rectangle.x + rectangle.width
+    if dragging and (outside_left or outside_right) then
+        local now<const> = os.clock()
+        if now >= (data.next_drag_scroll_time or 0) then
+            local distance<const> = outside_left and (rectangle.x - mouse_position.x) or
+                (mouse_position.x - rectangle.x - rectangle.width)
+            local step<const> = math.min(10, 1 + math.floor(distance / math.max(1, text_style.size)))
+            if outside_left then
+                data.scroll_offset = math.max(1, data.scroll_offset - step)
+            elseif width_from_offset(data.scroll_offset, #data.text + 1) > scroll_width then
+                data.scroll_offset = math.min(#data.text + 1, data.scroll_offset + step)
+            end
+            data.next_drag_scroll_time = now + 0.05
+        end
+    else
+        data.next_drag_scroll_time = nil
+    end
+
+    local index_at_mouse
+    if not triple_clicked and (clicked or double_clicked or dragging) then
+        local text_x_align<const> = control.text_x_align or ugui.alignment.start
+        local text_x_align_offset = 0
+        if data.scroll_offset == 1 and text_x_align ~= ugui.alignment.start then
+            local text_width<const> = painter.measure_text(data.text, text_style).w
+            if text_width < visible_width then
+                if text_x_align == ugui.alignment.center then
+                    text_x_align_offset = (visible_width - text_width) / 2
+                elseif text_x_align == ugui.alignment['end'] then
+                    text_x_align_offset = visible_width - text_width
+                end
+            end
+        end
+        local mouse_x = mouse_position.x
+        if dragging then
+            mouse_x = ugui.internal.clamp(mouse_x, rectangle.x + padding_x,
+                rectangle.x + padding_x + visible_width)
+        end
+        index_at_mouse = ugui.internal.get_caret_index(data.text, data.scroll_offset,
+            mouse_x - rectangle.x - text_x_align_offset)
+    end
+
+    if triple_clicked then
+        data.selection_mode = 'all'
+        data.selection_start = 1
+        data.selection_end = #data.text + 1
+        data.caret_index = data.selection_end
+        data.last_changed_anchor = 'selection_end'
+    elseif double_clicked then
+        local word_start<const>, word_end<const> = surrounding_word_index(data.text, index_at_mouse)
+        data.selection_mode = 'word'
+        data.selection_word_start = word_start
+        data.selection_word_end = word_end
+        data.selection_start = word_start
+        data.selection_end = word_end
+        data.caret_index = word_end
+        data.last_changed_anchor = 'selection_end'
+    elseif clicked then
+        data.selection_mode = 'character'
+        if ugui.internal.environment.shift then
+            local anchor<const> = (data.caret_index == data.selection_end) and data.selection_start or data.selection_end
+            data.selection_start = anchor
+            data.selection_end = index_at_mouse
+            data.caret_index = index_at_mouse
+            data.last_changed_anchor = 'selection_end'
+        else
+            data.caret_index = index_at_mouse
+            data.selection_start = index_at_mouse
+            data.selection_end = index_at_mouse
+            data.last_changed_anchor = 'caret'
+        end
+    end
+
+    -- If we're dragging the control, extend the existing selection.
+    if dragging then
+        if data.selection_mode == 'word' then
+            if index_at_mouse < data.selection_word_start then
+                local word_start<const> = surrounding_word_index(data.text, index_at_mouse + 1)
+                data.selection_start = data.selection_word_end
+                data.selection_end = word_start
+            elseif index_at_mouse > data.selection_word_end then
+                local _, word_end<const> = surrounding_word_index(data.text, index_at_mouse)
+                data.selection_start = data.selection_word_start
+                data.selection_end = word_end
+            else
+                data.selection_start = data.selection_word_start
+                data.selection_end = data.selection_word_end
+            end
+            data.caret_index = data.selection_end
+        else
+            data.selection_end = index_at_mouse
+        end
+        data.last_changed_anchor = 'selection_end'
+    end
+
+    -- If we're capturing the keyboard, we process all the key presses.
+    if ugui.internal.keyboard_captured_control == control.uid then
+        for i = 1, #ugui.internal.environment.key_events do
+            local e = ugui.internal.environment.key_events[i]
+            local before_edit<const> = {
+                text = data.text,
+                caret_index = data.caret_index,
+                selection_start = data.selection_start,
+                selection_end = data.selection_end,
+            }
+            local is_undo<const> = e.keycode2 == Mupen.keycode.SDLK_Z and e.ctrl and not e.shift
+            local is_redo<const> = e.keycode2 == Mupen.keycode.SDLK_Y and e.ctrl or
+                e.keycode2 == Mupen.keycode.SDLK_Z and e.ctrl and e.shift
+
+            if e.keycode2 and e.pressed and is_undo then
+                if #data.undo_stack > 0 then
+                    table.insert(data.redo_stack, before_edit)
+                    local previous<const> = table.remove(data.undo_stack)
+                    data.text = previous.text
+                    data.caret_index = previous.caret_index
+                    data.selection_start = previous.selection_start
+                    data.selection_end = previous.selection_end
+                    data.last_changed_anchor = 'caret'
+                end
+            elseif e.keycode2 and e.pressed and is_redo then
+                if #data.redo_stack > 0 then
+                    table.insert(data.undo_stack, before_edit)
+                    local next_state<const> = table.remove(data.redo_stack)
+                    data.text = next_state.text
+                    data.caret_index = next_state.caret_index
+                    data.selection_start = next_state.selection_start
+                    data.selection_end = next_state.selection_end
+                    data.last_changed_anchor = 'caret'
+                end
+            else
+                local has_selection<const> = data.selection_start ~= data.selection_end
+                if e.keycode2 and e.pressed then
+                    local lower_selection<const> = math.min(data.selection_start, data.selection_end)
+                    local higher_selection<const> = math.max(data.selection_start, data.selection_end)
+                    local anchor<const> = has_selection
+                        and ((data.caret_index == data.selection_end) and data.selection_start or data.selection_end)
+                        or data.caret_index
+
+                    if e.keycode2 == Mupen.keycode.SDLK_BACKSPACE then
+                        if e.ctrl then
+                            -- Ctrl+Backspace with a selection is REALLY weird and unintuitive, but this is what EDIT does:
+                            -- 1. collapse selection to lower bound 2. delete backwards word from there (we already have that so we just fall through to it)
+                            if has_selection then
+                                data.caret_index = lower_selection
+                                data.selection_start = lower_selection
+                                data.selection_end = lower_selection
+                                data.last_changed_anchor = 'caret'
+                            end
+
+                            local prev_word<const>, _ = surrounding_word_index(data.text, data.caret_index)
+                            data.text = ugui.internal.remove_range(data.text, prev_word, data.caret_index)
+                            data.caret_index = prev_word
+                            data.selection_start = prev_word
+                            data.selection_end = prev_word
+                            data.last_changed_anchor = 'caret'
+                        else
+                            if has_selection then
+                                data.text = ugui.internal.remove_range(data.text, lower_selection, higher_selection)
+
+                                data.caret_index = lower_selection
+                                data.selection_start = lower_selection
+                                data.selection_end = lower_selection
+                                data.last_changed_anchor = 'caret'
+                            else
+                                local delete_index<const> = data.caret_index - 1
+                                data.text = ugui.internal.remove_at(data.text, delete_index)
+                                data.caret_index = delete_index
+                                data.last_changed_anchor = 'caret'
+                            end
+                        end
+                    elseif e.keycode2 == Mupen.keycode.SDLK_DELETE then
+                        if has_selection then
+                            data.text = ugui.internal.remove_range(data.text, lower_selection, higher_selection)
+                            data.caret_index = lower_selection
+                            data.selection_start = lower_selection
+                            data.selection_end = lower_selection
+                        else
+                            data.text = ugui.internal.remove_at(data.text, data.caret_index)
+                            data.selection_start = data.caret_index
+                            data.selection_end = data.caret_index
+                        end
+                        data.last_changed_anchor = 'caret'
+                    elseif e.keycode2 == Mupen.keycode.SDLK_LEFT then
+                        if e.ctrl then
+                            if e.shift then
+                                local prev_word<const>, _ = surrounding_word_index(data.text, data.caret_index)
+                                data.caret_index = prev_word
+                                data.selection_start = math.min(anchor, prev_word)
+                                data.selection_end = math.max(anchor, prev_word)
+                                data.last_changed_anchor = 'caret'
+                            else
+                                local prev_word<const>, _ = surrounding_word_index(data.text, lower_selection)
+                                data.selection_start = prev_word
+                                data.selection_end = prev_word
+                                data.caret_index = prev_word
+                                data.last_changed_anchor = 'caret'
+                            end
+                        else
+                            if e.shift then
+                                local prev_index<const> = data.caret_index - 1
+                                data.caret_index = prev_index
+                                data.selection_start = math.min(anchor, prev_index)
+                                data.selection_end = math.max(anchor, prev_index)
+                                data.last_changed_anchor = 'caret'
+                            else
+                                if has_selection then
+                                    data.selection_start = lower_selection
+                                    data.selection_end = lower_selection
+                                    data.caret_index = lower_selection
+                                    data.last_changed_anchor = 'caret'
+                                else
+                                    data.caret_index = data.caret_index - 1
+                                    data.last_changed_anchor = 'caret'
+                                end
+                            end
+                        end
+                    elseif e.keycode2 == Mupen.keycode.SDLK_RIGHT then
+                        if e.ctrl then
+                            if e.shift then
+                                local _, next_word<const> = surrounding_word_index(data.text, data.caret_index)
+                                data.caret_index = next_word
+                                data.selection_start = math.min(anchor, next_word)
+                                data.selection_end = math.max(anchor, next_word)
+                                data.last_changed_anchor = 'caret'
+                            else
+                                local _, next_word<const> = surrounding_word_index(data.text, higher_selection)
+                                data.selection_start = next_word
+                                data.selection_end = next_word
+                                data.caret_index = next_word
+                                data.last_changed_anchor = 'caret'
+                            end
+                        else
+                            if e.shift then
+                                local next_index<const> = data.caret_index + 1
+                                data.caret_index = next_index
+                                data.selection_start = math.min(anchor, next_index)
+                                data.selection_end = math.max(anchor, next_index)
+                                data.last_changed_anchor = 'caret'
+                            else
+                                if has_selection then
+                                    data.selection_start = higher_selection
+                                    data.selection_end = higher_selection
+                                    data.caret_index = higher_selection
+                                    data.last_changed_anchor = 'caret'
+                                else
+                                    data.caret_index = data.caret_index + 1
+                                    data.last_changed_anchor = 'caret'
+                                end
+                            end
+                        end
+                    end
+
+                    if e.keycode2 == Mupen.keycode.SDLK_C and e.ctrl and has_selection then
+                        local selected_text<const> = data.text:sub(lower_selection, higher_selection - 1)
+                        clipboard.set('text', selected_text)
+                    end
+
+                    if e.keycode2 == Mupen.keycode.SDLK_A and e.ctrl then
+                        data.selection_start = 1
+                        data.selection_end = #data.text + 1
+                        data.caret_index = data.selection_end
+                        data.last_changed_anchor = 'selection_end'
+                    end
+                end
+
+                if e.text then
+                    if has_selection then
+                        local lower_selection<const> = math.min(data.selection_start, data.selection_end)
+                        local higher_selection<const> = math.max(data.selection_start, data.selection_end)
+
+                        data.text = ugui.internal.remove_range(data.text, lower_selection, higher_selection)
+
+                        data.caret_index = lower_selection
+                        data.selection_start = lower_selection
+                        data.selection_end = lower_selection
+
+                        data.last_changed_anchor = 'caret'
+                    end
+                    data.text = ugui.internal.insert_at(data.text, e.text, data.caret_index)
+                    data.caret_index = data.caret_index + #e.text
+                    data.last_changed_anchor = 'caret'
+                end
+            end
+
+            if not is_undo and not is_redo and data.text ~= before_edit.text then
+                table.insert(data.undo_stack, before_edit)
+                local history_size<const> = control.history_size or 64
+                while #data.undo_stack > history_size do
+                    table.remove(data.undo_stack, 1)
+                end
+                data.redo_stack = {}
+            end
+        end
+    end
+
+    -- Clamp indices to valid ranges.
+    data.caret_index = ugui.internal.clamp(data.caret_index, 1, #data.text + 1)
+    data.selection_start = ugui.internal.clamp(data.selection_start, 1, #data.text + 1)
+    data.selection_end = ugui.internal.clamp(data.selection_end, 1, #data.text + 1)
+
+    if data.caret_index ~= previous_caret_index then
+        data.caret_blink_start = os.clock()
+    end
+
+    scroll_target = data.caret_index
+    if data.last_changed_anchor == 'selection_start' then
+        scroll_target = data.selection_start
+    elseif data.last_changed_anchor == 'selection_end' then
+        scroll_target = data.selection_end
+    end
+
+    if scroll_dirty or scroll_state.text ~= data.text or scroll_state.target ~= scroll_target or
+        scroll_state.offset ~= data.scroll_offset then
+        data.scroll_offset = ugui.internal.clamp(data.scroll_offset, 1, scroll_target)
+        while data.scroll_offset < scroll_target and
+            width_from_offset(data.scroll_offset, scroll_target) > scroll_width do
+            data.scroll_offset = data.scroll_offset + 1
+        end
+
+        while data.scroll_offset > 1 and
+            width_from_offset(data.scroll_offset - 1, #data.text + 1) <= scroll_width do
+            data.scroll_offset = data.scroll_offset - 1
+        end
+
+        scroll_state = scroll_state or {}
+        scroll_state.text = data.text
+        scroll_state.width = scroll_width
+        scroll_state.font_name = font_name
+        scroll_state.font_size = font_size
+        scroll_state.target = scroll_target
+        scroll_state.offset = data.scroll_offset
+        data.scroll_state = scroll_state
+    end
+
+    data.signal_change = ugui.internal.process_signal_changes(data.signal_change, control.text ~= data.text)
+
+    return {
+        primary = data.text,
+        meta = {signal_change = data.signal_change},
+    }
+end
+
+
+local textbox_draw = function(control)
+    ugui.standard_styler.draw_textbox(control)
+end
 
 ---Places a TextBox.
 ---@param control TextBox The control table.
+---@param fn fun()? A callback whose placed controls become children of the textbox.
 ---@return string, Meta # The new text.
-ugui.textbox = function(control)
-    local result<const> = ugui.control(control, 'textbox')
+ugui.textbox = function(control, fn)
+    ugui.internal.assert(type(control.text) == 'string', 'expected text to be string')
+    ugui.internal.assert(type(control.text_x_align) == 'number' or control.text_x_align == nil,
+        'expected text_x_align to be number or nil')
+    ugui.internal.assert(control.history_size == nil or
+        (type(control.history_size) == 'number' and control.history_size >= 0 and control.history_size % 1 == 0),
+        'expected history_size to be a non-negative integer or nil')
+    control.draw = control.draw or textbox_draw
+    control.get_return_value = control.get_return_value or textbox_get_return_value
+    local result<const> = ugui.internal.control(control, 'textbox', fn, initialize_textbox_data)
     return result.primary, result.meta
 end
 
@@ -4163,7 +5465,7 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
----@class ComboBox : Control
+---@class ComboBox : UguiControl
 ---@field public items RichText[] The items contained in the control.
 ---@field public selected_index integer? The index of the currently selected item into the items array. If nil, no item is selected.
 ---@field public editable boolean? Whether the user can type in the combobox to filter the items.
@@ -4174,89 +5476,155 @@ local function combobox_get_uids()
     local n = 1
 
     local textbox<const> = n
-    n = n + ugui.registry.textbox.uids()
+    n = n + ugui.textbox_uids()
 
     local button<const> = n
-    n = n + ugui.registry.button.uids()
+    n = n + ugui.button_uids()
 
     local listbox<const> = n
-    n = n + ugui.registry.listbox.uids()
+    n = n + ugui.listbox_uids()
 
-    return {total = n, textbox = textbox, button = button, listbox = listbox}
+    local label_text<const> = n
+    n = n + ugui.label_uids()
+
+    local label_icon<const> = n
+    n = n + ugui.label_uids()
+
+    return {
+        total = n,
+        textbox = textbox,
+        button = button,
+        listbox = listbox,
+        label_text = label_text,
+        label_icon = label_icon,
+    }
 end
 local combobox_uids<const> = combobox_get_uids()
 
----@type ControlRegistryEntry
-ugui.registry.combobox = {
-    uids = function() return combobox_uids.total end,
-    hittestable = nil,
-    ---@param control ComboBox
-    validate = function(control)
-        ugui.internal.assert(type(control.items) == 'table', 'expected items to be table')
-        ugui.internal.assert(type(control.selected_index) == 'number' or type(control.selected_index) == 'nil',
-            'expected selected_index to be number or nil')
-    end,
-    ---@param control ComboBox
-    setup = function(control, data)
+---Gets the number of UID slots reserved by a ComboBox.
+---@return integer
+ugui.combobox_uids = function()
+    return combobox_uids.total
+end
+
+local function initialize_combobox_data(control, data)
+    data.open = false
+    data.was_open = false
+    data.selected_index = control.selected_index
+    data.update_filter = false
+    data.search_text = nil
+end
+
+---@param control ComboBox
+---@param data any
+---@return ControlReturnValue
+local function combobox_get_return_value(control, data)
+    if not ugui.internal.is_control_enabled(control) then
         data.open = false
-        data.was_open = false
-        data.selected_index = control.selected_index
-        data.update_filter = false
+    end
+
+    -- Only toggle on click if NOT editable (editable mode handles this via the button)
+    if not control.editable and ugui.internal.clicked_control == control.uid then
+        data.open = not data.open
+    end
+
+    local selected_index = data.filtered_to_original and data.filtered_to_original[data.selected_index] or data.selected_index
+
+    local signal_change = control.selected_index ~= selected_index
+        and (data.open
+            and (data.was_open and ugui.signal_change_states.ongoing or ugui.signal_change_states.started)
+            or (data.was_open and ugui.signal_change_states.ended or ugui.signal_change_states.none))
+        or ugui.signal_change_states.none
+
+    if signal_change == ugui.signal_change_states.ended then
+        data.searching = false
         data.search_text = nil
-    end,
-    ---@param control ComboBox
-    ---@return ControlReturnValue
-    logic = function(control, data)
-        if control.is_enabled == false then
-            data.open = false
-        end
+    end
+    data.was_open = data.open
+    return {
+        primary = selected_index,
+        meta = {signal_change = signal_change},
+    }
+end
 
-        -- Only toggle on click if NOT editable (editable mode handles this via the button)
-        if not control.editable and ugui.internal.clicked_control == control.uid then
-            data.open = not data.open
-        end
 
-        local selected_index = data.filtered_to_original and data.filtered_to_original[data.selected_index] or data.selected_index
-
-        local signal_change = control.selected_index ~= selected_index
-            and (data.open
-                and (data.was_open and ugui.signal_change_states.ongoing or ugui.signal_change_states.started)
-                or (data.was_open and ugui.signal_change_states.ended or ugui.signal_change_states.none))
-            or ugui.signal_change_states.none
-
-        if signal_change == ugui.signal_change_states.ended then
-            data.searching = false
-            data.search_text = nil
-        end
-        data.was_open = data.open
-        return {
-            primary = selected_index,
-            meta = {signal_change = signal_change},
-        }
-    end,
-    ---@param control ComboBox
-    draw = function(control)
-        ugui.standard_styler.draw_combobox(control)
-    end,
-}
+local combobox_draw = function(control)
+    ugui.standard_styler.draw_combobox(control)
+end
 
 
 ---Places a ComboBox.
 ---
 ---When preview_change is set, `meta.signal_change == ugui.signal_change_states.ended` may be used to determine when the combobox was closed to confirm the new selection.
 ---@param control ComboBox The control table.
+---@param fn fun()? A callback whose placed controls become children of the combobox.
 ---@return integer selected_index, Meta meta The new selected index and metadata.
-ugui.combobox = function(control)
-    local result = ugui.control(control, 'combobox')
-    local data = ugui.internal.control_data[control.uid]
+ugui.combobox = function(control, fn)
+    ugui.internal.assert(type(control.items) == 'table', 'expected items to be table')
+    ugui.internal.assert(type(control.selected_index) == 'number' or type(control.selected_index) == 'nil',
+        'expected selected_index to be number or nil')
+    control.draw = control.draw or combobox_draw
 
     local textbox_uid<const> = control.uid + combobox_uids.textbox
     local button_uid<const> = control.uid + combobox_uids.button
     local listbox_uid<const> = control.uid + combobox_uids.listbox
+    local label_text_uid<const> = control.uid + combobox_uids.label_text
+    local label_icon_uid<const> = control.uid + combobox_uids.label_icon
 
     local highest_owned_uid<const> = control.uid + combobox_uids.total - 1
 
     local button_size<const> = 30
+    control.get_return_value = control.get_return_value or combobox_get_return_value
+    local result = ugui.internal.control(control, 'combobox', function()
+        local visual_state = ugui.get_visual_state(control)
+        local data = ugui.internal.control_data[control.uid]
+        if data.open and control.is_enabled ~= false then
+            visual_state = ugui.visual_states.active
+        end
+        local text_color = ugui.standard_styler.params.button.text[visual_state]
+        local selected_index = data.selected_index
+        if selected_index ~= nil and data.filtered_to_original then
+            selected_index = data.filtered_to_original[selected_index] or selected_index
+        end
+        local selected_text = selected_index == nil and '' or control.items[selected_index] or ''
+        local padding = ugui.standard_styler.params.textbox.padding.x
+        local icon_size = ugui.standard_styler.params.icon_size
+
+        ugui.label({
+            uid = label_text_uid,
+            rectangle = {
+                x = padding * 2,
+                y = 0,
+                width = math.max(0, control.rectangle.width - icon_size - padding * 4),
+                height = control.rectangle.height,
+            },
+            text = selected_text,
+            color = text_color,
+            plaintext = control.plaintext,
+            align_x = ugui.alignment.start,
+            wrap = false,
+            clip = true,
+        })
+        ugui.label({
+            uid = label_icon_uid,
+            rectangle = {
+                x = control.rectangle.width - icon_size - padding * 2,
+                y = 0,
+                width = icon_size,
+                height = control.rectangle.height,
+            },
+            text = data.open and '[icon:arrow_up]' or '[icon:arrow_down]',
+            color = text_color,
+            align_x = ugui.alignment.center,
+            wrap = false,
+            clip = true,
+        })
+        if fn then
+            fn()
+        end
+    end, initialize_combobox_data)
+    local data = ugui.internal.control_data[control.uid]
+
 
     if control.editable then
         local selected_index = data.filtered_to_original and data.filtered_to_original[data.selected_index] or data.selected_index
@@ -4269,7 +5637,8 @@ ugui.combobox = function(control)
                 width = control.rectangle.width - button_size,
                 height = control.rectangle.height,
             },
-            is_enabled = control.is_enabled,
+            is_enabled = ugui.internal.is_control_enabled(control),
+            opacity = control.opacity,
             text = current_text,
         })
 
@@ -4281,7 +5650,8 @@ ugui.combobox = function(control)
                     width = button_size,
                     height = control.rectangle.height,
                 },
-                is_enabled = control.is_enabled,
+                is_enabled = ugui.internal.is_control_enabled(control),
+                opacity = control.opacity,
                 text = data.open and '[icon:arrow_up]' or '[icon:arrow_down]',
             }) then
             data.open = not data.open
@@ -4308,7 +5678,8 @@ ugui.combobox = function(control)
                 ---@type integer[]
                 data.filtered_to_original = {}
 
-                for i, item in ipairs(control.items) do
+                for i = 1, #control.items do
+                    local item = control.items[i]
                     if item:lower():find(data.search_text:lower(), 1, true) then
                         table.insert(data.filtered_items, item)
                         local filtered_index = #data.filtered_items
@@ -4327,14 +5698,15 @@ ugui.combobox = function(control)
 
         local content_bounds = ugui.standard_styler.get_desired_listbox_content_bounds({items = items_to_show})
 
+        local render_rect = control.render_rect
         local width = control.rectangle.width
-        if control.rectangle.x + width > ugui.internal.environment.window_size.x then
-            width = ugui.internal.environment.window_size.x - control.rectangle.x
+        if render_rect.x + width > ugui.internal.environment.window_size.x then
+            width = ugui.internal.environment.window_size.x - render_rect.x
         end
 
         local height = content_bounds.height
-        if control.rectangle.y + height > ugui.internal.environment.window_size.y then
-            height = ugui.internal.environment.window_size.y - control.rectangle.y -
+        if render_rect.y + height > ugui.internal.environment.window_size.y then
+            height = ugui.internal.environment.window_size.y - render_rect.y -
                 ugui.standard_styler.params.listbox_item.height * 2
         end
 
@@ -4353,6 +5725,7 @@ ugui.combobox = function(control)
             items = items_to_show,
             selected_index = data.selected_index,
             plaintext = control.plaintext,
+            opacity = control.opacity,
             z_index = math.maxinteger,
         }
         data.selected_index = ugui.listbox(listbox)
@@ -4365,7 +5738,8 @@ ugui.combobox = function(control)
             and ugui.internal.keyboard_captured_control >= control.uid
             and ugui.internal.keyboard_captured_control <= highest_owned_uid
         then
-            for _, e in ipairs(ugui.internal.environment.key_events) do
+            for i = 1, #ugui.internal.environment.key_events do
+                local e = ugui.internal.environment.key_events[i]
                 if e.keycode2 == Mupen.keycode.SDLK_RETURN and e.pressed then
                     enter_pressed = true
                     break
@@ -4412,72 +5786,417 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
----@class Joystick : Control
+---@class Joystick : UguiControl
 ---@field public position UguiVector2 The joystick's position with the range 0-128 on both axes.
 ---@field public mag number? The joystick's magnitude circle radius with the range `0-128`. If nil, no magnitude circle will be drawn.
 ---@field public x_snap integer? The snap distance to 0 on the X axis. If nil, no snap will be applied.
 ---@field public y_snap integer? The snap distance to 0 on the Y axis. If nil, no snap will be applied.
 ---A joystick which can be interacted with.
 
----@type ControlRegistryEntry
-ugui.registry.joystick = {
-    uids = function() return 1 end,
-    ---@param control Joystick
-    validate = function(control)
-        ugui.internal.assert(type(control.position) == 'table', 'expected position to be table')
-        ugui.internal.assert(type(control.position.x) == 'number', 'expected position.x to be number')
-        ugui.internal.assert(type(control.position.y) == 'number', 'expected position.y to be number')
-        ugui.internal.assert(type(control.mag) == 'nil' or type(control.mag) == 'number',
-            'expected mag to be nil or number')
-        ugui.internal.assert(type(control.x_snap) == 'nil' or type(control.x_snap) == 'number',
-            'expected x_snap to be nil or number')
-        ugui.internal.assert(type(control.y_snap) == 'nil' or type(control.y_snap) == 'number',
-            'expected y_snap to be nil or number')
-    end,
-    setup = function(control, data)
-        if data.signal_change == nil then
-            data.signal_change = ugui.signal_change_states.none
+---Gets the number of UID slots reserved by a Joystick.
+---@return integer
+ugui.joystick_uids = function()
+    return 1
+end
+
+---@param control Joystick
+---@param data any
+---@return ControlReturnValue
+local function joystick_get_return_value(control, data)
+    data.position = {x = control.position.x, y = control.position.y}
+    local rectangle = control.render_rect
+
+    if ugui.internal.mouse_captured_control == control.uid then
+        data.position.x = ugui.internal.clamp(
+            ugui.internal.remap(ugui.internal.environment.mouse_position.x - rectangle.x, 0,
+                rectangle.width, -128, 128), -128, 128)
+        data.position.y = ugui.internal.clamp(
+            ugui.internal.remap(ugui.internal.environment.mouse_position.y - rectangle.y, 0,
+                rectangle.height, -128, 128), -128, 128)
+        if control.x_snap and data.position.x > -control.x_snap and data.position.x < control.x_snap then
+            data.position.x = 0
         end
-    end,
-    ---@param control Joystick
-    ---@return ControlReturnValue
-    logic = function(control, data)
-        data.position = {x = control.position.x, y = control.position.y}
-
-        if ugui.internal.mouse_captured_control == control.uid then
-            data.position.x = ugui.internal.clamp(
-                ugui.internal.remap(ugui.internal.environment.mouse_position.x - control.rectangle.x, 0,
-                    control.rectangle.width, -128, 128), -128, 128)
-            data.position.y = ugui.internal.clamp(
-                ugui.internal.remap(ugui.internal.environment.mouse_position.y - control.rectangle.y, 0,
-                    control.rectangle.height, -128, 128), -128, 128)
-            if control.x_snap and data.position.x > -control.x_snap and data.position.x < control.x_snap then
-                data.position.x = 0
-            end
-            if control.y_snap and data.position.y > -control.y_snap and data.position.y < control.y_snap then
-                data.position.y = 0
-            end
+        if control.y_snap and data.position.y > -control.y_snap and data.position.y < control.y_snap then
+            data.position.y = 0
         end
+    end
 
-        data.signal_change = ugui.internal.process_signal_changes(data.signal_change,
-            control.position.x ~= data.position.x or control.position.y ~= data.position.y)
+    data.signal_change = ugui.internal.process_signal_changes(data.signal_change,
+        control.position.x ~= data.position.x or control.position.y ~= data.position.y)
 
-        return {
-            primary = data.position,
-            meta = {signal_change = data.signal_change},
-        }
-    end,
-    ---@param control Joystick
-    draw = function(control)
-        ugui.standard_styler.draw_joystick(control)
-    end,
-}
+    return {
+        primary = data.position,
+        meta = {signal_change = data.signal_change},
+    }
+end
+
+
+local joystick_draw = function(control)
+    ugui.standard_styler.draw_joystick(control)
+end
 
 ---Places a Joystick.
 ---@param control Joystick The control table.
+---@param fn fun()? A callback whose placed controls become children of the joystick.
 ---@return UguiVector2, Meta
-ugui.joystick = function(control)
-    local result = ugui.control(control, 'joystick')
+ugui.joystick = function(control, fn)
+    ugui.internal.assert(type(control.position) == 'table', 'expected position to be table')
+    ugui.internal.assert(type(control.position.x) == 'number', 'expected position.x to be number')
+    ugui.internal.assert(type(control.position.y) == 'number', 'expected position.y to be number')
+    ugui.internal.assert(type(control.mag) == 'nil' or type(control.mag) == 'number',
+        'expected mag to be nil or number')
+    ugui.internal.assert(type(control.x_snap) == 'nil' or type(control.x_snap) == 'number',
+        'expected x_snap to be nil or number')
+    ugui.internal.assert(type(control.y_snap) == 'nil' or type(control.y_snap) == 'number',
+        'expected y_snap to be nil or number')
+    control.draw = control.draw or joystick_draw
+    control.get_return_value = control.get_return_value or joystick_get_return_value
+    local result = ugui.internal.control(control, 'joystick', fn)
+    return result.primary, result.meta
+end
+
+-- ------------------------------------------------------------
+--   src/ugui/controls/colorpicker.lua
+-- ------------------------------------------------------------
+
+--
+-- Copyright (c) 2026, Mupen64 Organization (https://github.com/mupen64)
+--
+-- SPDX-License-Identifier: GPL-3.0-or-later
+--
+
+---@class ColorPicker : UguiControl
+---@field public color UguiRGBAF The current color and initial selection.
+---@field public shape "square"|"circle"? The picker shape. Defaults to "square".
+---@field public band_position "right"|"top"|"left"|"bottom"|"none"? Where the hue/value band is placed. Defaults to "right".
+---A color picker with either a square saturation/value field and hue band, or a circular hue/saturation picker with a value band.
+
+---Gets the number of UID slots reserved by a ColorPicker.
+---@return integer
+ugui.colorpicker_uids = function()
+    return 1
+end
+
+local valid_band_positions = {right = true, top = true, left = true, bottom = true, none = true}
+local valid_shapes = {square = true, circle = true}
+
+---@param rectangle UguiRect
+---@param band_position string
+---@return UguiRect picker
+---@return UguiRect band
+local function colorpicker_get_geometry(rectangle, band_position)
+    local shortest_side = math.min(rectangle.width, rectangle.height)
+    if band_position == 'none' then
+        local x = rectangle.x + (rectangle.width - shortest_side) / 2
+        local y = rectangle.y + (rectangle.height - shortest_side) / 2
+        return {x = x, y = y, width = shortest_side, height = shortest_side},
+            {x = x + shortest_side / 2, y = y + shortest_side / 2, width = 0, height = 0}
+    end
+
+    local band_thickness = math.min(16, shortest_side * 0.12)
+    local gap = math.min(4, shortest_side * 0.04)
+    local picker_side
+    local picker
+    local band
+
+    if band_position == 'left' or band_position == 'right' then
+        picker_side = math.max(0, math.min(rectangle.height, rectangle.width - band_thickness - gap))
+        local y = rectangle.y + (rectangle.height - picker_side) / 2
+        if band_position == 'left' then
+            band = {x = rectangle.x, y = y, width = band_thickness, height = picker_side}
+            picker = {x = rectangle.x + band_thickness + gap, y = y, width = picker_side, height = picker_side}
+        else
+            picker = {x = rectangle.x, y = y, width = picker_side, height = picker_side}
+            band = {x = rectangle.x + picker_side + gap, y = y, width = band_thickness, height = picker_side}
+        end
+    else
+        picker_side = math.max(0, math.min(rectangle.width, rectangle.height - band_thickness - gap))
+        local x = rectangle.x + (rectangle.width - picker_side) / 2
+        if band_position == 'top' then
+            band = {x = x, y = rectangle.y, width = picker_side, height = band_thickness}
+            picker = {x = x, y = rectangle.y + band_thickness + gap, width = picker_side, height = picker_side}
+        else
+            picker = {x = x, y = rectangle.y, width = picker_side, height = picker_side}
+            band = {x = x, y = rectangle.y + picker_side + gap, width = picker_side, height = band_thickness}
+        end
+    end
+
+    return picker, band
+end
+
+---@param control ColorPicker
+---@param point UguiVector2
+---@return boolean
+local function colorpicker_hittest(control, point)
+    local rectangle = control.render_rect
+    if (control.shape or 'square') ~= 'circle' then
+        return ugui.internal.point_in_rect(point, rectangle)
+    end
+
+    local circle, band = colorpicker_get_geometry(rectangle, control.band_position or 'right')
+    return ugui.internal.point_in_circle(point, circle) or
+        (band.width > 0 and band.height > 0 and ugui.internal.point_in_rect(point, band))
+end
+
+---@param control ColorPicker
+---@param data any
+---@return ControlReturnValue
+local function colorpicker_get_return_value(control, data)
+    local input_color = control.color
+    local hue, saturation, value = ugui.internal.rgbaf_to_hsv(input_color)
+    local color = ugui.internal.copy_color(input_color)
+    local shape = control.shape or 'square'
+    local band_position = control.band_position or 'right'
+    local square, band = colorpicker_get_geometry(control.render_rect, band_position)
+
+    local selection_changed = false
+    if ugui.internal.clicked_control == control.uid then
+        local mouse_down_position = ugui.internal.mouse_down_position
+        if shape == 'circle' then
+            if square.width > 0 and ugui.internal.point_in_circle(mouse_down_position, square) then
+                data.drag_mode = 'circle'
+            elseif band.width > 0 and ugui.internal.point_in_rect(mouse_down_position, band) then
+                data.drag_mode = 'value'
+            else
+                data.drag_mode = nil
+            end
+        elseif square.width > 0 and ugui.internal.point_in_rect(mouse_down_position, square) then
+            data.drag_mode = 'square'
+        elseif band.width > 0 and ugui.internal.point_in_rect(mouse_down_position, band) then
+            data.drag_mode = 'band'
+        else
+            data.drag_mode = nil
+        end
+    end
+
+    if ugui.internal.mouse_captured_control == control.uid then
+        local mouse_position = ugui.internal.environment.mouse_position
+        if data.drag_mode == 'circle' and square.width > 0 then
+            local center_x = square.x + square.width / 2
+            local center_y = square.y + square.height / 2
+            local dx = mouse_position.x - center_x
+            local dy = mouse_position.y - center_y
+            local distance = math.sqrt(dx * dx + dy * dy)
+            local new_saturation = ugui.internal.clamp(distance / (square.width / 2), 0, 1)
+            local new_hue = distance == 0 and hue or (math.atan(dy, dx) / (2 * math.pi)) % 1
+            selection_changed = new_saturation ~= saturation or new_hue ~= hue
+            saturation = new_saturation
+            hue = new_hue
+        elseif shape == 'circle' and data.drag_mode == 'value' and band.width > 0 then
+            local new_value
+            if band_position == 'left' or band_position == 'right' then
+                new_value = 1 - (mouse_position.y - band.y) / band.height
+            else
+                new_value = (mouse_position.x - band.x) / band.width
+            end
+            new_value = ugui.internal.clamp(new_value, 0, 1)
+            selection_changed = new_value ~= value
+            value = new_value
+        elseif data.drag_mode == 'square' and square.width > 0 then
+            local new_saturation = ugui.internal.clamp((mouse_position.x - square.x) / square.width, 0, 1)
+            local new_value = 1 - ugui.internal.clamp((mouse_position.y - square.y) / square.height, 0, 1)
+            selection_changed = new_saturation ~= saturation or new_value ~= value
+            saturation = new_saturation
+            value = new_value
+        elseif shape == 'square' and data.drag_mode == 'band' and band.width > 0 then
+            local new_hue
+            if band_position == 'left' or band_position == 'right' then
+                new_hue = (mouse_position.y - band.y) / band.height
+            else
+                new_hue = (mouse_position.x - band.x) / band.width
+            end
+            new_hue = ugui.internal.clamp(new_hue, 0, 1)
+            selection_changed = new_hue ~= hue
+            hue = new_hue
+        end
+    else
+        data.drag_mode = nil
+    end
+
+    local mouse_position = ugui.internal.environment.mouse_position
+    local circle_is_active = shape == 'circle' and (
+        ugui.internal.mouse_captured_control == control.uid and data.drag_mode == 'circle' or
+        ugui.internal.mouse_captured_control ~= control.uid and ugui.internal.hovered_control == control.uid and
+        ugui.internal.point_in_circle(mouse_position, square))
+    local band_is_active = band.width > 0 and band.height > 0 and (
+        ugui.internal.mouse_captured_control == control.uid and
+        (data.drag_mode == 'band' or data.drag_mode == 'value') or
+        ugui.internal.mouse_captured_control ~= control.uid and ugui.internal.hovered_control == control.uid and
+        ugui.internal.point_in_rect(mouse_position, band))
+
+    if ugui.internal.keyboard_captured_control == control.uid then
+        for i = 1, #ugui.internal.environment.key_events do
+            local event = ugui.internal.environment.key_events[i]
+            if event.keycode2 and event.pressed then
+                local nudge = 0.01
+                if shape == 'circle' then
+                    if band_is_active then
+                        local new_value = value
+                        if band_position == 'left' or band_position == 'right' then
+                            if event.keycode2 == Mupen.keycode.SDLK_UP then
+                                new_value = value + nudge
+                            elseif event.keycode2 == Mupen.keycode.SDLK_DOWN then
+                                new_value = value - nudge
+                            end
+                        else
+                            if event.keycode2 == Mupen.keycode.SDLK_LEFT then
+                                new_value = value - nudge
+                            elseif event.keycode2 == Mupen.keycode.SDLK_RIGHT then
+                                new_value = value + nudge
+                            end
+                        end
+                        new_value = ugui.internal.clamp(new_value, 0, 1)
+                        selection_changed = selection_changed or new_value ~= value
+                        value = new_value
+                    elseif circle_is_active then
+                        local new_hue = hue
+                        local new_saturation = saturation
+                        if event.keycode2 == Mupen.keycode.SDLK_LEFT then
+                            new_hue = hue - nudge
+                        elseif event.keycode2 == Mupen.keycode.SDLK_RIGHT then
+                            new_hue = hue + nudge
+                        elseif event.keycode2 == Mupen.keycode.SDLK_UP then
+                            new_saturation = saturation - nudge
+                        elseif event.keycode2 == Mupen.keycode.SDLK_DOWN then
+                            new_saturation = saturation + nudge
+                        end
+                        new_hue = ugui.internal.clamp(new_hue, 0, 1)
+                        new_saturation = ugui.internal.clamp(new_saturation, 0, 1)
+                        selection_changed = selection_changed or new_hue ~= hue or new_saturation ~= saturation
+                        hue = new_hue
+                        saturation = new_saturation
+                    end
+                elseif band_is_active then
+                    local new_hue = hue
+                    if band_position == 'left' or band_position == 'right' then
+                        if event.keycode2 == Mupen.keycode.SDLK_UP then
+                            new_hue = hue - nudge
+                        elseif event.keycode2 == Mupen.keycode.SDLK_DOWN then
+                            new_hue = hue + nudge
+                        end
+                    else
+                        if event.keycode2 == Mupen.keycode.SDLK_LEFT then
+                            new_hue = hue - nudge
+                        elseif event.keycode2 == Mupen.keycode.SDLK_RIGHT then
+                            new_hue = hue + nudge
+                        end
+                    end
+                    new_hue = ugui.internal.clamp(new_hue, 0, 1)
+                    selection_changed = selection_changed or new_hue ~= hue
+                    hue = new_hue
+                else
+                    local new_saturation = saturation
+                    local new_value = value
+
+                    if event.keycode2 == Mupen.keycode.SDLK_LEFT then
+                        new_saturation = saturation - nudge
+                    elseif event.keycode2 == Mupen.keycode.SDLK_RIGHT then
+                        new_saturation = saturation + nudge
+                    elseif event.keycode2 == Mupen.keycode.SDLK_UP then
+                        new_value = value + nudge
+                    elseif event.keycode2 == Mupen.keycode.SDLK_DOWN then
+                        new_value = value - nudge
+                    end
+
+                    new_saturation = ugui.internal.clamp(new_saturation, 0, 1)
+                    new_value = ugui.internal.clamp(new_value, 0, 1)
+                    selection_changed = selection_changed or new_saturation ~= saturation or new_value ~= value
+                    saturation = new_saturation
+                    value = new_value
+                end
+            end
+        end
+    end
+
+    if ugui.internal.hovered_control == control.uid and ugui.internal.is_control_enabled(control) then
+        local scroll_delta = ugui.internal.environment._scroll_delta.y
+        if scroll_delta ~= 0 then
+            local nudge = scroll_delta * 0.01
+            if band_is_active then
+                if shape == 'circle' then
+                    local new_value = ugui.internal.clamp(value + nudge, 0, 1)
+                    selection_changed = selection_changed or new_value ~= value
+                    value = new_value
+                else
+                    local new_hue = ugui.internal.clamp(hue - nudge, 0, 1)
+                    selection_changed = selection_changed or new_hue ~= hue
+                    hue = new_hue
+                end
+            elseif shape == 'circle' then
+                if circle_is_active then
+                    if ugui.internal.environment.shift then
+                        local new_hue = ugui.internal.clamp(hue - nudge, 0, 1)
+                        selection_changed = selection_changed or new_hue ~= hue
+                        hue = new_hue
+                    else
+                        local new_saturation = ugui.internal.clamp(saturation + nudge, 0, 1)
+                        selection_changed = selection_changed or new_saturation ~= saturation
+                        saturation = new_saturation
+                    end
+                end
+            elseif ugui.internal.environment.shift then
+                local new_saturation = ugui.internal.clamp(saturation + nudge, 0, 1)
+                selection_changed = selection_changed or new_saturation ~= saturation
+                saturation = new_saturation
+            else
+                local new_value = ugui.internal.clamp(value + nudge, 0, 1)
+                selection_changed = selection_changed or new_value ~= value
+                value = new_value
+            end
+        end
+    end
+
+    if selection_changed then
+        color = ugui.internal.hsv_to_rgbaf(hue, saturation, value)
+        color.a = input_color.a or 1
+    end
+
+    data.signal_change = ugui.internal.process_signal_changes(data.signal_change,
+        input_color.r ~= color.r or input_color.g ~= color.g or input_color.b ~= color.b or
+        (input_color.a or 1) ~= color.a)
+
+    return {
+        primary = color,
+        meta = {signal_change = data.signal_change},
+    }
+end
+
+local colorpicker_draw = function(control)
+    local hue, saturation, value = ugui.internal.rgbaf_to_hsv(control.color)
+    local shape = control.shape or 'square'
+    local band_position = control.band_position or 'right'
+    local square, band = colorpicker_get_geometry(control.render_rect, band_position)
+
+    if shape == 'circle' then
+        ugui.standard_styler.draw_colorpicker_circle(control, square, band, hue, saturation, value, band_position)
+    else
+        ugui.standard_styler.draw_colorpicker(control, square, band, hue,
+            ugui.internal.hsv_to_rgbaf(hue, 1, 1), saturation, value, band_position)
+    end
+end
+
+---Places a ColorPicker.
+---@param control ColorPicker The control table.
+---@param fn fun()? A callback whose placed controls become children of the color picker.
+---@return UguiRGBAF, Meta The selected color and its change metadata.
+ugui.colorpicker = function(control, fn)
+    ugui.internal.assert(type(control.color) == 'table', 'expected color to be table')
+    ugui.internal.assert(type(control.color.r) == 'number', 'expected color.r to be a number')
+    ugui.internal.assert(type(control.color.g) == 'number', 'expected color.g to be a number')
+    ugui.internal.assert(type(control.color.b) == 'number', 'expected color.b to be a number')
+    ugui.internal.assert(control.color.a == nil or type(control.color.a) == 'number',
+        'expected color.a to be nil or a number')
+    ugui.internal.assert(control.shape == nil or
+        (type(control.shape) == 'string' and valid_shapes[control.shape]),
+        'expected shape to be nil, square, or circle')
+    ugui.internal.assert(control.band_position == nil or
+        (type(control.band_position) == 'string' and valid_band_positions[control.band_position]),
+        'expected band_position to be nil, right, top, left, bottom, or none')
+
+    control.hittest = control.hittest or colorpicker_hittest
+    control.draw = control.draw or colorpicker_draw
+    control.get_return_value = control.get_return_value or colorpicker_get_return_value
+    local result = ugui.internal.control(control, 'colorpicker', fn)
     return result.primary, result.meta
 end
 
@@ -4491,52 +6210,55 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
----@class Trackbar : Control
+---@class Trackbar : UguiControl
 ---@field public value number The current value in the range 0-1.
 ---A trackbar which can have its value adjusted.
 
----@type ControlRegistryEntry
-ugui.registry.trackbar = {
-    uids = function() return 1 end,
-    ---@param control Trackbar
-    validate = function(control)
-        ugui.internal.assert(type(control.value) == 'number', 'expected position to be number')
-    end,
-    ---@param control Trackbar
-    ---@return ControlReturnValue
-    logic = function(control, data)
-        data.value = control.value
+---Gets the number of UID slots reserved by a Trackbar.
+---@return integer
+ugui.trackbar_uids = function()
+    return 1
+end
 
-        if ugui.internal.mouse_captured_control == control.uid then
-            if control.rectangle.width > control.rectangle.height then
-                data.value = (ugui.internal.environment.mouse_position.x - control.rectangle.x) / control.rectangle
-                    .width
-            else
-                data.value = (ugui.internal.environment.mouse_position.y - control.rectangle.y) /
-                    control.rectangle.height
-            end
+---@param control Trackbar
+---@param data any
+---@return ControlReturnValue
+local function trackbar_get_return_value(control, data)
+    data.value = control.value
+    local rectangle = control.render_rect
+
+    if ugui.internal.mouse_captured_control == control.uid then
+        if rectangle.width > rectangle.height then
+            data.value = (ugui.internal.environment.mouse_position.x - rectangle.x) / rectangle.width
+        else
+            data.value = (ugui.internal.environment.mouse_position.y - rectangle.y) / rectangle.height
         end
+    end
 
-        data.value = ugui.internal.clamp(data.value, 0, 1)
+    data.value = ugui.internal.clamp(data.value, 0, 1)
 
-        data.signal_change = ugui.internal.process_signal_changes(data.signal_change, control.value ~= data.value)
+    data.signal_change = ugui.internal.process_signal_changes(data.signal_change, control.value ~= data.value)
 
-        return {
-            primary = data.value,
-            meta = { signal_change = data.signal_change },
-        }
-    end,
-    ---@param control Trackbar
-    draw = function(control)
-        ugui.standard_styler.draw_trackbar(control)
-    end,
-}
+    return {
+        primary = data.value,
+        meta = { signal_change = data.signal_change },
+    }
+end
+
+
+local trackbar_draw = function(control)
+    ugui.standard_styler.draw_trackbar(control)
+end
 
 ---Places a Trackbar.
 ---@param control Trackbar The control table.
+---@param fn fun()? A callback whose placed controls become children of the trackbar.
 ---@return number, Meta # The trackbar's new value.
-ugui.trackbar = function(control)
-    local result = ugui.control(control, 'trackbar')
+ugui.trackbar = function(control, fn)
+    ugui.internal.assert(type(control.value) == 'number', 'expected position to be number')
+    control.draw = control.draw or trackbar_draw
+    control.get_return_value = control.get_return_value or trackbar_get_return_value
+    local result = ugui.internal.control(control, 'trackbar', fn)
     return result.primary, result.meta
 end
 
@@ -4561,169 +6283,209 @@ end
 ---@field public item MenuItem? The item that was clicked, or nil if none was.
 ---@field public dismissed boolean Whether the menu was dismissed by clicking outside of it.
 
----@class Menu : Control
+---@class Menu : UguiControl
 ---@field public items MenuItem[] The items contained in the menu.
 ---A menu, which allows the user to choose from a list of items.
 
----@type ControlRegistryEntry
-ugui.registry.menu = {
-    uids = function(control)
-        ugui.internal.assert(control, 'control is required')
-        ---@cast control Menu
-        local function max_depth(items)
-            local depth = 0
-            for _, item in ipairs(items) do
-                if item.items and #item.items > 0 then
-                    depth = math.max(depth, max_depth(item.items) + 1)
-                end
-            end
-            return depth
+---Gets the number of UID slots reserved by a Menu.
+---@param control Menu The menu instance.
+---@return integer
+ugui.menu_uids = function(control)
+    return 1
+end
+
+local function menu_init(_, data)
+    data.dismissed = 0
+    data.hovered_path = {}
+end
+
+local function menu_size(items)
+    local max_text_width = 0
+    for i = 1, #items do
+        local size = painter.measure_text(items[i].text, {
+            family = ugui.standard_styler.params.font_name,
+            size = ugui.standard_styler.params.font_size,
+        })
+        max_text_width = math.max(max_text_width, size.w)
+    end
+    return {
+        width = max_text_width + ugui.standard_styler.params.menu_item.left_padding +
+            ugui.standard_styler.params.menu_item.right_padding,
+        height = #items * ugui.standard_styler.params.menu_item.height,
+    }
+end
+
+local function menu_fit(rectangle, parent_rectangle)
+    local window_size = ugui.internal.environment.window_size or {x = math.maxinteger, y = math.maxinteger}
+    local overlap = ugui.standard_styler.params.menu.overlap_size
+    if rectangle.x + rectangle.width > window_size.x then
+        if parent_rectangle then
+            rectangle.x = parent_rectangle.x - rectangle.width + overlap
+        else
+            rectangle.x = rectangle.x - (rectangle.x + rectangle.width - window_size.x)
         end
-        return 1 + max_depth(control.items)
-    end,
-    ---@param control Menu
-    validate = function(control)
-        ugui.internal.assert(type(control.items) == 'table', 'expected items to be table')
-    end,
-    ---@param control Menu
-    setup = function(control, data)
-        data.dismissed = 0
-    end,
-    ---@param control Menu
-    ---@return ControlReturnValue
-    logic = function(control, data)
-        local function reset_hovered_index_for_all_child_menus(uid, items)
-            if ugui.internal.control_data[uid] then
-                ugui.internal.control_data[uid].hovered_index = nil
-            end
-            for _, item in pairs(items) do
-                if item.items then
-                    reset_hovered_index_for_all_child_menus(uid + 1, item.items)
-                end
-            end
+    end
+    if rectangle.y + rectangle.height > window_size.y then
+        rectangle.y = rectangle.y - (rectangle.y + rectangle.height - window_size.y)
+    end
+    return rectangle
+end
+
+---@param control Menu
+---@param hovered_path integer[]
+---@return {items: MenuItem[], rectangle: UguiRect, depth: integer}[]
+local function menu_get_visible(control, hovered_path)
+    local visible = {}
+    local rectangle = ugui.internal.deep_clone(assert(control.render_rect))
+    visible[1] = {items = control.items, rectangle = rectangle, depth = 1}
+
+    for depth = 1, #hovered_path do
+        local item_index = hovered_path[depth]
+        local parent = visible[depth]
+        local item = parent and parent.items[item_index]
+        if not item or item.enabled == false or not item.items or #item.items == 0 then
+            break
         end
 
-        local result = {
-            item = nil,
-            dismissed = false,
+        local size = menu_size(item.items)
+        local item_height = ugui.standard_styler.params.menu_item.height
+        local overlap = ugui.standard_styler.params.menu.overlap_size
+        local child_rectangle = {
+            x = parent.rectangle.x + parent.rectangle.width - overlap,
+            y = parent.rectangle.y + (item_index - 1) * item_height,
+            width = size.width,
+            height = size.height,
         }
+        menu_fit(child_rectangle, parent.rectangle)
+        visible[#visible + 1] = {
+            items = item.items,
+            rectangle = child_rectangle,
+            depth = depth + 1,
+        }
+    end
+    return visible
+end
 
-        -- We want to delay returning the dismissed state by a frame because we don't get to handle inputs otherwise,
-        -- so we turn the dismissed flag into a tristate.
-        if data.dismissed == 2 then
-            data.dismissed = 0
-            result.dismissed = true
+---@param control Menu
+---@param point UguiVector2
+---@return boolean
+local function menu_hittest(control, point)
+    local data = ugui.internal.control_data[control.uid]
+    local hovered_path = data and data.hovered_path or {}
+    local visible_menus = menu_get_visible(control, hovered_path)
+    for i = 1, #visible_menus do
+        if ugui.internal.point_in_rect(point, visible_menus[i].rectangle) then
+            return true
         end
+    end
+    return false
+end
 
-        if data.dismissed == 1 then
-            data.dismissed = 2
+---@param control Menu
+---@param data any
+---@return ControlReturnValue
+local function menu_get_return_value(control, data)
+    data.hovered_path = data.hovered_path or {}
+    local result = {item = nil, dismissed = false}
+    local visible_menus = menu_get_visible(control, data.hovered_path)
+    local mouse_position = ugui.internal.environment.mouse_position
+
+    if data.dismissed == 2 then
+        data.dismissed = 0
+        result.dismissed = true
+    elseif data.dismissed == 1 then
+        data.dismissed = 2
+    end
+
+    local mouse_down_position = ugui.internal.mouse_down_position
+    if ugui.internal.is_mouse_just_down() then
+        local inside_menu = false
+        for i = 1, #visible_menus do
+            if ugui.internal.point_in_rect(mouse_down_position, visible_menus[i].rectangle) then
+                inside_menu = true
+                break
+            end
         end
-
-        if ugui.internal.is_mouse_just_down() and not ugui.internal.point_in_rect(ugui.internal.mouse_down_position, control.rectangle) then
+        if not inside_menu then
             data.dismissed = 1
         end
+    end
 
-        if ugui.internal.hovered_control == control.uid then
-            reset_hovered_index_for_all_child_menus(control.uid, control.items)
-
-            local i = math.floor((ugui.internal.environment.mouse_position.y - control.rectangle.y) /
-                ugui.standard_styler.params.menu_item.height) + 1
-            data.hovered_index = ugui.internal.clamp(i, 1, #control.items)
+    local hovered_menu
+    for i = #visible_menus, 1, -1 do
+        if ugui.internal.point_in_rect(mouse_position, visible_menus[i].rectangle) then
+            hovered_menu = visible_menus[i]
+            break
         end
+    end
 
-        if ugui.internal.clicked_control == control.uid then
-            local item = control.items[data.hovered_index]
-
-            -- Only child-less items can be clicked
-            if item.enabled ~= false and (item.items == nil or #item.items == 0) then
-                result.item = item
+    local hovered_item_index
+    if hovered_menu then
+        local item_height = ugui.standard_styler.params.menu_item.height
+        local item_index = math.floor((mouse_position.y - hovered_menu.rectangle.y) / item_height) + 1
+        if item_index >= 1 and item_index <= #hovered_menu.items then
+            local hovered_path = {}
+            for depth = 1, hovered_menu.depth - 1 do
+                hovered_path[depth] = data.hovered_path[depth]
             end
+            hovered_path[hovered_menu.depth] = item_index
+            data.hovered_path = hovered_path
+            hovered_item_index = item_index
         end
+    end
 
-        if result.dismissed or result.item then
-            reset_hovered_index_for_all_child_menus(control.uid, control.items)
+    if ugui.internal.clicked_control == control.uid and hovered_menu and hovered_item_index then
+        local item = hovered_menu.items[hovered_item_index]
+        if item.enabled ~= false and (not item.items or #item.items == 0) then
+            result.item = item
         end
+    end
 
-        -- FIXME: Cursed flag... does this make sense?
-        data.signal_change = ugui.internal.process_signal_changes(data.signal_change,
-            result.item ~= nil or result.dismissed)
+    if result.dismissed or result.item then
+        data.hovered_path = {}
+    end
 
-        return {
-            primary = result,
-            meta = { signal_change = data.signal_change },
-        }
-    end,
-    ---@param control Menu
-    draw = function(control)
-        ugui.standard_styler.draw_menu(control, control.rectangle)
-    end,
-}
+    data.signal_change = ugui.internal.process_signal_changes(data.signal_change,
+        result.item ~= nil or result.dismissed)
+    return {
+        primary = result,
+        meta = {signal_change = data.signal_change},
+    }
+end
+
+local menu_draw = function(control)
+    local data = ugui.internal.control_data[control.uid]
+    local visible_menus = menu_get_visible(control, data.hovered_path or {})
+    for i = 1, #visible_menus do
+        local menu = visible_menus[i]
+        ugui.standard_styler.draw_menu(control, menu.rectangle, data.hovered_path[menu.depth])
+    end
+end
 
 ---Places a Menu.
 ---@param control Menu The control table.
 ---@return MenuResult, Meta # The menu result.
 ugui.menu = function(control)
+    ugui.internal.assert(type(control.items) == 'table', 'expected items to be table')
     control.z_index = control.z_index or 1000
 
-    -- We adjust the dimensions with what should fit the content
-    local max_text_width = 0
-    for _, item in pairs(control.items) do
-        local size = painter.measure_text(item.text, { family = ugui.standard_styler.params.font_name, size = ugui.standard_styler.params.font_size})
-        if size.w > max_text_width then
-            max_text_width = size.w
-        end
-    end
+    local size = menu_size(control.items)
+    local rectangle = assert(control.rectangle)
+    rectangle.width = size.width
+    rectangle.height = size.height
+    control.draw = control.draw or menu_draw
+    control.hittest = control.hittest or menu_hittest
+    control.get_return_value = control.get_return_value or menu_get_return_value
 
-    control.rectangle.width = max_text_width + ugui.standard_styler.params.menu_item.left_padding +
-        ugui.standard_styler.params.menu_item.right_padding
-    control.rectangle.height = #control.items * ugui.standard_styler.params.menu_item.height
+    local render_rect = ugui.internal.compute_render_rect(control)
+    local parent_offset_x = render_rect.x - rectangle.x
+    local parent_offset_y = render_rect.y - rectangle.y
+    menu_fit(render_rect, rawget(control, '_parent_rectangle'))
+    rectangle.x = render_rect.x - parent_offset_x
+    rectangle.y = render_rect.y - parent_offset_y
 
-    -- Overflow avoidance: shift the X/Y position to avoid going out of bounds
-    if control.rectangle.x + control.rectangle.width > ugui.internal.environment.window_size.x then
-        -- If the menu has a parent and there's an overflow on the X axis, try snaking out of the situation by moving left of the menu
-        if control.parent_rectangle then
-            control.rectangle.x = control.parent_rectangle.x - control.rectangle.width +
-                ugui.standard_styler.params.menu.overlap_size
-        else
-            control.rectangle.x = control.rectangle.x -
-                (control.rectangle.x + control.rectangle.width - ugui.internal.environment.window_size.x)
-        end
-    end
-    if control.rectangle.y + control.rectangle.height > ugui.internal.environment.window_size.y then
-        control.rectangle.y = control.rectangle.y -
-            (control.rectangle.y + control.rectangle.height - ugui.internal.environment.window_size.y)
-    end
-
-    local result = ugui.control(control, 'menu')
-    local data = ugui.internal.control_data[control.uid]
-
-    -- Show child menu if there's any hovered one
-    if data.hovered_index ~= nil then
-        local i = data.hovered_index
-        local item = control.items[i]
-
-        if item.items and item.enabled ~= false then
-            local submenu_result = ugui.menu({
-                uid = control.uid + 1,
-                rectangle = {
-                    x = control.rectangle.x + control.rectangle.width - ugui.standard_styler.params.menu.overlap_size,
-                    y = control.rectangle.y + ((i - 1) * ugui.standard_styler.params.menu_item.height),
-                    width = 0,
-                    height = 0,
-                },
-                items = item.items,
-                z_index = (control.z_index or 0) + 1,
-                parent_rectangle = ugui.internal.deep_clone(control.rectangle),
-            })
-
-            if submenu_result.item then
-                result.dismissed = false
-                result.item = submenu_result.item
-            end
-        end
-    end
-
-    return result, result.meta
+    local result = ugui.internal.control(control, 'menu', nil, menu_init)
+    return result.primary, result.meta
 end
 
 -- ------------------------------------------------------------
@@ -4736,7 +6498,7 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
----@class TabControl : Control
+---@class TabControl : UguiControl
 ---@field public items RichText[] The tab headers.
 ---@field public selected_index integer The index of the currently selected tab.
 ---A tab control, which allows the user to choose from a list of tabs.
@@ -4745,94 +6507,106 @@ end
 ---@field public selected_index integer The index of the selected tab.
 ---@field public rectangle UguiRect The visual bounds the selected tab can place its contents in.
 
-local function tabcontrol_get_uids(control)
-    ugui.internal.assert(control ~= nil, 'control is required')
-    ---@cast control TabControl
+---Gets the number of UID slots reserved by a TabControl.
+---@param control TabControl The tab control instance.
+---@return integer
+ugui.tabcontrol_uids = function(control)
     ugui.internal.assert(type(control.items) == 'table', 'expected items to be table')
-    return 1 + #control.items * ugui.registry.toggle_button.uids()
+    return 1 + #control.items * ugui.toggle_button_uids() + ugui.panel_uids()
 end
 
----@type ControlRegistryEntry
-ugui.registry.tabcontrol = {
-    uids = tabcontrol_get_uids,
-    hittestable = nil,
-    ---@param control TabControl
-    validate = function(control)
-        ugui.internal.assert(type(control.items) == 'table', 'expected items to be table')
-        ugui.internal.assert(type(control.selected_index) == 'number', 'expected selected_index to be number')
-    end,
-    ---@param control TabControl
-    setup = function(control, data)
-        data.scroll_x = 0
-        data.scroll_y = 0
-        data.selected_index = control.selected_index
-    end,
-    ---@param control TabControl
-    ---@return ControlReturnValue
-    logic = function(control, data)
-        data.selected_index = control.selected_index
-        return {
-            primary = data.selected_index,
-            meta = {signal_change = data.signal_change},
-        }
-    end,
-    ---@param control TabControl
-    draw = function(control)
-    end,
-}
+local function initialize_tabcontrol_data(control, data)
+    data.scroll_x = 0
+    data.scroll_y = 0
+    data.selected_index = control.selected_index
+end
+
+---@param control TabControl
+---@param data any
+---@return ControlReturnValue
+local function tabcontrol_get_return_value(control, data)
+    data.selected_index = control.selected_index
+    return {
+        primary = data.selected_index,
+        meta = {signal_change = data.signal_change},
+    }
+end
+
 
 ---Places a TabControl.
 ---@param control TabControl The control table.
+---@param fn fun()? A callback whose placed controls become children of the selected tab's content panel.
 ---@return TabControlResult, Meta # The result.
-ugui.tabcontrol = function(control)
-    local result = ugui.control(control, 'tabcontrol')
+ugui.tabcontrol = function(control, fn)
+    ugui.internal.assert(type(control.items) == 'table', 'expected items to be table')
+    ugui.internal.assert(type(control.selected_index) == 'number', 'expected selected_index to be number')
+    local selected_index = control.selected_index
+    local content_rectangle
+    local current_uid = control.uid + 1
+
+    control.get_return_value = control.get_return_value or tabcontrol_get_return_value
+    ugui.internal.control(control, 'tabcontrol', function()
+        local x = 0
+        local y = 0
+
+        for i = 1, #control.items do
+            local item = control.items[i]
+            local width = ugui.standard_styler.compute_rich_text(
+                item,
+                control.plaintext,
+                ugui.standard_styler.params.font_name,
+                ugui.standard_styler.params.font_size
+            ).size.x + 10
+
+            -- If it would overflow, wrap onto a new line.
+            if x + width > control.rectangle.width then
+                x = 0
+                y = y + ugui.standard_styler.params.tabcontrol.rail_size
+                    + ugui.standard_styler.params.tabcontrol.gap_y
+            end
+
+            local _, meta = ugui.toggle_button({
+                uid = current_uid,
+                is_enabled = ugui.internal.is_control_enabled(control),
+                opacity = control.opacity,
+                rectangle = {
+                    x = x,
+                    y = y,
+                    width = width,
+                    height = ugui.standard_styler.params.tabcontrol.rail_size,
+                },
+                text = item,
+                is_checked = selected_index == i,
+            })
+
+            if meta.signal_change == ugui.signal_change_states.started then
+                selected_index = i
+            end
+
+            x = x + width + ugui.standard_styler.params.tabcontrol.gap_x
+            current_uid = current_uid + ugui.toggle_button_uids()
+        end
+
+        local rail_size = ugui.standard_styler.params.tabcontrol.rail_size
+        content_rectangle = {
+            x = 0,
+            y = rail_size + y,
+            width = control.rectangle.width,
+            height = control.rectangle.height - y - rail_size,
+        }
+
+        ugui.panel({
+            uid = control.uid + 1 + #control.items * ugui.toggle_button_uids(),
+            rectangle = content_rectangle,
+        }, fn)
+    end, initialize_tabcontrol_data)
     local data = ugui.internal.control_data[control.uid]
 
     if ugui.standard_styler.params.tabcontrol.draw_frame then
         local clone = ugui.internal.deep_clone(control)
         clone.items = {}
-        ugui.standard_styler.draw_list(clone, clone.rectangle)
-    end
-
-    local x = 0
-    local y = 0
-    local selected_index = result.primary
-    local current_uid = control.uid + 1
-
-    for i, item in ipairs(control.items) do
-        local width = ugui.standard_styler.compute_rich_text(
-            item,
-            control.plaintext,
-            ugui.standard_styler.params.font_name,
-            ugui.standard_styler.params.font_size
-        ).size.x + 10
-
-        -- If it would overflow, wrap onto a new line.
-        if x + width > control.rectangle.width then
-            x = 0
-            y = y + ugui.standard_styler.params.tabcontrol.rail_size
-                + ugui.standard_styler.params.tabcontrol.gap_y
-        end
-
-        local _, meta = ugui.toggle_button({
-            uid = current_uid,
-            is_enabled = control.is_enabled,
-            rectangle = {
-                x = control.rectangle.x + x,
-                y = control.rectangle.y + y,
-                width = width,
-                height = ugui.standard_styler.params.tabcontrol.rail_size,
-            },
-            text = item,
-            is_checked = selected_index == i,
-        })
-
-        if meta.signal_change == ugui.signal_change_states.started then
-            selected_index = i
-        end
-
-        x = x + width + ugui.standard_styler.params.tabcontrol.gap_x
-        current_uid = current_uid + ugui.registry.toggle_button.uids()
+        clone.render_rect = control.render_rect
+        ugui.standard_styler.draw_list(clone, clone.render_rect)
     end
 
     data.selected_index = selected_index
@@ -4844,10 +6618,10 @@ ugui.tabcontrol = function(control)
     return {
         selected_index = selected_index,
         rectangle = {
-            x = control.rectangle.x,
-            y = control.rectangle.y + ugui.standard_styler.params.tabcontrol.rail_size + y,
-            width = control.rectangle.width,
-            height = control.rectangle.height - y - ugui.standard_styler.params.tabcontrol.rail_size,
+            x = control.rectangle.x + content_rectangle.x,
+            y = control.rectangle.y + content_rectangle.y,
+            width = content_rectangle.width,
+            height = content_rectangle.height,
         },
     }, {signal_change = data.signal_change}
 end
@@ -4862,7 +6636,7 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
----@class NumberBox : Control
+---@class NumberBox : UguiControl
 ---@field public value integer The value.
 ---@field public places integer The amount of digits the value is padded to.
 ---@field public show_negative boolean? Whether a button for viewing and toggling the value's sign is shown. If nil, false is assumed.
@@ -4872,206 +6646,218 @@ local function numberbox_get_uids()
     local n = 1
 
     local button_1<const> = n
-    n = n + ugui.registry.button.uids()
+    n = n + ugui.button_uids()
 
     return {total = n, button_1 = button_1}
 end
 local numberbox_uids<const> = numberbox_get_uids()
 
----@type ControlRegistryEntry
-ugui.registry.numberbox = {
-    uids = function() return numberbox_uids.total end,
-    ---@param control NumberBox
-    validate = function(control)
-        ugui.internal.assert(type(control.value) == 'number', 'expected value to be number')
-        ugui.internal.assert(type(control.places) == 'number', 'expected places to be number')
-        ugui.internal.assert(type(control.show_negative) == 'boolean' or type(control.show_negative) == 'nil',
-            'expected show_negative to be boolean or nil')
-    end,
-    ---@param control NumberBox
-    setup = function(control, data)
-        data.caret_index = 1
-    end,
-    ---@param control NumberBox
-    ---@return ControlReturnValue
-    logic = function(control, data)
-        local prev_value_negative = control.value < 0
-        data.value = math.abs(control.value)
+---Gets the number of UID slots reserved by a NumberBox.
+---@return integer
+ugui.numberbox_uids = function()
+    return numberbox_uids.total
+end
 
-        local function get_caret_index_at_relative_x(x)
-            local font_size = ugui.standard_styler.params.font_size * ugui.standard_styler.params.numberbox.font_scale
-            local font_name = ugui.standard_styler.params.monospace_font_name
-            local text = string.format('%0' .. tostring(control.places) .. 'd', data.value)
+local function initialize_numberbox_data(control, data)
+    data.caret_index = 1
+end
 
-            -- award for most painful basic geometry
-            local full_width = painter.measure_text(text, {
-                family = font_name,
-                size = font_size,
-            }).w
+---@param control NumberBox
+---@param data any
+---@return ControlReturnValue
+local function numberbox_get_return_value(control, data)
+    local rectangle = control.render_rect
+    local prev_value_negative = control.value < 0
+    data.value = math.abs(control.value)
 
-            local positions = {}
-            for i = 1, #text, 1 do
-                local width = painter.measure_text(text:sub(1, i), {
-                    family = font_name,
-                    size = font_size,
-                }).w
-
-                local left = control.rectangle.width / 2 - full_width / 2
-                positions[#positions + 1] = width + left
-            end
-
-            for i = #positions, 1, -1 do
-                if x > positions[i] then
-                    return ugui.internal.clamp(i + 1, 1, #positions)
-                end
-            end
-            return 1
-        end
-
-        local function increment_digit(index, value)
-            data.value = ugui.internal.set_digit(data.value, control.places,
-                ugui.internal.get_digit(data.value, control.places, index) + value, index)
-        end
-
-        if ugui.internal.clicked_control == control.uid then
-            data.caret_index = get_caret_index_at_relative_x(ugui.internal.environment.mouse_position.x -
-                control.rectangle.x)
-        end
-
-        if ugui.internal.keyboard_captured_control == control.uid then
-            -- handle number key press
-            for _, e in ipairs(ugui.internal.environment.key_events) do
-                if e.keycode2 and e.pressed then
-                    if e.keycode2 == Mupen.keycode.SDLK_LEFT then
-                        data.caret_index = data.caret_index - 1
-                    end
-                    if e.keycode2 == Mupen.keycode.SDLK_RIGHT then
-                        data.caret_index = data.caret_index + 1
-                    end
-                    if e.keycode2 == Mupen.keycode.SDLK_UP then
-                        increment_digit(data.caret_index, 1)
-                    end
-                    if e.keycode2 == Mupen.keycode.SDLK_DOWN then
-                        increment_digit(data.caret_index, -1)
-                    end
-                    if e.keycode2 == Mupen.keycode.SDLK_C and e.ctrl then
-                        local digit = ugui.internal.get_digit(data.value, control.places, data.caret_index)
-                        clipboard.set('text', tostring(digit))
-                    end
-                end
-                if e.text then
-                    -- accept only digit characters for insertion/paste
-                    local digits = e.text:match('^%d+$')
-                    if not digits then
-                        goto continue
-                    end
-
-                    -- clamp/truncate so caret_index + #digits - 1 does not exceed control.places
-                    local max_digits = control.places - data.caret_index + 1
-                    if max_digits <= 0 then
-                        goto continue
-                    end
-                    if #digits > max_digits then
-                        digits = digits:sub(1, max_digits)
-                    end
-
-                    data.value = ugui.internal.set_digit_range(data.value, control.places, digits, data.caret_index)
-                    data.caret_index = data.caret_index + #digits
-                end
-                ::continue::
-            end
-
-            if ugui.internal.environment._scroll_delta.y ~= 0 then
-                increment_digit(data.caret_index, ugui.internal.environment._scroll_delta.y)
-            end
-        end
-
-        data.caret_index = ugui.internal.clamp(data.caret_index, 1, control.places)
-
-        if prev_value_negative then
-            data.value = -math.abs(data.value)
-        end
-
-        data.signal_change = ugui.internal.process_signal_changes(data.signal_change, control.value ~= data.value)
-
-        return {
-            primary = data.value,
-            meta = {signal_change = data.signal_change},
-        }
-    end,
-    ---@param control NumberBox
-    draw = function(control)
-        local data = ugui.internal.control_data[control.uid]
+    local function get_caret_index_at_relative_x(x)
         local font_size = ugui.standard_styler.params.font_size * ugui.standard_styler.params.numberbox.font_scale
         local font_name = ugui.standard_styler.params.monospace_font_name
-        local text = string.format('%0' .. tostring(control.places) .. 'd', math.abs(control.value))
-        local p = ugui.internal.painter
+        local text = string.format('%0' .. tostring(control.places) .. 'd', data.value)
 
-        local visual_state = ugui.get_visual_state(control)
-        if ugui.internal.keyboard_captured_control == control.uid then
-            visual_state = ugui.visual_states.active
-        end
-        ugui.standard_styler.draw_edit_frame(control, control.rectangle, visual_state)
-
-        local rectangle = ugui.internal.rect_to_painter_rect(control.rectangle)
-        local text_style = {
-            family = font_name,
-            size = font_size,
-            weight = 400,
-            slant = 'normal',
-            align_x = 'center',
-            align_y = 'center',
-            antialiased = ugui.standard_styler.params.cleartype,
-            overflow = 'visible',
-            clip = false,
-        }
-
-        p:begin_path()
-        p:text(text, rectangle, text_style)
-        local text_color = ugui.color_source_to_rgbaf(ugui.standard_styler.params.textbox.text[visual_state])
-        p:fill(ugui.internal.rgbaf_to_painter_color(text_color))
-
-        local text_width_up_to_caret = painter.measure_text(text:sub(1, data.caret_index - 1), {
-            family = font_name,
-            size = font_size,
-        }).w
-
+        -- award for most painful basic geometry
         local full_width = painter.measure_text(text, {
             family = font_name,
             size = font_size,
         }).w
 
-        local left = control.rectangle.width / 2 - full_width / 2
+        local positions = {}
+        for i = 1, #text, 1 do
+            local width = painter.measure_text(text:sub(1, i), {
+                family = font_name,
+                size = font_size,
+            }).w
 
-        local selected_char_rect = {
-            x = control.rectangle.x + left + text_width_up_to_caret,
-            y = control.rectangle.y,
-            width = font_size / 2,
-            height = control.rectangle.height,
-        }
-
-        if ugui.internal.keyboard_captured_control == control.uid then
-            p:begin_path()
-            p:rect(ugui.internal.rect_to_painter_rect(selected_char_rect))
-            local selection_color = ugui.color_source_to_rgbaf(ugui.standard_styler.params.numberbox.selection)
-            p:fill(ugui.internal.rgbaf_to_painter_color(selection_color))
-
-            p:save()
-            p:clip(ugui.internal.rect_to_painter_rect(selected_char_rect))
-            p:begin_path()
-            p:text(text, rectangle, text_style)
-            local inverted_text_color = ugui.invert_color(ugui.standard_styler.params.textbox.text[visual_state])
-            p:fill(ugui.internal.rgbaf_to_painter_color(inverted_text_color))
-            p:restore()
+            local left = rectangle.width / 2 - full_width / 2
+            positions[#positions + 1] = width + left
         end
-    end,
-}
+
+        for i = #positions, 1, -1 do
+            if x > positions[i] then
+                return ugui.internal.clamp(i + 1, 1, #positions)
+            end
+        end
+        return 1
+    end
+
+    local function increment_digit(index, value)
+        data.value = ugui.internal.set_digit(data.value, control.places,
+            ugui.internal.get_digit(data.value, control.places, index) + value, index)
+    end
+
+    if ugui.internal.clicked_control == control.uid then
+        data.caret_index = get_caret_index_at_relative_x(ugui.internal.environment.mouse_position.x -
+            rectangle.x)
+    end
+
+    if ugui.internal.keyboard_captured_control == control.uid then
+        -- handle number key press
+        for i = 1, #ugui.internal.environment.key_events do
+            local e = ugui.internal.environment.key_events[i]
+            if e.keycode2 and e.pressed then
+                if e.keycode2 == Mupen.keycode.SDLK_LEFT then
+                    data.caret_index = data.caret_index - 1
+                end
+                if e.keycode2 == Mupen.keycode.SDLK_RIGHT then
+                    data.caret_index = data.caret_index + 1
+                end
+                if e.keycode2 == Mupen.keycode.SDLK_UP then
+                    increment_digit(data.caret_index, 1)
+                end
+                if e.keycode2 == Mupen.keycode.SDLK_DOWN then
+                    increment_digit(data.caret_index, -1)
+                end
+                if e.keycode2 == Mupen.keycode.SDLK_C and e.ctrl then
+                    local digit = ugui.internal.get_digit(data.value, control.places, data.caret_index)
+                    clipboard.set('text', tostring(digit))
+                end
+            end
+            if e.text then
+                -- accept only digit characters for insertion/paste
+                local digits = e.text:match('^%d+$')
+                if not digits then
+                    goto continue
+                end
+
+                -- clamp/truncate so caret_index + #digits - 1 does not exceed control.places
+                local max_digits = control.places - data.caret_index + 1
+                if max_digits <= 0 then
+                    goto continue
+                end
+                if #digits > max_digits then
+                    digits = digits:sub(1, max_digits)
+                end
+
+                data.value = ugui.internal.set_digit_range(data.value, control.places, digits, data.caret_index)
+                data.caret_index = data.caret_index + #digits
+            end
+            ::continue::
+        end
+
+        if ugui.internal.environment._scroll_delta.y ~= 0 then
+            increment_digit(data.caret_index, ugui.internal.environment._scroll_delta.y)
+        end
+    end
+
+    data.caret_index = ugui.internal.clamp(data.caret_index, 1, control.places)
+
+    if prev_value_negative then
+        data.value = -math.abs(data.value)
+    end
+
+    data.signal_change = ugui.internal.process_signal_changes(data.signal_change, control.value ~= data.value)
+
+    return {
+        primary = data.value,
+        meta = {signal_change = data.signal_change},
+    }
+end
+
+
+local numberbox_draw = function(control)
+    local data = ugui.internal.control_data[control.uid]
+    local rectangle = control.render_rect
+    local font_size = ugui.standard_styler.params.font_size * ugui.standard_styler.params.numberbox.font_scale
+    local font_name = ugui.standard_styler.params.monospace_font_name
+    local text = string.format('%0' .. tostring(control.places) .. 'd', math.abs(control.value))
+    local p = ugui.internal.painter
+
+    local visual_state = ugui.get_visual_state(control)
+    if ugui.internal.keyboard_captured_control == control.uid then
+        visual_state = ugui.visual_states.active
+    end
+    ugui.standard_styler.draw_edit_frame(control, rectangle, visual_state)
+
+    local painter_rectangle = ugui.internal.rect_to_painter_rect(rectangle)
+    local text_style = {
+        family = font_name,
+        size = font_size,
+        weight = 400,
+        slant = 'normal',
+        align_x = 'center',
+        align_y = 'center',
+        antialiased = ugui.standard_styler.params.cleartype,
+        overflow = 'visible',
+        clip = false,
+    }
+
+    p:begin_path()
+    p:text(text, painter_rectangle, text_style)
+    local text_color = ugui.color_source_to_rgbaf(ugui.standard_styler.params.textbox.text[visual_state])
+    p:fill(ugui.internal.rgbaf_to_painter_color(text_color))
+
+    local text_width_up_to_caret = painter.measure_text(text:sub(1, data.caret_index - 1), {
+        family = font_name,
+        size = font_size,
+    }).w
+
+    local full_width = painter.measure_text(text, {
+        family = font_name,
+        size = font_size,
+    }).w
+
+    local char_width = painter.measure_text(text:sub(data.caret_index, data.caret_index), {
+        family = font_name,
+        size = font_size,
+    }).w
+
+    local left = rectangle.width / 2 - full_width / 2
+
+    local selected_char_rect = {
+        x = rectangle.x + left + text_width_up_to_caret,
+        y = rectangle.y,
+        width = char_width,
+        height = rectangle.height,
+    }
+
+    if ugui.internal.keyboard_captured_control == control.uid then
+        p:begin_path()
+        p:rect(ugui.internal.rect_to_painter_rect(selected_char_rect))
+        local selection_color = ugui.color_source_to_rgbaf(ugui.standard_styler.params.numberbox.selection)
+        p:fill(ugui.internal.rgbaf_to_painter_color(selection_color))
+
+        p:save()
+        p:clip(ugui.internal.rect_to_painter_rect(selected_char_rect))
+        p:begin_path()
+        p:text(text, painter_rectangle, text_style)
+        local inverted_text_color = ugui.invert_color(ugui.standard_styler.params.textbox.text[visual_state])
+        p:fill(ugui.internal.rgbaf_to_painter_color(inverted_text_color))
+        p:restore()
+    end
+end
 
 ---Places a NumberBox.
 ---@param control NumberBox The control table.
+---@param fn fun()? A callback whose placed controls become children of the numberbox.
 ---@return integer, Meta # The new value.
-ugui.numberbox = function(control)
-    local _ = ugui.control(control, 'numberbox')
+ugui.numberbox = function(control, fn)
+    ugui.internal.assert(type(control.value) == 'number', 'expected value to be number')
+    ugui.internal.assert(type(control.places) == 'number', 'expected places to be number')
+    ugui.internal.assert(type(control.show_negative) == 'boolean' or type(control.show_negative) == 'nil',
+        'expected show_negative to be boolean or nil')
+    control.draw = control.draw or numberbox_draw
+    control.get_return_value = control.get_return_value or numberbox_get_return_value
+    local _ = ugui.internal.control(control, 'numberbox', fn, initialize_numberbox_data)
     local data = ugui.internal.control_data[control.uid]
 
     if control.show_negative then
@@ -5086,7 +6872,8 @@ ugui.numberbox = function(control)
 
         if ugui.button({
                 uid = control.uid + numberbox_uids.button_1,
-                is_enabled = true,
+                is_enabled = ugui.internal.is_control_enabled(control),
+                opacity = control.opacity,
                 rectangle = {
                     x = control.rectangle.x - negative_button_size,
                     y = control.rectangle.y,
@@ -5097,6 +6884,7 @@ ugui.numberbox = function(control)
             }) then
             data.value = -data.value
         end
+        ugui.internal.update_render_rect(control)
     end
 
     return math.floor(data.value), data.meta
@@ -5112,7 +6900,7 @@ end
 -- SPDX-License-Identifier: GPL-3.0-or-later
 --
 
----@class Spinner : Control
+---@class Spinner : UguiControl
 ---@field public value number The spinner's numerical value.
 ---@field public increment number? The increment applied when the + or - buttons are clicked (negated when - is clicked). If nil, 1 is assumed.
 ---@field public minimum_value number? The minimum value.
@@ -5124,58 +6912,57 @@ local function spinner_get_uids()
     local n = 1
 
     local textbox<const> = n
-    n = n + ugui.registry.textbox.uids()
+    n = n + ugui.textbox_uids()
 
     local button_1<const> = n
-    n = n + ugui.registry.button.uids()
+    n = n + ugui.button_uids()
 
     local button_2<const> = n
-    n = n + ugui.registry.button.uids()
+    n = n + ugui.button_uids()
 
     return {total = n, textbox = textbox, button_1 = button_1, button_2 = button_2}
 end
 local spinner_uids<const> = spinner_get_uids()
 
----@type ControlRegistryEntry
-ugui.registry.spinner = {
-    uids = function() return spinner_uids.total end,
-    hittestable = nil,
-    ---@param control Spinner
-    validate = function(control)
-        ugui.internal.assert(type(control.value) == 'number' or type(control.value) == 'nil',
-            'expected value to be number or nil')
-        ugui.internal.assert(type(control.increment) == 'number' or type(control.increment) == 'nil',
-            'expected increment to be number or nil')
-        ugui.internal.assert(type(control.minimum_value) == 'number' or type(control.minimum_value) == 'nil',
-            'expected minimum_value to be number or nil')
-        ugui.internal.assert(type(control.maximum_value) == 'number' or type(control.maximum_value) == 'nil',
-            'expected maximum_value to be number or nil')
-        ugui.internal.assert(type(control.is_horizontal) == 'boolean' or type(control.is_horizontal) == 'nil',
-            'expected is_horizontal to be boolean or nil')
-    end,
-    ---@param control Spinner
-    setup = function(control, data)
-        data.value = control.value or 0
-    end,
-    ---@param control Spinner
-    ---@return ControlReturnValue
-    logic = function(control, data)
-        data.value = control.value or 0
-        return {
-            primary = data.value,
-            meta = {signal_change = data.signal_change},
-        }
-    end,
-    ---@param control Spinner
-    draw = function(control)
-    end,
-}
+---Gets the number of UID slots reserved by a Spinner.
+---@return integer
+ugui.spinner_uids = function()
+    return spinner_uids.total
+end
+
+local function initialize_spinner_data(control, data)
+    data.value = control.value or 0
+end
+
+---@param control Spinner
+---@param data any
+---@return ControlReturnValue
+local function spinner_get_return_value(control, data)
+    data.value = control.value or 0
+    return {
+        primary = data.value,
+        meta = {signal_change = data.signal_change},
+    }
+end
+
 
 ---Places a Spinner.
 ---@param control Spinner The control table.
+---@param fn fun()? A callback whose placed controls become children of the spinner.
 ---@return number, Meta # The new value.
-ugui.spinner = function(control)
-    local result = ugui.control(control, 'spinner')
+ugui.spinner = function(control, fn)
+    ugui.internal.assert(type(control.value) == 'number' or type(control.value) == 'nil',
+        'expected value to be number or nil')
+    ugui.internal.assert(type(control.increment) == 'number' or type(control.increment) == 'nil',
+        'expected increment to be number or nil')
+    ugui.internal.assert(type(control.minimum_value) == 'number' or type(control.minimum_value) == 'nil',
+        'expected minimum_value to be number or nil')
+    ugui.internal.assert(type(control.maximum_value) == 'number' or type(control.maximum_value) == 'nil',
+        'expected maximum_value to be number or nil')
+    ugui.internal.assert(type(control.is_horizontal) == 'boolean' or type(control.is_horizontal) == 'nil',
+        'expected is_horizontal to be boolean or nil')
+    control.get_return_value = control.get_return_value or spinner_get_return_value
+    local result = ugui.internal.control(control, 'spinner', fn, initialize_spinner_data)
     local data = ugui.internal.control_data[control.uid]
 
     local textbox_uid<const> = control.uid + spinner_uids.textbox
@@ -5212,7 +6999,8 @@ ugui.spinner = function(control)
     local new_text = ugui.textbox({
         uid = textbox_uid,
         rectangle = textbox_rect,
-        is_enabled = control.is_enabled,
+        is_enabled = ugui.internal.is_control_enabled(control),
+        opacity = control.opacity,
         text = tostring(value),
     })
 
@@ -5221,7 +7009,7 @@ ugui.spinner = function(control)
         value = clamp_value(new_number)
     end
 
-    if control.is_enabled ~= false
+    if ugui.internal.is_control_enabled(control)
         and (ugui.internal.point_in_rect(ugui.internal.environment.mouse_position, textbox_rect)
             or ugui.internal.mouse_captured_control == textbox_uid)
     then
@@ -5233,7 +7021,8 @@ ugui.spinner = function(control)
     if control.is_horizontal then
         if ugui.button({
                 uid = button_1_uid,
-                is_enabled = not (value == control.minimum_value),
+                is_enabled = ugui.internal.is_control_enabled(control) and not (value == control.minimum_value),
+                opacity = control.opacity,
                 rectangle = {
                     x = control.rectangle.x + control.rectangle.width - button_size * 2,
                     y = control.rectangle.y,
@@ -5248,7 +7037,8 @@ ugui.spinner = function(control)
 
         if ugui.button({
                 uid = button_2_uid,
-                is_enabled = not (value == control.maximum_value),
+                is_enabled = ugui.internal.is_control_enabled(control) and not (value == control.maximum_value),
+                opacity = control.opacity,
                 rectangle = {
                     x = control.rectangle.x + control.rectangle.width - button_size,
                     y = control.rectangle.y,
@@ -5263,7 +7053,8 @@ ugui.spinner = function(control)
     else
         if ugui.button({
                 uid = button_1_uid,
-                is_enabled = not (value == control.maximum_value),
+                is_enabled = ugui.internal.is_control_enabled(control) and not (value == control.maximum_value),
+                opacity = control.opacity,
                 rectangle = {
                     x = control.rectangle.x + control.rectangle.width - button_size * 2,
                     y = control.rectangle.y,
@@ -5278,7 +7069,8 @@ ugui.spinner = function(control)
 
         if ugui.button({
                 uid = button_2_uid,
-                is_enabled = not (value == control.minimum_value),
+                is_enabled = ugui.internal.is_control_enabled(control) and not (value == control.minimum_value),
+                opacity = control.opacity,
                 rectangle = {
                     x = control.rectangle.x + control.rectangle.width - button_size * 2,
                     y = control.rectangle.y + control.rectangle.height / 2,
@@ -5451,7 +7243,7 @@ ugui.apply_nineslice = function(style)
     end
 
     ugui.standard_styler.draw_raised_frame = function(control, visual_state)
-        _nineslice_draw_image(style.path, control.rectangle, style.button.states[visual_state].source,
+        _nineslice_draw_image(style.path, control.render_rect, style.button.states[visual_state].source,
             style.button.states[visual_state].center, 'nearest', ugui.standard_styler.params.color_filter, true)
     end
 
@@ -5483,14 +7275,21 @@ ugui.apply_nineslice = function(style)
             height = rectangle.height,
         }
 
-        ugui.standard_styler.draw_rich_text(text_rect, ugui.alignment.start, nil, item,
-            ugui.standard_styler.params.listbox_item.text[visual_state], visual_state, control.plaintext)
+        ugui.standard_styler.draw_rich_text({
+            rectangle = text_rect,
+            align_x = ugui.alignment.start,
+            text = item,
+            color = ugui.standard_styler.params.listbox_item.text[visual_state],
+            visual_state = visual_state,
+            plaintext = control.plaintext,
+            wrap = false,
+        })
     end
 
     ugui.standard_styler.draw_scrollbar = function(control, thumb_rectangle)
         local visual_state = ugui.get_visual_state(control)
 
-        _nineslice_draw_image(style.path, control.rectangle, style.scrollbar_rail, nil, 'nearest', nil, false)
+        _nineslice_draw_image(style.path, control.render_rect, style.scrollbar_rail, nil, 'nearest', nil, false)
 
         _nineslice_draw_image(style.path, thumb_rectangle, style.scrollbar_thumb.states[visual_state].source,
             style.scrollbar_thumb.states[visual_state].center, 'nearest', ugui.standard_styler.params.color_filter, true)
