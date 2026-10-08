@@ -6,31 +6,31 @@
 
 local UID = UIDProvider.allocate_once('GhostPlayback', function(enum_next)
     return {
-        PlaybackStatus = enum_next(ugui.registry.label.uids()),
-        EnableHack = enum_next(ugui.registry.toggle_button.uids()),
-        GhostsLabel = enum_next(ugui.registry.label.uids()),
-        AddGhost = enum_next(ugui.registry.button.uids()),
-        RemoveGhost = enum_next(ugui.registry.button.uids()),
-        EnableGhost = enum_next(ugui.registry.button.uids()),
-        GhostList = enum_next(ugui.registry.listbox.uids()),
-        FileLabel = enum_next(ugui.registry.label.uids()),
-        FileName = enum_next(ugui.registry.textbox.uids()),
-        SaveGhost = enum_next(ugui.registry.button.uids()),
-        TimerStartLabel = enum_next(ugui.registry.label.uids()),
-        TimerStart = enum_next(ugui.registry.textbox.uids()),
-        TimerStartDecrement = enum_next(ugui.registry.button.uids()),
-        TimerStartIncrement = enum_next(ugui.registry.button.uids()),
-        GraphicsLabel = enum_next(ugui.registry.label.uids()),
-        Graphics = enum_next(ugui.registry.label.uids()),
-        TransparentLabel = enum_next(ugui.registry.label.uids()),
-        Transparent = enum_next(ugui.registry.button.uids()),
-        ColorLabel = enum_next(ugui.registry.label.uids()),
-        Color = enum_next(ugui.registry.textbox.uids()),
-        ColorPickerButton = enum_next(ugui.registry.button.uids()),
-        ColorSwatch = enum_next(ugui.registry.panel.uids()),
-        ColorPickerOk = enum_next(ugui.registry.button.uids()),
-        ColorPickerCancel = enum_next(ugui.registry.button.uids()),
-        GhostData = enum_next(ugui.registry.listbox.uids()),
+        PlaybackStatus = enum_next(ugui.label_uids()),
+        EnableHack = enum_next(ugui.toggle_button_uids()),
+        GhostsLabel = enum_next(ugui.label_uids()),
+        AddGhost = enum_next(ugui.button_uids()),
+        RemoveGhost = enum_next(ugui.button_uids()),
+        EnableGhost = enum_next(ugui.button_uids()),
+        GhostList = enum_next(ugui.listbox_uids()),
+        FileLabel = enum_next(ugui.label_uids()),
+        FileName = enum_next(ugui.textbox_uids()),
+        SaveGhost = enum_next(ugui.button_uids()),
+        TimerStartLabel = enum_next(ugui.label_uids()),
+        TimerStart = enum_next(ugui.textbox_uids()),
+        TimerStartDecrement = enum_next(ugui.button_uids()),
+        TimerStartIncrement = enum_next(ugui.button_uids()),
+        GraphicsLabel = enum_next(ugui.label_uids()),
+        Graphics = enum_next(ugui.label_uids()),
+        TransparentLabel = enum_next(ugui.label_uids()),
+        Transparent = enum_next(ugui.button_uids()),
+        ColorLabel = enum_next(ugui.label_uids()),
+        Color = enum_next(ugui.textbox_uids()),
+        ColorPickerButton = enum_next(ugui.button_uids()),
+        ColorSwatch = enum_next(ugui.panel_uids()),
+        ColorPickerOk = enum_next(ugui.button_uids()),
+        ColorPickerCancel = enum_next(ugui.button_uids()),
+        GhostData = enum_next(ugui.listbox_uids()),
     }
 end)
 
@@ -132,7 +132,7 @@ return {
         local ghost_list = {}
         local selected_index = nil
         for i, ghost in ipairs(ghosts) do
-            local enabled = Ghost.is_enabled(ghost.id) and '[✓] ' or '[  ] ' 
+            local enabled = Ghost.is_enabled(ghost.id) and '[✓] ' or '[  ] '
             ghost.name = display_names[ghost.id] or ghost.name
             ghost_list[#ghost_list + 1] = enabled .. ghost.name
             if ghost.id == selected_ghost_id then
@@ -151,7 +151,7 @@ return {
 
         -- file of the selected ghost
         section_label(UID.FileLabel, grid_rect(0, 7.1, 1, 0.9), Locales.str('GHOST_FILE'))
-        
+
         local name = ''
         for _, ghost in ipairs(ghosts) do
             if ghost.id == selected_ghost_id then name = ghost.name end

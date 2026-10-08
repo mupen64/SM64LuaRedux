@@ -6,10 +6,10 @@
 
 local UID = UIDProvider.allocate_once('GhostSettings', function(enum_next)
     return {
-        AutoLoad = enum_next(ugui.registry.toggle_button.uids()),
-        TransparentDefault = enum_next(ugui.registry.toggle_button.uids()),
-        BaseOffsetLabel = enum_next(ugui.registry.label.uids()),
-        BaseOffset = enum_next(ugui.registry.textbox.uids()),
+        AutoLoad = enum_next(ugui.toggle_button_uids()),
+        TransparentDefault = enum_next(ugui.toggle_button_uids()),
+        BaseOffsetLabel = enum_next(ugui.label_uids()),
+        BaseOffset = enum_next(ugui.textbox_uids()),
     }
 end)
 

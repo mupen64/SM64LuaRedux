@@ -6,18 +6,18 @@
 
 local UID = UIDProvider.allocate_once('GhostRecording', function(enum_next)
     return {
-        RecordingStatus = enum_next(ugui.registry.label.uids()),
-        RecordMario = enum_next(ugui.registry.toggle_button.uids()),
-        ObjectLabel = enum_next(ugui.registry.label.uids()),
-        RecordObject = enum_next(ugui.registry.toggle_button.uids()),
-        AddressLabel = enum_next(ugui.registry.label.uids()),
-        GhostObjectAddress = enum_next(ugui.registry.textbox.uids()),
-        RecordObjectByName = enum_next(ugui.registry.toggle_button.uids()),
-        ObjectList = enum_next(ugui.registry.listbox.uids()),
-        ObjectData = enum_next(ugui.registry.listbox.uids()),
-        GhostPath = enum_next(ugui.registry.textbox.uids()),
-        BrowseGhostPath = enum_next(ugui.registry.button.uids()),
-        RecordGhost = enum_next(ugui.registry.toggle_button.uids()),
+        RecordingStatus = enum_next(ugui.label_uids()),
+        RecordMario = enum_next(ugui.toggle_button_uids()),
+        ObjectLabel = enum_next(ugui.label_uids()),
+        RecordObject = enum_next(ugui.toggle_button_uids()),
+        AddressLabel = enum_next(ugui.label_uids()),
+        GhostObjectAddress = enum_next(ugui.textbox_uids()),
+        RecordObjectByName = enum_next(ugui.toggle_button_uids()),
+        ObjectList = enum_next(ugui.listbox_uids()),
+        ObjectData = enum_next(ugui.listbox_uids()),
+        GhostPath = enum_next(ugui.textbox_uids()),
+        BrowseGhostPath = enum_next(ugui.button_uids()),
+        RecordGhost = enum_next(ugui.toggle_button_uids()),
     }
 end)
 
