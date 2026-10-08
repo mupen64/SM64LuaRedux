@@ -6,7 +6,7 @@
 
 function get_base_style()
     return {
-        background_color = BreitbandGraphics.repeated_to_color(240),
+        background_color = ugui.color_source_to_rgba8('#F0F0F0'),
 
         font_name = 'MS Sans Serif',
         font_size = 12,
@@ -15,10 +15,10 @@ function get_base_style()
 
         button = {
             text = {
-                [1] = BreitbandGraphics.colors.black,
-                [2] = BreitbandGraphics.colors.black,
-                [3] = BreitbandGraphics.colors.black,
-                [0] = BreitbandGraphics.repeated_to_color(131),
+                [1] = ugui.color_source_to_rgba8('#000000'),
+                [2] = ugui.color_source_to_rgba8('#000000'),
+                [3] = ugui.color_source_to_rgba8('#000000'),
+                [0] = ugui.color_source_to_rgba8('#838383'),
             },
 
             states = {
@@ -42,13 +42,13 @@ function get_base_style()
         },
         textbox = {
             item_height = 15,
-            selection = BreitbandGraphics.hex_to_color('#0078D7'),
+            selection = ugui.color_source_to_rgba8('#0078D7'),
 
             text = {
-                [1] = BreitbandGraphics.colors.black,
-                [2] = BreitbandGraphics.colors.black,
-                [3] = BreitbandGraphics.colors.black,
-                [0] = BreitbandGraphics.repeated_to_color(109),
+                [1] = ugui.color_source_to_rgba8('#000000'),
+                [2] = ugui.color_source_to_rgba8('#000000'),
+                [3] = ugui.color_source_to_rgba8('#000000'),
+                [0] = ugui.color_source_to_rgba8('#6D6D6D'),
             },
 
             states = {
@@ -71,14 +71,14 @@ function get_base_style()
             },
         },
         numberbox = {
-            selection = BreitbandGraphics.hex_to_color('#0078D7'),
+            selection = ugui.color_source_to_rgba8('#0078D7'),
         },
         listbox = {
             text = {
-                [1] = BreitbandGraphics.colors.black,
-                [2] = BreitbandGraphics.colors.black,
-                [3] = BreitbandGraphics.colors.white,
-                [0] = BreitbandGraphics.repeated_to_color(204),
+                [1] = ugui.color_source_to_rgba8('#000000'),
+                [2] = ugui.color_source_to_rgba8('#000000'),
+                [3] = ugui.color_source_to_rgba8('#FFFFFF'),
+                [0] = ugui.color_source_to_rgba8('#CCCCCC'),
             },
             states = {
                 [1] = {
@@ -141,40 +141,40 @@ function get_base_style()
         },
         joystick = {
             back = {
-                [1] = BreitbandGraphics.hex_to_color('#FFFFFF'),
-                [2] = BreitbandGraphics.hex_to_color('#FFFFFF'),
-                [3] = BreitbandGraphics.hex_to_color('#FFFFFF'),
-                [0] = BreitbandGraphics.hex_to_color('#FFFFFF'),
+                [1] = ugui.color_source_to_rgba8('#FFFFFF'),
+                [2] = ugui.color_source_to_rgba8('#FFFFFF'),
+                [3] = ugui.color_source_to_rgba8('#FFFFFF'),
+                [0] = ugui.color_source_to_rgba8('#FFFFFF'),
             },
             outline = {
-                [1] = BreitbandGraphics.hex_to_color('#000000'),
-                [2] = BreitbandGraphics.hex_to_color('#000000'),
-                [3] = BreitbandGraphics.hex_to_color('#000000'),
-                [0] = BreitbandGraphics.hex_to_color('#000000'),
+                [1] = ugui.color_source_to_rgba8('#000000'),
+                [2] = ugui.color_source_to_rgba8('#000000'),
+                [3] = ugui.color_source_to_rgba8('#000000'),
+                [0] = ugui.color_source_to_rgba8('#000000'),
             },
             tip = {
-                [1] = BreitbandGraphics.hex_to_color('#FF0000'),
-                [2] = BreitbandGraphics.hex_to_color('#FF0000'),
-                [3] = BreitbandGraphics.hex_to_color('#FF0000'),
-                [0] = BreitbandGraphics.hex_to_color('#FF8080'),
+                [1] = ugui.color_source_to_rgba8('#FF0000'),
+                [2] = ugui.color_source_to_rgba8('#FF0000'),
+                [3] = ugui.color_source_to_rgba8('#FF0000'),
+                [0] = ugui.color_source_to_rgba8('#FF8080'),
             },
             line = {
-                [1] = BreitbandGraphics.hex_to_color('#0000FF'),
-                [2] = BreitbandGraphics.hex_to_color('#0000FF'),
-                [3] = BreitbandGraphics.hex_to_color('#0000FF'),
-                [0] = BreitbandGraphics.hex_to_color('#8080FF'),
+                [1] = ugui.color_source_to_rgba8('#0000FF'),
+                [2] = ugui.color_source_to_rgba8('#0000FF'),
+                [3] = ugui.color_source_to_rgba8('#0000FF'),
+                [0] = ugui.color_source_to_rgba8('#8080FF'),
             },
             inner_mag = {
-                [1] = BreitbandGraphics.hex_to_color('#FF000022'),
-                [2] = BreitbandGraphics.hex_to_color('#FF000022'),
-                [3] = BreitbandGraphics.hex_to_color('#FF000022'),
-                [0] = BreitbandGraphics.hex_to_color('#00000000'),
+                [1] = ugui.color_source_to_rgba8('#FF000022'),
+                [2] = ugui.color_source_to_rgba8('#FF000022'),
+                [3] = ugui.color_source_to_rgba8('#FF000022'),
+                [0] = ugui.color_source_to_rgba8('#00000000'),
             },
             outer_mag = {
-                [1] = BreitbandGraphics.hex_to_color('#FF0000'),
-                [2] = BreitbandGraphics.hex_to_color('#FF0000'),
-                [3] = BreitbandGraphics.hex_to_color('#FF0000'),
-                [0] = BreitbandGraphics.hex_to_color('#FF8080'),
+                [1] = ugui.color_source_to_rgba8('#FF0000'),
+                [2] = ugui.color_source_to_rgba8('#FF0000'),
+                [3] = ugui.color_source_to_rgba8('#FF0000'),
+                [0] = ugui.color_source_to_rgba8('#FF8080'),
             },
             mag_thicknesses = {
                 [1] = 2,

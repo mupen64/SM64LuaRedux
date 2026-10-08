@@ -8,31 +8,31 @@ local theme = get_base_style()
 
 theme.menu = {
     back = {
-        [1] = BreitbandGraphics.hex_to_color('#F9F9F9'),
-        [2] = BreitbandGraphics.hex_to_color('#F9F9F9'),
-        [3] = BreitbandGraphics.hex_to_color('#F9F9F9'),
-        [0] = BreitbandGraphics.hex_to_color('#F9F9F9'),
+        [1] = ugui.color_source_to_rgba8('#F9F9F9'),
+        [2] = ugui.color_source_to_rgba8('#F9F9F9'),
+        [3] = ugui.color_source_to_rgba8('#F9F9F9'),
+        [0] = ugui.color_source_to_rgba8('#F9F9F9'),
     },
     border = {
-        [1] = BreitbandGraphics.hex_to_color('#E5E5E5'),
-        [2] = BreitbandGraphics.hex_to_color('#E5E5E5'),
-        [3] = BreitbandGraphics.hex_to_color('#E5E5E5'),
-        [0] = BreitbandGraphics.hex_to_color('#E5E5E5'),
+        [1] = ugui.color_source_to_rgba8('#E5E5E5'),
+        [2] = ugui.color_source_to_rgba8('#E5E5E5'),
+        [3] = ugui.color_source_to_rgba8('#E5E5E5'),
+        [0] = ugui.color_source_to_rgba8('#E5E5E5'),
     },
 }
 
 theme.menu_item = {
     back = {
-        [1] = BreitbandGraphics.hex_to_color('#00000000'),
-        [2] = BreitbandGraphics.hex_to_color('#F0F0F0'),
-        [3] = BreitbandGraphics.hex_to_color('#F0F0F0'),
-        [0] = BreitbandGraphics.hex_to_color('#00000000'),
+        [1] = ugui.color_source_to_rgba8('#00000000'),
+        [2] = ugui.color_source_to_rgba8('#F0F0F0'),
+        [3] = ugui.color_source_to_rgba8('#F0F0F0'),
+        [0] = ugui.color_source_to_rgba8('#00000000'),
     },
     border = {
-        [1] = BreitbandGraphics.hex_to_color('#00000000'),
-        [2] = BreitbandGraphics.hex_to_color('#F0F0F0'),
-        [3] = BreitbandGraphics.hex_to_color('#F0F0F0'),
-        [0] = BreitbandGraphics.hex_to_color('#00000000'),
+        [1] = ugui.color_source_to_rgba8('#00000000'),
+        [2] = ugui.color_source_to_rgba8('#F0F0F0'),
+        [3] = ugui.color_source_to_rgba8('#F0F0F0'),
+        [0] = ugui.color_source_to_rgba8('#00000000'),
     },
 }
 
