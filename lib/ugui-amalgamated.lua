@@ -13,7 +13,7 @@
 --
 
 local ugui = {
-    _VERSION = 'next',
+    _VERSION = '5.1.0',
     _URL = 'https://codeberg.org/mupen64/ugui',
     _DESCRIPTION = 'Flexible immediate-mode GUI library for Mupen Lua',
     _LICENSE = 'GPL-3',
@@ -265,7 +265,7 @@ ugui.end_frame = function()
     local function begin_control_rectangle_path(control)
         current_painter:begin_path()
 
-        local render_rectangle = control.render_rect
+        local render_rectangle = control._render_rect
         local rectangle = {
             x = render_rectangle.x,
             y = render_rectangle.y,
@@ -282,7 +282,7 @@ ugui.end_frame = function()
 
     ---@param control UguiControl
     local function draw_control_background(control)
-        local rectangle = control.render_rect
+        local rectangle = control._render_rect
         local fill_color = control.fill
 
         if fill_color then
@@ -442,7 +442,7 @@ ugui.end_frame = function()
 
         if control.clip_children then
             current_painter:save()
-            current_painter:clip(ugui.internal.rect_to_painter_rect(control.render_rect))
+            current_painter:clip(ugui.internal.rect_to_painter_rect(control._render_rect))
         end
 
         local children = ugui.internal.get_sorted_scene_children(node)
@@ -1109,7 +1109,7 @@ local control_impl = function(control, control_type, fn, initialize_data)
     local execution_start = ugui.DEBUG and os.clock()
     local return_value
     local render_rect = ugui.internal.compute_render_rect(control)
-    control.render_rect = render_rect
+    control._render_rect = render_rect
     local revert_styler_mixin = ugui.internal.apply_styler_mixin(control)
 
     local is_new_control = ugui.internal.control_data[control.uid] == nil
@@ -1719,7 +1719,7 @@ ugui.internal.is_point_inside_clip_ancestors = function(point, node)
         local control = ancestor.control
         if control.clip_children and not ugui.internal.point_in_rect(
                 point,
-                control.render_rect
+                control._render_rect
             ) then
             return false
         end
@@ -1751,7 +1751,7 @@ local function get_parent_render_rectangle(parent)
     if parent == nil or parent == ugui.internal.scene_root then
         return {x = 0, y = 0, width = 0, height = 0}
     end
-    return assert(parent.control.render_rect)
+    return assert(parent.control._render_rect)
 end
 
 ---Computes a control's absolute rectangle using its current parent.
@@ -1771,7 +1771,7 @@ ugui.internal.hittest = function(point, control)
     if control.hittest then
         return control.hittest(control, point)
     end
-    return ugui.internal.point_in_rect(point, control.render_rect)
+    return ugui.internal.point_in_rect(point, control._render_rect)
 end
 
 ---Recomputes a placed node and its descendants after a local rectangle changes.
@@ -2085,6 +2085,50 @@ ugui.standard_styler = {
         local half_width = arrow_extent
         local half_height = arrow_extent
         local point_extent = arrow_extent * 0.75
+        local icon_extent = math.min(rectangle.width, rectangle.height)
+        local icon_line_width = math.max(1, icon_extent * 0.1)
+
+        local function stroke_lines(lines)
+            p:begin_path()
+            for i = 1, #lines do
+                local line = lines[i]
+                p:line(line[1], line[2], line[3], line[4])
+            end
+            p:stroke(painter_color, {width = icon_line_width})
+        end
+
+        local function draw_diagonal_arrow(direction_x, direction_y)
+            local direction_length = math.sqrt(2)
+            local unit_x = direction_x / direction_length
+            local unit_y = direction_y / direction_length
+            local tip_distance = icon_extent * 0.36
+            local head_length = icon_extent * 0.28
+            local head_half_width = head_length
+            local tip_x = center_x + unit_x * tip_distance
+            local tip_y = center_y + unit_y * tip_distance
+            local base_x = tip_x - unit_x * head_length
+            local base_y = tip_y - unit_y * head_length
+            local perpendicular_x = -unit_y
+            local perpendicular_y = unit_x
+
+            local corner_1_x = base_x + perpendicular_x * head_half_width
+            local corner_1_y = base_y + perpendicular_y * head_half_width
+            local corner_2_x = base_x - perpendicular_x * head_half_width
+            local corner_2_y = base_y - perpendicular_y * head_half_width
+            local min_x = math.min(tip_x, corner_1_x, corner_2_x)
+            local max_x = math.max(tip_x, corner_1_x, corner_2_x)
+            local min_y = math.min(tip_y, corner_1_y, corner_2_y)
+            local max_y = math.max(tip_y, corner_1_y, corner_2_y)
+            local shift_x = center_x - (min_x + max_x) / 2
+            local shift_y = center_y - (min_y + max_y) / 2
+
+            p:begin_path()
+            p:move_to(tip_x + shift_x, tip_y + shift_y)
+            p:line_to(corner_1_x + shift_x, corner_1_y + shift_y)
+            p:line_to(corner_2_x + shift_x, corner_2_y + shift_y)
+            p:close_path()
+            p:fill(painter_color)
+        end
 
         if key == 'arrow_left' then
             p:begin_path()
@@ -2121,6 +2165,47 @@ ugui.standard_styler = {
             p:line_to(center_x - check_extent * 0.25, center_y + check_extent * 0.65)
             p:line_to(center_x + check_extent, center_y - check_extent * 0.65)
             p:stroke(painter_color, {width = math.max(1, check_extent * 0.18)})
+        elseif key == 'hgrip' or key == 'vgrip' then
+            local grip_extent = icon_extent * 0.3
+            local grip_spacing = icon_extent * 0.18
+            local lines = {}
+            for i = -1, 1 do
+                local offset = i * grip_spacing
+                if key == 'hgrip' then
+                    lines[#lines + 1] = {
+                        center_x + offset, center_y - grip_extent,
+                        center_x + offset, center_y + grip_extent,
+                    }
+                else
+                    lines[#lines + 1] = {
+                        center_x - grip_extent, center_y + offset,
+                        center_x + grip_extent, center_y + offset,
+                    }
+                end
+            end
+            stroke_lines(lines)
+        elseif key == 'diagonal_grip_top_left' then
+            draw_diagonal_arrow(-1, -1)
+        elseif key == 'diagonal_grip_top_right' then
+            draw_diagonal_arrow(1, -1)
+        elseif key == 'diagonal_grip_bottom_left' then
+            draw_diagonal_arrow(-1, 1)
+        elseif key == 'diagonal_grip_bottom_right' then
+            draw_diagonal_arrow(1, 1)
+        elseif key == 'minimize' then
+            local extent = icon_extent * 0.32
+            stroke_lines({{center_x - extent, center_y, center_x + extent, center_y}})
+        elseif key == 'maximize' then
+            local size = icon_extent * 0.62
+            p:begin_path()
+            p:rect({x = center_x - size / 2, y = center_y - size / 2, w = size, h = size})
+            p:stroke(painter_color, {width = icon_line_width})
+        elseif key == 'close' then
+            local extent = icon_extent * 0.3
+            stroke_lines({
+                {center_x - extent, center_y - extent, center_x + extent, center_y + extent},
+                {center_x + extent, center_y - extent, center_x - extent, center_y + extent},
+            })
         else
             -- Unknown icon, probably a good idea to nag the user
             p:begin_path()
@@ -2366,7 +2451,7 @@ ugui.standard_styler = {
     ---@param control UguiControl The control table.
     ---@param visual_state VisualState The control's visual state.
     draw_raised_frame = function(control, visual_state)
-        local rectangle = control.render_rect
+        local rectangle = control._render_rect
         local p = ugui.internal.painter
         p:begin_path()
         p:rect(ugui.internal.rect_to_painter_rect(rectangle))
@@ -2407,7 +2492,7 @@ ugui.standard_styler = {
     ---@param thumb_rectangle UguiRect The scrollbar thumb's bounds.
     draw_scrollbar = function(control, thumb_rectangle)
         local visual_state = ugui.get_visual_state(control)
-        local rectangle = control.render_rect
+        local rectangle = control._render_rect
         local p = ugui.internal.painter
         p:begin_path()
         p:rect(ugui.internal.rect_to_painter_rect(rectangle))
@@ -2699,7 +2784,7 @@ ugui.standard_styler = {
     ---@param visual_state VisualState The visual state.
     draw_textbox = function(control, visual_state)
         local data = ugui.internal.control_data[control.uid]
-        local rectangle = control.render_rect
+        local rectangle = control._render_rect
         local text<const> = data.text
         local scroll_offset = data.scroll_offset
         local scrolled_text<const> = scroll_offset == 1 and text or text:sub(scroll_offset)
@@ -2822,7 +2907,7 @@ ugui.standard_styler = {
     ---@param control Joystick The control table.
     ---@param visual_state VisualState The visual state.
     draw_joystick = function(control, visual_state)
-        local rectangle = control.render_rect
+        local rectangle = control._render_rect
         local x = control.position and control.position.x or 0
         local y = control.position and control.position.y or 0
         local mag = control.mag or 0
@@ -2900,7 +2985,7 @@ ugui.standard_styler = {
         p:fill(ugui.internal.color_source_to_painter_color(tip_color))
     end,
     draw_track = function(control, visual_state, is_horizontal)
-        local rectangle = control.render_rect
+        local rectangle = control._render_rect
         local track_rectangle = {}
         if not is_horizontal then
             track_rectangle = {
@@ -2935,7 +3020,7 @@ ugui.standard_styler = {
     ---@param is_horizontal boolean Whether the trackbar is horizontal.
     ---@param value number The trackbar's value.
     draw_thumb = function(control, visual_state, is_horizontal, value)
-        local rectangle = control.render_rect
+        local rectangle = control._render_rect
         local head_rectangle = {}
         local effective_bar_height = math.min(
             (is_horizontal and rectangle.height or rectangle.width) * 2,
@@ -2968,7 +3053,7 @@ ugui.standard_styler = {
     ---Draws a Trackbar with the specified parameters.
     ---@param control Trackbar The control table.
     draw_trackbar = function(control)
-        local rectangle = control.render_rect
+        local rectangle = control._render_rect
         local visual_state = ugui.get_visual_state(control)
         local data = ugui.internal.control_data[control.uid]
 
@@ -3213,7 +3298,7 @@ ugui.standard_styler = {
     ---Draws a ListBox with the specified parameters.
     ---@param control ListBox The control table.
     draw_listbox = function(control)
-        ugui.standard_styler.draw_list(control, control.render_rect)
+        ugui.standard_styler.draw_list(control, control._render_rect)
     end,
 
     ---Gets the desired bounds of a listbox's content.
@@ -3678,7 +3763,7 @@ ugui.internal.draw_debug_control_state = function(control)
     end
 
     local p = ugui.internal.painter
-    local render_rect = control.render_rect
+    local render_rect = control._render_rect
     if ugui.internal.keyboard_captured_control == control.uid then
         local rectangle = {
             x = render_rect.x - 4,
@@ -4054,9 +4139,9 @@ end
 
 ---@class UguiControl
 ---@field public uid UID The unique identifier of the control.
----@field public draw (fun(control: UguiControl))? Draws the control. Use `control.render_rect` instead of `control.rectangle`.
----@field public hittest (fun(control: UguiControl, point: UguiVector2): boolean)? Provides hittesting for the control. By default, the check is whether the point is inside `control.render_rect`.
----@field public get_return_value (fun(control: UguiControl, data: any): ControlReturnValue)? Computes the control's current return value and updates its data; use `render_rect` for absolute bounds.
+---@field public draw (fun(control: UguiControl))? Draws the control. Use `control._render_rect` instead of `control.rectangle`.
+---@field public hittest (fun(control: UguiControl, point: UguiVector2): boolean)? Provides hittesting for the control. By default, the check is whether the point is inside `control._render_rect`.
+---@field public get_return_value (fun(control: UguiControl, data: any): ControlReturnValue)? Computes the control's current return value and updates its data; use `control._render_rect` for absolute bounds.
 ---@field public hittestable boolean? Whether this control instance participates in hit-testing. Defaults to `true`, except controls with a different placement default, such as labels and panels. Set this to `true` or `false` to override the default.
 ---@field public styler_mixin any? An optional styler mixin table which can override specific styler parameters for this control. Inherited by children.
 ---@field public rectangle UguiRect The control's rectangle relative to its parent's origin. Top-level controls are relative to the scene origin.
@@ -4077,6 +4162,7 @@ end
 ---@field public background_size UguiBackgroundSize? Background image dimensions in pixels, `"auto"`, `"cover"`, or `"contain"`. Requires `background_image`.
 ---@field public background_nineslice_source PainterRect? Source rectangle for nine-slice rendering. Requires `background_image` and `background_nineslice_center`.
 ---@field public background_nineslice_center PainterRect? Center rectangle for nine-slice rendering. Requires `background_image` and `background_nineslice_source`.
+---@field public _render_rect UguiRect **Internal, only use when authoring controls.** The control's effective rectangle.
 
 ---The base class for all controls.
 
@@ -4144,7 +4230,7 @@ end
 
 local label_draw = function(control)
     ugui.standard_styler.draw_rich_text({
-        rectangle = control.render_rect,
+        rectangle = control._render_rect,
         align_x = control.align_x,
         align_y = control.align_y,
         text = control.text,
@@ -4396,7 +4482,7 @@ end
 ---@return ControlReturnValue
 local function carrousel_button_get_return_value(control, data)
     data.selected_index = control.selected_index
-    local rectangle = control.render_rect
+    local rectangle = control._render_rect
 
     if ugui.internal.clicked_control == control.uid then
         local relative_x = ugui.internal.environment.mouse_position.x - rectangle.x
@@ -4528,7 +4614,7 @@ end
 ---@return ControlReturnValue
 local function scrollbar_get_return_value(control, data)
     data.value = control.value
-    local rectangle = control.render_rect
+    local rectangle = control._render_rect
 
     local is_horizontal = rectangle.width > rectangle.height
 
@@ -4577,7 +4663,7 @@ end
 
 local scrollbar_draw = function(control)
     local data = ugui.internal.control_data[control.uid]
-    local rectangle = control.render_rect
+    local rectangle = control._render_rect
     local is_horizontal = rectangle.width > rectangle.height
 
     ---@type UguiRect
@@ -4673,7 +4759,7 @@ end
 local function listbox_get_return_value(control, data)
     data.selected_index = control.selected_index
 
-    local render_rect = control.render_rect
+    local render_rect = control._render_rect
     local rectangle = {
         x = render_rect.x,
         y = render_rect.y,
@@ -4977,7 +5063,7 @@ end
 ---@param data any
 ---@return ControlReturnValue
 local function textbox_get_return_value(control, data)
-    local rectangle = control.render_rect
+    local rectangle = control._render_rect
     data.text = control.text
     local previous_caret_index<const> = data.caret_index
 
@@ -5290,6 +5376,14 @@ local function textbox_get_return_value(control, data)
                     if e.keycode2 == Mupen.keycode.SDLK_C and e.ctrl and has_selection then
                         local selected_text<const> = data.text:sub(lower_selection, higher_selection - 1)
                         clipboard.set('text', selected_text)
+                    elseif e.keycode2 == Mupen.keycode.SDLK_X and e.ctrl and has_selection then
+                        local selected_text<const> = data.text:sub(lower_selection, higher_selection - 1)
+                        clipboard.set('text', selected_text)
+                        data.text = ugui.internal.remove_range(data.text, lower_selection, higher_selection)
+                        data.caret_index = lower_selection
+                        data.selection_start = lower_selection
+                        data.selection_end = lower_selection
+                        data.last_changed_anchor = 'caret'
                     end
 
                     if e.keycode2 == Mupen.keycode.SDLK_A and e.ctrl then
@@ -5380,7 +5474,7 @@ end
 
 local textbox_draw = function(control)
     local visual_state = ugui.get_visual_state(control)
-    local rectangle = control.render_rect
+    local rectangle = control._render_rect
 
     -- Special case: if we're capturing the keyboard, we consider ourselves "active"
     if ugui.internal.keyboard_captured_control == control.uid then
@@ -5657,7 +5751,7 @@ ugui.combobox = function(control, fn)
 
         local content_bounds = ugui.standard_styler.get_desired_listbox_content_bounds({items = items_to_show})
 
-        local render_rect = control.render_rect
+        local render_rect = control._render_rect
         local width = control.rectangle.width
         if render_rect.x + width > ugui.internal.environment.window_size.x then
             width = ugui.internal.environment.window_size.x - render_rect.x
@@ -5768,7 +5862,7 @@ end
 ---@return ControlReturnValue
 local function joystick_get_return_value(control, data)
     data.position = {x = control.position.x, y = control.position.y}
-    local rectangle = control.render_rect
+    local rectangle = control._render_rect
 
     if ugui.internal.mouse_captured_control == control.uid then
         data.position.x = ugui.internal.clamp(
@@ -5900,7 +5994,7 @@ end
 ---@param point UguiVector2
 ---@return boolean
 local function colorpicker_hittest(control, point)
-    local rectangle = control.render_rect
+    local rectangle = control._render_rect
     if (control.shape or 'square') ~= 'circle' then
         return ugui.internal.point_in_rect(point, rectangle)
     end
@@ -5919,7 +6013,7 @@ local function colorpicker_get_return_value(control, data)
     local color = ugui.internal.copy_color(input_color)
     local shape = control.shape or 'square'
     local band_position = control.band_position or 'right'
-    local square, band = colorpicker_get_geometry(control.render_rect, band_position)
+    local square, band = colorpicker_get_geometry(control._render_rect, band_position)
 
     local selection_changed = false
     if ugui.internal.clicked_control == control.uid then
@@ -6137,7 +6231,7 @@ local colorpicker_draw = function(control)
     local hue, saturation, value = ugui.internal.rgbaf_to_hsv(control.color)
     local shape = control.shape or 'square'
     local band_position = control.band_position or 'right'
-    local square, band = colorpicker_get_geometry(control.render_rect, band_position)
+    local square, band = colorpicker_get_geometry(control._render_rect, band_position)
 
     if shape == 'circle' then
         ugui.standard_styler.draw_colorpicker_circle(control, square, band, hue, saturation, value, band_position)
@@ -6197,7 +6291,7 @@ end
 ---@return ControlReturnValue
 local function trackbar_get_return_value(control, data)
     data.value = control.value
-    local rectangle = control.render_rect
+    local rectangle = control._render_rect
 
     if ugui.internal.mouse_captured_control == control.uid then
         if rectangle.width > rectangle.height then
@@ -6307,7 +6401,7 @@ end
 ---@return {items: MenuItem[], rectangle: UguiRect, depth: integer}[]
 local function menu_get_visible(control, hovered_path)
     local visible = {}
-    local rectangle = ugui.internal.deep_clone(assert(control.render_rect))
+    local rectangle = ugui.internal.deep_clone(assert(control._render_rect))
     visible[1] = {items = control.items, rectangle = rectangle, depth = 1}
 
     for depth = 1, #hovered_path do
@@ -6575,7 +6669,7 @@ ugui.tabcontrol = function(control, fn)
     if ugui.standard_styler.params.tabcontrol.draw_frame then
         local clone = ugui.internal.deep_clone(control)
         clone.items = {}
-        clone.render_rect = control.render_rect
+        clone.render_rect = control._render_rect
         ugui.standard_styler.draw_list(clone, clone.render_rect)
     end
 
@@ -6636,7 +6730,7 @@ end
 ---@param data any
 ---@return ControlReturnValue
 local function numberbox_get_return_value(control, data)
-    local rectangle = control.render_rect
+    local rectangle = control._render_rect
     local prev_value_negative = control.value < 0
     data.value = math.abs(control.value)
 
@@ -6746,7 +6840,7 @@ end
 
 local numberbox_draw = function(control)
     local data = ugui.internal.control_data[control.uid]
-    local rectangle = control.render_rect
+    local rectangle = control._render_rect
     local font_size = ugui.standard_styler.params.font_size * ugui.standard_styler.params.numberbox.font_scale
     local font_name = ugui.standard_styler.params.monospace_font_name
     local text = string.format('%0' .. tostring(control.places) .. 'd', math.abs(control.value))
@@ -6932,15 +7026,12 @@ ugui.spinner = function(control, fn)
     ugui.internal.assert(type(control.is_horizontal) == 'boolean' or type(control.is_horizontal) == 'nil',
         'expected is_horizontal to be boolean or nil')
     control.get_return_value = control.get_return_value or spinner_get_return_value
-    local result = ugui.internal.control(control, 'spinner', fn, initialize_spinner_data)
-    local data = ugui.internal.control_data[control.uid]
 
     local textbox_uid<const> = control.uid + spinner_uids.textbox
     local button_1_uid<const> = control.uid + spinner_uids.button_1
     local button_2_uid<const> = control.uid + spinner_uids.button_2
 
     local increment = control.increment or 1
-    local value = result.primary
 
     local function clamp_value(candidate)
         if control.minimum_value and control.maximum_value then
@@ -6959,100 +7050,115 @@ ugui.spinner = function(control, fn)
     end
 
     local button_size<const> = ugui.standard_styler.params.spinner.button_size
-    local textbox_rect = {
-        x = control.rectangle.x,
-        y = control.rectangle.y,
-        width = control.rectangle.width - button_size * 2,
-        height = control.rectangle.height,
-    }
+    local data
+    local value
+    local result = ugui.internal.control(control, 'spinner', function()
+        data = ugui.internal.control_data[control.uid]
+        value = data.value
 
-    local new_text = ugui.textbox({
-        uid = textbox_uid,
-        rectangle = textbox_rect,
-        is_enabled = ugui.internal.is_control_enabled(control),
-        opacity = control.opacity,
-        text = tostring(value),
-    })
+        local textbox_rect = {
+            x = 0,
+            y = 0,
+            width = control.rectangle.width - button_size * 2,
+            height = control.rectangle.height,
+        }
+        local textbox_render_rect = ugui.internal.compute_render_rect({
+            uid = textbox_uid,
+            rectangle = textbox_rect,
+        })
 
-    local new_number = tonumber(new_text)
-    if new_number then
-        value = clamp_value(new_number)
-    end
+        local new_text = ugui.textbox({
+            uid = textbox_uid,
+            rectangle = textbox_rect,
+            is_enabled = ugui.internal.is_control_enabled(control),
+            opacity = control.opacity,
+            text = tostring(value),
+        })
 
-    if ugui.internal.is_control_enabled(control)
-        and (ugui.internal.point_in_rect(ugui.internal.environment.mouse_position, textbox_rect)
-            or ugui.internal.mouse_captured_control == textbox_uid)
-    then
-        if ugui.internal.environment._scroll_delta.y ~= 0 then
-            value = clamp_value(value + increment * ugui.internal.environment._scroll_delta.y)
+        local new_number = tonumber(new_text)
+        if new_number then
+            value = clamp_value(new_number)
         end
-    end
 
-    if control.is_horizontal then
-        if ugui.button({
-                uid = button_1_uid,
-                is_enabled = ugui.internal.is_control_enabled(control) and not (value == control.minimum_value),
-                opacity = control.opacity,
-                rectangle = {
-                    x = control.rectangle.x + control.rectangle.width - button_size * 2,
-                    y = control.rectangle.y,
-                    width = button_size,
-                    height = control.rectangle.height,
-                },
-                text = '-',
-            })
+        if ugui.internal.is_control_enabled(control)
+            and (ugui.internal.point_in_rect(ugui.internal.environment.mouse_position, textbox_render_rect)
+                or ugui.internal.mouse_captured_control == textbox_uid)
         then
-            value = clamp_value(value - increment)
+            if ugui.internal.environment._scroll_delta.y ~= 0 then
+                value = clamp_value(value + increment * ugui.internal.environment._scroll_delta.y)
+            end
         end
 
-        if ugui.button({
-                uid = button_2_uid,
-                is_enabled = ugui.internal.is_control_enabled(control) and not (value == control.maximum_value),
-                opacity = control.opacity,
-                rectangle = {
-                    x = control.rectangle.x + control.rectangle.width - button_size,
-                    y = control.rectangle.y,
-                    width = button_size,
-                    height = control.rectangle.height,
-                },
-                text = '+',
-            })
-        then
-            value = clamp_value(value + increment)
-        end
-    else
-        if ugui.button({
-                uid = button_1_uid,
-                is_enabled = ugui.internal.is_control_enabled(control) and not (value == control.maximum_value),
-                opacity = control.opacity,
-                rectangle = {
-                    x = control.rectangle.x + control.rectangle.width - button_size * 2,
-                    y = control.rectangle.y,
-                    width = button_size * 2,
-                    height = control.rectangle.height / 2,
-                },
-                text = '+',
-            })
-        then
-            value = clamp_value(value + increment)
+        if control.is_horizontal then
+            if ugui.button({
+                    uid = button_1_uid,
+                    is_enabled = ugui.internal.is_control_enabled(control) and not (value == control.minimum_value),
+                    opacity = control.opacity,
+                    rectangle = {
+                        x = control.rectangle.width - button_size * 2,
+                        y = 0,
+                        width = button_size,
+                        height = control.rectangle.height,
+                    },
+                    text = '-',
+                })
+            then
+                value = clamp_value(value - increment)
+            end
+
+            if ugui.button({
+                    uid = button_2_uid,
+                    is_enabled = ugui.internal.is_control_enabled(control) and not (value == control.maximum_value),
+                    opacity = control.opacity,
+                    rectangle = {
+                        x = control.rectangle.width - button_size,
+                        y = 0,
+                        width = button_size,
+                        height = control.rectangle.height,
+                    },
+                    text = '+',
+                })
+            then
+                value = clamp_value(value + increment)
+            end
+        else
+            if ugui.button({
+                    uid = button_1_uid,
+                    is_enabled = ugui.internal.is_control_enabled(control) and not (value == control.maximum_value),
+                    opacity = control.opacity,
+                    rectangle = {
+                        x = control.rectangle.width - button_size * 2,
+                        y = 0,
+                        width = button_size * 2,
+                        height = control.rectangle.height / 2,
+                    },
+                    text = '+',
+                })
+            then
+                value = clamp_value(value + increment)
+            end
+
+            if ugui.button({
+                    uid = button_2_uid,
+                    is_enabled = ugui.internal.is_control_enabled(control) and not (value == control.minimum_value),
+                    opacity = control.opacity,
+                    rectangle = {
+                        x = control.rectangle.width - button_size * 2,
+                        y = control.rectangle.height / 2,
+                        width = button_size * 2,
+                        height = control.rectangle.height / 2,
+                    },
+                    text = '-',
+                })
+            then
+                value = clamp_value(value - increment)
+            end
         end
 
-        if ugui.button({
-                uid = button_2_uid,
-                is_enabled = ugui.internal.is_control_enabled(control) and not (value == control.minimum_value),
-                opacity = control.opacity,
-                rectangle = {
-                    x = control.rectangle.x + control.rectangle.width - button_size * 2,
-                    y = control.rectangle.y + control.rectangle.height / 2,
-                    width = button_size * 2,
-                    height = control.rectangle.height / 2,
-                },
-                text = '-',
-            })
-        then
-            value = clamp_value(value - increment)
+        if fn then
+            fn()
         end
-    end
+    end, initialize_spinner_data)
 
     value = clamp_value(value)
     data.value = value
@@ -7061,6 +7167,382 @@ ugui.spinner = function(control, fn)
     result.meta.signal_change = data.signal_change
 
     return result.primary, result.meta
+end
+
+-- ------------------------------------------------------------
+--   src/ugui/controls/window.lua
+-- ------------------------------------------------------------
+
+--
+-- Copyright (c) 2026, Mupen64 Organization (https://github.com/mupen64)
+--
+-- SPDX-License-Identifier: GPL-3.0-or-later
+--
+
+---@alias UguiWindowTitlebarPosition "top"|"left"|"right"|"bottom"
+
+---@class UguiWindow : UguiControl
+---@field public title RichText The window's title.
+---@field public titlebar_size number? The titlebar height or width. Defaults to 24.
+---@field public titlebar_position UguiWindowTitlebarPosition? The titlebar's position. Defaults to `top`.
+---@field public resize_grip_size number? The resize grip's size. Defaults to 8.
+---@field public draggable boolean? Whether the window can be dragged. Defaults to `true`.
+---@field public resizable boolean? Whether the window can be resized. Defaults to `true`.
+---@field public minimizable boolean? Whether the window can be minimized. Defaults to `true`.
+---@field public maximizable boolean? Whether the window can be maximized. Defaults to `true`.
+---@field public closable boolean? Whether the window can be closed. Defaults to `true`.
+---A window that hosts content in its slot.
+
+---@class UguiWindowResult
+---@field public new_position Vector2? The window's new position if it was moved.
+---@field public new_size Vector2? The window's new size if it was resized.
+---@field public minimized boolean? Whether the minimize button was pressed.
+---@field public maximized boolean? Whether the maximize button was pressed.
+---@field public closed boolean? Whether the close button was pressed.
+
+local function window_get_uids()
+    local n = 1
+
+    local titlebar_panel<const> = n
+    n = n + ugui.panel_uids()
+
+    local content_panel<const> = n
+    n = n + ugui.panel_uids()
+
+    local title<const> = n
+    n = n + ugui.label_uids()
+
+    local minimize_button<const> = n
+    n = n + ugui.button_uids()
+
+    local maximize_button<const> = n
+    n = n + ugui.button_uids()
+
+    local close_button<const> = n
+    n = n + ugui.button_uids()
+
+    local resize_handle<const> = n
+    n = n + ugui.panel_uids()
+
+    local drag_grip<const> = n
+    n = n + ugui.label_uids()
+
+    return {
+        total = n,
+        titlebar_panel = titlebar_panel,
+        content_panel = content_panel,
+        title = title,
+        minimize_button = minimize_button,
+        maximize_button = maximize_button,
+        close_button = close_button,
+        resize_handle = resize_handle,
+        drag_grip = drag_grip,
+    }
+end
+local window_uids<const> = window_get_uids()
+
+local function window_draw_rotated_title(control, angle)
+    local rectangle = control._render_rect
+    local p = ugui.internal.painter
+    p:save()
+    p:translate(rectangle.x + rectangle.width / 2, rectangle.y + rectangle.height / 2)
+    p:rotate(angle)
+    ugui.standard_styler.draw_rich_text({
+        rectangle = {
+            x = -rectangle.height / 2,
+            y = -rectangle.width / 2,
+            width = rectangle.height,
+            height = rectangle.width,
+        },
+        text = control.text,
+        color = control.color,
+        plaintext = control.plaintext,
+        font_name = control.font_name,
+        font_size = control.font_size,
+        align_x = ugui.alignment.start,
+        align_y = ugui.alignment.center,
+        wrap = false,
+        clip = true,
+    })
+    p:restore()
+end
+
+local function window_draw_resize_handle(control)
+    ugui.standard_styler.draw_icon(
+        control._render_rect,
+        ugui.standard_styler.params.button.border[ugui.visual_states.normal],
+        'diagonal_grip_bottom_right')
+end
+
+---Gets the number of UID slots reserved by a Window.
+---@return integer
+ugui.window_uids = function()
+    return window_uids.total
+end
+
+---Places a Window.
+---@param control UguiWindow The control table.
+---@param fn fun()? A callback whose placed controls become children of the window's content slot.
+---@return UguiWindowResult, Meta # The window result.
+ugui.window = function(control, fn)
+    ugui.internal.assert(type(control.title) == 'string', 'expected title to be string')
+    ugui.internal.assert(type(control.titlebar_size) == 'number' or control.titlebar_size == nil,
+        'expected titlebar_size to be number or nil')
+    ugui.internal.assert(type(control.resize_grip_size) == 'number' or control.resize_grip_size == nil,
+        'expected resize_grip_size to be number or nil')
+    ugui.internal.assert(control.titlebar_size == nil or control.titlebar_size >= 0,
+        'expected titlebar_size to be non-negative')
+    ugui.internal.assert(control.resize_grip_size == nil or control.resize_grip_size >= 0,
+        'expected resize_grip_size to be non-negative')
+    ugui.internal.assert(type(control.draggable) == 'boolean' or control.draggable == nil,
+        'expected draggable to be boolean or nil')
+    ugui.internal.assert(type(control.resizable) == 'boolean' or control.resizable == nil,
+        'expected resizable to be boolean or nil')
+    ugui.internal.assert(type(control.minimizable) == 'boolean' or control.minimizable == nil,
+        'expected minimizable to be boolean or nil')
+    ugui.internal.assert(type(control.maximizable) == 'boolean' or control.maximizable == nil,
+        'expected maximizable to be boolean or nil')
+    ugui.internal.assert(type(control.closable) == 'boolean' or control.closable == nil,
+        'expected closable to be boolean or nil')
+
+    local titlebar_size = control.titlebar_size or 24
+    local titlebar_position = control.titlebar_position or 'top'
+    ugui.internal.assert(titlebar_position == 'top' or titlebar_position == 'left'
+        or titlebar_position == 'right' or titlebar_position == 'bottom',
+        'expected titlebar_position to be top, left, right, or bottom')
+
+    local resize_grip_size = control.resize_grip_size or 8
+    local rectangle = control.rectangle
+    local vertical_titlebar = titlebar_position == 'left' or titlebar_position == 'right'
+    local titlebar_rectangle = {
+        x = titlebar_position == 'right' and rectangle.width - titlebar_size or 0,
+        y = titlebar_position == 'bottom' and rectangle.height - titlebar_size or 0,
+        width = vertical_titlebar and titlebar_size or rectangle.width,
+        height = vertical_titlebar and rectangle.height or titlebar_size,
+    }
+    local content_rectangle = {
+        x = titlebar_position == 'left' and titlebar_size or 0,
+        y = titlebar_position == 'top' and titlebar_size or 0,
+        width = math.max(0, rectangle.width - (vertical_titlebar and titlebar_size or 0)),
+        height = math.max(0, rectangle.height - (vertical_titlebar and 0 or titlebar_size)),
+    }
+    local is_enabled = ugui.internal.is_control_enabled(control)
+    local minimized = false
+    local maximized = false
+    local closed = false
+    local titlebar_buttons = {}
+
+    if control.minimizable ~= false then
+        titlebar_buttons[#titlebar_buttons + 1] = {
+            uid = window_uids.minimize_button,
+            text = '[icon:minimize]',
+            action = 'minimize',
+        }
+    end
+    if control.maximizable ~= false then
+        titlebar_buttons[#titlebar_buttons + 1] = {
+            uid = window_uids.maximize_button,
+            text = '[icon:maximize]',
+            action = 'maximize',
+        }
+    end
+    if control.closable ~= false then
+        titlebar_buttons[#titlebar_buttons + 1] = {
+            uid = window_uids.close_button,
+            text = '[icon:close]',
+            action = 'close',
+        }
+    end
+
+    local button_count = #titlebar_buttons
+    local resize_handle_size = control.resizable ~= false
+        and math.min(resize_grip_size, math.max(0, rectangle.width), math.max(0, rectangle.height)) or 0
+    local resize_handle_reserve = (titlebar_position == 'right' or titlebar_position == 'bottom')
+        and resize_handle_size or 0
+    local titlebar_length = (vertical_titlebar and rectangle.height or rectangle.width) - resize_handle_reserve
+    local button_size = button_count > 0 and math.min(titlebar_size, titlebar_length / button_count) or 0
+    local buttons_width = vertical_titlebar and titlebar_size or button_size * button_count
+    local buttons_height = vertical_titlebar and button_size * button_count or titlebar_size
+
+    local result = ugui.internal.control(control, 'window', function()
+        ugui.panel({
+            uid = control.uid + window_uids.titlebar_panel,
+            rectangle = titlebar_rectangle,
+            fill = ugui.standard_styler.params.button.back[ugui.visual_states.normal],
+            stroke = ugui.standard_styler.params.button.border[ugui.visual_states.normal],
+            stroke_style = {width = 1},
+            hittestable = control.draggable ~= false,
+            opacity = control.opacity,
+        }, function()
+            local title_start = 8
+            if control.draggable ~= false then
+                ugui.label({
+                    uid = control.uid + window_uids.drag_grip,
+                    rectangle = vertical_titlebar
+                        and {x = 0, y = 6, width = titlebar_size, height = 12}
+                        or {x = 6, y = 0, width = 12, height = titlebar_size},
+                    text = vertical_titlebar and '[icon:vgrip]' or '[icon:hgrip]',
+                    color = ugui.standard_styler.params.button.border[ugui.visual_states.normal],
+                    opacity = control.opacity,
+                })
+                title_start = 26
+            end
+
+            local title_label = {
+                uid = control.uid + window_uids.title,
+                rectangle = vertical_titlebar and {
+                    x = 0,
+                    y = title_start,
+                    width = titlebar_size,
+                    height = math.max(0,
+                        rectangle.height - buttons_height - resize_handle_reserve - title_start - 4),
+                } or {
+                    x = title_start,
+                    y = 0,
+                    width = math.max(0,
+                        rectangle.width - buttons_width - resize_handle_reserve - title_start - 4),
+                    height = titlebar_size,
+                },
+                text = control.title,
+                color = ugui.standard_styler.params.button.text[ugui.visual_states.normal],
+                align_x = ugui.alignment.start,
+                align_y = ugui.alignment.center,
+                wrap = false,
+                clip = true,
+                opacity = control.opacity,
+            }
+            if vertical_titlebar then
+                title_label.draw = function(title_control)
+                    window_draw_rotated_title(title_control,
+                        titlebar_position == 'left' and -math.pi / 2 or math.pi / 2)
+                end
+            end
+            ugui.label(title_label)
+
+            for i = 1, button_count do
+                local button = titlebar_buttons[i]
+                local button_rectangle = vertical_titlebar and {
+                    x = 0,
+                    y = rectangle.height - resize_handle_reserve - buttons_height + (i - 1) * button_size,
+                    width = titlebar_size,
+                    height = button_size,
+                } or {
+                    x = rectangle.width - resize_handle_reserve - buttons_width + (i - 1) * button_size,
+                    y = 0,
+                    width = button_size,
+                    height = titlebar_size,
+                }
+                local pressed = ugui.button({
+                    uid = control.uid + button.uid,
+                    rectangle = button_rectangle,
+                    text = button.text,
+                    is_enabled = is_enabled,
+                    opacity = control.opacity,
+                })
+                if button.action == 'minimize' then
+                    minimized = pressed
+                elseif button.action == 'maximize' then
+                    maximized = pressed
+                elseif button.action == 'close' then
+                    closed = pressed
+                end
+            end
+        end)
+
+        ugui.panel({
+            uid = control.uid + window_uids.content_panel,
+            rectangle = content_rectangle,
+            opacity = control.opacity,
+        }, fn)
+
+        if control.resizable ~= false then
+            ugui.panel({
+                uid = control.uid + window_uids.resize_handle,
+                rectangle = {
+                    x = rectangle.width - resize_handle_size,
+                    y = rectangle.height - resize_handle_size,
+                    width = resize_handle_size,
+                    height = resize_handle_size,
+                },
+                draw = window_draw_resize_handle,
+                hittestable = true,
+                opacity = control.opacity,
+            })
+        end
+    end)
+
+    local data = ugui.internal.control_data[control.uid]
+    local dragging = control.draggable ~= false
+        and ugui.internal.mouse_captured_control == control.uid + window_uids.titlebar_panel
+    local new_position
+
+    if dragging then
+        if not data.drag_start_position then
+            data.drag_start_position = {x = control.rectangle.x, y = control.rectangle.y}
+            data.drag_start_mouse_position = {
+                x = ugui.internal.mouse_down_position.x,
+                y = ugui.internal.mouse_down_position.y,
+            }
+        end
+
+        local mouse_position = ugui.internal.environment.mouse_position
+        local delta_x = mouse_position.x - data.drag_start_mouse_position.x
+        local delta_y = mouse_position.y - data.drag_start_mouse_position.y
+        if delta_x ~= 0 or delta_y ~= 0 then
+            data.drag_moved = true
+        end
+        if data.drag_moved then
+            new_position = {
+                x = data.drag_start_position.x + delta_x,
+                y = data.drag_start_position.y + delta_y,
+            }
+        end
+    else
+        data.drag_start_position = nil
+        data.drag_start_mouse_position = nil
+        data.drag_moved = nil
+    end
+
+    local resizing = control.resizable ~= false
+        and ugui.internal.mouse_captured_control == control.uid + window_uids.resize_handle
+    local minimum_width = vertical_titlebar and math.max(1, titlebar_size) or 1
+    local minimum_height = vertical_titlebar and 1 or math.max(1, titlebar_size)
+    local new_size
+
+    if resizing then
+        if not data.resize_start_size then
+            data.resize_start_size = {x = rectangle.width, y = rectangle.height}
+            data.resize_start_mouse_position = {
+                x = ugui.internal.mouse_down_position.x,
+                y = ugui.internal.mouse_down_position.y,
+            }
+        end
+
+        local mouse_position = ugui.internal.environment.mouse_position
+        local delta_x = mouse_position.x - data.resize_start_mouse_position.x
+        local delta_y = mouse_position.y - data.resize_start_mouse_position.y
+        if delta_x ~= 0 or delta_y ~= 0 then
+            data.resize_moved = true
+        end
+        if data.resize_moved then
+            new_size = {
+                x = math.max(minimum_width, data.resize_start_size.x + delta_x),
+                y = math.max(minimum_height, data.resize_start_size.y + delta_y),
+            }
+        end
+    else
+        data.resize_start_size = nil
+        data.resize_start_mouse_position = nil
+        data.resize_moved = nil
+    end
+
+    return {
+        new_position = new_position,
+        new_size = new_size,
+        minimized = minimized,
+        maximized = maximized,
+        closed = closed,
+    }, result.meta
 end
 
 -- ------------------------------------------------------------
@@ -7193,7 +7675,7 @@ ugui.apply_nineslice = function(style)
     end
 
     ugui.standard_styler.draw_raised_frame = function(control, visual_state)
-        _nineslice_draw_image(style.path, control.render_rect, style.button.states[visual_state].source,
+        _nineslice_draw_image(style.path, control._render_rect, style.button.states[visual_state].source,
             style.button.states[visual_state].center, 'nearest', ugui.standard_styler.params.color_filter, true)
     end
 
@@ -7238,7 +7720,7 @@ ugui.apply_nineslice = function(style)
     ugui.standard_styler.draw_scrollbar = function(control, thumb_rectangle)
         local visual_state = ugui.get_visual_state(control)
 
-        _nineslice_draw_image(style.path, control.render_rect, style.scrollbar_rail, nil, 'nearest', nil, false)
+        _nineslice_draw_image(style.path, control._render_rect, style.scrollbar_rail, nil, 'nearest', nil, false)
 
         _nineslice_draw_image(style.path, thumb_rectangle, style.scrollbar_thumb.states[visual_state].source,
             style.scrollbar_thumb.states[visual_state].center, 'nearest', ugui.standard_styler.params.color_filter, true)
