@@ -522,6 +522,11 @@ end
 ---@field public type string The type last used with this UID.
 ---@field public frame integer The most recent frame in which this UID was placed.
 
+local unpack_values = table.unpack or unpack
+local function pack_values(...)
+    return {n = select('#', ...), ...}
+end
+
 ugui.internal = {
     ---@type SceneRoot
     scene_root = {children = {}},
@@ -676,6 +681,27 @@ ugui.internal = {
     ---@type PainterImage?
     ---A full-brightness 256x256 color wheel, shared by all controls.
     colorpicker_circle_image = nil,
+
+    ---Runs a callback with a temporary scene parent, then restores the previous parent.
+    ---@param parent SceneNode|SceneRoot
+    ---@param fn fun(): ...
+    ---@return ...
+    with_parent = function(parent, fn)
+        local previous_parent = ugui.internal.current_parent
+        ugui.internal.current_parent = parent
+        local results = pack_values(fn())
+        ugui.internal.current_parent = previous_parent
+        return unpack_values(results, 1, results.n)
+    end,
+
+    default_get_return_value = function()
+        return {
+            primary = nil,
+            meta = {
+                signal_change = ugui.signal_change_states.none,
+            },
+        }
+    end,
 
     ---@return boolean # Whether LMB was just pressed.
     is_mouse_just_down = function()
@@ -1078,10 +1104,7 @@ local control_impl = function(control, control_type, fn, initialize_data)
         error('UID -1 is reserved for the global context menu.', 2)
     end
 
-    local get_return_value = control.get_return_value
-    if get_return_value == nil then
-        error(string.format("Control type '%s' has no get_return_value function", control_type))
-    end
+    local get_return_value = control.get_return_value or ugui.internal.default_get_return_value
 
     local execution_start = ugui.DEBUG and os.clock()
     local return_value
@@ -1800,7 +1823,6 @@ end
 ---@field align_y UguiAlignment? The rich text's vertical alignment inside the rectangle. If nil, the default is assumed.
 ---@field text RichText The rich text.
 ---@field color UguiRGBA8 The rich text's color. If a rich text segment contains a color, it is used instead.
----@field visual_state VisualState The visual state for rich icons.
 ---@field plaintext boolean? Whether the text is drawn without rich formatting. If nil, false is assumed.
 ---@field font_name string? The font name to use for the text. If nil, the default is assumed.
 ---@field font_size number? The font size to use for the text. If nil, the default is assumed.
@@ -2044,14 +2066,10 @@ ugui.standard_styler = {
     },
 
     ---Draws an icon with the specified parameters.
-    ---The draw_icon implementation may choose to use either the color or visual_state parameter to determine the icon's appearance.
-    ---Therefore, the caller must provide either a color or a visual state, or both.
     ---@param rectangle UguiRect The icon's bounds.
     ---@param color UguiColorSource? The icon's fill color.
-    ---@param visual_state VisualState? The icon's visual state.
     ---@param key string The icon's identifier.
-    draw_icon = function(rectangle, color, visual_state, key)
-        -- NOTE: visual_state is not utilized by the standard implementation of draw_icon.
+    draw_icon = function(rectangle, color, key)
         if not color then
             ugui.internal.painter:begin_path()
             ugui.internal.painter:rect(ugui.internal.rect_to_painter_rect(rectangle))
@@ -2097,13 +2115,12 @@ ugui.standard_styler = {
             p:close_path()
             p:fill(painter_color)
         elseif key == 'checkmark' then
-            local connection_point = {x = rectangle.x + rectangle.width * 0.3, y = rectangle.y + rectangle.height}
+            local check_extent = math.min(rectangle.width, rectangle.height) * 0.4
             p:begin_path()
-            p:line(rectangle.x, rectangle.y + rectangle.height / 2, connection_point.x, connection_point.y)
-            p:stroke(painter_color, {width = 1})
-            p:begin_path()
-            p:line(connection_point.x, connection_point.y, rectangle.x + rectangle.width, rectangle.y)
-            p:stroke(painter_color, {width = 1})
+            p:move_to(center_x - check_extent, center_y - check_extent * 0.05)
+            p:line_to(center_x - check_extent * 0.25, center_y + check_extent * 0.65)
+            p:line_to(center_x + check_extent, center_y - check_extent * 0.65)
+            p:stroke(painter_color, {width = math.max(1, check_extent * 0.18)})
         else
             -- Unknown icon, probably a good idea to nag the user
             p:begin_path()
@@ -2209,7 +2226,6 @@ ugui.standard_styler = {
         local align_y = params.align_y
         local text = params.text
         local color = params.color
-        local visual_state = params.visual_state
         local plaintext = params.plaintext
         local font_name = params.font_name
         local font_size = params.font_size
@@ -2316,7 +2332,7 @@ ugui.standard_styler = {
         for i = 1, #segment_data do
             local data = segment_data[i]
             if data.segment.type == 'icon' then
-                ugui.standard_styler.draw_icon(data.rectangle, data.segment.color or color, visual_state,
+                ugui.standard_styler.draw_icon(data.rectangle, data.segment.color or color,
                     data.segment.value)
             end
             if data.segment.type == 'text' then
@@ -2408,13 +2424,14 @@ ugui.standard_styler = {
         p:circle(inner_rect)
         p:stroke(ugui.internal.color_source_to_painter_color(outline_color), {width = 1})
 
+        local center_x = rectangle.x + rectangle.width / 2
+        local center_y = rectangle.y + rectangle.height / 2
+        local guide_radius = math.max(0, math.min(rectangle.width, rectangle.height) / 2 - 1)
         p:begin_path()
-        p:line(rectangle.x + rectangle.width / 2, rectangle.y,
-            rectangle.x + rectangle.width / 2, rectangle.y + rectangle.height)
+        p:line(center_x, center_y - guide_radius, center_x, center_y + guide_radius)
         p:stroke(ugui.internal.color_source_to_painter_color(outline_color), {width = 1})
         p:begin_path()
-        p:line(rectangle.x, rectangle.y + rectangle.height / 2,
-            rectangle.x + rectangle.width, rectangle.y + rectangle.height / 2)
+        p:line(center_x - guide_radius, center_y, center_x + guide_radius, center_y)
         p:stroke(ugui.internal.color_source_to_painter_color(outline_color), {width = 1})
 
         local r = position.r - mag_thickness
@@ -2495,7 +2512,6 @@ ugui.standard_styler = {
             align_x = ugui.alignment.start,
             text = item,
             color = ugui.standard_styler.params.listbox_item.text[visual_state],
-            visual_state = visual_state,
             plaintext = control.plaintext,
             wrap = false,
         })
@@ -2579,6 +2595,7 @@ ugui.standard_styler = {
         p:begin_path()
         p:rect(ugui.internal.rect_to_painter_rect(rectangle))
         p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.menu_item.back[visual_state]))
+        local text_color = ugui.standard_styler.params.menu_item.text[visual_state]
         p:save()
         p:clip(ugui.internal.rect_to_painter_rect(rectangle))
 
@@ -2588,8 +2605,8 @@ ugui.standard_styler = {
                 y = rectangle.y,
                 width = rectangle.height,
                 height = rectangle.height,
-            }, -7)
-            ugui.standard_styler.draw_icon(icon_rect, ugui.standard_styler.params.menu_item.height, nil, 'checkmark')
+            }, -3)
+            ugui.standard_styler.draw_icon(icon_rect, text_color, 'checkmark')
         end
 
         if item.items then
@@ -2598,8 +2615,8 @@ ugui.standard_styler = {
                 y = rectangle.y,
                 width = ugui.standard_styler.params.menu_item.right_padding,
                 height = rectangle.height,
-            }, -7)
-            ugui.standard_styler.draw_icon(icon_rect, ugui.standard_styler.params.menu_item.height, nil, 'arrow_right')
+            }, -3)
+            ugui.standard_styler.draw_icon(icon_rect, text_color, 'arrow_right')
         end
 
         local text_rect = {
@@ -2621,7 +2638,7 @@ ugui.standard_styler = {
             overflow = 'visible',
             clip = false,
         })
-        p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.menu_item.text[visual_state]))
+        p:fill(ugui.internal.color_source_to_painter_color(text_color))
 
         p:restore()
     end,
@@ -2669,20 +2686,40 @@ ugui.standard_styler = {
         if not text then
             return
         end
-        local rectangle = {x = position.x, y = position.y, width = 0, height = 0}
-        local size = ugui.standard_styler.compute_rich_text(text, control.plaintext,
-            ugui.standard_styler.params.font_name, ugui.standard_styler.params.font_size).size
-        rectangle.width = size.x
-        rectangle.height = math.max(size.y, ugui.standard_styler.params.menu_item.height)
-        rectangle.y = rectangle.y + rectangle.height
-
-        if rectangle.x + rectangle.width > ugui.internal.environment.window_size.x then
-            rectangle.x = rectangle.x - (rectangle.x + rectangle.width - ugui.internal.environment.window_size.x)
+        local font_name = ugui.standard_styler.params.font_name
+        local font_size = ugui.standard_styler.params.font_size
+        local lines = {}
+        local width = 0
+        local height = 0
+        local icon_size = ugui.standard_styler.params.icon_size
+        text = text:gsub('\r\n?', '\n')
+        for line in (text .. '\n'):gmatch('(.-)\n') do
+            local size = ugui.standard_styler.compute_rich_text(line, control.plaintext, font_name, font_size).size
+            local line_height = math.max(icon_size, size.y)
+            lines[#lines + 1] = {text = line, height = line_height}
+            width = math.max(width, size.x)
+            height = height + line_height
         end
-        if rectangle.y + rectangle.height > ugui.internal.environment.window_size.y then
-            rectangle.y = rectangle.y - (rectangle.y + rectangle.height - ugui.internal.environment.window_size.y)
+
+        local rectangle = {
+            x = position.x,
+            y = position.y,
+            width = width,
+            height = math.max(height, ugui.standard_styler.params.menu_item.height),
+        }
+        local window_size = ugui.internal.environment.window_size or {x = math.maxinteger, y = math.maxinteger}
+        local vertical_offset = ugui.standard_styler.params.menu_item.height
+        rectangle.y = position.y + vertical_offset
+        if rectangle.y + rectangle.height > window_size.y then
+            rectangle.y = position.y - vertical_offset - rectangle.height
+        end
+        if rectangle.y + rectangle.height > window_size.y then
+            rectangle.y = window_size.y - rectangle.height
         end
 
+        if rectangle.x + rectangle.width > window_size.x then
+            rectangle.x = rectangle.x - (rectangle.x + rectangle.width - window_size.x)
+        end
         rectangle.x = math.max(rectangle.x, 0)
         rectangle.y = math.max(rectangle.y, 0)
 
@@ -2712,14 +2749,19 @@ ugui.standard_styler = {
             rectangle.width = 99999
         end
 
-        ugui.standard_styler.draw_rich_text({
-            rectangle = rectangle,
-            align_x = ugui.alignment.start,
-            text = text,
-            color = ugui.standard_styler.params.menu_item.text[ugui.visual_states.normal],
-            visual_state = ugui.visual_states.normal,
-            plaintext = control.plaintext,
-        })
+        local y = rectangle.y + math.max(0, (rectangle.height - height) / 2)
+        for i = 1, #lines do
+            local line = lines[i]
+            ugui.standard_styler.draw_rich_text({
+                rectangle = {x = rectangle.x, y = y, width = rectangle.width, height = line.height},
+                align_x = ugui.alignment.start,
+                align_y = ugui.alignment.center,
+                text = line.text,
+                color = ugui.standard_styler.params.menu_item.text[ugui.visual_states.normal],
+                plaintext = control.plaintext,
+            })
+            y = y + line.height
+        end
     end,
 
     ---Draws a Button with the specified parameters.
@@ -2758,14 +2800,14 @@ ugui.standard_styler = {
             y = rectangle.y,
             width = ugui.standard_styler.params.icon_size,
             height = rectangle.height,
-        }, ugui.standard_styler.params.button.text[visual_state], visual_state, 'arrow_left')
+        }, ugui.standard_styler.params.button.text[visual_state], 'arrow_left')
         ugui.standard_styler.draw_icon({
             x = rectangle.x + rectangle.width - ugui.standard_styler.params.textbox.padding.x -
                 ugui.standard_styler.params.icon_size,
             y = rectangle.y,
             width = ugui.standard_styler.params.icon_size,
             height = rectangle.height,
-        }, ugui.standard_styler.params.button.text[visual_state], visual_state, 'arrow_right')
+        }, ugui.standard_styler.params.button.text[visual_state], 'arrow_right')
     end,
 
     ---Draws a TextBox with the specified parameters.
@@ -4135,18 +4177,6 @@ ugui.panel_uids = function()
     return 1
 end
 
----@param control Panel
----@param data any
----@return ControlReturnValue
-local function panel_get_return_value(control, data)
-    return {
-        primary = nil,
-        meta = {
-            signal_change = ugui.signal_change_states.none,
-        },
-    }
-end
-
 
 ---Places a Panel.
 ---@param control Panel The control table.
@@ -4156,7 +4186,7 @@ ugui.panel = function(control, fn)
     if control.hittestable == nil then
         control.hittestable = false
     end
-    control.get_return_value = control.get_return_value or panel_get_return_value
+
     local result = ugui.internal.control(control, 'panel', fn)
     return result.primary, result.meta
 end
@@ -4189,28 +4219,14 @@ ugui.label_uids = function()
     return 1
 end
 
----@param control Label
----@param data any
----@return ControlReturnValue
-local function label_get_return_value(control, data)
-    return {
-        primary = nil,
-        meta = {
-            signal_change = ugui.signal_change_states.none,
-        },
-    }
-end
-
 
 local label_draw = function(control)
-    local visual_state = ugui.get_visual_state(control)
     ugui.standard_styler.draw_rich_text({
         rectangle = control.render_rect,
         align_x = control.align_x,
         align_y = control.align_y,
         text = control.text,
         color = control.color,
-        visual_state = visual_state,
         plaintext = control.plaintext,
         font_name = control.font_name,
         font_size = control.font_size,
@@ -4238,7 +4254,7 @@ ugui.label = function(control, fn)
         control.hittestable = false
     end
     control.draw = control.draw or label_draw
-    control.get_return_value = control.get_return_value or label_get_return_value
+
     local result = ugui.internal.control(control, 'label', fn)
     return result.primary, result.meta
 end
@@ -5711,14 +5727,13 @@ ugui.combobox = function(control, fn)
         end
 
         local list_rect = {
-            x = control.rectangle.x,
-            y = control.rectangle.y + control.rectangle.height,
+            x = render_rect.x,
+            y = render_rect.y + control.rectangle.height,
             width = width,
             height = height,
         }
 
-        local restore = ugui.internal.keyboard_captured_control
-        ugui.internal.keyboard_captured_control = listbox_uid
+        -- HACK: Parent the listbox to the scene root to avoid drawing priority issues
         local listbox = {
             uid = listbox_uid,
             rectangle = list_rect,
@@ -5726,11 +5741,17 @@ ugui.combobox = function(control, fn)
             selected_index = data.selected_index,
             plaintext = control.plaintext,
             opacity = control.opacity,
+            styler_mixin = control.styler_mixin,
             z_index = math.maxinteger,
         }
-        data.selected_index = ugui.listbox(listbox)
+        local restore_keyboard_capture = ugui.internal.keyboard_captured_control
+        ugui.internal.keyboard_captured_control = listbox_uid
+        local selected_index = ugui.internal.with_parent(ugui.internal.scene_root, function()
+            return ugui.listbox(listbox)
+        end)
+        ugui.internal.keyboard_captured_control = restore_keyboard_capture
+        data.selected_index = selected_index
         result.primary = data.filtered_to_original and data.filtered_to_original[data.selected_index] or data.selected_index
-        ugui.internal.keyboard_captured_control = restore
 
         local enter_pressed = false
         -- allow confirming the selection with return when any of the owned controls captures keyboard input
@@ -6288,9 +6309,8 @@ end
 ---A menu, which allows the user to choose from a list of items.
 
 ---Gets the number of UID slots reserved by a Menu.
----@param control Menu The menu instance.
 ---@return integer
-ugui.menu_uids = function(control)
+ugui.menu_uids = function()
     return 1
 end
 
@@ -6508,11 +6528,10 @@ end
 ---@field public rectangle UguiRect The visual bounds the selected tab can place its contents in.
 
 ---Gets the number of UID slots reserved by a TabControl.
----@param control TabControl The tab control instance.
+---@param item_count integer The amount of items passed in to the TabControl.
 ---@return integer
-ugui.tabcontrol_uids = function(control)
-    ugui.internal.assert(type(control.items) == 'table', 'expected items to be table')
-    return 1 + #control.items * ugui.toggle_button_uids() + ugui.panel_uids()
+ugui.tabcontrol_uids = function(item_count)
+    return 1 + item_count * ugui.toggle_button_uids() + ugui.panel_uids()
 end
 
 local function initialize_tabcontrol_data(control, data)
@@ -7141,13 +7160,6 @@ local function scale_and_center(inner, outer, max_size, adjust_even_odd)
     }
 end
 
-local function _nineslice_fill_rectangle(rectangle, color)
-    local p = ugui.internal.painter
-    p:begin_path()
-    p:rect(ugui.internal.rect_to_painter_rect(rectangle))
-    p:fill(ugui.internal.color_source_to_painter_color(color))
-end
-
 
 local function _nineslice_draw_image(path, destination, source, center, sampling, color, round_rectangles)
     if round_rectangles then
@@ -7203,7 +7215,7 @@ end
 ---Styling information for nineslice graphics.
 ---@class UguiNinesliceStyle
 ---@field path string The path to the nineslice atlas.
----@field icons table<string, table<VisualState, UguiRect>> Map of icon keys to their corresponding per-visual state source rects into the atlas.
+---@field icons table<string, UguiRect> Map of icon keys to their source rectangles in the atlas.
 ---@field button UguiNinesliceMetadata Per-visual state nineslice metadata for raised frame graphics.
 ---@field textbox UguiNinesliceMetadata Per-visual state nineslice metadata for edit frame graphics.
 ---@field listbox UguiNinesliceMetadata Per-visual state nineslice metadata for list frame graphics.
@@ -7217,29 +7229,16 @@ end
 ugui.apply_nineslice = function(style)
     ugui.free()
 
-    local function draw_icon_placeholder(rectangle)
-        _nineslice_fill_rectangle(rectangle, '#FF0000')
-    end
-
     local original_draw_icon = ugui.standard_styler.draw_icon
-    ugui.standard_styler.draw_icon = function(rectangle, color, visual_state, key)
-        local rectangles = style.icons[key]
-
-        if not rectangles then
-            original_draw_icon(rectangle, color, visual_state, key)
+    ugui.standard_styler.draw_icon = function(rectangle, color, key)
+        local source = style.icons[key]
+        if not source then
+            original_draw_icon(rectangle, color, key)
             return
         end
 
-        local rect = rectangles[visual_state]
-        if not rect then
-            draw_icon_placeholder(rectangle)
-            return
-        end
-
-        local adjusted_rect = scale_and_center(rect, rectangle, ugui.standard_styler.params.icon_size, true)
-        local source = rectangles[visual_state]
-        _nineslice_draw_image(style.path, adjusted_rect, source, nil, 'linear',
-            ugui.standard_styler.params.color_filter, false)
+        local adjusted_rect = scale_and_center(source, rectangle, ugui.standard_styler.params.icon_size, true)
+        _nineslice_draw_image(style.path, adjusted_rect, source, nil, 'linear', color, false)
     end
 
     ugui.standard_styler.draw_raised_frame = function(control, visual_state)
@@ -7280,7 +7279,6 @@ ugui.apply_nineslice = function(style)
             align_x = ugui.alignment.start,
             text = item,
             color = ugui.standard_styler.params.listbox_item.text[visual_state],
-            visual_state = visual_state,
             plaintext = control.plaintext,
             wrap = false,
         })
