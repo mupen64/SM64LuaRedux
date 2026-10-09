@@ -2402,76 +2402,6 @@ ugui.standard_styler = {
         p:fill(ugui.internal.color_source_to_painter_color(ugui.standard_styler.params.listbox.back[visual_state]))
     end,
 
-    ---Draws a joystick's inner part with the specified parameters.
-    ---@param rectangle UguiRect The control bounds.
-    ---@param visual_state VisualState The control's visual state.
-    ---@param position UguiVector2 The joystick's position.
-    draw_joystick_inner = function(rectangle, visual_state, position)
-        local back_color = ugui.standard_styler.params.joystick.back[visual_state]
-        local outline_color = ugui.standard_styler.params.joystick.outline[visual_state]
-        local tip_color = ugui.standard_styler.params.joystick.tip[visual_state]
-        local line_color = ugui.standard_styler.params.joystick.line[visual_state]
-        local inner_mag_color = ugui.standard_styler.params.joystick.inner_mag[visual_state]
-        local outer_mag_color = ugui.standard_styler.params.joystick.outer_mag[visual_state]
-        local mag_thickness = ugui.standard_styler.params.joystick.mag_thicknesses[visual_state]
-        local p = ugui.internal.painter
-        local inner_rect = ugui.internal.rect_to_painter_rect(ugui.internal.inflate_rect(rectangle, -1))
-
-        p:begin_path()
-        p:circle(inner_rect)
-        p:fill(ugui.internal.color_source_to_painter_color(back_color))
-        p:begin_path()
-        p:circle(inner_rect)
-        p:stroke(ugui.internal.color_source_to_painter_color(outline_color), {width = 1})
-
-        local center_x = rectangle.x + rectangle.width / 2
-        local center_y = rectangle.y + rectangle.height / 2
-        local guide_radius = math.max(0, math.min(rectangle.width, rectangle.height) / 2 - 1)
-        p:begin_path()
-        p:line(center_x, center_y - guide_radius, center_x, center_y + guide_radius)
-        p:stroke(ugui.internal.color_source_to_painter_color(outline_color), {width = 1})
-        p:begin_path()
-        p:line(center_x - guide_radius, center_y, center_x + guide_radius, center_y)
-        p:stroke(ugui.internal.color_source_to_painter_color(outline_color), {width = 1})
-
-        local r = position.r - mag_thickness
-        if r > 0 then
-            p:begin_path()
-            p:circle({
-                x = rectangle.x + rectangle.width / 2 - r / 2,
-                y = rectangle.y + rectangle.height / 2 - r / 2,
-                w = r,
-                h = r,
-            })
-            p:fill(ugui.internal.color_source_to_painter_color(inner_mag_color))
-            r = position.r
-
-            p:begin_path()
-            p:circle({
-                x = rectangle.x + rectangle.width / 2 - r / 2,
-                y = rectangle.y + rectangle.height / 2 - r / 2,
-                w = r,
-                h = r,
-            })
-            p:stroke(ugui.internal.color_source_to_painter_color(outer_mag_color), {width = mag_thickness})
-        end
-
-        p:begin_path()
-        p:line(rectangle.x + rectangle.width / 2, rectangle.y + rectangle.height / 2,
-            position.x, position.y)
-        p:stroke(ugui.internal.color_source_to_painter_color(line_color), {width = 3})
-
-        local tip_size = ugui.standard_styler.params.joystick.tip_size
-        p:begin_path()
-        p:circle({
-            x = position.x - tip_size / 2,
-            y = position.y - tip_size / 2,
-            w = tip_size,
-            h = tip_size,
-        })
-        p:fill(ugui.internal.color_source_to_painter_color(tip_color))
-    end,
-
     ---Draws a scrollbar with the specified parameters.
     ---@param control ScrollBar
     ---@param thumb_rectangle UguiRect The scrollbar thumb's bounds.
@@ -2764,70 +2694,18 @@ ugui.standard_styler = {
         end
     end,
 
-    ---Draws a Button with the specified parameters.
-    ---@param control Button The control table.
-    draw_button = function(control)
-        local visual_state = ugui.get_visual_state(control)
-
-        -- NOTE: Avoids duplicating code for ToggleButton in this implementation by putting it here
-        ---@diagnostic disable-next-line: undefined-field
-        if control.is_checked and ugui.internal.is_control_enabled(control) then
-            visual_state = ugui.visual_states.active
-        end
-
-        ugui.standard_styler.draw_raised_frame(control, visual_state)
-    end,
-
-    ---Draws a ToggleButton with the specified parameters.
-    ---@param control ToggleButton The control table.
-    draw_togglebutton = function(control)
-        ugui.standard_styler.draw_button(control)
-    end,
-
-    ---Draws a CarrouselButton with the specified parameters.
-    ---@param control CarrouselButton The control table.
-    draw_carrousel_button = function(control)
-        -- add a "fake" text field
-        control.text = control.items and control.items[control.selected_index] or ''
-        ugui.standard_styler.draw_button(control)
-
-        local visual_state = ugui.get_visual_state(control)
-
-        -- draw the arrows
-        local rectangle = control.render_rect
-        ugui.standard_styler.draw_icon({
-            x = rectangle.x + ugui.standard_styler.params.textbox.padding.x,
-            y = rectangle.y,
-            width = ugui.standard_styler.params.icon_size,
-            height = rectangle.height,
-        }, ugui.standard_styler.params.button.text[visual_state], 'arrow_left')
-        ugui.standard_styler.draw_icon({
-            x = rectangle.x + rectangle.width - ugui.standard_styler.params.textbox.padding.x -
-                ugui.standard_styler.params.icon_size,
-            y = rectangle.y,
-            width = ugui.standard_styler.params.icon_size,
-            height = rectangle.height,
-        }, ugui.standard_styler.params.button.text[visual_state], 'arrow_right')
-    end,
-
     ---Draws a TextBox with the specified parameters.
     ---@param control TextBox The control table.
-    draw_textbox = function(control)
+    ---@param visual_state VisualState The visual state.
+    draw_textbox = function(control, visual_state)
         local data = ugui.internal.control_data[control.uid]
         local rectangle = control.render_rect
-        local visual_state = ugui.get_visual_state(control)
         local text<const> = data.text
         local scroll_offset = data.scroll_offset
         local scrolled_text<const> = scroll_offset == 1 and text or text:sub(scroll_offset)
 
         local keyboard_captured = ugui.internal.keyboard_captured_control == control.uid
 
-        -- Special case: if we're capturing the keyboard, we consider ourselves "active"
-        if keyboard_captured then
-            visual_state = ugui.visual_states.active
-        end
-
-        ugui.standard_styler.draw_edit_frame(control, rectangle, visual_state)
         local p = ugui.internal.painter
         p:save()
 
@@ -2942,27 +2820,84 @@ ugui.standard_styler = {
 
     ---Draws a Joystick with the specified parameters.
     ---@param control Joystick The control table.
-    draw_joystick = function(control)
+    ---@param visual_state VisualState The visual state.
+    draw_joystick = function(control, visual_state)
         local rectangle = control.render_rect
-        local visual_state = ugui.get_visual_state(control)
         local x = control.position and control.position.x or 0
         local y = control.position and control.position.y or 0
         local mag = control.mag or 0
 
-        -- joystick has no hover or active states
-        if not (visual_state == ugui.visual_states.disabled) then
-            visual_state = ugui.visual_states.normal
-        end
-
-        ugui.standard_styler.draw_raised_frame(control, visual_state)
-        ugui.standard_styler.draw_joystick_inner(rectangle, visual_state, {
+        local position = {
             x = ugui.internal.remap(ugui.internal.clamp(x, -128, 128), -128, 128,
                 rectangle.x, rectangle.x + rectangle.width),
             y = ugui.internal.remap(ugui.internal.clamp(y, -128, 128), -128, 128,
                 rectangle.y, rectangle.y + rectangle.height),
             r = ugui.internal.remap(ugui.internal.clamp(mag, 0, 128), 0, 128, 0,
                 math.min(rectangle.width, rectangle.height)),
+        }
+
+        local back_color = ugui.standard_styler.params.joystick.back[visual_state]
+        local outline_color = ugui.standard_styler.params.joystick.outline[visual_state]
+        local tip_color = ugui.standard_styler.params.joystick.tip[visual_state]
+        local line_color = ugui.standard_styler.params.joystick.line[visual_state]
+        local inner_mag_color = ugui.standard_styler.params.joystick.inner_mag[visual_state]
+        local outer_mag_color = ugui.standard_styler.params.joystick.outer_mag[visual_state]
+        local mag_thickness = ugui.standard_styler.params.joystick.mag_thicknesses[visual_state]
+        local p = ugui.internal.painter
+        local inner_rect = ugui.internal.rect_to_painter_rect(ugui.internal.inflate_rect(rectangle, -1))
+
+        p:begin_path()
+        p:circle(inner_rect)
+        p:fill(ugui.internal.color_source_to_painter_color(back_color))
+        p:begin_path()
+        p:circle(inner_rect)
+        p:stroke(ugui.internal.color_source_to_painter_color(outline_color), {width = 1})
+
+        local center_x = rectangle.x + rectangle.width / 2
+        local center_y = rectangle.y + rectangle.height / 2
+        local guide_radius = math.max(0, math.min(rectangle.width, rectangle.height) / 2 - 1)
+        p:begin_path()
+        p:line(center_x, center_y - guide_radius, center_x, center_y + guide_radius)
+        p:stroke(ugui.internal.color_source_to_painter_color(outline_color), {width = 1})
+        p:begin_path()
+        p:line(center_x - guide_radius, center_y, center_x + guide_radius, center_y)
+        p:stroke(ugui.internal.color_source_to_painter_color(outline_color), {width = 1})
+
+        local r = position.r - mag_thickness
+        if r > 0 then
+            p:begin_path()
+            p:circle({
+                x = center_x - r / 2,
+                y = center_y - r / 2,
+                w = r,
+                h = r,
+            })
+            p:fill(ugui.internal.color_source_to_painter_color(inner_mag_color))
+            r = position.r
+
+            p:begin_path()
+            p:circle({
+                x = center_x - r / 2,
+                y = center_y - r / 2,
+                w = r,
+                h = r,
+            })
+            p:stroke(ugui.internal.color_source_to_painter_color(outer_mag_color), {width = mag_thickness})
+        end
+
+        p:begin_path()
+        p:line(center_x, center_y, position.x, position.y)
+        p:stroke(ugui.internal.color_source_to_painter_color(line_color), {width = 3})
+
+        local tip_size = ugui.standard_styler.params.joystick.tip_size
+        p:begin_path()
+        p:circle({
+            x = position.x - tip_size / 2,
+            y = position.y - tip_size / 2,
+            w = tip_size,
+            h = tip_size,
         })
+        p:fill(ugui.internal.color_source_to_painter_color(tip_color))
     end,
     draw_track = function(control, visual_state, is_horizontal)
         local rectangle = control.render_rect
@@ -3273,19 +3208,6 @@ ugui.standard_styler = {
         p:begin_path()
         p:circle(painter_rect)
         p:stroke(control.is_enabled == false and '#808080' or '#000000', {width = 1})
-    end,
-
-    ---Draws a ComboBox with the specified parameters.
-    ---@param control ComboBox The control table.
-    draw_combobox = function(control)
-        local visual_state = ugui.get_visual_state(control)
-        local data = ugui.internal.control_data[control.uid]
-
-        if data.open and ugui.internal.is_control_enabled(control) then
-            visual_state = ugui.visual_states.active
-        end
-
-        ugui.standard_styler.draw_raised_frame(control, visual_state)
     end,
 
     ---Draws a ListBox with the specified parameters.
@@ -4308,7 +4230,8 @@ end
 
 
 local button_draw = function(control)
-    ugui.standard_styler.draw_button(control)
+    local visual_state = ugui.get_visual_state(control)
+    ugui.standard_styler.draw_raised_frame(control, visual_state)
 end
 
 ---Places a Button.
@@ -4391,7 +4314,11 @@ end
 
 
 local toggle_button_draw = function(control)
-    ugui.standard_styler.draw_button(control)
+    local visual_state = ugui.get_visual_state(control)
+    if visual_state ~= ugui.visual_states.disabled and control.is_checked then
+        visual_state = ugui.visual_states.active
+    end
+    ugui.standard_styler.draw_raised_frame(control, visual_state)
 end
 
 ---Places a ToggleButton.
@@ -5452,7 +5379,16 @@ end
 
 
 local textbox_draw = function(control)
-    ugui.standard_styler.draw_textbox(control)
+    local visual_state = ugui.get_visual_state(control)
+    local rectangle = control.render_rect
+
+    -- Special case: if we're capturing the keyboard, we consider ourselves "active"
+    if ugui.internal.keyboard_captured_control == control.uid then
+        visual_state = ugui.visual_states.active
+    end
+
+    ugui.standard_styler.draw_edit_frame(control, rectangle, visual_state)
+    ugui.standard_styler.draw_textbox(control, visual_state)
 end
 
 ---Places a TextBox.
@@ -5565,7 +5501,14 @@ end
 
 
 local combobox_draw = function(control)
-    ugui.standard_styler.draw_combobox(control)
+    local visual_state = ugui.get_visual_state(control)
+    local data = ugui.internal.control_data[control.uid]
+
+    if visual_state ~= ugui.visual_states.disabled and data.open then
+        visual_state = ugui.visual_states.active
+    end
+
+    ugui.standard_styler.draw_raised_frame(control, visual_state)
 end
 
 
@@ -5853,7 +5796,15 @@ end
 
 
 local joystick_draw = function(control)
-    ugui.standard_styler.draw_joystick(control)
+    local visual_state = ugui.get_visual_state(control)
+
+    -- joystick has no hover or active states
+    if visual_state ~= ugui.visual_states.disabled then
+        visual_state = ugui.visual_states.normal
+    end
+
+    ugui.standard_styler.draw_raised_frame(control, visual_state)
+    ugui.standard_styler.draw_joystick(control, visual_state)
 end
 
 ---Places a Joystick.
