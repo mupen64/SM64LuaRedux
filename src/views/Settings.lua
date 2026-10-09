@@ -54,7 +54,7 @@ local visual_items = {
                 selected_index = Settings.active_style_index,
             })
 
-            if meta.signal_change == ugui.signal_change_states.started then
+            if meta.signal_change == ugui.signal_change_states.ended then
                 action.invoke(ACTION_SETTINGS_SET_STYLE, nil, nil, {
                     style = Styles.theme_names()[new_active_style_index],
                 })
@@ -70,7 +70,7 @@ local visual_items = {
                 items = Locales.names(),
                 selected_index = Settings.locale_index,
             })
-            if meta.signal_change == ugui.signal_change_states.started then
+            if meta.signal_change == ugui.signal_change_states.ended then
                 action.invoke(ACTION_SETTINGS_SET_LANGUAGE, nil, nil, {
                     language = Locales.names()[new_locale_index],
                 })
@@ -375,7 +375,7 @@ local memory_items = {
                 selected_index = Settings.address_source_index,
                 tooltip = Locales.str('SETTINGS_MEMORY_REGION_TOOLTIP'),
             })
-            if meta.signal_change == ugui.signal_change_states.started then
+            if meta.signal_change == ugui.signal_change_states.ended then
                 action.invoke(ACTION_SETTINGS_SET_REGION, nil, nil, {
                     region = region_names[new_region_index],
                 })
