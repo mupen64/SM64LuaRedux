@@ -74,9 +74,10 @@ local DEFAULT_COLORS = {
 local HACK_FILE_BASE <const> = 0x80400000
 local MIN_BASE_OFFSET <const> = 0x8040 -- below this is the game's own memory
 local MAX_BASE_OFFSET <const> = 0x806C -- the 15 animation buffers end at base + 0x13C000
-local BASE_LUIS <const> = {0x8044, 0x8078, 0x8190, 0x8270} -- lui base, incl. colored hats
-local BASE_PLUS_1_LUI <const> = 0x80F8 -- lui base + 1 (frame buffers)
-local ANIMATION_BUFFER_LUI <const> = 0x8050 -- lui base + 0x10
+local BASE_LUIS <const> = {0x44, 0x78, 0x190, 0x270} -- offsets to write "LUI Ghost.base_offset" to
+local BASE_PLUS_1_LUI <const> = 0xF8 -- offset to write "LUI Ghost.base_offset + 1" to
+local ANIMATION_BUFFER_LUI <const> = 0x50 -- offset to write "LUI Ghost.base_offset + 0x10" to
+local HAT_COLOR_LIGHTS_OFFSET <const> = 0x8300
 
 local pending_base_offset = nil
 
@@ -302,10 +303,13 @@ end
 ---@return boolean # Whether the playback hack is supported on the current ROM
 function Ghost.hack_is_supported()
 	local address_source = Addresses[Settings.address_source_index]
+    local rom_name = address_source.name()
 	return (
         address_source.vanilla_bank_04_offset ~= nil and
         address_source.s_segment_table_offset ~= nil and
-        address_source.area_update_objects ~= nil
+        address_source.area_update_objects ~= nil and
+        (rom_name == Locales.str('ADDRESS_USA') or
+            rom_name == Locales.str('ADDRESS_JAPAN'))
     )
 end
 
@@ -377,7 +381,7 @@ local function write_color_to_stream(ID, ghost_index)
         color = ghost_hat_color[ID]
     end
     local lights = color_to_lights(color)
-    writebytes(region(0x8300) + ghost_index * 0x20, lights)
+    writebytes(region(HAT_COLOR_LIGHTS_OFFSET) + ghost_index * 0x20, lights)
 end
 
 local function set_new_ghost_color(ID)
@@ -403,7 +407,7 @@ local function read_ghost_frame(file)
     }
 end 
 
----@param filepath # the path to a .ghost file
+---@param filepath string # the path to a .ghost file
 ---@return integer | nil # an ID for the newly loaded ghost, or nil if it fails
 function Ghost.load_ghost_file(filepath)
     local file = io.open(filepath, "rb")
@@ -454,7 +458,7 @@ function Ghost.load_ghost_file(filepath)
 	return ID
 end
 
----@param integer
+---@param ID integer
 ---@return string | nil # the file name of a loaded ghost
 function Ghost.get_file_name(ID)
     if ID == 0 then
@@ -516,7 +520,7 @@ function Ghost.disable_ghost(ID)
     ghost_enabled[ID] = false
 end
 
----Reallows teh ghost with the given ID to be displayed.
+---Reallows the ghost with the given ID to be displayed.
 ---@return boolean # whether the operation succeeds (if a ghost with such an ID exists)
 function Ghost.enable_ghost(ID)
     if ghost_data[ID] == nil then
@@ -876,8 +880,8 @@ function Ghost.update()
     end
 end
 
----@param integer # the ghost ID to change the color for
----@param {integer, integer, integer} # the RGB color
+---@param ID integer # the ghost ID to change the color for
+---@param RGB {r: integer, g: integer, b: integer} # the RGB color
 function Ghost.set_color(ID, RGB)
 	ghost_hat_color[ID] = {
 		clamp(RGB[1]), clamp(RGB[2]), clamp(RGB[3])
@@ -908,8 +912,8 @@ function Ghost.get_ghost_data_length(ID)
 	return #ghost_data[ID]
 end
 
----@param integer # the ghost ID to change transparency for
----@param boolean # whether it should be transparent or not
+---@param ID integer # the ghost ID to change transparency for
+---@param transparent boolean # whether it should be transparent or not
 function Ghost.set_transparent(ID, transparent)
     if transparent then
 		ghost_is_transparent[ID] = 1
@@ -918,7 +922,7 @@ function Ghost.set_transparent(ID, transparent)
 	end
 end
 
----@param integer # the ghost's ID
+---@param ID integer # the ghost's ID
 ---@return boolean
 function Ghost.is_transparent(ID)
     return ghost_is_transparent[ID] == 1
