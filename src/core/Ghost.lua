@@ -58,7 +58,6 @@ local OBJ_PITCH_OFFSET <const> = 0x1A
 local OBJ_YAW_OFFSET <const> = 0x1C
 local OBJ_ROLL_OFFSET <const> = 0x1E
 
-local MAX_GHOSTS = 15
 local DEFAULT_COLORS = {
     {255, 0, 0},
     {255, 127, 0},

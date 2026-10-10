@@ -74,6 +74,7 @@ Settings = {
     ghost_tab_index = 1,
     ghost_transparent_default = false,
     ghost_recording_auto_load = true,
+    ghost_playback_warning_accepted = false,
     autodetect_address = true,
     auto_firsties = false,
     mini_visualizer = false,

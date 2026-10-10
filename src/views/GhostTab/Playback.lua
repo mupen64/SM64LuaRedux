@@ -32,6 +32,8 @@ local UID = UIDProvider.allocate_once('GhostPlayback', function(enum_next)
         ColorPickerOk = enum_next(ugui.button_uids()),
         ColorPickerCancel = enum_next(ugui.button_uids()),
         GhostData = enum_next(ugui.listbox_uids()),
+        Warning = enum_next(ugui.label_uids()),
+        AcceptWarning = enum_next(ugui.button_uids()),
     }
 end)
 
@@ -94,6 +96,29 @@ return {
                 align_x = ugui.alignment['start'],
                 align_y = ugui.alignment.center,
             })
+        end
+
+        -- the rest of the tab stays hidden until the memory warning is accepted (reset in the settings tab)
+        if not Settings.ghost_playback_warning_accepted then
+            ugui.label({
+                uid = UID.Warning,
+                rectangle = grid_rect(0.1, 1, 7.8, 5),
+                text = Locales.str('GHOST_PLAYBACK_WARNING'),
+                color = foreground_color,
+                font_size = theme.font_size * 1.25,
+                font_name = theme.font_name,
+                align_x = ugui.alignment['start'],
+                align_y = ugui.alignment['start'],
+                wrap = true,
+            })
+            if ugui.button({
+                    uid = UID.AcceptWarning,
+                    rectangle = grid_rect(2, 6.5, 4, 1),
+                    text = Locales.str('GHOST_PLAYBACK_WARNING_ACCEPT'),
+                }) then
+                Settings.ghost_playback_warning_accepted = true
+            end
+            return
         end
 
         local hack_supported = Ghost.hack_is_supported()

@@ -255,6 +255,10 @@ Locales = {}
 ---@field public GHOST_SETTINGS_TRANSPARENT_DEFAULT_TOOLTIP string
 ---@field public GHOST_SETTINGS_BASE_OFFSET string
 ---@field public GHOST_SETTINGS_BASE_OFFSET_TOOLTIP string
+---@field public GHOST_PLAYBACK_WARNING string
+---@field public GHOST_PLAYBACK_WARNING_ACCEPT string
+---@field public GHOST_SETTINGS_SHOW_PLAYBACK_WARNING string
+---@field public GHOST_SETTINGS_SHOW_PLAYBACK_WARNING_TOOLTIP string
 ---@field public GHOST_NONE_SELECTED string
 ---@field public GHOST_DATA_ROLL string
 ---@field public GHOST_DATA_ANIMATION string

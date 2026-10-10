@@ -10,6 +10,7 @@ local UID = UIDProvider.allocate_once('GhostSettings', function(enum_next)
         TransparentDefault = enum_next(ugui.toggle_button_uids()),
         BaseOffsetLabel = enum_next(ugui.label_uids()),
         BaseOffset = enum_next(ugui.textbox_uids()),
+        ShowPlaybackWarning = enum_next(ugui.toggle_button_uids()),
     }
 end)
 
@@ -71,5 +72,13 @@ return {
         if base and base ~= target_base then
             Ghost.set_base_offset(base)
         end
+
+        Settings.ghost_playback_warning_accepted = not ugui.toggle_button({
+            uid = UID.ShowPlaybackWarning,
+            rectangle = grid_rect(0.1, 4, 7.8, 1),
+            text = Locales.str('GHOST_SETTINGS_SHOW_PLAYBACK_WARNING'),
+            tooltip = Locales.str('GHOST_SETTINGS_SHOW_PLAYBACK_WARNING_TOOLTIP'),
+            is_checked = not Settings.ghost_playback_warning_accepted,
+        })
     end
 }
