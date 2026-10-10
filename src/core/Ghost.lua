@@ -754,13 +754,105 @@ function Ghost.get_pending_base_offset()
     return pending_base_offset
 end
 
+--[[
+    Body state hooks: Mario's geo callbacks read gBodyStates[0] for every node drawn with his
+    model, so ghosts copied the real Mario's kick/punch scaling, torso tilt and head rotation.
+    Each hook jumps to a wrapper that applies neutral values when the node being drawn is a
+    ghost (GraphNodeObjects inlined at region 0x7000-0x7FFF), else runs the original.
+]]
+
+local BODY_HOOKS_OFFSET <const> = 0x8800 -- free space between the hat lights and the frame buffers
+local BODY_HOOK_STRIDE <const> = 0x50
+local NOP <const> = 0x00000000
+local NEUTRAL_SCALE <const> = {0x3C0C3F80, 0xAD6C0018, NOP} -- scaleNode->scale = 1.0f
+local NEUTRAL_ROTATION <const> = {0xA5600018, 0xA560001A, 0xA560001C} -- rotNode->rotation = {0, 0, 0}
+
+-- addresses from STROOP's MappingUS.map / MappingJP.map
+local BODY_HOOKS_US <const> = {
+    cur_graph_node_object = 0x8032DF00,
+    {addr = 0x80277294, neutral = NEUTRAL_ROTATION}, -- geo_mario_tilt_torso
+    {addr = 0x802773A4, neutral = NEUTRAL_ROTATION}, -- geo_mario_head_rotation
+    {addr = 0x802775CC, neutral = NEUTRAL_SCALE},    -- geo_mario_hand_foot_scaler
+}
+local BODY_HOOKS_JP <const> = {
+    cur_graph_node_object = 0x8032CFA0,
+    {addr = 0x80276CE4, neutral = NEUTRAL_ROTATION}, -- geo_mario_tilt_torso
+    {addr = 0x80276DF4, neutral = NEUTRAL_ROTATION}, -- geo_mario_head_rotation
+    {addr = 0x8027701C, neutral = NEUTRAL_SCALE},    -- geo_mario_hand_foot_scaler
+}
+
+local function j_to(target)
+    return 0x08000000 | ((target & 0x0FFFFFFF) >> 2)
+end
+
+-- true for branches/jumps, which can't be relocated into the wrapper
+local function is_branch(op)
+    local opcode, funct = op >> 26, op & 0x3F
+    return (opcode >= 1 and opcode <= 7) or (opcode >= 20 and opcode <= 23)
+        or (opcode == 0 and (funct == 8 or funct == 9))
+        or (opcode == 17 and ((op >> 21) & 0x1F) == 8)
+end
+
+---@return integer, integer | nil # the hooked function's original first two instructions, or nil if its code is unexpected
+local function original_instructions(addr)
+    local first, second = memory.readdword(addr), memory.readdword(addr + 4)
+    if first >> 26 == 2 then
+        -- already hooked, possibly for an older base offset: recover what that wrapper displaced
+        local wrapper = (addr & 0xF0000000) | ((first & 0x03FFFFFF) << 2)
+        if memory.readdword(wrapper + 0x44) == j_to(addr + 8) then
+            return memory.readdword(wrapper + 0x3C), memory.readdword(wrapper + 0x40)
+        end
+        return nil
+    end
+    -- the previous function ends right before, and the moved instructions aren't branches
+    if memory.readdword(addr - 8) ~= 0x03E00008 or is_branch(first) or is_branch(second) then
+        return nil
+    end
+    return first, second
+end
+
+local function apply_body_state_hooks(hooks)
+    local node_hi, node_lo = (hooks.cur_graph_node_object + 0x8000) >> 16, hooks.cur_graph_node_object & 0xFFFF
+    for i, hook in ipairs(hooks) do
+        local wrapper = region(BODY_HOOKS_OFFSET) + (i - 1) * BODY_HOOK_STRIDE
+        local first, second = original_instructions(hook.addr)
+        if not first then
+            print(string.format("Ghost: unexpected code at 0x%X, skipping body state hook", hook.addr))
+        else
+            local code = {
+                0x3C080000 | node_hi,        -- lui t0, hi(gCurGraphNodeObject)
+                0x8D080000 | node_lo,        -- lw t0, lo(gCurGraphNodeObject)(t0)
+                0x3C090000 | Ghost.base_offset, -- lui t1, base
+                0x35297000, -- ori t1, t1, 0x7000
+                0x01094023, -- subu t0, t0, t1
+                0x2D081000, -- sltiu t0, t0, 0x1000   ; ghost node?
+                0x11000008, -- beq t0, zero, original
+                0x240A0001, -- addiu t2, zero, GEO_CONTEXT_RENDER
+                0x148A0006, -- bne a0, t2, original
+                0x8CAB0008, -- lw t3, 0x8(a1)         ; node->next
+                hook.neutral[1], hook.neutral[2], hook.neutral[3],
+                0x03E00008, -- jr ra
+                0x00001025, -- or v0, zero, zero      ; return NULL
+                first, second, -- original: the displaced instructions, then resume
+                j_to(hook.addr + 8),
+                NOP,
+            }
+            for k, op in ipairs(code) do
+                memory.writedword(wrapper + (k - 1) * 4, op)
+            end
+            memory.writedword(hook.addr + 4, NOP)
+            memory.writedword(hook.addr, j_to(wrapper))
+        end
+    end
+end
+
 ---Write the playback ghost hack to RAM.
 -- Details: https://github.com/FramePerfection/STROOP/tree/Development/HackSources/Ghosts
 function Ghost.apply_hack()
 	local rom_name = Addresses[Settings.address_source_index].name()
-	local HACKS = HACKS_US -- default to US hack
+	local HACKS, BODY_HOOKS = HACKS_US, BODY_HOOKS_US -- default to US hack
 	if rom_name == Locales.str('ADDRESS_JAPAN') then
-		HACKS = HACKS_JP
+		HACKS, BODY_HOOKS = HACKS_JP, BODY_HOOKS_JP
 	end
 
     local hook_addr = Addresses[Settings.address_source_index].area_update_objects
@@ -788,6 +880,7 @@ function Ghost.apply_hack()
     memory.writedword(hook_addr, hook_instruction())
 
     enable_colored_hats()
+    apply_body_state_hooks(BODY_HOOKS)
 
     memory.recompilenextall()
 end
