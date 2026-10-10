@@ -37,14 +37,27 @@ local UID = UIDProvider.allocate_once('GhostPlayback', function(enum_next)
     }
 end)
 
-local selected_ghost_id = 0
--- names edited in the UI, by ghost ID; only displayed here, the ghost module keeps its filepath
+local selected_ghost = nil
+
+-- names edited in the UI, by ghost; only displayed here, the ghost module keeps its filepath
 local display_names = {}
+
+-- set the display name from the filepath
+local function ghost_name(ghost)
+    if not ghost then
+        return 'Mario'
+    end
+    if not display_names[ghost] then
+        display_names[ghost] = ghost.filepath:match('[^\\/]+$'):match("^(.*)%.[^%.]*$") or ghost.filepath
+    end
+    return display_names[ghost]
+end
+
 local picker_open = false
-local picker_ghost_id = nil
+local picker_ghost = nil
 local picker_original = nil
 local color_text = nil
-local color_text_ghost_id = nil
+local color_text_ghost = nil
 
 local function rgb_to_str(rgb)
     return string.format('#%02X%02X%02X', rgb[1], rgb[2], rgb[3])
@@ -121,9 +134,9 @@ return {
             return
         end
 
-        local hack_supported = Ghost.hack_is_supported()
-        local hack_enabled = Ghost.hack_is_applied()
-        local valid_ghost_selected = selected_ghost_id ~= 0
+        local hack_supported = Ghosts.hack_is_supported()
+        local hack_enabled = Ghosts.hack_is_applied()
+        local valid_ghost_selected = selected_ghost ~= nil
 
         local status = Locales.str('GHOST_STATUS')
         if not hack_supported then
@@ -139,12 +152,12 @@ return {
             uid = UID.EnableHack,
             rectangle = grid_rect(0.1, 1.7, 7.8, 1),
             text = Locales.str('GHOST_ENABLE_HACK'),
-            tooltip = Ghost.auto_apply_hack and Locales.str('GHOST_DISABLE_HACK_TOOLTIP') or Locales.str('GHOST_ENABLE_HACK_TOOLTIP'),
-            is_checked = Ghost.auto_apply_hack,
+            tooltip = Ghosts.auto_apply_hack and Locales.str('GHOST_DISABLE_HACK_TOOLTIP') or Locales.str('GHOST_ENABLE_HACK_TOOLTIP'),
+            is_checked = Ghosts.auto_apply_hack,
             is_enabled = hack_supported
         })
-        if auto_apply_hack ~= Ghost.auto_apply_hack then
-            Ghost.auto_apply_hack = auto_apply_hack
+        if auto_apply_hack ~= Ghosts.auto_apply_hack then
+            Ghosts.auto_apply_hack = auto_apply_hack
         end
 
         if ugui.button({
@@ -154,11 +167,11 @@ return {
             }) then
             local path = iohelper.filediag("*.ghost", 0)
             if string.len(path) > 0 then
-                local new_id = Ghost.load_ghost_file(path)
-                if not new_id then
+                local new_ghost = Ghosts.load_ghost_file(path)
+                if not new_ghost then
                     print(Locales.str('GHOST_LOAD_FAILED'))
                 else
-                    selected_ghost_id = new_id
+                    selected_ghost = new_ghost
                 end
             end
         end
@@ -169,11 +182,12 @@ return {
                 text = Locales.str('GHOST_REMOVE'),
                 is_enabled = valid_ghost_selected
             }) then
-            Ghost.unload_ghost(selected_ghost_id)
-            selected_ghost_id = 0 -- go back to Mario
+            Ghosts.unload_ghost(selected_ghost)
+            display_names[selected_ghost] = nil
+            selected_ghost = nil -- go back to Mario
         end
 
-        local was_enabled = Ghost.is_enabled(selected_ghost_id)
+        local was_enabled = not selected_ghost or selected_ghost.enabled
         if ugui.button({
             uid = UID.EnableGhost,
             rectangle = grid_rect(5.3, 2.7, 2.6, 1),
@@ -181,42 +195,15 @@ return {
             tooltip = Locales.str('GHOST_ENABLE_GHOST_TOOLTIP'),
             is_enabled = valid_ghost_selected
         }) then
-            if was_enabled then
-                Ghost.disable_ghost(selected_ghost_id)
-            else
-                Ghost.enable_ghost(selected_ghost_id)
-            end
-        end
-
-
-        -- ghost list
-        local ghosts = Ghost.list_ghosts()
-        local ghost_list = {}
-        local selected_index = nil
-        for i, ghost in ipairs(ghosts) do
-            local enabled = Ghost.is_enabled(ghost.id) and '[✓] ' or '[  ] '
-            ghost.name = display_names[ghost.id] or ghost.name
-            ghost_list[#ghost_list + 1] = enabled .. ghost.name
-            if ghost.id == selected_ghost_id then
-                selected_index = i
-            end
-        end
-        local new_index = ugui.listbox({
-            uid = UID.GhostList,
-            rectangle = grid_rect(0.1, 3.7, 7.8, 3.4),
-            selected_index = selected_index,
-            items = ghost_list,
-        })
-        if new_index and ghosts[new_index] then
-            selected_ghost_id = ghosts[new_index].id
+            selected_ghost.enabled = not was_enabled
         end
 
         -- file of the selected ghost
         section_label(UID.FileLabel, grid_rect(0, 7.1, 1, 0.9), Locales.str('GHOST_FILE'))
 
-        local name = ''
-        for _, ghost in ipairs(ghosts) do
-            if ghost.id == selected_ghost_id then name = ghost.name end
+        local name = 'Mario'
+        if selected_ghost then
+            name = ghost_name(selected_ghost)
         end
         local new_name = ugui.textbox({
             uid = UID.FileName,
@@ -228,8 +215,8 @@ return {
             },
             is_enabled = valid_ghost_selected
         })
-        if valid_ghost_selected and new_name ~= name then
-            display_names[selected_ghost_id] = new_name
+        if selected_ghost and new_name ~= name then
+            display_names[selected_ghost] = new_name
         end
 
         if ugui.button({
@@ -240,7 +227,7 @@ return {
                 is_enabled = valid_ghost_selected
             }) then
             local path = iohelper.filediag("*.ghost", 1)
-            if string.len(path) > 0 and not Ghost.save_ghost_file(selected_ghost_id, path) then
+            if string.len(path) > 0 and not Ghosts.save_ghost_file(selected_ghost, path) then
                 print(Locales.str('GHOST_SAVE_FAILED'))
             end
         end
@@ -248,7 +235,7 @@ return {
         -- editable ghost data
         section_label(UID.TimerStartLabel, grid_rect(0, 7.9, 8, 1), Locales.str('GHOST_TIMER_START'))
 
-        local current_start = Ghost.get_global_timer_offset(selected_ghost_id)
+        local current_start = not selected_ghost and 0 or selected_ghost.global_timer_start
         local new_start = ugui.textbox({
             uid = UID.TimerStart,
             rectangle = grid_rect(3.7, 8, 2.6, 0.8),
@@ -262,7 +249,7 @@ return {
         -- the box shows the start timer, not the raw offset, so convert back when editing
         local typed_start = tonumber(new_start)
         if typed_start and typed_start ~= current_start then
-            Ghost.set_global_timer_start(selected_ghost_id, typed_start)
+            selected_ghost.global_timer_start = typed_start
         end
 
         if ugui.button({
@@ -275,7 +262,7 @@ return {
                     font_size = theme.font_size * 1.25,
                 },
             }) then
-            Ghost.set_global_timer_start(selected_ghost_id, math.max(0, current_start - 1))
+            selected_ghost.global_timer_start = math.max(0, current_start - 1)
         end
 
         if ugui.button({
@@ -288,23 +275,26 @@ return {
                     font_size = theme.font_size * 1.25,
                 },
             }) then
-            Ghost.set_global_timer_start(selected_ghost_id, current_start + 1)
+            selected_ghost.global_timer_start = current_start + 1
         end
 
         -- close the picker (keeping the current color) if its target is no longer editable
-        if picker_open and picker_ghost_id ~= selected_ghost_id then
+        if picker_open and picker_ghost ~= selected_ghost then
             picker_open = false
         end
 
         -- display object's graphics instead of hat options
-        local graphics = Ghost.get_graphics(selected_ghost_id)
+        local graphics = not selected_ghost and 0 or selected_ghost.graphics
         if graphics ~= 0 then
             section_label(UID.GraphicsLabel, grid_rect(0, 8.8, 2.5, 1), Locales.str('GHOST_GRAPHICS'))
             section_label(UID.Graphics, grid_rect(2, 8.8, 5.4, 1), string.format('0x%X', graphics))
         else
             section_label(UID.TransparentLabel, grid_rect(0, 8.8, 2.5, 1), Locales.str('GHOST_TRANSPARENT'))
 
-            local transparent = Ghost.is_transparent(selected_ghost_id)
+            local transparent = false
+            if valid_ghost_selected then
+                transparent = selected_ghost.is_transparent
+            end
             if ugui.button({
                     uid = UID.Transparent,
                     rectangle = grid_rect(2.5, 8.9, 0.8, 0.8),
@@ -315,17 +305,16 @@ return {
                         font_size = theme.font_size * 1.25,
                     },
                 }) then
-                Ghost.set_transparent(selected_ghost_id, not transparent)
+                selected_ghost.is_transparent = not transparent
             end
 
             section_label(UID.ColorLabel, grid_rect(0, 9.7, 1.3, 1), Locales.str('GHOST_COLOR'))
 
-            -- editable without a ghost selected, since ID 0 is Mario's hat
-            local color = Ghost.get_color(selected_ghost_id)
+            local color = Ghosts.get_color(selected_ghost)
             local color_text_is_focused = ugui.internal.keyboard_captured_control == UID.Color
-            if color_text == nil or not color_text_is_focused or color_text_ghost_id ~= selected_ghost_id then
+            if color_text == nil or not color_text_is_focused or color_text_ghost ~= selected_ghost then
                 color_text = rgb_to_str(color)
-                color_text_ghost_id = selected_ghost_id
+                color_text_ghost = selected_ghost
             end
             color_text = ugui.textbox({
                 uid = UID.Color,
@@ -338,7 +327,7 @@ return {
             })
             local typed_color = parse_hex_color(color_text)
             if typed_color then
-                Ghost.set_color(selected_ghost_id, typed_color)
+                Ghosts.set_color(selected_ghost, typed_color)
                 color = typed_color
             end
 
@@ -365,7 +354,7 @@ return {
                     picker_open = false
                 else
                     picker_open = true
-                    picker_ghost_id = selected_ghost_id
+                    picker_ghost = selected_ghost
                     picker_original = { color[1], color[2], color[3] }
                 end
             end
@@ -380,7 +369,7 @@ return {
                 })
                 local picked_rgb = ugui_color_to_rgb(picked_color)
                 if picked_rgb[1] ~= color[1] or picked_rgb[2] ~= color[2] or picked_rgb[3] ~= color[3] then
-                    Ghost.set_color(selected_ghost_id, picked_rgb)
+                    Ghosts.set_color(selected_ghost, picked_rgb)
                     color = picked_rgb
                 end
 
@@ -399,7 +388,7 @@ return {
                         text = Locales.str('GHOST_COLOR_PICKER_CANCEL'),
                         tooltip = Locales.str('GHOST_COLOR_PICKER_CANCEL_TOOLTIP'),
                     }) then
-                    Ghost.set_color(picker_ghost_id, picker_original)
+                    Ghosts.set_color(picker_ghost, picker_original)
                     picker_open = false
                 end
             end
@@ -409,7 +398,33 @@ return {
             uid = UID.GhostData,
             rectangle = grid_rect(0, 12, 8, 4),
             selected_index = nil,
-            items = ghost_varwatch_data(selected_ghost_id),
+            items = ghost_varwatch_data(selected_ghost),
         })
+
+        -- ghost list
+        -- drawn last so changes in selected)ghost don't affect other UI elements
+        local ghosts = Ghosts.list_ghosts()
+        local ghost_name_list = {'[✓] Mario'}
+        local selected_index = 1
+        for i, ghost in ipairs(ghosts) do
+            local enabled = ghost.enabled and '[✓] ' or '[  ] '
+            ghost_name_list[#ghost_name_list + 1] = enabled .. ghost_name(ghost)
+            if ghost == selected_ghost then
+                selected_index = i + 1 -- Mario is the first item
+            end
+        end
+        local new_index = ugui.listbox({
+            uid = UID.GhostList,
+            rectangle = grid_rect(0.1, 3.7, 7.8, 3.4),
+            selected_index = selected_index,
+            items = ghost_name_list,
+        })
+        if new_index then
+            if new_index == 1 then
+                selected_ghost = nil -- Mario
+            else
+                selected_ghost = ghosts[new_index - 1]
+            end
+        end
     end
 }

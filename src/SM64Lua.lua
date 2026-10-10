@@ -183,7 +183,7 @@ local function at_input()
     end
 
     Joypad.send()
-    Ghost.update()
+    Ghosts.update()
     Dumping.update()
 end
 

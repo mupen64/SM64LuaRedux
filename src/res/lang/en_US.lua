@@ -311,7 +311,6 @@ This action cannot be undone.
     GHOST_PLAYBACK_WARNING_ACCEPT = 'I Understand',
     GHOST_SETTINGS_SHOW_PLAYBACK_WARNING = 'Show warning before ghost playback',
     GHOST_SETTINGS_SHOW_PLAYBACK_WARNING_TOOLTIP = 'Show the memory warning on the playback tab again\nuntil it is accepted',
-    GHOST_NONE_SELECTED = 'No ghost selected',
     GHOST_DATA_ROLL = 'Roll',
     GHOST_DATA_ANIMATION = 'Animation',
     GHOST_DATA_ANIMATION_FRAME = 'Animation Frame',

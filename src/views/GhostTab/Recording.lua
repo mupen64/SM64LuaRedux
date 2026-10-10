@@ -30,12 +30,12 @@ local object_data_cache = { key = nil, items = nil }
 
 local function object_varwatch_data()
     local mario_obj = Memory.current.mario_object_effective
-    local addr = Ghost.recording_object_address(mario_obj)
+    local addr = Ghosts.recording_object_address(mario_obj)
     local key = addr .. ':' .. Memory.current.global_timer
     if key ~= object_data_cache.key then
         object_data_cache.key = key
-        local data = Ghost.read_object(addr)
-        object_data_cache.items = data and frame_varwatch_data(data, addr ~= mario_obj and data.graphics)
+        local data = Ghosts.read_object(addr)
+        object_data_cache.items = data and frame_varwatch_data(data)
             or { Locales.str('GHOST_INVALID_OBJECT') }
     end
     return object_data_cache.items
@@ -61,7 +61,7 @@ return {
         local foreground_color = Drawing.foreground_color()
 
         local status = Locales.str('GHOST_STATUS_IDLE')
-        if Ghost.is_recording() then
+        if Ghosts.is_recording() then
             status = Locales.str('GHOST_STATUS_RECORDING')
             was_recording_timer = SAVED_DISPLAY_TIME
         elseif was_recording_timer > 0 then
@@ -86,18 +86,18 @@ return {
         local record = ugui.toggle_button({
             uid = UID.RecordGhost,
             rectangle = grid_rect(0.1, 1.85, 7.8, 1),
-            text = Ghost.is_recording() and Locales.str('GHOST_STOP') or Locales.str('GHOST_START'),
+            text = Ghosts.is_recording() and Locales.str('GHOST_STOP') or Locales.str('GHOST_START'),
             tooltip = Locales.str('GHOST_RECORD_TOOLTIP'),
-            is_checked = Ghost.is_recording()
+            is_checked = Ghosts.is_recording()
         })
-        if record ~= Ghost.is_recording() then
-            if Ghost.is_recording() then
-                local result = Ghost.stop_recording()
+        if record ~= Ghosts.is_recording() then
+            if Ghosts.is_recording() then
+                local result = Ghosts.stop_recording()
                 if not result then
                     print(Locales.str('GHOST_STOP_RECORDING_FAILED'))
                 end
             else
-                local result = Ghost.start_recording()
+                local result = Ghosts.start_recording()
                 if not result then
                     print(Locales.str('GHOST_START_RECORDING_FAILED'))
                 end
@@ -147,10 +147,10 @@ return {
                 rectangle = grid_rect(0.1, 4.6, 1.5, 1),
                 text = Locales.str('GHOST_RECORD_MARIO'),
                 tooltip = Locales.str('GHOST_RECORD_MARIO_TOOLTIP'),
-                is_enabled = not Ghost.is_recording(),
-                is_checked = Ghost.recording_mode == GhostRecordingModes.mario
+                is_enabled = not Ghosts.is_recording(),
+                is_checked = Ghosts.recording_mode == GhostRecordingModes.mario
             }) then
-            Ghost.recording_mode = GhostRecordingModes.mario
+            Ghosts.recording_mode = GhostRecordingModes.mario
         end
 
         if ugui.toggle_button({
@@ -158,10 +158,10 @@ return {
                 rectangle = grid_rect(1.6, 4.6, 3.4, 1),
                 text = Locales.str('GHOST_RECORD_OBJECT'),
                 tooltip = Locales.str('GHOST_RECORD_OBJECT_TOOLTIP'),
-                is_enabled = not Ghost.is_recording(),
-                is_checked = Ghost.recording_mode == GhostRecordingModes.object and not select_object_by_name
+                is_enabled = not Ghosts.is_recording(),
+                is_checked = Ghosts.recording_mode == GhostRecordingModes.object and not select_object_by_name
             }) then
-            Ghost.recording_mode = GhostRecordingModes.object
+            Ghosts.recording_mode = GhostRecordingModes.object
             select_object_by_name = false
         end
 
@@ -179,16 +179,16 @@ return {
         local new_obj_addr = tonumber(ugui.textbox({
             uid = UID.GhostObjectAddress,
             rectangle = grid_rect(2, 5.7, 3, 0.9),
-            text = string.format("0x%X", Ghost.object_address),
+            text = string.format("0x%X", Ghosts.object_address),
             tooltip = Locales.str('GHOST_OBJECT_ADDRESS_TOOLTIP'),
             styler_mixin = {
                 font_size = theme.font_size * 1.25,
             },
-            is_enabled = (Ghost.recording_mode == GhostRecordingModes.object and
-                not select_object_by_name and not Ghost.is_recording())
+            is_enabled = (Ghosts.recording_mode == GhostRecordingModes.object and
+                not select_object_by_name and not Ghosts.is_recording())
         }):gsub("[^%x]", ""), 16)
-        if new_obj_addr and new_obj_addr ~= Ghost.object_address then
-            Ghost.object_address = new_obj_addr
+        if new_obj_addr and new_obj_addr ~= Ghosts.object_address then
+            Ghosts.object_address = new_obj_addr
         end
 
         if ugui.toggle_button({
@@ -196,15 +196,15 @@ return {
                 rectangle = grid_rect(5, 4.6, 2.9, 1),
                 text = Locales.str('GHOST_RECORD_OBJECT_BY_NAME'),
                 tooltip = Locales.str('GHOST_RECORD_OBJECT_BY_NAME_TOOLTIP'),
-                is_enabled = not Ghost.is_recording(),
-                is_checked = Ghost.recording_mode == GhostRecordingModes.object and select_object_by_name
+                is_enabled = not Ghosts.is_recording(),
+                is_checked = Ghosts.recording_mode == GhostRecordingModes.object and select_object_by_name
             }) then
-            Ghost.recording_mode = GhostRecordingModes.object
+            Ghosts.recording_mode = GhostRecordingModes.object
             select_object_by_name = true
         end
 
-        local by_name_enabled = (Ghost.recording_mode == GhostRecordingModes.object and
-                select_object_by_name and not Ghost.is_recording())
+        local by_name_enabled = (Ghosts.recording_mode == GhostRecordingModes.object and
+                select_object_by_name and not Ghosts.is_recording())
         -- Memory.update() flags the list as stale once per game frame, so this doesn't rescan on every draw.
         -- Also fill it once up front so Mario is listed before "Object by name" is picked
         if (by_name_enabled or #object_list.objects == 0) and Memory.objects_need_updating() then
@@ -217,12 +217,12 @@ return {
         end
         local selected_object_index = nil
         for i, obj in ipairs(object_list.objects) do
-            if Ghost.recording_mode == GhostRecordingModes.mario then
+            if Ghosts.recording_mode == GhostRecordingModes.mario then
                 if obj.name == 'Mario' then
                     selected_object_index = i
                     break
                 end
-            elseif obj.address == Ghost.object_address then
+            elseif obj.address == Ghosts.object_address then
                 selected_object_index = i
                 break
             end
@@ -237,7 +237,7 @@ return {
             is_enabled = by_name_enabled,
         })
         if new_object_index and new_object_index ~= selected_object_index and object_list.objects[new_object_index] then
-            Ghost.object_address = object_list.objects[new_object_index].address
+            Ghosts.object_address = object_list.objects[new_object_index].address
         end
 
         -- data of the object that would be recorded

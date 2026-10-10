@@ -310,7 +310,6 @@ Cette action est irréversible.
     GHOST_PLAYBACK_WARNING_ACCEPT = 'J\'ai compris',
     GHOST_SETTINGS_SHOW_PLAYBACK_WARNING = 'Afficher l\'avertissement avant la lecture des fantômes',
     GHOST_SETTINGS_SHOW_PLAYBACK_WARNING_TOOLTIP = 'Affiche de nouveau l\'avertissement sur la mémoire dans l\'onglet lecture\njusqu\'à ce qu\'il soit accepté',
-    GHOST_NONE_SELECTED = 'Aucun fantôme sélectionné',
     GHOST_DATA_ROLL = 'Roll',
     GHOST_DATA_ANIMATION = 'Animation',
     GHOST_DATA_ANIMATION_FRAME = 'Frame d\'animation',

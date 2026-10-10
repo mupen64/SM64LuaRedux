@@ -50,7 +50,7 @@ return {
         })
 
         -- a move requested while the hack is running finishes once its ghosts are freed
-        local target_base = Ghost.get_pending_base_offset() or Ghost.base_offset
+        local target_base = Ghosts.get_pending_base_offset() or Ghosts.base_offset
         local is_focused = ugui.internal.keyboard_captured_control == UID.BaseOffset
         if not is_focused then
             base_offset_text = string.format('0x%X', target_base)
@@ -64,13 +64,13 @@ return {
                 font_size = theme.font_size * 1.25,
             },
         })
-        -- accepts 8060, 0x8060 or 0x80600000; Ghost.set_base_offset ignores invalid values
+        -- accepts 8060, 0x8060 or 0x80600000; Ghosts.set_base_offset ignores invalid values
         local base = tonumber((base_offset_text:gsub('^%s*0[xX]', '')), 16)
         if base and base > 0xFFFF and base & 0xFFFF == 0 then
             base = base >> 16
         end
         if base and base ~= target_base then
-            Ghost.set_base_offset(base)
+            Ghosts.set_base_offset(base)
         end
 
         Settings.ghost_playback_warning_accepted = not ugui.toggle_button({

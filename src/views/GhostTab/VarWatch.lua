@@ -39,13 +39,10 @@ function frame_varwatch_data(data)
     return items
 end
 
-function ghost_varwatch_data(ID)
-    if ID == 0 then
+function ghost_varwatch_data(ghost)
+    if not ghost then
         return frame_varwatch_data(get_mario_data())
     end
-    local data = Ghost.get_ghost_data(ID, Memory.current.global_timer)
-    if data == nil then
-        return { Locales.str('GHOST_NONE_SELECTED') }
-    end
+    local data = Ghosts.get_ghost_data(ghost, Memory.current.global_timer)
     return frame_varwatch_data(data)
 end
