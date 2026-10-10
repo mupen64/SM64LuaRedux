@@ -39,6 +39,22 @@ local non_mario_graphics = nil
 local animation_switches = { }
 local last_recorded_animation = nil
 
+---@class VariableData
+---@field type integer # see Ghosts.VARIABLE_TYPES
+---@field label string # up to 15 bytes
+---@field data any[] # one value per frame
+
+-- variable block: magic, 15 byte label, 1 byte type, then one value of that type per frame
+local VARWATCH_EXTRA_MAGIC <const> = 0x12345678
+local VARIABLE_FORMATS <const> = {'<I2', '<I4', '<f'}
+local VARIABLE_MASKS <const> = {0xFFFF, 0xFFFFFFFF}
+Ghosts.VARIABLE_TYPES = {word = 1, int = 2, float = 3}
+
+---@type VariableData[]
+local recording_variables = {} -- the registered variables, snapshot when a recording starts
+local variable_types = {} -- label to type map, for variables registered with Ghosts.record_variable
+local variable_read_funcs = {} -- label to function map, where the function returns the current value
+
 ---@class Ghost
 ---@field filepath string
 ---@field data GhostFrame[]
@@ -47,6 +63,7 @@ local last_recorded_animation = nil
 ---@field hat_color integer[3]
 ---@field graphics integer # the gfx pointer for an object or 0 for a Mario
 ---@field enabled boolean # when true, the ghost will be displayed
+---@field variables VariableData[] # extra recorded data, each with one value per frame of `data`
 
 -- ghosts loaded in (Lua) memory, in load order. Kept as an array since its order assigns the
 -- hack's RAM slots, and pairs() over a table with removed keys can reorder them between frames
@@ -133,6 +150,20 @@ local function read_float(file)
     return string.unpack('<f', file:read(4))
 end
 
+---@param file file*
+---@param variables VariableData[]
+local function write_variable_blocks(file, variables)
+    for _, variable in ipairs(variables) do
+        local format, mask = VARIABLE_FORMATS[variable.type], VARIABLE_MASKS[variable.type]
+        local values = {}
+        for i, value in ipairs(variable.data) do
+            values[i] = string.pack(format, mask and (math.floor(value) & mask) or value)
+        end
+        file:write(string.pack('<I4c15B', VARWATCH_EXTRA_MAGIC, variable.label:sub(1, 15), variable.type),
+            table.concat(values))
+    end
+end
+
 ---Writes the current ghost data to the disk.
 ---@return boolean # Whether the operation succeeded.
 ---@nodiscard
@@ -176,9 +207,26 @@ local function flush()
 		end
 	end
 
+	write_variable_blocks(file, recording_variables)
+
 	file:close()
 
 	return true
+end
+
+---Records an extra value with each frame, starting with the next recording.
+---@param label string # up to 15 bytes, stored in the file
+---@param datatype integer # see Ghosts.VARIABLE_TYPES
+---@param read_func function # a function that reads game memory and returns the current value
+function Ghosts.record_variable(label, datatype, read_func)
+    variable_types[label] = datatype
+    variable_read_funcs[label] = read_func
+end
+
+---@param label string
+function Ghosts.stop_recording_variable(label)
+    variable_types[label] = nil
+    variable_read_funcs[label] = nil
 end
 
 ---Appends a frame to the ghost recording if active.
@@ -215,6 +263,11 @@ local function update_recording()
 			last_recorded_animation = animation
 			animation_switches[math.max(0, global_timer - 1 - recording_base_frame)] = animation
 		end
+
+        -- extra variable info
+        for _, variable in ipairs(recording_variables) do
+            variable.data[#variable.data + 1] = variable_read_funcs[variable.label]() or 0
+        end
 	end
 end
 
@@ -262,6 +315,13 @@ function Ghosts.start_recording()
 	end
 	animation_switches = {}
 	last_recorded_animation = nil
+
+	-- snapshot so variables (un)registered mid-recording can't misalign values with frames
+	recording_variables = {}
+	for label, datatype in pairs(variable_types) do
+		recording_variables[#recording_variables + 1] = {label = label, type = datatype, data = {}}
+	end
+	table.sort(recording_variables, function(a, b) return a.label < b.label end)
 
 	return true
 end
@@ -422,7 +482,8 @@ function Ghosts.load_ghost_file(filepath)
         is_transparent = Settings.ghost_transparent_default or false,
         hat_color = {0, 0, 0},
         graphics = 0,
-        enabled = true
+        enabled = true,
+        variables = {},
     }
 
     -- ensure the file isn't truncated or empty
@@ -438,33 +499,61 @@ function Ghosts.load_ghost_file(filepath)
         return nil
     end
 
-	-- optional object block: graphics pointer and animation pointers keyed by frame offset
-	local magic = file:read(4)
-	if magic and #magic == 4 and string.unpack('<I4', magic) == OBJECT_EXTRA_MAGIC then
-		-- pcall so a truncated block falls back to Mario instead of failing the load
-		pcall(function()
-            local graphics = read_int(file)
-            local count = read_int(file)
-			local switches, first_key = {}, nil
-			for _ = 1, count do
-                local key = read_int(file)
-                local value = read_int(file)
-				switches[key] = value
-				if first_key == nil or key < first_key then first_key = key end
-			end
-			-- resolve each frame's animation like STROOP: the latest switch, else the earliest one
-			local animation = first_key and switches[first_key] or 0
-			for _, f in ipairs(ghost.data) do
-				animation = switches[f.offset] or animation
-				f.animation = animation
-			end
-			ghost.graphics = graphics
-		end)
-    else
-        -- Mario ghost: give it a new hat color (rotating default selection)
+    -- extended ghost format with optional blocks
+    while true do
+        local magic = file:read(4)
+        if not magic or #magic ~= 4 then
+            break
+        end
+        magic = string.unpack('<I4', magic)
+
+        local block_ok = true
+        if magic == OBJECT_EXTRA_MAGIC then
+            -- object block: graphics pointer and animation pointers keyed by frame offset
+            -- pcall so a truncated block falls back to Mario instead of failing the load
+            block_ok = pcall(function()
+                local graphics = read_int(file)
+                local count = read_int(file)
+                local switches, first_key = {}, nil
+                for _ = 1, count do
+                    local key = read_int(file)
+                    local value = read_int(file)
+                    switches[key] = value
+                    if first_key == nil or key < first_key then first_key = key end
+                end
+                -- resolve each frame's animation like STROOP: the latest switch, else the earliest one
+                local animation = first_key and switches[first_key] or 0
+                for _, f in ipairs(ghost.data) do
+                    animation = switches[f.offset] or animation
+                    f.animation = animation
+                end
+                ghost.graphics = graphics
+            end)
+        elseif magic == VARWATCH_EXTRA_MAGIC then
+            -- varwatch block: extra data is included per frame
+            block_ok = pcall(function()
+                local label, datatype = string.unpack('c15B', file:read(16))
+                local format = assert(VARIABLE_FORMATS[datatype])
+                local size = string.packsize(format)
+                local variable = {label = label:gsub('%z+$', ''), type = datatype, data = {}}
+                for i = 1, #ghost.data do
+                    variable.data[i] = string.unpack(format, file:read(size))
+                end
+                ghost.variables[#ghost.variables + 1] = variable
+            end)
+        else
+            break -- unknown block
+        end
+        if not block_ok then
+            break -- the rest of the file can't be located after a truncated block
+        end
+    end
+
+    -- give Mario ghosts a new hat color (rotating default selection)
+    if ghost.graphics == 0 then
         ghost.hat_color = DEFAULT_COLORS[default_color_counter + 1]
     	default_color_counter = (default_color_counter + 1) % #DEFAULT_COLORS
-	end
+    end
 
 	file:close()
 	ghosts[#ghosts + 1] = ghost
@@ -498,6 +587,7 @@ function Ghosts.save_ghost_file(ghost, filepath)
         end
         file:write(string.pack('<I4I4I4', OBJECT_EXTRA_MAGIC, graphics, #switches), table.concat(switches))
     end
+    write_variable_blocks(file, ghost.variables)
     file:close()
     ghost.filepath = filepath
     return true
@@ -991,6 +1081,22 @@ function Ghosts.get_ghost_data(ghost, global_timer)
     end
     local i = global_timer - ghost.global_timer_start + 1
     return last_valid_ghost_frame(ghost.data, i + 1)
+end
+
+---Returns the ghost's extra recorded values on the given frame, clamped like Ghosts.get_ghost_data.
+---@param ghost Ghost
+---@param global_timer integer
+---@return {label: string, type: integer, value: any}[]
+function Ghosts.get_ghost_variables(ghost, global_timer)
+    local values = {}
+    if not ghost or not ghost.data or #ghost.data == 0 then
+        return values
+    end
+    local i = math.max(1, math.min(#ghost.data, global_timer - ghost.global_timer_start + 2))
+    for _, variable in ipairs(ghost.variables) do
+        values[#values + 1] = {label = variable.label, type = variable.type, value = variable.data[i]}
+    end
+    return values
 end
 
 ---Returns a contiguous array of the currently loaded ghosts.

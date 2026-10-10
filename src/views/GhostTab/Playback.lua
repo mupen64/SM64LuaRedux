@@ -94,6 +94,16 @@ end
 
 return {
     name = function() return Locales.str('GHOST_PLAYBACK_TAB_NAME') end,
+
+    ---@return string[] # the varwatch lines of the selected ghost (Mario if none), for the overlay
+    varwatch_items = function() return ghost_varwatch_data(selected_ghost) end,
+
+    ---@return string, string | nil # the selected ghost's display name, and its hat color as hex (nil for object ghosts)
+    selected_name_and_color = function()
+        local is_object = selected_ghost and selected_ghost.graphics ~= 0
+        return ghost_name(selected_ghost), not is_object and rgb_to_str(Ghosts.get_color(selected_ghost)) or nil
+    end,
+    
     draw = function()
         local theme = Styles.theme()
         local foreground_color = Drawing.foreground_color()
@@ -185,6 +195,7 @@ return {
             Ghosts.unload_ghost(selected_ghost)
             display_names[selected_ghost] = nil
             selected_ghost = nil -- go back to Mario
+            valid_ghost_selected = false
         end
 
         local was_enabled = not selected_ghost or selected_ghost.enabled

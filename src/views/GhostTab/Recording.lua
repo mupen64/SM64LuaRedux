@@ -31,11 +31,16 @@ local object_data_cache = { key = nil, items = nil }
 local function object_varwatch_data()
     local mario_obj = Memory.current.mario_object_effective
     local addr = Ghosts.recording_object_address(mario_obj)
+    -- the selected extra variables are part of the key so toggling one updates the list straight away
     local key = addr .. ':' .. Memory.current.global_timer
+    local selected = Settings.ghost_recorded_variables or {}
+    for _, variable in ipairs(GHOST_RECORDABLE_VARIABLES) do
+        key = key .. (selected[variable.id] and '1' or '0')
+    end
     if key ~= object_data_cache.key then
         object_data_cache.key = key
         local data = Ghosts.read_object(addr)
-        object_data_cache.items = data and frame_varwatch_data(data)
+        object_data_cache.items = data and frame_varwatch_data(data, selected_variable_lines())
             or { Locales.str('GHOST_INVALID_OBJECT') }
     end
     return object_data_cache.items
@@ -97,6 +102,7 @@ return {
                     print(Locales.str('GHOST_STOP_RECORDING_FAILED'))
                 end
             else
+                sync_ghost_recorded_variables()
                 local result = Ghosts.start_recording()
                 if not result then
                     print(Locales.str('GHOST_START_RECORDING_FAILED'))

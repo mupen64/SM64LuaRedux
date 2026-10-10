@@ -259,6 +259,10 @@ Locales = {}
 ---@field public GHOST_PLAYBACK_WARNING_ACCEPT string
 ---@field public GHOST_SETTINGS_SHOW_PLAYBACK_WARNING string
 ---@field public GHOST_SETTINGS_SHOW_PLAYBACK_WARNING_TOOLTIP string
+---@field public GHOST_SETTINGS_OVERLAY_DATA string
+---@field public GHOST_SETTINGS_OVERLAY_DATA_TOOLTIP string
+---@field public GHOST_SETTINGS_RECORD_VARIABLES string
+---@field public GHOST_SETTINGS_RECORD_VARIABLE_TOOLTIP string
 ---@field public GHOST_DATA_ROLL string
 ---@field public GHOST_DATA_ANIMATION string
 ---@field public GHOST_DATA_ANIMATION_FRAME string

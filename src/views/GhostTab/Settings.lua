@@ -11,6 +11,10 @@ local UID = UIDProvider.allocate_once('GhostSettings', function(enum_next)
         BaseOffsetLabel = enum_next(ugui.label_uids()),
         BaseOffset = enum_next(ugui.textbox_uids()),
         ShowPlaybackWarning = enum_next(ugui.toggle_button_uids()),
+        OverlayData = enum_next(ugui.toggle_button_uids()),
+        RecordVariablesLabel = enum_next(ugui.label_uids()),
+        -- one toggle per entry in GHOST_RECORDABLE_VARIABLES (loaded first by GhostTab/Main.lua)
+        RecordVariables = enum_next(ugui.toggle_button_uids() * #GHOST_RECORDABLE_VARIABLES),
     }
 end)
 
@@ -80,5 +84,38 @@ return {
             tooltip = Locales.str('GHOST_SETTINGS_SHOW_PLAYBACK_WARNING_TOOLTIP'),
             is_checked = not Settings.ghost_playback_warning_accepted,
         })
+
+        Settings.ghost_overlay_data = ugui.toggle_button({
+            uid = UID.OverlayData,
+            rectangle = grid_rect(0.1, 5, 7.8, 1),
+            text = Locales.str('GHOST_SETTINGS_OVERLAY_DATA'),
+            tooltip = Locales.str('GHOST_SETTINGS_OVERLAY_DATA_TOOLTIP'),
+            is_checked = Settings.ghost_overlay_data or false,
+        })
+
+        -- extra data recorded with each frame, laid out in two columns
+        ugui.label({
+            uid = UID.RecordVariablesLabel,
+            rectangle = grid_rect(0.1, 6, 7.8, 1),
+            text = Locales.str('GHOST_SETTINGS_RECORD_VARIABLES'),
+            color = Drawing.foreground_color(),
+            font_size = theme.font_size * 1.25,
+            font_name = theme.font_name,
+            align_x = ugui.alignment['start'],
+            align_y = ugui.alignment.center,
+        })
+        -- presets saved before this setting existed don't have the table
+        Settings.ghost_recorded_variables = Settings.ghost_recorded_variables or {}
+        for i, variable in ipairs(GHOST_RECORDABLE_VARIABLES) do
+            local column, row = (i - 1) % 2, (i - 1) // 2
+            Settings.ghost_recorded_variables[variable.id] = ugui.toggle_button({
+                uid = UID.RecordVariables + (i - 1) * ugui.toggle_button_uids(),
+                rectangle = grid_rect(0.1 + column * 3.9, 6.9 + row, 3.8, 1),
+                text = Locales.str(variable.locale),
+                tooltip = Locales.str('GHOST_SETTINGS_RECORD_VARIABLE_TOOLTIP'),
+                is_checked = Settings.ghost_recorded_variables[variable.id] or false,
+                is_enabled = not Ghosts.is_recording(),
+            })
+        end
     end
 }
