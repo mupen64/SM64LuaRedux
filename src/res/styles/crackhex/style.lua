@@ -7,95 +7,95 @@
 local theme = get_base_style()
 
 theme.font_name = 'Consolas'
-theme.background_color = BreitbandGraphics.repeated_to_color(34)
-theme.textbox.selection = BreitbandGraphics.hex_to_color('#A8294BFF')
-theme.numberbox.selection = BreitbandGraphics.hex_to_color('#A8294BFF')
+theme.background_color = ugui.color_source_to_rgba8('#222222')
+theme.textbox.selection = ugui.color_source_to_rgba8('#A8294BFF')
+theme.numberbox.selection = ugui.color_source_to_rgba8('#A8294BFF')
 theme.button.text = {
-    [1] = BreitbandGraphics.hex_to_color('#F7A8B8'),
-    [2] = BreitbandGraphics.colors.black,
-    [3] = BreitbandGraphics.colors.black,
-    [0] = BreitbandGraphics.repeated_to_color(131),
+    [1] = ugui.color_source_to_rgba8('#F7A8B8'),
+    [2] = ugui.color_source_to_rgba8('#000000'),
+    [3] = ugui.color_source_to_rgba8('#000000'),
+    [0] = ugui.color_source_to_rgba8('#838383'),
 }
 theme.textbox.text = {
-    [1] = BreitbandGraphics.hex_to_color('#F7A8B8'),
-    [2] = BreitbandGraphics.colors.black,
-    [3] = BreitbandGraphics.colors.black,
-    [0] = BreitbandGraphics.repeated_to_color(109),
+    [1] = ugui.color_source_to_rgba8('#F7A8B8'),
+    [2] = ugui.color_source_to_rgba8('#000000'),
+    [3] = ugui.color_source_to_rgba8('#000000'),
+    [0] = ugui.color_source_to_rgba8('#6D6D6D'),
 }
 theme.listbox_item.text = {
-    [1] = BreitbandGraphics.hex_to_color('#F7A8B8'),
-    [2] = BreitbandGraphics.hex_to_color('#F7A8B8'),
-    [3] = BreitbandGraphics.colors.black,
-    [0] = BreitbandGraphics.repeated_to_color(209),
+    [1] = ugui.color_source_to_rgba8('#F7A8B8'),
+    [2] = ugui.color_source_to_rgba8('#F7A8B8'),
+    [3] = ugui.color_source_to_rgba8('#000000'),
+    [0] = ugui.color_source_to_rgba8('#D1D1D1'),
 }
 theme.joystick.back = {
-    [1] = BreitbandGraphics.hex_to_color('#00000000'),
-    [2] = BreitbandGraphics.hex_to_color('#00000000'),
-    [3] = BreitbandGraphics.hex_to_color('#00000000'),
-    [0] = BreitbandGraphics.hex_to_color('#00000000'),
+    [1] = ugui.color_source_to_rgba8('#00000000'),
+    [2] = ugui.color_source_to_rgba8('#00000000'),
+    [3] = ugui.color_source_to_rgba8('#00000000'),
+    [0] = ugui.color_source_to_rgba8('#00000000'),
 }
 theme.joystick.outline = {
-    [1] = BreitbandGraphics.hex_to_color('#386A87'),
-    [2] = BreitbandGraphics.hex_to_color('#386A87'),
-    [3] = BreitbandGraphics.hex_to_color('#386A87'),
-    [0] = BreitbandGraphics.hex_to_color('#386A87'),
+    [1] = ugui.color_source_to_rgba8('#386A87'),
+    [2] = ugui.color_source_to_rgba8('#386A87'),
+    [3] = ugui.color_source_to_rgba8('#386A87'),
+    [0] = ugui.color_source_to_rgba8('#386A87'),
 }
 theme.joystick.inner_mag = {
-    [1] = BreitbandGraphics.hex_to_color('#55A0CC22'),
-    [2] = BreitbandGraphics.hex_to_color('#55A0CC22'),
-    [3] = BreitbandGraphics.hex_to_color('#55A0CC22'),
-    [0] = BreitbandGraphics.hex_to_color('#55A0CC22'),
+    [1] = ugui.color_source_to_rgba8('#55A0CC22'),
+    [2] = ugui.color_source_to_rgba8('#55A0CC22'),
+    [3] = ugui.color_source_to_rgba8('#55A0CC22'),
+    [0] = ugui.color_source_to_rgba8('#55A0CC22'),
 }
 theme.joystick.outer_mag = {
-    [1] = BreitbandGraphics.hex_to_color('#55A0CC'),
-    [2] = BreitbandGraphics.hex_to_color('#55A0CC'),
-    [3] = BreitbandGraphics.hex_to_color('#55A0CC'),
-    [0] = BreitbandGraphics.hex_to_color('#55A0CC'),
+    [1] = ugui.color_source_to_rgba8('#55A0CC'),
+    [2] = ugui.color_source_to_rgba8('#55A0CC'),
+    [3] = ugui.color_source_to_rgba8('#55A0CC'),
+    [0] = ugui.color_source_to_rgba8('#55A0CC'),
 }
 theme.joystick.line = {
-    [1] = BreitbandGraphics.hex_to_color('#EEAFC0'),
-    [2] = BreitbandGraphics.hex_to_color('#EEAFC0'),
-    [3] = BreitbandGraphics.hex_to_color('#EEAFC0'),
-    [0] = BreitbandGraphics.hex_to_color('#EEAFC0'),
+    [1] = ugui.color_source_to_rgba8('#EEAFC0'),
+    [2] = ugui.color_source_to_rgba8('#EEAFC0'),
+    [3] = ugui.color_source_to_rgba8('#EEAFC0'),
+    [0] = ugui.color_source_to_rgba8('#EEAFC0'),
 }
 theme.joystick.tip = {
-    [1] = BreitbandGraphics.hex_to_color('#EEAFC0'),
-    [2] = BreitbandGraphics.hex_to_color('#EEAFC0'),
-    [3] = BreitbandGraphics.hex_to_color('#EEAFC0'),
-    [0] = BreitbandGraphics.hex_to_color('#EEAFC0'),
+    [1] = ugui.color_source_to_rgba8('#EEAFC0'),
+    [2] = ugui.color_source_to_rgba8('#EEAFC0'),
+    [3] = ugui.color_source_to_rgba8('#EEAFC0'),
+    [0] = ugui.color_source_to_rgba8('#EEAFC0'),
 }
 theme.menu = {
     back = {
-        [1] = BreitbandGraphics.hex_to_color('#1A1A1C'),
-        [2] = BreitbandGraphics.hex_to_color('#1A1A1C'),
-        [3] = BreitbandGraphics.hex_to_color('#1A1A1C'),
-        [0] = BreitbandGraphics.hex_to_color('#1A1A1C'),
+        [1] = ugui.color_source_to_rgba8('#1A1A1C'),
+        [2] = ugui.color_source_to_rgba8('#1A1A1C'),
+        [3] = ugui.color_source_to_rgba8('#1A1A1C'),
+        [0] = ugui.color_source_to_rgba8('#1A1A1C'),
     },
     border = {
-        [1] = BreitbandGraphics.hex_to_color('#386A87'),
-        [2] = BreitbandGraphics.hex_to_color('#386A87'),
-        [3] = BreitbandGraphics.hex_to_color('#386A87'),
-        [0] = BreitbandGraphics.hex_to_color('#386A87'),
+        [1] = ugui.color_source_to_rgba8('#386A87'),
+        [2] = ugui.color_source_to_rgba8('#386A87'),
+        [3] = ugui.color_source_to_rgba8('#386A87'),
+        [0] = ugui.color_source_to_rgba8('#386A87'),
     },
 }
 theme.menu_item = {
     back = {
-        [1] = BreitbandGraphics.hex_to_color('#00000000'),
-        [2] = BreitbandGraphics.hex_to_color('#73CFF4'),
-        [3] = BreitbandGraphics.hex_to_color('#73CFF4'),
-        [0] = BreitbandGraphics.hex_to_color('#00000000'),
+        [1] = ugui.color_source_to_rgba8('#00000000'),
+        [2] = ugui.color_source_to_rgba8('#73CFF4'),
+        [3] = ugui.color_source_to_rgba8('#73CFF4'),
+        [0] = ugui.color_source_to_rgba8('#00000000'),
     },
     border = {
-        [1] = BreitbandGraphics.hex_to_color('#00000000'),
-        [2] = BreitbandGraphics.hex_to_color('#00091E'),
-        [3] = BreitbandGraphics.hex_to_color('#00091E'),
-        [0] = BreitbandGraphics.hex_to_color('#00000000'),
+        [1] = ugui.color_source_to_rgba8('#00000000'),
+        [2] = ugui.color_source_to_rgba8('#00091E'),
+        [3] = ugui.color_source_to_rgba8('#00091E'),
+        [0] = ugui.color_source_to_rgba8('#00000000'),
     },
     text = {
-        [1] = BreitbandGraphics.hex_to_color('#F7A8B8'),
-        [2] = BreitbandGraphics.hex_to_color('#000000'),
-        [3] = BreitbandGraphics.hex_to_color('#000000'),
-        [0] = BreitbandGraphics.hex_to_color('#F7A8B8'),
+        [1] = ugui.color_source_to_rgba8('#F7A8B8'),
+        [2] = ugui.color_source_to_rgba8('#000000'),
+        [3] = ugui.color_source_to_rgba8('#000000'),
+        [0] = ugui.color_source_to_rgba8('#F7A8B8'),
     },
 }
 
