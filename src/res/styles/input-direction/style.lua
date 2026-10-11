@@ -6,7 +6,7 @@
 
 local theme = get_base_style()
 
-theme.background_color = BreitbandGraphics.hex_to_color('#222222')
+theme.background_color = ugui.color_source_to_rgba8('#222222')
 theme.button.states = {
     [1] = {
         source = expand_rect({ 1, 1, 11, 9 }),
@@ -26,58 +26,58 @@ theme.button.states = {
     },
 }
 theme.button.text = {
-    [1] = BreitbandGraphics.colors.black,
-    [2] = BreitbandGraphics.colors.white,
-    [3] = BreitbandGraphics.colors.white,
-    [0] = BreitbandGraphics.repeated_to_color(131),
+    [1] = ugui.color_source_to_rgba8('#000000'),
+    [2] = ugui.color_source_to_rgba8('#FFFFFF'),
+    [3] = ugui.color_source_to_rgba8('#FFFFFF'),
+    [0] = ugui.color_source_to_rgba8('#838383'),
 }
 theme.textbox.text = {
-    [1] = BreitbandGraphics.colors.white,
-    [2] = BreitbandGraphics.colors.white,
-    [3] = BreitbandGraphics.colors.black,
-    [0] = BreitbandGraphics.repeated_to_color(109),
+    [1] = ugui.color_source_to_rgba8('#FFFFFF'),
+    [2] = ugui.color_source_to_rgba8('#FFFFFF'),
+    [3] = ugui.color_source_to_rgba8('#000000'),
+    [0] = ugui.color_source_to_rgba8('#6D6D6D'),
 }
 theme.listbox_item.text = {
-    [1] = BreitbandGraphics.colors.white,
-    [2] = BreitbandGraphics.colors.white,
-    [3] = BreitbandGraphics.colors.white,
-    [0] = BreitbandGraphics.repeated_to_color(209),
+    [1] = ugui.color_source_to_rgba8('#FFFFFF'),
+    [2] = ugui.color_source_to_rgba8('#FFFFFF'),
+    [3] = ugui.color_source_to_rgba8('#FFFFFF'),
+    [0] = ugui.color_source_to_rgba8('#D1D1D1'),
 }
 theme.joystick.back = {
-    [1] = BreitbandGraphics.hex_to_color('#222222'),
-    [2] = BreitbandGraphics.hex_to_color('#222222'),
-    [3] = BreitbandGraphics.hex_to_color('#222222'),
-    [0] = BreitbandGraphics.hex_to_color('#222222'),
+    [1] = ugui.color_source_to_rgba8('#222222'),
+    [2] = ugui.color_source_to_rgba8('#222222'),
+    [3] = ugui.color_source_to_rgba8('#222222'),
+    [0] = ugui.color_source_to_rgba8('#222222'),
 }
 theme.joystick.outline = {
-    [1] = BreitbandGraphics.hex_to_color('#FFFFFF'),
-    [2] = BreitbandGraphics.hex_to_color('#FFFFFF'),
-    [3] = BreitbandGraphics.hex_to_color('#FFFFFF'),
-    [0] = BreitbandGraphics.hex_to_color('#FFFFFF'),
+    [1] = ugui.color_source_to_rgba8('#FFFFFF'),
+    [2] = ugui.color_source_to_rgba8('#FFFFFF'),
+    [3] = ugui.color_source_to_rgba8('#FFFFFF'),
+    [0] = ugui.color_source_to_rgba8('#FFFFFF'),
 }
 theme.joystick.inner_mag = {
-    [1] = BreitbandGraphics.hex_to_color('#FF000022'),
-    [2] = BreitbandGraphics.hex_to_color('#FF000022'),
-    [3] = BreitbandGraphics.hex_to_color('#FF000022'),
-    [0] = BreitbandGraphics.hex_to_color('#FF000022'),
+    [1] = ugui.color_source_to_rgba8('#FF000022'),
+    [2] = ugui.color_source_to_rgba8('#FF000022'),
+    [3] = ugui.color_source_to_rgba8('#FF000022'),
+    [0] = ugui.color_source_to_rgba8('#FF000022'),
 }
 theme.joystick.outer_mag = {
-    [1] = BreitbandGraphics.hex_to_color('#FF0000'),
-    [2] = BreitbandGraphics.hex_to_color('#FF0000'),
-    [3] = BreitbandGraphics.hex_to_color('#FF0000'),
-    [0] = BreitbandGraphics.hex_to_color('#FF0000'),
+    [1] = ugui.color_source_to_rgba8('#FF0000'),
+    [2] = ugui.color_source_to_rgba8('#FF0000'),
+    [3] = ugui.color_source_to_rgba8('#FF0000'),
+    [0] = ugui.color_source_to_rgba8('#FF0000'),
 }
 theme.joystick.line = {
-    [1] = BreitbandGraphics.hex_to_color('#00FF08'),
-    [2] = BreitbandGraphics.hex_to_color('#00FF08'),
-    [3] = BreitbandGraphics.hex_to_color('#00FF08'),
-    [0] = BreitbandGraphics.hex_to_color('#00FF08'),
+    [1] = ugui.color_source_to_rgba8('#00FF08'),
+    [2] = ugui.color_source_to_rgba8('#00FF08'),
+    [3] = ugui.color_source_to_rgba8('#00FF08'),
+    [0] = ugui.color_source_to_rgba8('#00FF08'),
 }
 theme.joystick.tip = {
-    [1] = BreitbandGraphics.hex_to_color('#FF0000'),
-    [2] = BreitbandGraphics.hex_to_color('#FF0000'),
-    [3] = BreitbandGraphics.hex_to_color('#FF0000'),
-    [0] = BreitbandGraphics.hex_to_color('#FF0000'),
+    [1] = ugui.color_source_to_rgba8('#FF0000'),
+    [2] = ugui.color_source_to_rgba8('#FF0000'),
+    [3] = ugui.color_source_to_rgba8('#FF0000'),
+    [0] = ugui.color_source_to_rgba8('#FF0000'),
 }
 
 return {

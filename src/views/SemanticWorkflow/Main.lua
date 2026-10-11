@@ -90,17 +90,25 @@ SemanticWorkflowDialog = nil
 local ugui_icon_draw = ugui.standard_styler.draw_icon
 
 local custom_icons = { 'navigate_back', 'base_sheet', 'without_save', 'delete',
-    'next_page', 'previous_page', 'duplicate', 'action', 'clone_up', 'clone_down', 'merge_up', 'loop'}
+    'next_page', 'previous_page', 'duplicate', 'action', 'clone_up', 'clone_down', 'merge_up', 'loop' }
 
-ugui.standard_styler.draw_icon = function(rectangle, color, visual_state, key)
+ugui.standard_styler.draw_icon = function(rectangle, color, key)
     local postfix = Drawing.IsLightMode() and '' or '_light'
     for _, icon in ipairs(custom_icons) do
         if key == icon then
-            BreitbandGraphics.draw_image(rectangle, nil, views_path .. 'SemanticWorkflow/Resources/' .. key .. postfix .. '.png', color, 'linear')
+            BreitbandGraphics.draw_image2({
+                path = views_path .. 'SemanticWorkflow/Resources/' .. key .. postfix .. '.png',
+                destx1 = rectangle.x,
+                desty1 = rectangle.y,
+                destx2 = rectangle.x + rectangle.width,
+                desty2 = rectangle.y + rectangle.height,
+                color = "#FFFFFF",
+                interpolation = 1,
+            })
             return
         end
     end
-    ugui_icon_draw(rectangle, color, visual_state, key)
+    ugui_icon_draw(rectangle, color, key)
 end
 
 local Tabs = dofile(views_path .. 'SemanticWorkflow/Tabs.lua')

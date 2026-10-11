@@ -36,6 +36,19 @@ ACTION_SET_PRESET_UP = ACTION_PRESET .. 'Select Next ---'
 ACTION_TOGGLE_REMEMBER_TAS_STATE = ACTION_PRESET .. 'Remember TAS State'
 ACTION_RESET_PRESET = ACTION_PRESET .. 'Reset to Default'
 ACTION_DELETE_ALL_PRESETS = ACTION_PRESET .. 'Delete All'
+ACTION_SETTINGS = ROOT .. 'Settings ---'
+ACTION_SETTINGS_SET_STYLE = ACTION_SETTINGS .. ' > Set Style...'
+ACTION_SETTINGS_SET_LANGUAGE = ACTION_SETTINGS .. ' > Set Language...'
+ACTION_SETTINGS_TOGGLE_CONSOLE_NOTIFICATIONS = ACTION_SETTINGS .. ' > Toggle Console Notifications'
+ACTION_SETTINGS_SET_FF_FPS = ACTION_SETTINGS .. ' > Set Fast-Forward FPS... ---'
+ACTION_SETTINGS_TOGGLE_MANUAL_ON_JOYSTICK = ACTION_SETTINGS .. ' > Manual On Joystick Interact'
+ACTION_SETTINGS_TOGGLE_LOCK_HOTKEYS = ACTION_SETTINGS .. ' > Lock Hotkeys When Control Active ---'
+ACTION_SETTINGS_SELECT_MAP_FILE = ACTION_SETTINGS .. ' > Select Map File'
+ACTION_SETTINGS_SET_REGION = ACTION_SETTINGS .. ' > Set Region...'
+ACTION_SETTINGS_AUTODETECT_NOW = ACTION_SETTINGS .. ' > Detect Address Now'
+ACTION_SETTINGS_TOGGLE_AUTODETECT = ACTION_SETTINGS .. ' > Detect Address On Start ---'
+ACTION_SETTINGS_SET_ANGLE_FORMAT = ACTION_SETTINGS .. ' > Set Angle Format...'
+ACTION_SETTINGS_SET_DECIMAL_POINTS = ACTION_SETTINGS .. ' > Set Decimal Points...'
 ACTION_TOGGLE_NAVBAR = ROOT .. 'Navigation Bar'
 ACTION_TOGGLE_DEBUG_MODE = ROOT .. 'Debug Mode'
 
@@ -51,6 +64,74 @@ local function wrap_params(params)
     -- No-op for now.
 
     return new_params
+end
+
+---Finds the 1-based index of the option whose name matches `value`, case-insensitively.
+---@param names string[]
+---@param value string?
+---@return integer?
+local function option_index(names, value)
+    if not value then
+        return nil
+    end
+
+    local lower_value = value:lower()
+    for i = 1, #names, 1 do
+        if names[i]:lower() == lower_value then
+            return i
+        end
+    end
+
+    return nil
+end
+
+---Returns the option names that complete the typed value.
+---@param names string[]
+---@param value string?
+---@return string[]
+local function option_hints(names, value)
+    local lower_value = (value or ''):lower()
+    local hints = {}
+
+    for i = 1, #names, 1 do
+        if lower_value == '' or names[i]:lower():sub(1, #lower_value) == lower_value then
+            hints[#hints + 1] = names[i]
+        end
+    end
+
+    return hints
+end
+
+---Returns the names of a list of `{ name, value }` options.
+---@param options { name: string, value: any }[]
+---@return string[]
+local function option_names(options)
+    local names = {}
+    for i = 1, #options, 1 do
+        names[i] = options[i].name
+    end
+
+    return names
+end
+
+---Returns the angle formatting options, localized to the current locale.
+---@return { name: string, value: boolean }[]
+local function angle_format_options()
+    return {
+        { name = Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT_SHORT'), value = false },
+        { name = Locales.str('SETTINGS_VARWATCH_ANGLE_FORMAT_DEGREE'), value = true },
+    }
+end
+
+---Returns the display names of all address sources.
+---@return string[]
+local function region_names()
+    local names = {}
+    for i = 1, #Addresses, 1 do
+        names[i] = Addresses[i].name()
+    end
+
+    return names
 end
 
 
@@ -365,6 +446,225 @@ actions[#actions + 1] = wrap_params({
     on_press = function()
         Presets.delete_all()
         Actions.notify_all_changed()
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_SETTINGS_SET_STYLE,
+    params = {
+        {
+            key = 'style',
+            name = 'Style',
+            get_initial_value = function()
+                return Styles.theme_names()[Settings.active_style_index]
+            end,
+            get_hints = function(value)
+                return option_hints(Styles.theme_names(), value)
+            end,
+            validator = function(value)
+                if option_index(Styles.theme_names(), value) then
+                    return nil
+                end
+
+                return 'Unknown style.'
+            end,
+        },
+    },
+    on_press = function(params)
+        local index = option_index(Styles.theme_names(), params.style)
+        if index then
+            Settings.active_style_index = index
+            Styles.update_style()
+        end
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_SETTINGS_SET_LANGUAGE,
+    params = {
+        {
+            key = 'language',
+            name = 'Language',
+            get_initial_value = function()
+                return Locales.names()[Settings.locale_index]
+            end,
+            get_hints = function(value)
+                return option_hints(Locales.names(), value)
+            end,
+            validator = function(value)
+                if option_index(Locales.names(), value) then
+                    return nil
+                end
+
+                return 'Unknown language.'
+            end,
+        },
+    },
+    on_press = function(params)
+        local index = option_index(Locales.names(), params.language)
+        if index then
+            Settings.locale_index = index
+        end
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_SETTINGS_TOGGLE_CONSOLE_NOTIFICATIONS,
+    on_press = function()
+        Settings.notification_style = Settings.notification_style == NOTIFICATION_STYLE_CONSOLE
+            and NOTIFICATION_STYLE_BUBBLE
+            or NOTIFICATION_STYLE_CONSOLE
+        action.notify_active_changed(ACTION_SETTINGS_TOGGLE_CONSOLE_NOTIFICATIONS)
+    end,
+    get_active = function()
+        return Settings.notification_style == NOTIFICATION_STYLE_CONSOLE
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_SETTINGS_SET_FF_FPS,
+    params = {
+        {
+            key = 'fps',
+            name = 'FPS',
+            get_initial_value = function()
+                return tostring(Settings.ff_fps)
+            end,
+            validator = Validators.number,
+        },
+    },
+    on_press = function(params)
+        Settings.ff_fps = math.max(1, tonumber(params.fps))
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_SETTINGS_TOGGLE_MANUAL_ON_JOYSTICK,
+    on_press = function()
+        Settings.enable_manual_on_joystick_interact = not Settings.enable_manual_on_joystick_interact
+        action.notify_active_changed(ACTION_SETTINGS_TOGGLE_MANUAL_ON_JOYSTICK)
+    end,
+    get_active = function()
+        return Settings.enable_manual_on_joystick_interact
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_SETTINGS_TOGGLE_LOCK_HOTKEYS,
+    on_press = function()
+        Settings.lock_hotkeys_when_control_active = not Settings.lock_hotkeys_when_control_active
+        action.notify_active_changed(ACTION_SETTINGS_TOGGLE_LOCK_HOTKEYS)
+    end,
+    get_active = function()
+        return Settings.lock_hotkeys_when_control_active
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_SETTINGS_SELECT_MAP_FILE,
+    on_press = function()
+        Mapping.load_map_file_dialog()
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_SETTINGS_SET_REGION,
+    params = {
+        {
+            key = 'region',
+            name = 'Region',
+            get_initial_value = function()
+                return region_names()[Settings.address_source_index]
+            end,
+            get_hints = function(value)
+                return option_hints(region_names(), value)
+            end,
+            validator = function(value)
+                if option_index(region_names(), value) then
+                    return nil
+                end
+
+                return 'Unknown region.'
+            end,
+        },
+    },
+    on_press = function(params)
+        local index = option_index(region_names(), params.region)
+        if index then
+            Settings.address_source_index = index
+        end
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_SETTINGS_AUTODETECT_NOW,
+    on_press = function()
+        Settings.address_source_index = Memory.find_matching_address_source_index()
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_SETTINGS_TOGGLE_AUTODETECT,
+    on_press = function()
+        Settings.autodetect_address = not Settings.autodetect_address
+        action.notify_active_changed(ACTION_SETTINGS_TOGGLE_AUTODETECT)
+    end,
+    get_active = function()
+        return Settings.autodetect_address
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_SETTINGS_SET_ANGLE_FORMAT,
+    params = {
+        {
+            key = 'format',
+            name = 'Format',
+            get_initial_value = function()
+                local options = angle_format_options()
+                for i = 1, #options, 1 do
+                    if options[i].value == Settings.format_angles_degrees then
+                        return options[i].name
+                    end
+                end
+
+                return nil
+            end,
+            get_hints = function(value)
+                return option_hints(option_names(angle_format_options()), value)
+            end,
+            validator = function(value)
+                if option_index(option_names(angle_format_options()), value) then
+                    return nil
+                end
+
+                return 'Unknown angle format.'
+            end,
+        },
+    },
+    on_press = function(params)
+        local options = angle_format_options()
+        local index = option_index(option_names(options), params.format)
+        if index then
+            Settings.format_angles_degrees = options[index].value
+        end
+    end,
+})
+
+actions[#actions + 1] = wrap_params({
+    path = ACTION_SETTINGS_SET_DECIMAL_POINTS,
+    params = {
+        {
+            key = 'points',
+            name = 'Decimal Points',
+            get_initial_value = function()
+                return tostring(Settings.format_decimal_points)
+            end,
+            validator = Validators.number,
+        },
+    },
+    on_press = function(params)
+        Settings.format_decimal_points = math.max(0, tonumber(params.points))
     end,
 })
 

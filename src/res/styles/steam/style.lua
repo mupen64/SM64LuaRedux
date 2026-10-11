@@ -6,66 +6,66 @@
 
 local theme = get_base_style()
 
-theme.background_color = BreitbandGraphics.hex_to_color('#4C5945')
-theme.textbox.selection = BreitbandGraphics.hex_to_color('#4FA33D')
-theme.numberbox.selection = BreitbandGraphics.hex_to_color('#4FA33D')
+theme.background_color = ugui.color_source_to_rgba8('#4C5945')
+theme.textbox.selection = ugui.color_source_to_rgba8('#4FA33D')
+theme.numberbox.selection = ugui.color_source_to_rgba8('#4FA33D')
 theme.font_size = 11.4
 theme.font_name = 'Tahoma'
 theme.cleartype = false
 
 theme.button.text = {
-    [1] = BreitbandGraphics.colors.white,
-    [2] = BreitbandGraphics.colors.white,
-    [3] = BreitbandGraphics.colors.white,
-    [0] = BreitbandGraphics.repeated_to_color(131),
+    [1] = ugui.color_source_to_rgba8('#FFFFFF'),
+    [2] = ugui.color_source_to_rgba8('#FFFFFF'),
+    [3] = ugui.color_source_to_rgba8('#FFFFFF'),
+    [0] = ugui.color_source_to_rgba8('#838383'),
 }
 theme.textbox.text = {
-    [1] = BreitbandGraphics.colors.white,
-    [2] = BreitbandGraphics.colors.white,
-    [3] = BreitbandGraphics.colors.white,
-    [0] = BreitbandGraphics.repeated_to_color(109),
+    [1] = ugui.color_source_to_rgba8('#FFFFFF'),
+    [2] = ugui.color_source_to_rgba8('#FFFFFF'),
+    [3] = ugui.color_source_to_rgba8('#FFFFFF'),
+    [0] = ugui.color_source_to_rgba8('#6D6D6D'),
 }
 theme.listbox_item.text = {
-    [1] = BreitbandGraphics.colors.white,
-    [2] = BreitbandGraphics.colors.white,
-    [3] = BreitbandGraphics.colors.white,
-    [0] = BreitbandGraphics.repeated_to_color(209),
+    [1] = ugui.color_source_to_rgba8('#FFFFFF'),
+    [2] = ugui.color_source_to_rgba8('#FFFFFF'),
+    [3] = ugui.color_source_to_rgba8('#FFFFFF'),
+    [0] = ugui.color_source_to_rgba8('#D1D1D1'),
 }
 theme.joystick.back = {
-    [1] = BreitbandGraphics.hex_to_color('#00000000'),
-    [2] = BreitbandGraphics.hex_to_color('#00000000'),
-    [3] = BreitbandGraphics.hex_to_color('#00000000'),
-    [0] = BreitbandGraphics.hex_to_color('#00000000'),
+    [1] = ugui.color_source_to_rgba8('#00000000'),
+    [2] = ugui.color_source_to_rgba8('#00000000'),
+    [3] = ugui.color_source_to_rgba8('#00000000'),
+    [0] = ugui.color_source_to_rgba8('#00000000'),
 }
 theme.joystick.outline = {
-    [1] = BreitbandGraphics.hex_to_color('#4FA33D'),
-    [2] = BreitbandGraphics.hex_to_color('#4FA33D'),
-    [3] = BreitbandGraphics.hex_to_color('#4FA33D'),
-    [0] = BreitbandGraphics.hex_to_color('#4FA33D'),
+    [1] = ugui.color_source_to_rgba8('#4FA33D'),
+    [2] = ugui.color_source_to_rgba8('#4FA33D'),
+    [3] = ugui.color_source_to_rgba8('#4FA33D'),
+    [0] = ugui.color_source_to_rgba8('#4FA33D'),
 }
 theme.joystick.inner_mag = {
-    [1] = BreitbandGraphics.hex_to_color('#4FA33D22'),
-    [2] = BreitbandGraphics.hex_to_color('#4FA33D22'),
-    [3] = BreitbandGraphics.hex_to_color('#4FA33D22'),
-    [0] = BreitbandGraphics.hex_to_color('#4FA33D22'),
+    [1] = ugui.color_source_to_rgba8('#4FA33D22'),
+    [2] = ugui.color_source_to_rgba8('#4FA33D22'),
+    [3] = ugui.color_source_to_rgba8('#4FA33D22'),
+    [0] = ugui.color_source_to_rgba8('#4FA33D22'),
 }
 theme.joystick.outer_mag = {
-    [1] = BreitbandGraphics.hex_to_color('#4FA33D'),
-    [2] = BreitbandGraphics.hex_to_color('#4FA33D'),
-    [3] = BreitbandGraphics.hex_to_color('#4FA33D'),
-    [0] = BreitbandGraphics.hex_to_color('#4FA33D'),
+    [1] = ugui.color_source_to_rgba8('#4FA33D'),
+    [2] = ugui.color_source_to_rgba8('#4FA33D'),
+    [3] = ugui.color_source_to_rgba8('#4FA33D'),
+    [0] = ugui.color_source_to_rgba8('#4FA33D'),
 }
 theme.joystick.line = {
-    [1] = BreitbandGraphics.hex_to_color('#00CE4B'),
-    [2] = BreitbandGraphics.hex_to_color('#00CE4B'),
-    [3] = BreitbandGraphics.hex_to_color('#00CE4B'),
-    [0] = BreitbandGraphics.hex_to_color('#00CE4B'),
+    [1] = ugui.color_source_to_rgba8('#00CE4B'),
+    [2] = ugui.color_source_to_rgba8('#00CE4B'),
+    [3] = ugui.color_source_to_rgba8('#00CE4B'),
+    [0] = ugui.color_source_to_rgba8('#00CE4B'),
 }
 theme.joystick.tip = {
-    [1] = BreitbandGraphics.hex_to_color('#00CE4B'),
-    [2] = BreitbandGraphics.hex_to_color('#00CE4B'),
-    [3] = BreitbandGraphics.hex_to_color('#00CE4B'),
-    [0] = BreitbandGraphics.hex_to_color('#00CE4B'),
+    [1] = ugui.color_source_to_rgba8('#00CE4B'),
+    [2] = ugui.color_source_to_rgba8('#00CE4B'),
+    [3] = ugui.color_source_to_rgba8('#00CE4B'),
+    [0] = ugui.color_source_to_rgba8('#00CE4B'),
 }
 
 return {

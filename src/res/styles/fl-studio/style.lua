@@ -13,22 +13,22 @@ theme.font_size = 14
 theme.font_name = 'Candara'
 
 theme.textbox.text = {
-    [1] = BreitbandGraphics.hex_to_color('#A5ABAF'),
-    [2] = BreitbandGraphics.hex_to_color('#A5ABAF'),
-    [3] = BreitbandGraphics.hex_to_color('#A5ABAF'),
-    [0] = BreitbandGraphics.repeated_to_color(209),
+    [1] = ugui.color_source_to_rgba8('#A5ABAF'),
+    [2] = ugui.color_source_to_rgba8('#A5ABAF'),
+    [3] = ugui.color_source_to_rgba8('#A5ABAF'),
+    [0] = ugui.color_source_to_rgba8('#D1D1D1'),
 }
 theme.button.text = {
-    [1] = BreitbandGraphics.hex_to_color('#DAD8D2'),
-    [2] = BreitbandGraphics.hex_to_color('#DAD8D2'),
-    [3] = BreitbandGraphics.hex_to_color('#DAD8D2'),
-    [0] = BreitbandGraphics.repeated_to_color(209),
+    [1] = ugui.color_source_to_rgba8('#DAD8D2'),
+    [2] = ugui.color_source_to_rgba8('#DAD8D2'),
+    [3] = ugui.color_source_to_rgba8('#DAD8D2'),
+    [0] = ugui.color_source_to_rgba8('#D1D1D1'),
 }
 theme.listbox_item.text = {
-    [1] = BreitbandGraphics.hex_to_color('#A5ABAF'),
-    [2] = BreitbandGraphics.hex_to_color('#A5ABAF'),
-    [3] = BreitbandGraphics.hex_to_color('#A5ABAF'),
-    [0] = BreitbandGraphics.repeated_to_color(209),
+    [1] = ugui.color_source_to_rgba8('#A5ABAF'),
+    [2] = ugui.color_source_to_rgba8('#A5ABAF'),
+    [3] = ugui.color_source_to_rgba8('#A5ABAF'),
+    [0] = ugui.color_source_to_rgba8('#D1D1D1'),
 }
 
 return {
