@@ -246,6 +246,11 @@ return {
             Ghosts.object_address = object_list.objects[new_object_index].address
         end
 
+        -- mark the object picked by name in the world visualizer (Mario isn't marked)
+        local picked_by_name = Ghosts.recording_mode == GhostRecordingModes.object and select_object_by_name
+        local is_mario = Ghosts.object_address == 0 or Ghosts.object_address == Memory.current.mario_object_effective
+        WorldVisualizer.highlighted_object = (picked_by_name and not is_mario) and Ghosts.object_address or nil
+
         -- data of the object that would be recorded
         ugui.listbox({
             uid = UID.ObjectData,
