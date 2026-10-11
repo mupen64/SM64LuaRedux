@@ -85,6 +85,7 @@ Settings = {
     hotkeys_selected_index = 1,
     hotkeys_allow_with_active_control = true,
     lock_hotkeys_when_control_active = true,
+    lock_only_control_keys = false,
     enable_manual_on_joystick_interact = false,
     timer_auto = true,
     semantic_workflow = {
