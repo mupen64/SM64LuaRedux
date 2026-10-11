@@ -946,7 +946,7 @@ function Ghosts.apply_hack()
     end
 
     -- signature: this hack originates from Lua
-    memory.writebyte(region(0x7FFE), 0x42)
+    memory.writebyte(region(0x7FFD), 0x42)
 
     memory.writedword(hook_addr, hook_instruction())
 
