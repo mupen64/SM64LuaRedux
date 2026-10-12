@@ -28,6 +28,7 @@ local SAVED_DISPLAY_TIME <const> = 300
 -- the recorded object's data, read once per game frame rather than on every draw
 local object_data_cache = { key = nil, items = nil }
 
+---@return string[]
 local function object_varwatch_data()
     local mario_obj = Memory.current.mario_object_effective
     local addr = Ghosts.recording_object_address(mario_obj)
@@ -246,10 +247,9 @@ return {
             Ghosts.object_address = object_list.objects[new_object_index].address
         end
 
-        -- mark the object picked by name in the world visualizer (Mario isn't marked)
+        -- mark the object picked by name in the world visualizer
         local picked_by_name = Ghosts.recording_mode == GhostRecordingModes.object and select_object_by_name
-        local is_mario = Ghosts.object_address == 0 or Ghosts.object_address == Memory.current.mario_object_effective
-        WorldVisualizer.highlighted_object = (picked_by_name and not is_mario) and Ghosts.object_address or nil
+        WorldVisualizer.highlighted_object = picked_by_name and Ghosts.object_address or nil
 
         -- data of the object that would be recorded
         ugui.listbox({

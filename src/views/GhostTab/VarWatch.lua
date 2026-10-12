@@ -12,7 +12,7 @@ local function get_mario_data()
             z = Memory.current.mario_z
         },
         animation_index = Memory.current.mario_animation,
-        animation_frame = Memory.current.mario_animation_timer,
+        animation_timer = Memory.current.mario_animation_timer,
         pitch = Memory.current.mario_pitch,
         yaw = Memory.current.mario_facing_yaw,
         roll = Memory.current.mario_roll
@@ -38,7 +38,7 @@ function frame_varwatch_data(data, extra)
         entry('VARWATCH_PITCH_LABEL', Formatter.angle(data.pitch)),
         entry('GHOST_DATA_ROLL', Formatter.angle(data.roll or 0)),
         entry('GHOST_DATA_ANIMATION', Formatter.u(data.animation_index)),
-        entry('GHOST_DATA_ANIMATION_FRAME', Formatter.u(data.animation_frame)),
+        entry('GHOST_DATA_ANIMATION_TIMER', Formatter.u(data.animation_timer)),
     }) do
         items[#items + 1] = line
     end
@@ -49,9 +49,15 @@ local function format_action(action)
     return Locales.raw().ACTIONS[action] or (Locales.str('VARWATCH_UNKNOWN_ACTION') .. action)
 end
 
--- extra data that can be recorded with a ghost, picked in the ghost settings tab. `label` is what's
--- stored in the file (max 15 bytes), so it stays in English; `locale` is what's displayed
----@type {id: string, label: string, locale: string, type: integer, read: fun(): number, format: fun(value: number): string}[]
+---@class GhostVarWatchData
+---@field id string # unique internal identifier
+---@field label GhostVarLabel # the identifier stored in the ghost file
+---@field locale string # the Locales identifier (the displayed label)
+---@field type GhostVarType
+---@field read fun(): any # a function that returns the current value of the data
+---@field format fun(value: any): string # a function to display the data as a string
+
+---@type GhostVarWatchData[]
 GHOST_RECORDABLE_VARIABLES = {
     {
         id = 'action',
@@ -141,11 +147,15 @@ function selected_variable_lines()
 end
 
 function ghost_varwatch_data(ghost)
+    local lines = {}
     if not ghost then
-        return frame_varwatch_data(get_mario_data(), selected_variable_lines())
+        -- display all information for Mario
+        for _, variable in ipairs(GHOST_RECORDABLE_VARIABLES) do
+            lines[#lines + 1] = entry(variable.locale, variable.format(variable.read()))
+        end 
+        return frame_varwatch_data(get_mario_data(), lines)
     end
     local data = Ghosts.get_ghost_data(ghost, Memory.current.global_timer)
-    local lines = {}
     for _, variable in ipairs(Ghosts.get_ghost_variables(ghost, Memory.current.global_timer)) do
         lines[#lines + 1] = variable_entry(variable)
     end

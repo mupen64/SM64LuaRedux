@@ -155,10 +155,11 @@ WorldVisualizer.draw = function()
     end
 
     if highlighted then
+        local color = Settings.ghost_recording_highlight_color or {255, 0, 0}
         draw_object({
             x = memory.readfloat(highlighted + 0xA0),
             y = memory.readfloat(highlighted + 0xA4),
             z = memory.readfloat(highlighted + 0xA8),
-        }, BreitbandGraphics.colors.red, 3)
+        }, { r = color[1], g = color[2], b = color[3] }, 3)
     end
 end

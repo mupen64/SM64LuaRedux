@@ -307,17 +307,26 @@ This action cannot be undone.
     GHOST_SETTINGS_TRANSPARENT_DEFAULT_TOOLTIP = 'Newly loaded ghosts start out transparent',
     GHOST_SETTINGS_BASE_OFFSET = 'Hack base offset:',
     GHOST_SETTINGS_BASE_OFFSET_TOOLTIP = 'Upper half of the hack\'s RAM address, from 0x8040 to 0x806C.\nMove it to avoid conflicts, e.g. with Usamune ROMs.\nIf the hack is running, its ghosts are cleared first\nand it moves as the game advances',
-    GHOST_PLAYBACK_WARNING = 'WARNING: Enabling ghost playback modifies the game\'s memory. Recording a TAS while this hack is enabled may result in a desync when played from an unmodified state.\n\nAdditionally, this hack supports roughly 15 ghosts at max. Any more may result in crashing the game',
+    GHOST_PLAYBACK_WARNING =
+[[WARNING: Enabling ghost playback modifies the game's memory. Recording a TAS while this hack is enabled may result in a desync when played from an unmodified state.
+
+To properly disable/remove the hack you will need to load a clean savestate.
+
+Also, this hack supports about 15 ghosts at max. Any more may result in a game crash.]],
     GHOST_PLAYBACK_WARNING_ACCEPT = 'I Understand',
     GHOST_SETTINGS_SHOW_PLAYBACK_WARNING = 'Show warning before ghost playback',
     GHOST_SETTINGS_SHOW_PLAYBACK_WARNING_TOOLTIP = 'Show the memory warning on the playback tab again\nuntil it is accepted',
     GHOST_SETTINGS_OVERLAY_DATA = 'Overlay ghost data',
-    GHOST_SETTINGS_OVERLAY_DATA_TOOLTIP = 'Show the selected playback ghost\'s data over the game.',
+    GHOST_SETTINGS_OVERLAY_DATA_TOOLTIP = 'Show the selected playback ghost\'s data over the game',
+    GHOST_SETTINGS_DISABLE_BODY_MOVEMENT = 'Disable ghost body movement',
+    GHOST_SETTINGS_DISABLE_BODY_MOVEMENT_TOOLTIP = 'An experimental hack that prevents ghosts from copying\nMario\'s punch/kick scaling, torso tilt, and head rotation',
+    GHOST_SETTINGS_HIGHLIGHT_COLOR = 'Object highlight color:',
+    GHOST_SETTINGS_HIGHLIGHT_COLOR_TOOLTIP = 'Color of the box drawn around the object\npicked by name in the recording tab',
     GHOST_SETTINGS_RECORD_VARIABLES = 'Extra data to record:',
     GHOST_SETTINGS_RECORD_VARIABLE_TOOLTIP = 'Record this value with each frame of the ghost.\nShown with the ghost\'s data in the playback tab',
     GHOST_DATA_ROLL = 'Roll',
     GHOST_DATA_ANIMATION = 'Animation',
-    GHOST_DATA_ANIMATION_FRAME = 'Animation Frame',
+    GHOST_DATA_ANIMATION_TIMER = 'Animation Frame',
     GHOST_DATA_GRAPHICS = 'Graphics',
     -- Varwatch
     VARWATCH_FACING_YAW_LABEL = "Facing Yaw",

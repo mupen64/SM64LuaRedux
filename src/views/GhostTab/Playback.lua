@@ -55,42 +55,11 @@ end
 
 local picker_open = false
 local picker_ghost = nil
-local picker_original = nil
+local picker_original = {0xFF, 0, 0}
 local color_text = nil
 local color_text_ghost = nil
 
-local function rgb_to_str(rgb)
-    return string.format('#%02X%02X%02X', rgb[1], rgb[2], rgb[3])
-end
-
-local function parse_hex_color(text)
-    if not text then
-        return nil
-    end
-    local hex = text:gsub('#', ''):gsub('%s', '')
-    if #hex ~= 6 or hex:match('%X') then
-        return nil
-    end
-    local r = tonumber(hex:sub(1, 2), 16)
-    local g = tonumber(hex:sub(3, 4), 16)
-    local b = tonumber(hex:sub(5, 6), 16)
-    if not r or not g or not b then
-        return nil
-    end
-    return {r, g, b}
-end
-
-local function rgb_to_ugui_color(rgb)
-    return {r = rgb[1] / 255, g = rgb[2] / 255, b = rgb[3] / 255, a = 1}
-end
-
-local function ugui_color_to_rgb(color)
-    return {
-        math.floor(color.r * 255 + 0.5),
-        math.floor(color.g * 255 + 0.5),
-        math.floor(color.b * 255 + 0.5),
-    }
-end
+local Colors = dofile(views_path .. 'GhostTab/Colors.lua')
 
 return {
     name = function() return Locales.str('GHOST_PLAYBACK_TAB_NAME') end,
@@ -101,7 +70,7 @@ return {
     ---@return string, string | nil # the selected ghost's display name, and its hat color as hex (nil for object ghosts)
     selected_name_and_color = function()
         local is_object = selected_ghost and selected_ghost.graphics ~= 0
-        return ghost_name(selected_ghost), not is_object and rgb_to_str(Ghosts.get_color(selected_ghost)) or nil
+        return ghost_name(selected_ghost), not is_object and Colors.rgb_to_str(Ghosts.get_color(selected_ghost)) or nil
     end,
     
     draw = function()
@@ -136,7 +105,7 @@ return {
             })
             if ugui.button({
                     uid = UID.AcceptWarning,
-                    rectangle = grid_rect(2, 6.5, 4, 1),
+                    rectangle = grid_rect(2, 8.5, 4, 1),
                     text = Locales.str('GHOST_PLAYBACK_WARNING_ACCEPT'),
                 }) then
                 Settings.ghost_playback_warning_accepted = true
@@ -191,7 +160,7 @@ return {
                 rectangle = grid_rect(2.7, 2.7, 2.6, 1),
                 text = Locales.str('GHOST_REMOVE'),
                 is_enabled = valid_ghost_selected
-            }) then
+            }) and selected_ghost then
             Ghosts.unload_ghost(selected_ghost)
             display_names[selected_ghost] = nil
             selected_ghost = nil -- go back to Mario
@@ -236,7 +205,7 @@ return {
                 text = Locales.str('GHOST_SAVE_AS'),
                 tooltip = Locales.str('GHOST_SAVE_AS_TOOLTIP'),
                 is_enabled = valid_ghost_selected
-            }) then
+            }) and selected_ghost then
             local path = iohelper.filediag("*.ghost", 1)
             if string.len(path) > 0 and not Ghosts.save_ghost_file(selected_ghost, path) then
                 print(Locales.str('GHOST_SAVE_FAILED'))
@@ -246,7 +215,10 @@ return {
         -- editable ghost data
         section_label(UID.TimerStartLabel, grid_rect(0, 7.9, 8, 1), Locales.str('GHOST_TIMER_START'))
 
-        local current_start = not selected_ghost and 0 or selected_ghost.global_timer_start
+        local current_start = 0
+        if selected_ghost ~= nil then
+            current_start = selected_ghost.global_timer_start
+        end
         local new_start = ugui.textbox({
             uid = UID.TimerStart,
             rectangle = grid_rect(3.7, 8, 2.6, 0.8),
@@ -295,15 +267,14 @@ return {
         end
 
         -- display object's graphics instead of hat options
-        local graphics = not selected_ghost and 0 or selected_ghost.graphics
-        if graphics ~= 0 then
+        if selected_ghost ~= nil and selected_ghost.graphics ~= 0 then
             section_label(UID.GraphicsLabel, grid_rect(0, 8.8, 2.5, 1), Locales.str('GHOST_GRAPHICS'))
-            section_label(UID.Graphics, grid_rect(2, 8.8, 5.4, 1), string.format('0x%X', graphics))
+            section_label(UID.Graphics, grid_rect(2, 8.8, 5.4, 1), string.format('0x%X', selected_ghost.graphics))
         else
             section_label(UID.TransparentLabel, grid_rect(0, 8.8, 2.5, 1), Locales.str('GHOST_TRANSPARENT'))
 
             local transparent = false
-            if valid_ghost_selected then
+            if selected_ghost ~= nil then
                 transparent = selected_ghost.is_transparent
             end
             if ugui.button({
@@ -324,7 +295,7 @@ return {
             local color = Ghosts.get_color(selected_ghost)
             local color_text_is_focused = ugui.internal.keyboard_captured_control == UID.Color
             if color_text == nil or not color_text_is_focused or color_text_ghost ~= selected_ghost then
-                color_text = rgb_to_str(color)
+                color_text = Colors.rgb_to_str(color)
                 color_text_ghost = selected_ghost
             end
             color_text = ugui.textbox({
@@ -336,7 +307,7 @@ return {
                     font_size = theme.font_size * 1.25,
                 },
             })
-            local typed_color = parse_hex_color(color_text)
+            local typed_color = Colors.parse_hex_color(color_text)
             if typed_color then
                 Ghosts.set_color(selected_ghost, typed_color)
                 color = typed_color
@@ -358,7 +329,7 @@ return {
                     width = swatch_rect.width - 8,
                     height = swatch_rect.height - 8,
                 },
-                fill = rgb_to_str(color),
+                fill = Colors.rgb_to_str(color),
             })
             if open_picker then
                 if picker_open then
@@ -374,11 +345,11 @@ return {
                 local picked_color = ugui.colorpicker({
                     uid = UID.ColorPicker,
                     rectangle = grid_rect(4.5, 9.2, 3, 3),
-                    color = rgb_to_ugui_color(color),
+                    color = Colors.rgb_to_ugui_color(color),
                     shape = 'circle',
                     band_position = 'right',
                 })
-                local picked_rgb = ugui_color_to_rgb(picked_color)
+                local picked_rgb = Colors.ugui_color_to_rgb(picked_color)
                 if picked_rgb[1] ~= color[1] or picked_rgb[2] ~= color[2] or picked_rgb[3] ~= color[3] then
                     Ghosts.set_color(selected_ghost, picked_rgb)
                     color = picked_rgb
@@ -413,7 +384,7 @@ return {
         })
 
         -- ghost list
-        -- drawn last so changes in selected)ghost don't affect other UI elements
+        -- drawn last so changes in selected_ghost don't affect other UI elements
         local ghosts = Ghosts.list_ghosts()
         local ghost_name_list = {'[✓] Mario'}
         local selected_index = 1
