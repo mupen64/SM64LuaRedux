@@ -25,7 +25,7 @@ end
 
 ---Formats a frame of ghost or object data as varwatch lines.
 ---@param extra string[]? # extra variable lines, placed after facing yaw and before the less important fields
-function frame_varwatch_data(data, extra)
+local function frame_varwatch_data(data, extra)
     local items = {
         entry('VARWATCH_GLOBAL_TIMER_LABEL', Memory.current.global_timer),
         entry('VARWATCH_POS_X_LABEL', Formatter.u(data.position.x)),
@@ -60,6 +60,14 @@ end
 ---@type GhostVarWatchData[]
 GHOST_RECORDABLE_VARIABLES = {
     {
+        id = 'yaw_intended',
+        label = 'Intended Yaw',
+        locale = 'VARWATCH_INTENDED_YAW_LABEL',
+        type = Ghosts.VARIABLE_TYPES.word,
+        read = function() return Memory.current.mario_intended_yaw end,
+        format = Formatter.angle
+    },
+    {
         id = 'action',
         label = 'Action',
         locale = 'VARWATCH_ACTION_LABEL',
@@ -68,27 +76,11 @@ GHOST_RECORDABLE_VARIABLES = {
         format = format_action
     },
     {
-        id = 'rng',
-        label = 'RNG',
-        locale = 'VARWATCH_RNG_LABEL',
-        type = Ghosts.VARIABLE_TYPES.word,
-        read = function() return Memory.current.rng_value end,
-        format = tostring
-    },
-    {
         id = 'h_spd',
         label = 'H Spd',
         locale = 'VARWATCH_H_SPEED_LABEL',
         type = Ghosts.VARIABLE_TYPES.float,
         read = function() return Memory.current.mario_h_speed end,
-        format = Formatter.ups
-    },
-    {
-        id = 'v_spd',
-        label = 'Y Spd',
-        locale = 'VARWATCH_Y_SPEED_LABEL',
-        type = Ghosts.VARIABLE_TYPES.float,
-        read = function() return Memory.current.mario_v_speed end,
         format = Formatter.ups
     },
     {
@@ -100,17 +92,25 @@ GHOST_RECORDABLE_VARIABLES = {
         format = Formatter.percent
     },
     {
-        id = 'yaw_intended',
-        label = 'Intended Yaw',
-        locale = 'VARWATCH_INTENDED_YAW_LABEL',
+        id = 'v_spd',
+        label = 'Y Spd',
+        locale = 'VARWATCH_Y_SPEED_LABEL',
+        type = Ghosts.VARIABLE_TYPES.float,
+        read = function() return Memory.current.mario_v_speed end,
+        format = Formatter.ups
+    },
+    {
+        id = 'rng',
+        label = 'RNG',
+        locale = 'VARWATCH_RNG_LABEL',
         type = Ghosts.VARIABLE_TYPES.word,
-        read = function() return Memory.current.mario_intended_yaw end,
-        format = Formatter.angle
+        read = function() return Memory.current.rng_value end,
+        format = tostring
     },
 }
 
 ---Registers the variables enabled in the settings with the ghost module; call before a recording starts.
-function sync_ghost_recorded_variables()
+local function sync_ghost_recorded_variables()
     for _, variable in ipairs(GHOST_RECORDABLE_VARIABLES) do
         if Settings.ghost_recorded_variables and Settings.ghost_recorded_variables[variable.id] then
             Ghosts.record_variable(variable.label, variable.type, variable.read)
@@ -136,7 +136,7 @@ end
 
 ---Lines for the current values of the variables selected in the ghost settings tab, i.e. what a recording would store.
 ---@return string[]
-function selected_variable_lines()
+local function selected_variable_lines()
     local lines = {}
     for _, variable in ipairs(GHOST_RECORDABLE_VARIABLES) do
         if Settings.ghost_recorded_variables and Settings.ghost_recorded_variables[variable.id] then
@@ -146,7 +146,9 @@ function selected_variable_lines()
     return lines
 end
 
-function ghost_varwatch_data(ghost)
+---Get all available data for the given ghost on the current frame
+---@param ghost Ghost | nil # if nil, returns current data for Mario
+local function ghost_varwatch_data(ghost)
     local lines = {}
     if not ghost then
         -- display all information for Mario
@@ -161,3 +163,10 @@ function ghost_varwatch_data(ghost)
     end
     return frame_varwatch_data(data, lines)
 end
+
+return {
+    frame_varwatch_data = frame_varwatch_data,
+    sync_recorded_variables = sync_ghost_recorded_variables,
+    selected_variable_lines = selected_variable_lines,
+    get_data = ghost_varwatch_data
+}

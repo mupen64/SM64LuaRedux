@@ -81,8 +81,9 @@ local OBJ_PITCH_OFFSET <const> = 0x1A
 local OBJ_YAW_OFFSET <const> = 0x1C
 local OBJ_ROLL_OFFSET <const> = 0x1E
 
+---@type HatColor
 local mario_hat_color = {0xFF, 0x00, 0x00}
-local default_color_counter = 1
+---@type HatColor[]
 local DEFAULT_COLORS = {
     {255, 0, 0},
     {255, 127, 0},
@@ -93,6 +94,7 @@ local DEFAULT_COLORS = {
     {255, 255, 255},
     {51, 51, 51}
 }
+local default_color_counter = 1
 
 -- the hack's tables are written for a region starting at 0x80400000 and moved to Ghosts.base_offset
 local HACK_FILE_BASE <const> = 0x80400000
@@ -438,6 +440,7 @@ local function clamp(x)
     return math.max(0, math.min(255, x))
 end
 
+---@param rgb HatColor
 local function color_to_lights(rgb)
     local r1 = clamp(rgb[1])
     local g1 = clamp(rgb[2])

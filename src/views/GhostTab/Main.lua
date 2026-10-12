@@ -12,7 +12,7 @@ local UID = UIDProvider.allocate_once('GhostTab', function(enum_next)
     }
 end)
 
-dofile(views_path .. 'GhostTab/VarWatch.lua')
+GhostVarWatch = dofile(views_path .. 'GhostTab/GhostVarWatch.lua')
 
 local playback_tab = dofile(views_path .. 'GhostTab/Playback.lua')
 local tabs = {
@@ -23,10 +23,13 @@ local tabs = {
 
 ---Draws the selected playback ghost's data over the game.
 ---Called every frame from SM64Lua.lua so it stays up outside the Ghost tab.
----@param beside_semantic_workflow boolean # whether to move left of the semantic workflow tab's varwatch overlay
-function draw_ghost_overlay(beside_semantic_workflow)
+---@param left_shift number # the amount to shift the overlay by (used so it doesn't overlap the semantic workflow)
+function GhostTab_draw_ghost_overlay(left_shift)
     if not Settings.ghost_overlay_data then
         return
+    end
+    if not left_shift then
+        left_shift = 0
     end
     local item_height = ugui.standard_styler.params.listbox_item.height
     local name, color = playback_tab.selected_name_and_color()
@@ -41,7 +44,7 @@ function draw_ghost_overlay(beside_semantic_workflow)
     table.insert(items, 1, name)
 
     -- sized to fit the items (+1px border each side), keeping the bottom where the semantic workflow's ends
-    local rectangle = grid_rect(beside_semantic_workflow and -12 or -6, 9, 6, 7)
+    local rectangle = grid_rect(-6 - left_shift, 9, 6, 7)
     local height = #items * item_height + 2
     rectangle.y = rectangle.y + rectangle.height - height
     rectangle.height = height
@@ -59,7 +62,7 @@ function draw_ghost_overlay(beside_semantic_workflow)
     if color then
         ugui.panel({
             uid = UID.OverlayColor,
-            rectangle = { x = rectangle.x + 3, y = rectangle.y + 1 + (item_height - swatch_size) / 2, width = swatch_size, height = swatch_size },
+            rectangle = { x = rectangle.x + 3, y = rectangle.y + 0.5 + (item_height - swatch_size) / 2, width = swatch_size, height = swatch_size },
             fill = color,
         })
     end

@@ -41,7 +41,8 @@ local function object_varwatch_data()
     if key ~= object_data_cache.key then
         object_data_cache.key = key
         local data = Ghosts.read_object(addr)
-        object_data_cache.items = data and frame_varwatch_data(data, selected_variable_lines())
+        local vardata = GhostVarWatch.selected_variable_lines()
+        object_data_cache.items = data and GhostVarWatch.frame_varwatch_data(data, vardata)
             or { Locales.str('GHOST_INVALID_OBJECT') }
     end
     return object_data_cache.items
@@ -103,7 +104,7 @@ return {
                     print(Locales.str('GHOST_STOP_RECORDING_FAILED'))
                 end
             else
-                sync_ghost_recorded_variables()
+                GhostVarWatch.sync_recorded_variables()
                 local result = Ghosts.start_recording()
                 if not result then
                     print(Locales.str('GHOST_START_RECORDING_FAILED'))

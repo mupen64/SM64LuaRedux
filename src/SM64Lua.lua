@@ -38,7 +38,7 @@ dofile(core_path .. 'MoreMaths.lua')
 dofile(core_path .. 'WorldVisualizer.lua')
 dofile(core_path .. 'MiniVisualizer.lua')
 dofile(core_path .. 'Timer.lua')
-dofile(core_path .. 'Ghost.lua')
+dofile(core_path .. 'Ghosts.lua')
 dofile(core_path .. 'VarWatch.lua')
 dofile(core_path .. 'Styles.lua')
 dofile(core_path .. 'Locales.lua')
@@ -284,7 +284,9 @@ local function atdrawd2d()
 
     WorldVisualizer.draw()
     MiniVisualizer.draw()
-    draw_ghost_overlay(views[Settings.tab_index].name() == Locales.str('SEMANTIC_WORKFLOW_TAB_NAME'))
+    GhostTab_draw_ghost_overlay(
+        views[Settings.tab_index].name() == Locales.str('SEMANTIC_WORKFLOW_TAB_NAME') and 6 or 0
+    )
     Notifications.draw()
 
     BreitbandGraphics.fill_rectangle({

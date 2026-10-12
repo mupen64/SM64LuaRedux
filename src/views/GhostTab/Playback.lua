@@ -65,7 +65,7 @@ return {
     name = function() return Locales.str('GHOST_PLAYBACK_TAB_NAME') end,
 
     ---@return string[] # the varwatch lines of the selected ghost (Mario if none), for the overlay
-    varwatch_items = function() return ghost_varwatch_data(selected_ghost) end,
+    varwatch_items = function() return GhostVarWatch.get_data(selected_ghost) end,
 
     ---@return string, string | nil # the selected ghost's display name, and its hat color as hex (nil for object ghosts)
     selected_name_and_color = function()
@@ -380,7 +380,7 @@ return {
             uid = UID.GhostData,
             rectangle = grid_rect(0, 12, 8, 4),
             selected_index = nil,
-            items = ghost_varwatch_data(selected_ghost),
+            items = GhostVarWatch.get_data(selected_ghost),
         })
 
         -- ghost list
