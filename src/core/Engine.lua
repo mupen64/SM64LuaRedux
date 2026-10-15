@@ -173,11 +173,14 @@ end
 
 local ENABLE_REVERSE_YAW_ON_WALLKICK = true
 
-function get_goal_angle(targetspd)
+--- @param targetspd # the forward speed to end the frame at
+--- @param v # the forward speed the frame starts from (default: Mario's current one)
+function get_goal_angle(targetspd, v)
+	v = v or Memory.current.mario_f_speed
 	if (targetspd > 0) then
-		return math.floor(math.acos((targetspd + 0.35 - Memory.current.mario_f_speed) / 1.5) * 32768 / math.pi)
+		return math.floor(math.acos((targetspd + 0.35 - v) / 1.5) * 32768 / math.pi)
 	end
-	return math.floor(math.acos((targetspd - 0.35 - Memory.current.mario_f_speed) / 1.5) * 32768 / math.pi)
+	return math.floor(math.acos((targetspd - 0.35 - v) / 1.5) * 32768 / math.pi)
 end
 
 --- Returns the target angle to hold on the current frame to achieve arctan straining.
@@ -304,7 +307,7 @@ Engine.get_point99_trick_goal_angle = function(action, v, current_input, movemen
 			targetspeed = 48
 			goal = get_dyaw(13927)
 		else
-			goal = get_dyaw(get_goal_angle(targetspeed))
+			goal = get_dyaw(get_goal_angle(targetspeed, v))
 		end
 
 	-- starting a slide kick
@@ -316,7 +319,7 @@ Engine.get_point99_trick_goal_angle = function(action, v, current_input, movemen
 		targetspeed = 32
 		if (v > 32) then
 			if (v > 33.85) then targetspeed = targetspeed + 1 end
-			goal = get_dyaw(get_goal_angle(targetspeed))
+			goal = get_dyaw(get_goal_angle(targetspeed, v))
 		else
 			goal = get_dyaw(13927)
 		end
@@ -328,7 +331,7 @@ Engine.get_point99_trick_goal_angle = function(action, v, current_input, movemen
 		speedsign = -1
 		targetspeed = -16 - v / 2
 		if (v < -11.9) then targetspeed = targetspeed - 2 end
-		goal = get_dyaw(get_goal_angle(targetspeed))
+		goal = get_dyaw(get_goal_angle(targetspeed, v))
 
 	-- long jump (in the air)
 	elseif (v > 46.85 and v < 47.85 + offset and
@@ -337,7 +340,7 @@ Engine.get_point99_trick_goal_angle = function(action, v, current_input, movemen
 		speedsign = 1
 		targetspeed = 48
 		if (v > 49.85) then targetspeed = targetspeed + 1 end
-		goal = get_dyaw(get_goal_angle(targetspeed))
+		goal = get_dyaw(get_goal_angle(targetspeed, v))
 
 	-- air movement
 	elseif (v > 30.85 and v < 31.85 + offset and
@@ -351,7 +354,7 @@ Engine.get_point99_trick_goal_angle = function(action, v, current_input, movemen
 		speedsign = 1
 		targetspeed = 32
 		if (v > 33.85) then targetspeed = targetspeed + 1 end
-		goal = get_dyaw(get_goal_angle(targetspeed))
+		goal = get_dyaw(get_goal_angle(targetspeed, v))
 		if (REFLECT_ACTION and ENABLE_REVERSE_YAW_ON_WALLKICK) then
 			goal = (goal + 32768) % 65536
 		end
@@ -369,7 +372,7 @@ Engine.get_point99_trick_goal_angle = function(action, v, current_input, movemen
 		speedsign = 1
 		targetspeed = 32 - 15
 		if (v > 18.85) then targetspeed = targetspeed + 1 end
-		goal = get_dyaw(get_goal_angle(targetspeed))
+		goal = get_dyaw(get_goal_angle(targetspeed, v))
 		if (REFLECT_ACTION and ENABLE_REVERSE_YAW_ON_WALLKICK) then
 			goal = (goal + 32768) % 65536
 		end
@@ -399,7 +402,7 @@ Engine.get_point99_trick_goal_angle = function(action, v, current_input, movemen
 		speedsign = -1
 		targetspeed = -16
 		if (v < -17.85) then targetspeed = targetspeed - 2 end
-		goal = get_dyaw(get_goal_angle(targetspeed))
+		goal = get_dyaw(get_goal_angle(targetspeed, v))
 
 	-- air dive (backwards)
 	elseif (v > -31.85 - offset and v < -29.85 and
@@ -417,7 +420,7 @@ Engine.get_point99_trick_goal_angle = function(action, v, current_input, movemen
 		speedsign = -1
 		targetspeed = -16 - 15
 		if (v < -32.85) then targetspeed = targetspeed - 2 end
-		goal = get_dyaw(get_goal_angle(targetspeed))
+		goal = get_dyaw(get_goal_angle(targetspeed, v))
 
 	-- single jump (backwards)
 	elseif (v > -21.0625 - offset / 0.8 and v < -18.5625 and
@@ -429,7 +432,7 @@ Engine.get_point99_trick_goal_angle = function(action, v, current_input, movemen
 		speedsign = -1
 		targetspeed = -16 + v / 5
 		if (v < -22.3125) then targetspeed = targetspeed - 2 end
-		goal = get_dyaw(get_goal_angle(targetspeed))
+		goal = get_dyaw(get_goal_angle(targetspeed, v))
 
 	-- single jump
 	elseif (v > 38.5625 and v < 39.8125 + offset / 0.8 and
@@ -442,7 +445,7 @@ Engine.get_point99_trick_goal_angle = function(action, v, current_input, movemen
 		speedsign = 1
 		targetspeed = 32 + v / 5
 		if (v > 42.3125) then targetspeed = targetspeed + 1 end
-		goal = get_dyaw(get_goal_angle(targetspeed))
+		goal = get_dyaw(get_goal_angle(targetspeed, v))
 
 	-- triple jump dive
 	elseif (v > 20 and v < 21.0625 + offset / 0.8 and
@@ -452,7 +455,7 @@ Engine.get_point99_trick_goal_angle = function(action, v, current_input, movemen
 		speedsign = 1
 		targetspeed = 32 - 15 + v / 5
 		if (v > 23.5625) then targetspeed = targetspeed + 1 end
-		goal = get_dyaw(get_goal_angle(targetspeed))
+		goal = get_dyaw(get_goal_angle(targetspeed, v))
 	end
 
 	if goal == nil then
@@ -477,6 +480,114 @@ Engine.get_point99_trick_goal_angle = function(action, v, current_input, movemen
 	end
 
 	return goal + 32 * speedsign * get_dyaw_sign(), verify_speed_under_threshold
+end
+
+-- Attacks that knock Mario back (interaction.c): on the frame a punch, kick or trip hits one of these objects,
+-- mario_process_interactions calls bounce_back_from_attack, which sets his forward speed to -16 in the air or -48
+-- on the ground before the action step runs.
+local Recoil = {
+	MARIO_METAL_CAP = 0x00000004,
+	MARIO_PUNCHING = 0x00100000,
+	MARIO_KICKING = 0x00200000,
+	MARIO_TRIPPING = 0x00400000,
+	ACT_PUNCHING = 0x00800380,
+	ACT_MOVE_PUNCHING = 0x00800457,
+	ACT_JUMP_KICK = 0x018008AC,
+	INTERACT_GRABBABLE = 0x00000002,
+	INTERACT_KOOPA = 0x00000080,
+	INTERACT_BREAKABLE = 0x00000200,
+	INTERACT_BOUNCE_TOP = 0x00008000,
+	INTERACT_BULLY = 0x00020000,
+	INTERACT_BOUNCE_TOP2 = 0x00100000,
+	INTERACT_HIT_FROM_BELOW = 0x00400000,
+	INT_SUBTYPE_KICKABLE = 0x00000100,
+	INT_STATUS_INTERACTED = 0x00008000,
+	OBJECT_COUNT = 240,
+	OBJECT_SIZE = 0x260,
+}
+Recoil.TYPES = Recoil.INTERACT_GRABBABLE | Recoil.INTERACT_KOOPA | Recoil.INTERACT_BREAKABLE |
+	Recoil.INTERACT_BOUNCE_TOP | Recoil.INTERACT_BULLY | Recoil.INTERACT_BOUNCE_TOP2 | Recoil.INTERACT_HIT_FROM_BELOW
+-- the handlers that turn a metal cap collision into INT_FAST_ATTACK_OR_SHELL, which doesn't knock Mario back
+Recoil.METAL_IGNORED = Recoil.INTERACT_KOOPA | Recoil.INTERACT_BOUNCE_TOP | Recoil.INTERACT_BOUNCE_TOP2 |
+	Recoil.INTERACT_HIT_FROM_BELOW
+
+--- Returns the forward speed Mario's action starts from this frame if his punch, kick or trip hits an object that
+--- knocks him back, or nil. The game detects collisions at the start of the frame, before Mario's update
+--- (object_collision.c), so this redoes that hitbox test for Mario against every active object with one of those
+--- interaction types, then determine_interaction's angle test. Not modelled: Mario's moving-platform displacement,
+--- the 4-object collision limit, and which object counts when two of the same interaction type overlap Mario.
+function Engine.get_attack_recoil_speed()
+	local addresses = Addresses[Settings.address_source_index]
+	if not addresses.object_pool or not addresses.mario_flags then
+		return nil
+	end
+	local action = Memory.current.mario_action
+	if action ~= Recoil.ACT_PUNCHING and action ~= Recoil.ACT_MOVE_PUNCHING and action ~= Recoil.ACT_JUMP_KICK then
+		return nil
+	end
+	-- set by the previous frame's action step, read by this frame's interactions
+	local flags = memory.readdword(addresses.mario_flags)
+	local punch_or_kick = (flags & (Recoil.MARIO_PUNCHING | Recoil.MARIO_KICKING)) ~= 0
+	local kick_or_trip = (flags & (Recoil.MARIO_KICKING | Recoil.MARIO_TRIPPING)) ~= 0
+	local trip = (flags & Recoil.MARIO_TRIPPING) ~= 0
+	if not punch_or_kick and not trip then
+		return nil
+	end
+	local metal = (flags & Recoil.MARIO_METAL_CAP) ~= 0
+	local recoil = (action & ACT_FLAG_AIR) ~= 0 and -16 or -48
+
+	local mario = Memory.current.mario_object_effective
+	if mario == 0 then
+		return nil
+	end
+	-- clear_object_collision decrements oIntangibleTimer just before the test
+	local function tangible(obj)
+		local timer = memory.readdwordsigned(obj + 0x9C)
+		return timer == 0 or timer == 1
+	end
+	if not tangible(mario) then
+		return nil
+	end
+	local mx, my, mz = memory.readfloat(mario + 0xA0), memory.readfloat(mario + 0xA4), memory.readfloat(mario + 0xA8)
+	local m_radius = memory.readfloat(mario + 0x1F8)
+	local m_bottom = my - memory.readfloat(mario + 0x208)
+	local m_top = m_bottom + memory.readfloat(mario + 0x1FC)
+
+	for i = 0, Recoil.OBJECT_COUNT - 1 do
+		local o = addresses.object_pool + i * Recoil.OBJECT_SIZE
+		local interact_type = memory.readdword(o + 0x130)
+		if o ~= mario and (interact_type & Recoil.TYPES) ~= 0 and (memory.readword(o + 0x74) & 1) ~= 0 and
+				tangible(o) and (memory.readdword(o + 0x134) & Recoil.INT_STATUS_INTERACTED) == 0 then
+			-- detect_object_hitbox_overlap
+			local ox, oy, oz = memory.readfloat(o + 0xA0), memory.readfloat(o + 0xA4), memory.readfloat(o + 0xA8)
+			local dx, dz = mx - ox, mz - oz
+			local o_bottom = oy - memory.readfloat(o + 0x208)
+			local o_top = o_bottom + memory.readfloat(o + 0x1FC)
+			if m_radius + memory.readfloat(o + 0x1F8) > math.sqrt(dx * dx + dz * dz) and
+					m_bottom <= o_top and m_top >= o_bottom then
+				-- determine_interaction: within 60 degrees of Mario's facing yaw (90 for a trip)
+				local yaw_to_obj = Angles.atan2s(oz - Memory.current.mario_z, ox - Memory.current.mario_x)
+				local dyaw = math.abs((yaw_to_obj - Memory.current.mario_facing_yaw + 0x8000) % 0x10000 - 0x8000)
+				local hit = (punch_or_kick and dyaw <= 0x2AAA) or (trip and dyaw <= 0x4000)
+				if (interact_type & Recoil.INTERACT_BULLY) ~= 0 and (metal or (not hit and (action & ACT_FLAG_AIR) ~= 0
+						and Memory.current.mario_v_speed < 0 and Memory.current.mario_y > oy)) then
+					-- interact_bully sets -16 for any attack; a metal cap one or a stomp (INT_HIT_FROM_ABOVE)
+					-- isn't bounced back further
+					return -16
+				end
+				if hit then
+					if (interact_type & Recoil.INTERACT_GRABBABLE) ~= 0 then
+						if (memory.readdword(o + 0x190) & Recoil.INT_SUBTYPE_KICKABLE) ~= 0 and kick_or_trip then
+							return recoil
+						end
+					elseif not (metal and (interact_type & Recoil.METAL_IGNORED) ~= 0) then
+						return recoil
+					end
+				end
+			end
+		end
+	end
+	return nil
 end
 
 --- Bruteforce search in a neighbourhood for better inputs.
@@ -551,9 +662,10 @@ Engine.inputs_for_angle = function(goal, current_input, movement_mode)
 	local verify_xx99 = nil
 	if Settings.tas.strain_speed_target then
 		local xx99_goal
+		-- on the frame an attack knocks Mario back, the action step starts from the recoil speed
 		xx99_goal, verify_xx99 = Engine.get_point99_trick_goal_angle(
 			action,
-			Memory.current.mario_f_speed,
+			Engine.get_attack_recoil_speed() or Memory.current.mario_f_speed,
 			current_input,
 			movement_mode
 		)
