@@ -220,7 +220,9 @@ Locales = {}
 ---@field public GHOST_DISABLED string
 ---@field public GHOST_UNSUPPORTED string
 ---@field public GHOST_ENABLED string
+---@field public GHOST_NOT_CONTROLLED string
 ---@field public GHOST_ENABLE_HACK string
+---@field public GHOST_TAKE_CONTROL string
 ---@field public GHOST_LIST string
 ---@field public GHOST_ADD string
 ---@field public GHOST_LOAD_FAILED string

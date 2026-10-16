@@ -72,7 +72,7 @@ return {
         local is_object = selected_ghost and selected_ghost.graphics ~= 0
         return ghost_name(selected_ghost), not is_object and Colors.rgb_to_str(Ghosts.get_color(selected_ghost)) or nil
     end,
-    
+
     draw = function()
         local theme = Styles.theme()
         local foreground_color = Drawing.foreground_color()
@@ -114,29 +114,31 @@ return {
         end
 
         local hack_supported = Ghosts.hack_is_supported()
-        local hack_enabled = Ghosts.hack_is_applied()
+        local hack_enabled, hack_controlled = Ghosts.hack_is_applied()
         local valid_ghost_selected = selected_ghost ~= nil
 
         local status = Locales.str('GHOST_STATUS')
         if not hack_supported then
             status = status .. Locales.str('GHOST_UNSUPPORTED')
         elseif hack_enabled then
-            status = status .. Locales.str('GHOST_ENABLED')
+            status = status .. Locales.str(hack_controlled and 'GHOST_ENABLED' or 'GHOST_NOT_CONTROLLED')
         else
             status = status .. Locales.str('GHOST_DISABLED')
         end
         section_label(UID.PlaybackStatus, grid_rect(0, 0.9, 8, 1), status)
 
+        local is_checked = Ghosts.auto_apply_hack and hack_controlled
         local auto_apply_hack = ugui.toggle_button({
             uid = UID.EnableHack,
             rectangle = grid_rect(0.1, 1.7, 7.8, 1),
-            text = Locales.str('GHOST_ENABLE_HACK'),
+            text = Locales.str((hack_enabled and not hack_controlled) and 'GHOST_TAKE_CONTROL'or 'GHOST_ENABLE_HACK' ),
             tooltip = Ghosts.auto_apply_hack and Locales.str('GHOST_DISABLE_HACK_TOOLTIP') or Locales.str('GHOST_ENABLE_HACK_TOOLTIP'),
-            is_checked = Ghosts.auto_apply_hack,
+            is_checked = is_checked,
             is_enabled = hack_supported
         })
-        if auto_apply_hack ~= Ghosts.auto_apply_hack then
+        if auto_apply_hack ~= is_checked then
             Ghosts.auto_apply_hack = auto_apply_hack
+            Ghosts.take_control()
         end
 
         if ugui.button({

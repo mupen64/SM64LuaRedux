@@ -238,7 +238,7 @@ function Ghosts.stop_recording_variable(label)
     variable_read_funcs[label] = nil
 end
 
----Appends a frame to the ghost recording if active. 
+---Appends a frame to the ghost recording if active.
 local function update_recording()
 	if frame == 0 then
 		frame = frame + 1
@@ -389,15 +389,15 @@ function Ghosts.hack_is_supported()
     )
 end
 
----@return boolean # Whether the Lua ghost hack is in RAM
+---@return boolean hack_enabled, boolean has_control # Whether the Lua ghost hack is in RAM, and whether SM64LuaRedux is controlling it
 -- Note: this is a guess based on if the first jump instruction is present
 function Ghosts.hack_is_applied()
-    local hack_signature = memory.readbyte(region(HACK_SIGNATURE_OFFSET))
-    if hack_signature ~= LUA_HACK_SIGNATURE then
-        return false
-    end
     local address_source = Addresses[Settings.address_source_index]
-    return memory.readdword(address_source.area_update_objects) == hook_instruction()
+    if memory.readdword(address_source.area_update_objects) ~= hook_instruction() then
+        return false, false
+    end
+    local hack_signature = memory.readbyte(region(HACK_SIGNATURE_OFFSET))
+    return true, hack_signature == LUA_HACK_SIGNATURE
 end
 
 -- Source: https://github.com/FramePerfection/STROOP/blob/Development/STROOP/Tabs/GhostTab/ColoredHats.cs
@@ -939,6 +939,11 @@ local function apply_body_state_hooks(hooks)
     end
 end
 
+function Ghosts.take_control()
+    -- signature: this hack originates from Lua
+    memory.writebyte(region(HACK_SIGNATURE_OFFSET), LUA_HACK_SIGNATURE)
+end
+
 ---Write the playback ghost hack to RAM.
 -- Details: https://github.com/FramePerfection/STROOP/tree/Development/HackSources/Ghosts
 function Ghosts.apply_hack()
@@ -970,8 +975,7 @@ function Ghosts.apply_hack()
         memory.writedword(addr, 0)
     end
 
-    -- signature: this hack originates from Lua
-    memory.writebyte(region(HACK_SIGNATURE_OFFSET), LUA_HACK_SIGNATURE)
+    Ghosts.take_control()
 
     memory.writedword(hook_addr, hook_instruction())
 
@@ -1060,7 +1064,7 @@ function Ghosts.update()
 	if is_recording then
 		update_recording()
 	end
-    local hack_applied = Ghosts.hack_is_applied()
+    local hack_applied, has_control = Ghosts.hack_is_applied()
     if Ghosts.auto_apply_hack and not hack_applied then
         Ghosts.apply_hack()
         hack_applied = true
@@ -1073,7 +1077,7 @@ function Ghosts.update()
             pending_base_offset = nil
             Ghosts.apply_hack()
         end
-    elseif hack_applied then
+    elseif hack_applied and has_control then
         -- updating will always write Mario's hat to memory, so
         -- gate it behind a check to see if the RAM is hacked
         update_ghost_playback()
