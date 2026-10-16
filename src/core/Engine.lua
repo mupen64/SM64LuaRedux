@@ -153,7 +153,7 @@ local function get_dyaw(angle)
 	elseif Settings.tas.strain_left == false and Settings.tas.strain_right then
 		return corrected_facing_yaw - angle
 	elseif Settings.tas.strain_left == false and Settings.tas.strain_right == false then
-		return corrected_facing_yaw + angle * (math.pow(-1, Memory.current.mario_global_timer % 2))
+		return corrected_facing_yaw + angle * (math.pow(-1, Memory.current.global_timer % 2))
 	else
 		return angle
 	end
@@ -165,7 +165,7 @@ local function get_dyaw_sign()
 	elseif Settings.tas.strain_left == false and Settings.tas.strain_right then
 		return -1
 	elseif Settings.tas.strain_left == false and Settings.tas.strain_right == false then
-		return math.pow(-1, Memory.current.mario_global_timer % 2)
+		return math.pow(-1, Memory.current.global_timer % 2)
 	else
 		return 0
 	end
@@ -197,7 +197,7 @@ end
 ---		r is automatically determined based on the goal angle and
 ---		the returned angle is adjusted accordingly
 function Engine.get_arctan_angle(r, d, n, s, goal, inverse_strain, movement_mode)
-	local t = Memory.current.mario_global_timer - s + 1 -- current frame within strain
+	local t = Memory.current.global_timer - s + 1 -- current frame within strain
 	if (t <= 0 or n < t) then
 		return goal -- outside of frame range
 	end

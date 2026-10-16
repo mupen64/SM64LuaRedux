@@ -19,7 +19,7 @@ local function playback_speed_mode()
 end
 
 function __impl.new(name, create_savestate)
-    local global_timer = Memory.current.mario_global_timer
+    local global_timer = Memory.current.global_timer
 
     local new_instance = {
         version = SEMANTIC_WORKFLOW_FILE_VERSION,

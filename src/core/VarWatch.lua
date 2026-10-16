@@ -122,7 +122,7 @@ VarWatch.var_funcs = {
     ['global_timer'] = function()
         return {
             label = Locales.str('VARWATCH_GLOBAL_TIMER_LABEL'),
-            value = tostring(Memory.current.mario_global_timer)
+            value = tostring(Memory.current.global_timer)
         }
     end,
     ['moved_dist'] = function()

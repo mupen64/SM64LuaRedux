@@ -6,10 +6,9 @@
 
 local RNG_ROW = 1
 local DUMPING_ROW = 3
-local GHOST_ROW = 5
-local TRACKERS_ROW = 7
-local OVERLAYS_ROW = 9
-local AUTOMATION_ROW = 11
+local TRACKERS_ROW = 5
+local OVERLAYS_ROW = 7
+local AUTOMATION_ROW = 9
 
 local UID = UIDProvider.allocate_once('Tools', function(enum_next)
     return {
@@ -17,8 +16,6 @@ local UID = UIDProvider.allocate_once('Tools', function(enum_next)
         RngUse = enum_next(ugui.toggle_button_uids()),
         RngValue = enum_next(ugui.spinner_uids()),
         Dump = enum_next(ugui.toggle_button_uids()),
-        GhostObjectAddress = enum_next(ugui.textbox_uids()),
-        RecordGhost = enum_next(ugui.button_uids()),
         WorldVisualizer = enum_next(ugui.toggle_button_uids()),
         AutoFirsties = enum_next(ugui.toggle_button_uids()),
         MiniVisualizer = enum_next(ugui.toggle_button_uids()),
@@ -30,7 +27,6 @@ local UID = UIDProvider.allocate_once('Tools', function(enum_next)
         Swim = enum_next(ugui.toggle_button_uids()),
         RngLabel = enum_next(ugui.label_uids()),
         DumpingLabel = enum_next(ugui.label_uids()),
-        GhostLabel = enum_next(ugui.label_uids()),
         TrackersLabel = enum_next(ugui.label_uids()),
         OverlaysLabel = enum_next(ugui.label_uids()),
         AutomationLabel = enum_next(ugui.label_uids()),
@@ -105,46 +101,6 @@ return {
 
         if not now_dump_enabled and previous_dump_enabled then
             Dumping.stop()
-        end
-
-
-        ugui.label({
-            uid = UID.GhostLabel,
-            rectangle = grid_rect(0, GHOST_ROW - 1, 8, 1),
-            text = Locales.str('TOOLS_GHOST'),
-            color = foreground_color,
-            font_size = theme.font_size * 1.25,
-            font_name = theme.font_name,
-            align_x = ugui.alignment['start'],
-            align_y = ugui.alignment.center,
-        })
-
-        Ghost.object_address = tonumber(ugui.textbox({
-            uid = UID.GhostObjectAddress,
-            rectangle = grid_rect(4, GHOST_ROW, 4, 1),
-            text = string.format("%x", Ghost.object_address or 0),
-            tooltip = Locales.str('TOOLS_GHOST_OBJECT_ADDRESS_TOOL_TIP')
-        }):gsub("[^%x]", ""), 16)
-
-        if ugui.button({
-                uid = UID.RecordGhost,
-                rectangle = grid_rect(0, GHOST_ROW, 4, 1),
-                text = Ghost.recording() and Locales.str('TOOLS_GHOST_STOP') or Locales.str('TOOLS_GHOST_START'),
-                tooltip = Locales.str('TOOLS_GHOST_RECORD_TOOLTIP'),
-            }) then
-            if Ghost.recording() then
-                local result = Ghost.stop_recording()
-
-                if not result then
-                    print(Locales.str('TOOLS_GHOST_STOP_RECORDING_FAILED'))
-                end
-            else
-                local result = Ghost.start_recording()
-
-                if not result then
-                    print(Locales.str('TOOLS_GHOST_START_RECORDING_FAILED'))
-                end
-            end
         end
 
         ugui.label({
