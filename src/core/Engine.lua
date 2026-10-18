@@ -503,27 +503,28 @@ local Recoil = {
 	INT_SUBTYPE_KICKABLE = 0x00000100,
 	INT_STATUS_INTERACTED = 0x00008000,
 	OBJECT_COUNT = 240,
-	OBJECT_SIZE = 0x260,
-	-- check_player_object_collision only tests Mario against these object lists (object_collision.c). An object's
-	-- list is the second byte of its behavior script's first command, BEGIN(list) = 0x00 list 00 00.
-	COLLIDES_WITH_MARIO = { [0] = true, [2] = true, [4] = true, [5] = true, [6] = true, [9] = true, [10] = true },
+	OBJECT_LIST_SIZE = 0x68,
+	-- check_player_object_collision tests Mario against these object lists, in this order (object_collision.c)
+	MARIO_COLLISION_LISTS = { 0, 10, 6, 4, 5, 9, 2 },
 }
-Recoil.TYPES = Recoil.INTERACT_GRABBABLE | Recoil.INTERACT_KOOPA | Recoil.INTERACT_BREAKABLE |
-	Recoil.INTERACT_BOUNCE_TOP | Recoil.INTERACT_BULLY | Recoil.INTERACT_BOUNCE_TOP2 | Recoil.INTERACT_HIT_FROM_BELOW
+-- the handlers that can knock Mario back, in sInteractionHandlers' order (interaction.c)
+Recoil.HANDLER_ORDER = { Recoil.INTERACT_BULLY, Recoil.INTERACT_BOUNCE_TOP2, Recoil.INTERACT_HIT_FROM_BELOW,
+	Recoil.INTERACT_BOUNCE_TOP, Recoil.INTERACT_BREAKABLE, Recoil.INTERACT_KOOPA, Recoil.INTERACT_GRABBABLE }
 -- the handlers that turn a metal cap collision into INT_FAST_ATTACK_OR_SHELL, which doesn't knock Mario back
 Recoil.METAL_IGNORED = Recoil.INTERACT_KOOPA | Recoil.INTERACT_BOUNCE_TOP | Recoil.INTERACT_BOUNCE_TOP2 |
 	Recoil.INTERACT_HIT_FROM_BELOW
 
 --- Returns the forward speed Mario's action starts from this frame if his punch, kick or trip hits an object that
 --- knocks him back, or nil. The game detects collisions at the start of the frame, before Mario's update
---- (object_collision.c), so this redoes that hitbox test for Mario against every active object with one of those
---- interaction types in a list Mario is tested against, then determine_interaction's angle test. Not modelled:
---- Mario's moving-platform displacement, the 4-object collision limit, which object counts when two of the same
---- interaction type overlap Mario, and a punch or kick hitting a wall (check_kick_or_punch_wall runs after the
---- objects and sets -48 when a point 50 units ahead touches a wall, also in an air jump kick).
+--- (object_collision.c), so this redoes that test as the game does: Mario's collided objects are the first 4 tangible
+--- ones whose hitbox overlaps his, in the order the object lists are tested, and mario_process_interactions handles
+--- only the first of them of each interaction type, with determine_interaction's angle test. Not modelled: Mario's
+--- moving-platform displacement, an earlier handler that ends the interactions (e.g. damage from another object), and
+--- a punch or kick hitting a wall (check_kick_or_punch_wall runs after the objects and sets -48 when a point 50 units
+--- ahead touches a wall, also in an air jump kick).
 function Engine.get_attack_recoil_speed()
 	local addresses = Addresses[Settings.address_source_index]
-	if not addresses.object_pool or not addresses.mario_flags then
+	if not addresses.object_lists or not addresses.mario_flags then
 		return nil
 	end
 	local action = Memory.current.mario_action
@@ -553,49 +554,57 @@ function Engine.get_attack_recoil_speed()
 	if not tangible(mario) then
 		return nil
 	end
-	local function collides_with_mario(obj)
-		local behavior = memory.readdword(obj + 0x20C)
-		if behavior < 0x80000000 or behavior >= 0x80800000 then
-			return false
-		end
-		return Recoil.COLLIDES_WITH_MARIO[(memory.readdword(behavior) >> 16) & 0xFF] == true
-	end
-	local mx, my, mz = memory.readfloat(mario + 0xA0), memory.readfloat(mario + 0xA4), memory.readfloat(mario + 0xA8)
+	local mx, mz = memory.readfloat(mario + 0xA0), memory.readfloat(mario + 0xA8)
 	local m_radius = memory.readfloat(mario + 0x1F8)
-	local m_bottom = my - memory.readfloat(mario + 0x208)
+	local m_bottom = memory.readfloat(mario + 0xA4) - memory.readfloat(mario + 0x208)
 	local m_top = m_bottom + memory.readfloat(mario + 0x1FC)
 
-	for i = 0, Recoil.OBJECT_COUNT - 1 do
-		local o = addresses.object_pool + i * Recoil.OBJECT_SIZE
-		local interact_type = memory.readdword(o + 0x130)
-		if o ~= mario and (interact_type & Recoil.TYPES) ~= 0 and (memory.readword(o + 0x74) & 1) ~= 0 and
-				tangible(o) and (memory.readdword(o + 0x134) & Recoil.INT_STATUS_INTERACTED) == 0 and
-				collides_with_mario(o) then
-			-- detect_object_hitbox_overlap
-			local ox, oy, oz = memory.readfloat(o + 0xA0), memory.readfloat(o + 0xA4), memory.readfloat(o + 0xA8)
-			local dx, dz = mx - ox, mz - oz
-			local o_bottom = oy - memory.readfloat(o + 0x208)
-			local o_top = o_bottom + memory.readfloat(o + 0x1FC)
-			if m_radius + memory.readfloat(o + 0x1F8) > math.sqrt(dx * dx + dz * dz) and
-					m_bottom <= o_top and m_top >= o_bottom then
-				-- determine_interaction: within 60 degrees of Mario's facing yaw (90 for a trip)
-				local yaw_to_obj = Angles.atan2s(oz - Memory.current.mario_z, ox - Memory.current.mario_x)
-				local dyaw = math.abs((yaw_to_obj - Memory.current.mario_facing_yaw + 0x8000) % 0x10000 - 0x8000)
-				local hit = (punch_or_kick and dyaw <= 0x2AAA) or (trip and dyaw <= 0x4000)
-				if (interact_type & Recoil.INTERACT_BULLY) ~= 0 and (metal or (not hit and (action & ACT_FLAG_AIR) ~= 0
-						and Memory.current.mario_v_speed < 0 and Memory.current.mario_y > oy)) then
-					-- interact_bully sets -16 for any attack; a metal cap one or a stomp (INT_HIT_FROM_ABOVE)
-					-- isn't bounced back further
-					return -16
+	-- detect_object_hitbox_overlap fills Mario's collided list, up to 4 objects
+	local collided = {}
+	for _, list in ipairs(Recoil.MARIO_COLLISION_LISTS) do
+		local head = addresses.object_lists + list * Recoil.OBJECT_LIST_SIZE
+		local o, n = memory.readdword(head + 0x60), 0
+		while o ~= head and o >= 0x80000000 and o < 0x80800000 and n < Recoil.OBJECT_COUNT and #collided < 4 do
+			if o ~= mario and tangible(o) then
+				local dx, dz = mx - memory.readfloat(o + 0xA0), mz - memory.readfloat(o + 0xA8)
+				local o_bottom = memory.readfloat(o + 0xA4) - memory.readfloat(o + 0x208)
+				if m_radius + memory.readfloat(o + 0x1F8) > math.sqrt(dx * dx + dz * dz) and
+						m_bottom <= o_bottom + memory.readfloat(o + 0x1FC) and m_top >= o_bottom then
+					collided[#collided + 1] = o
 				end
-				if hit then
-					if (interact_type & Recoil.INTERACT_GRABBABLE) ~= 0 then
-						if (memory.readdword(o + 0x190) & Recoil.INT_SUBTYPE_KICKABLE) ~= 0 and kick_or_trip then
-							return recoil
-						end
-					elseif not (metal and (interact_type & Recoil.METAL_IGNORED) ~= 0) then
+			end
+			o, n = memory.readdword(o + 0x60), n + 1
+		end
+	end
+
+	for _, interact_type in ipairs(Recoil.HANDLER_ORDER) do
+		-- mario_get_collided_object: the first collided object of exactly that type
+		local o = nil
+		for _, c in ipairs(collided) do
+			if memory.readdword(c + 0x130) == interact_type then
+				o = c
+				break
+			end
+		end
+		if o and (memory.readdword(o + 0x134) & Recoil.INT_STATUS_INTERACTED) == 0 then
+			-- determine_interaction: within 60 degrees of Mario's facing yaw (90 for a trip)
+			local ox, oy, oz = memory.readfloat(o + 0xA0), memory.readfloat(o + 0xA4), memory.readfloat(o + 0xA8)
+			local yaw_to_obj = Angles.atan2s(oz - Memory.current.mario_z, ox - Memory.current.mario_x)
+			local dyaw = math.abs((yaw_to_obj - Memory.current.mario_facing_yaw + 0x8000) % 0x10000 - 0x8000)
+			local hit = (punch_or_kick and dyaw <= 0x2AAA) or (trip and dyaw <= 0x4000)
+			if interact_type == Recoil.INTERACT_BULLY and (metal or (not hit and (action & ACT_FLAG_AIR) ~= 0
+					and Memory.current.mario_v_speed < 0 and Memory.current.mario_y > oy)) then
+				-- interact_bully sets -16 for any attack; a metal cap one or a stomp (INT_HIT_FROM_ABOVE)
+				-- isn't bounced back further
+				return -16
+			end
+			if hit then
+				if interact_type == Recoil.INTERACT_GRABBABLE then
+					if (memory.readdword(o + 0x190) & Recoil.INT_SUBTYPE_KICKABLE) ~= 0 and kick_or_trip then
 						return recoil
 					end
+				elseif not (metal and (interact_type & Recoil.METAL_IGNORED) ~= 0) then
+					return recoil
 				end
 			end
 		end
