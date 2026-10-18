@@ -41,8 +41,7 @@ ACTION_SETTINGS_SET_STYLE = ACTION_SETTINGS .. ' > Set Style...'
 ACTION_SETTINGS_SET_LANGUAGE = ACTION_SETTINGS .. ' > Set Language...'
 ACTION_SETTINGS_TOGGLE_CONSOLE_NOTIFICATIONS = ACTION_SETTINGS .. ' > Toggle Console Notifications'
 ACTION_SETTINGS_SET_FF_FPS = ACTION_SETTINGS .. ' > Set Fast-Forward FPS... ---'
-ACTION_SETTINGS_TOGGLE_MANUAL_ON_JOYSTICK = ACTION_SETTINGS .. ' > Manual On Joystick Interact'
-ACTION_SETTINGS_TOGGLE_LOCK_HOTKEYS = ACTION_SETTINGS .. ' > Lock Hotkeys When Control Active ---'
+ACTION_SETTINGS_TOGGLE_MANUAL_ON_JOYSTICK = ACTION_SETTINGS .. ' > Manual On Joystick Interact ---'
 ACTION_SETTINGS_SELECT_MAP_FILE = ACTION_SETTINGS .. ' > Select Map File'
 ACTION_SETTINGS_SET_REGION = ACTION_SETTINGS .. ' > Set Region...'
 ACTION_SETTINGS_AUTODETECT_NOW = ACTION_SETTINGS .. ' > Detect Address Now'
@@ -546,17 +545,6 @@ actions[#actions + 1] = wrap_params({
     end,
     get_active = function()
         return Settings.enable_manual_on_joystick_interact
-    end,
-})
-
-actions[#actions + 1] = wrap_params({
-    path = ACTION_SETTINGS_TOGGLE_LOCK_HOTKEYS,
-    on_press = function()
-        Settings.lock_hotkeys_when_control_active = not Settings.lock_hotkeys_when_control_active
-        action.notify_active_changed(ACTION_SETTINGS_TOGGLE_LOCK_HOTKEYS)
-    end,
-    get_active = function()
-        return Settings.lock_hotkeys_when_control_active
     end,
 })
 

@@ -122,6 +122,8 @@ local function execute_defer_before_navbar_queue()
 end
 
 is_keyboard_captured = false
+-- The hotkeys to lock while is_keyboard_captured (nil: all), found with it at the end of a frame (see get_hotkeys_to_lock)
+local hotkeys_to_lock = nil
 
 -- HACK: Do not consume wheel input while a control owns the mouse or a numberbox owns the keyboard.
 function can_scroll()
@@ -132,6 +134,50 @@ function can_scroll()
     local keyboard_captured_control = ugui.internal.keyboard_captured_control
     return keyboard_captured_control == nil or
         ugui.internal.control_types[keyboard_captured_control] ~= 'numberbox'
+end
+
+local function get_keyboard_captured_type()
+    if ugui.internal.keyboard_captured_control == nil then
+        return nil
+    end
+    local control = ugui.internal.find_node(ugui.internal.keyboard_captured_control)
+    return control and control.type or nil
+end
+
+-- The hotkeys on the keys a numberbox uses: digits (also on the keypad) and arrows with every combination of Ctrl,
+-- Shift and Alt, and Ctrl+C / Ctrl+V (paste types text). The modifier variants matter: layouts like AZERTY type the
+-- top-row digits with Shift, and Shift+digit is Mupen's default Save Slot N.
+local NUMBERBOX_HOTKEYS = (function()
+    local hotkeys = {}
+    local function add(keycode, ctrl, shift, alt)
+        hotkeys[#hotkeys + 1] = { trigger = { type = 'keycode', value = keycode }, ctrl = ctrl, shift = shift, alt = alt }
+    end
+    local function add_with_modifiers(keycode)
+        for m = 0, 7 do
+            add(keycode, m & 1 ~= 0, m & 2 ~= 0, m & 4 ~= 0)
+        end
+    end
+    for i = 0, 9 do
+        add_with_modifiers(Mupen.keycode['SDLK_' .. i])
+        add_with_modifiers(Mupen.keycode['SDLK_KP_' .. i])
+    end
+    for _, name in ipairs({ 'SDLK_LEFT', 'SDLK_RIGHT', 'SDLK_UP', 'SDLK_DOWN' }) do
+        add_with_modifiers(Mupen.keycode[name])
+    end
+    add(Mupen.keycode.SDLK_C, true, false, false)
+    add(Mupen.keycode.SDLK_V, true, false, false)
+    return hotkeys
+end)()
+
+-- Which hotkeys to lock while a control captures the keyboard: for a numberbox only the ones on its keys, so that
+-- e.g. save / load state still work while typing a number; for any other control (a textbox takes any key) all (nil).
+-- Mupen versions whose action.lock_hotkeys takes no hotkey list ignore it and lock all hotkeys.
+-- Call it before ugui.end_frame, like get_is_keyboard_captured: ugui's scene (find_node) is empty between frames.
+local function get_hotkeys_to_lock()
+    if get_keyboard_captured_type() == 'numberbox' then
+        return NUMBERBOX_HOTKEYS
+    end
+    return nil
 end
 
 -- HACK: We want to know if ugui is capturing keyboard input on a control that cares about inputs.
@@ -258,7 +304,8 @@ local function atdrawd2d()
     G_KEYS = ugui.internal.deep_clone(keys)
 
     -- HACK: We turn off hotkeys while a control is capturing inputs
-    action.lock_hotkeys(Settings.lock_hotkeys_when_control_active and is_keyboard_captured or false)
+    local lock_hotkeys = is_keyboard_captured or false
+    action.lock_hotkeys(lock_hotkeys, lock_hotkeys and hotkeys_to_lock or nil)
 
     VarWatch_update()
 
@@ -303,6 +350,7 @@ local function atdrawd2d()
     draw_navbar()
 
     is_keyboard_captured = get_is_keyboard_captured()
+    hotkeys_to_lock = get_hotkeys_to_lock()
     ugui.end_frame()
     stored_mouse_events = {}
     key_events = {}
