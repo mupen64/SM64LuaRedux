@@ -144,32 +144,37 @@ local function get_keyboard_captured_type()
     return control and control.type or nil
 end
 
--- The hotkeys on the keys a numberbox uses: digits (also on the keypad), arrows, Ctrl+C and Ctrl+V (paste types text).
+-- The hotkeys on the keys a numberbox uses: digits (also on the keypad) and arrows with every combination of Ctrl,
+-- Shift and Alt, and Ctrl+C / Ctrl+V (paste types text). The modifier variants matter: layouts like AZERTY type the
+-- top-row digits with Shift, and Shift+digit is Mupen's default Save Slot N.
 local NUMBERBOX_HOTKEYS = (function()
     local hotkeys = {}
-    local function add(keycode, ctrl)
-        hotkeys[#hotkeys + 1] = { trigger = { type = 'keycode', value = keycode }, ctrl = ctrl or false }
+    local function add(keycode, ctrl, shift, alt)
+        hotkeys[#hotkeys + 1] = { trigger = { type = 'keycode', value = keycode }, ctrl = ctrl, shift = shift, alt = alt }
+    end
+    local function add_with_modifiers(keycode)
+        for m = 0, 7 do
+            add(keycode, m & 1 ~= 0, m & 2 ~= 0, m & 4 ~= 0)
+        end
     end
     for i = 0, 9 do
-        add(Mupen.keycode['SDLK_' .. i])
-        add(Mupen.keycode['SDLK_KP_' .. i])
+        add_with_modifiers(Mupen.keycode['SDLK_' .. i])
+        add_with_modifiers(Mupen.keycode['SDLK_KP_' .. i])
     end
     for _, name in ipairs({ 'SDLK_LEFT', 'SDLK_RIGHT', 'SDLK_UP', 'SDLK_DOWN' }) do
-        add(Mupen.keycode[name])
+        add_with_modifiers(Mupen.keycode[name])
     end
-    add(Mupen.keycode.SDLK_C, true)
-    add(Mupen.keycode.SDLK_V, true)
+    add(Mupen.keycode.SDLK_C, true, false, false)
+    add(Mupen.keycode.SDLK_V, true, false, false)
     return hotkeys
 end)()
 
--- Which hotkeys to lock while a control captures the keyboard: with Settings.lock_only_control_keys and a numberbox,
--- only the ones on its keys, so that e.g. save / load state still work while typing a number; otherwise all (nil).
+-- Which hotkeys to lock while a control captures the keyboard: for a numberbox only the ones on its keys, so that
+-- e.g. save / load state still work while typing a number; for any other control (a textbox takes any key) all (nil).
 -- Mupen versions whose action.lock_hotkeys takes no hotkey list ignore it and lock all hotkeys.
--- Settings.lock_hotkeys_when_control_active (lock everything) takes precedence over Settings.lock_only_control_keys.
 -- Call it before ugui.end_frame, like get_is_keyboard_captured: ugui's scene (find_node) is empty between frames.
 local function get_hotkeys_to_lock()
-    if Settings.lock_only_control_keys and not Settings.lock_hotkeys_when_control_active
-        and get_keyboard_captured_type() == 'numberbox' then
+    if get_keyboard_captured_type() == 'numberbox' then
         return NUMBERBOX_HOTKEYS
     end
     return nil
@@ -299,8 +304,7 @@ local function atdrawd2d()
     G_KEYS = ugui.internal.deep_clone(keys)
 
     -- HACK: We turn off hotkeys while a control is capturing inputs
-    local lock_hotkeys = (Settings.lock_hotkeys_when_control_active or Settings.lock_only_control_keys)
-        and is_keyboard_captured or false
+    local lock_hotkeys = is_keyboard_captured or false
     action.lock_hotkeys(lock_hotkeys, lock_hotkeys and hotkeys_to_lock or nil)
 
     VarWatch_update()

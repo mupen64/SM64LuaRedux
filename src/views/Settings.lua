@@ -11,14 +11,12 @@ local UID = UIDProvider.allocate_once('SettingsV5', function(enum_next)
         NotificationStyle = enum_next(ugui.carrousel_button_uids()),
         RepaintThrottle = enum_next(ugui.numberbox_uids()),
         EnableManualOnJoystickInteract = enum_next(ugui.toggle_button_uids()),
-        LockHotkeysWhenControlActive = enum_next(ugui.toggle_button_uids()),
-        LockOnlyControlKeys = enum_next(ugui.toggle_button_uids()),
         VisualGroup = enum_next(ugui.toggle_button_uids()),
         InteractionGroup = enum_next(ugui.toggle_button_uids()),
         VisualGroupLabel = enum_next(ugui.label_uids()),
         InteractionGroupLabel = enum_next(ugui.label_uids()),
         VisualItemLabelBase = enum_next(4 * ugui.label_uids()),
-        InteractionItemLabelBase = enum_next(3 * ugui.label_uids()),
+        InteractionItemLabelBase = enum_next(1 * ugui.label_uids()),
         LoadMapFile = enum_next(ugui.button_uids()),
         Region = enum_next(ugui.combobox_uids()),
         AutoDetect = enum_next(ugui.button_uids()),
@@ -133,40 +131,6 @@ local interaction_items = {
             })
             if meta.signal_change == ugui.signal_change_states.started then
                 action.invoke(ACTION_SETTINGS_TOGGLE_MANUAL_ON_JOYSTICK)
-            end
-        end,
-    },
-    {
-        show_label = false,
-        control_width = 7.5,
-        text = function() return Locales.str('SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE') end,
-        func = function(rect)
-            local _, meta = ugui.toggle_button({
-                uid = UID.LockHotkeysWhenControlActive,
-                rectangle = rect,
-                is_checked = Settings.lock_hotkeys_when_control_active,
-                text = Locales.str('SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE'),
-                tooltip = Locales.str('SETTINGS_INTERACTION_LOCK_HOTKEYS_WHEN_CONTROL_ACTIVE_TOOLTIP'),
-            })
-            if meta.signal_change == ugui.signal_change_states.started then
-                action.invoke(ACTION_SETTINGS_TOGGLE_LOCK_HOTKEYS)
-            end
-        end,
-    },
-    {
-        show_label = false,
-        control_width = 7.5,
-        text = function() return Locales.str('SETTINGS_INTERACTION_LOCK_ONLY_CONTROL_KEYS') end,
-        func = function(rect)
-            local _, meta = ugui.toggle_button({
-                uid = UID.LockOnlyControlKeys,
-                rectangle = rect,
-                is_checked = Settings.lock_only_control_keys,
-                text = Locales.str('SETTINGS_INTERACTION_LOCK_ONLY_CONTROL_KEYS'),
-                tooltip = Locales.str('SETTINGS_INTERACTION_LOCK_ONLY_CONTROL_KEYS_TOOLTIP'),
-            })
-            if meta.signal_change == ugui.signal_change_states.started then
-                action.invoke(ACTION_SETTINGS_TOGGLE_LOCK_ONLY_CONTROL_KEYS)
             end
         end,
     },
