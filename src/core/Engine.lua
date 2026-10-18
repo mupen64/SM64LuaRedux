@@ -504,6 +504,9 @@ local Recoil = {
 	INT_STATUS_INTERACTED = 0x00008000,
 	OBJECT_COUNT = 240,
 	OBJECT_SIZE = 0x260,
+	-- check_player_object_collision only tests Mario against these object lists (object_collision.c). An object's
+	-- list is the second byte of its behavior script's first command, BEGIN(list) = 0x00 list 00 00.
+	COLLIDES_WITH_MARIO = { [0] = true, [2] = true, [4] = true, [5] = true, [6] = true, [9] = true, [10] = true },
 }
 Recoil.TYPES = Recoil.INTERACT_GRABBABLE | Recoil.INTERACT_KOOPA | Recoil.INTERACT_BREAKABLE |
 	Recoil.INTERACT_BOUNCE_TOP | Recoil.INTERACT_BULLY | Recoil.INTERACT_BOUNCE_TOP2 | Recoil.INTERACT_HIT_FROM_BELOW
@@ -514,8 +517,10 @@ Recoil.METAL_IGNORED = Recoil.INTERACT_KOOPA | Recoil.INTERACT_BOUNCE_TOP | Reco
 --- Returns the forward speed Mario's action starts from this frame if his punch, kick or trip hits an object that
 --- knocks him back, or nil. The game detects collisions at the start of the frame, before Mario's update
 --- (object_collision.c), so this redoes that hitbox test for Mario against every active object with one of those
---- interaction types, then determine_interaction's angle test. Not modelled: Mario's moving-platform displacement,
---- the 4-object collision limit, and which object counts when two of the same interaction type overlap Mario.
+--- interaction types in a list Mario is tested against, then determine_interaction's angle test. Not modelled:
+--- Mario's moving-platform displacement, the 4-object collision limit, which object counts when two of the same
+--- interaction type overlap Mario, and a punch or kick hitting a wall (check_kick_or_punch_wall runs after the
+--- objects and sets -48 when a point 50 units ahead touches a wall, also in an air jump kick).
 function Engine.get_attack_recoil_speed()
 	local addresses = Addresses[Settings.address_source_index]
 	if not addresses.object_pool or not addresses.mario_flags then
@@ -548,6 +553,13 @@ function Engine.get_attack_recoil_speed()
 	if not tangible(mario) then
 		return nil
 	end
+	local function collides_with_mario(obj)
+		local behavior = memory.readdword(obj + 0x20C)
+		if behavior < 0x80000000 or behavior >= 0x80800000 then
+			return false
+		end
+		return Recoil.COLLIDES_WITH_MARIO[(memory.readdword(behavior) >> 16) & 0xFF] == true
+	end
 	local mx, my, mz = memory.readfloat(mario + 0xA0), memory.readfloat(mario + 0xA4), memory.readfloat(mario + 0xA8)
 	local m_radius = memory.readfloat(mario + 0x1F8)
 	local m_bottom = my - memory.readfloat(mario + 0x208)
@@ -557,7 +569,8 @@ function Engine.get_attack_recoil_speed()
 		local o = addresses.object_pool + i * Recoil.OBJECT_SIZE
 		local interact_type = memory.readdword(o + 0x130)
 		if o ~= mario and (interact_type & Recoil.TYPES) ~= 0 and (memory.readword(o + 0x74) & 1) ~= 0 and
-				tangible(o) and (memory.readdword(o + 0x134) & Recoil.INT_STATUS_INTERACTED) == 0 then
+				tangible(o) and (memory.readdword(o + 0x134) & Recoil.INT_STATUS_INTERACTED) == 0 and
+				collides_with_mario(o) then
 			-- detect_object_hitbox_overlap
 			local ox, oy, oz = memory.readfloat(o + 0xA0), memory.readfloat(o + 0xA4), memory.readfloat(o + 0xA8)
 			local dx, dz = mx - ox, mz - oz
