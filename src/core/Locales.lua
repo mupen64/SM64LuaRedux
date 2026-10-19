@@ -243,6 +243,7 @@ Locales = {}
 ---@field public GHOST_COLOR_PICKER_CANCEL_TOOLTIP string
 ---@field public GHOST_ENABLE_HACK_TOOLTIP string
 ---@field public GHOST_DISABLE_HACK_TOOLTIP string
+---@field public GHOST_TAKE_CONTROL_TOOLTIP string
 ---@field public GHOST_ENABLE_GHOST string
 ---@field public GHOST_DISABLE_GHOST string
 ---@field public GHOST_ENABLE_GHOST_TOOLTIP string

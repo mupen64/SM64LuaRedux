@@ -128,11 +128,13 @@ return {
         section_label(UID.PlaybackStatus, grid_rect(0, 0.9, 8, 1), status)
 
         local is_checked = Ghosts.auto_apply_hack and hack_controlled
+        local take_control = hack_enabled and not hack_controlled
+        local tooltip = Ghosts.auto_apply_hack and 'GHOST_DISABLE_HACK_TOOLTIP' or 'GHOST_ENABLE_HACK_TOOLTIP'
         local auto_apply_hack = ugui.toggle_button({
             uid = UID.EnableHack,
             rectangle = grid_rect(0.1, 1.7, 7.8, 1),
-            text = Locales.str((hack_enabled and not hack_controlled) and 'GHOST_TAKE_CONTROL'or 'GHOST_ENABLE_HACK' ),
-            tooltip = Ghosts.auto_apply_hack and Locales.str('GHOST_DISABLE_HACK_TOOLTIP') or Locales.str('GHOST_ENABLE_HACK_TOOLTIP'),
+            text = Locales.str(take_control and 'GHOST_TAKE_CONTROL' or 'GHOST_ENABLE_HACK'),
+            tooltip = Locales.str(take_control and 'GHOST_TAKE_CONTROL_TOOLTIP' or tooltip),
             is_checked = is_checked,
             is_enabled = hack_supported
         })
