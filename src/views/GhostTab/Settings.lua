@@ -6,23 +6,23 @@
 
 local UID = UIDProvider.allocate_once('GhostSettings', function(enum_next)
     return {
-        AutoLoad = enum_next(ugui.toggle_button_uids()),
-        TransparentDefault = enum_next(ugui.toggle_button_uids()),
-        BaseOffsetLabel = enum_next(ugui.label_uids()),
-        BaseOffset = enum_next(ugui.textbox_uids()),
-        ShowPlaybackWarning = enum_next(ugui.toggle_button_uids()),
-        OverlayData = enum_next(ugui.toggle_button_uids()),
-        DisableBodyMovement = enum_next(ugui.toggle_button_uids()),
-        RecordVariablesLabel = enum_next(ugui.label_uids()),
+        AutoLoad = enum_next(),
+        TransparentDefault = enum_next(),
+        BaseOffsetLabel = enum_next(),
+        BaseOffset = enum_next(),
+        ShowPlaybackWarning = enum_next(),
+        OverlayData = enum_next(),
+        DisableBodyMovement = enum_next(),
+        RecordVariablesLabel = enum_next(),
         -- one toggle per entry in GHOST_RECORDABLE_VARIABLES (loaded first by GhostTab/Main.lua)
-        RecordVariables = enum_next(ugui.toggle_button_uids() * #GHOST_RECORDABLE_VARIABLES),
-        HighlightColorLabel = enum_next(ugui.label_uids()),
-        HighlightColor = enum_next(ugui.textbox_uids()),
-        HighlightColorPickerButton = enum_next(ugui.button_uids()),
-        HighlightColorSwatch = enum_next(ugui.panel_uids()),
-        HighlightColorPicker = enum_next(ugui.colorpicker_uids()),
-        HighlightColorPickerOk = enum_next(ugui.button_uids()),
-        HighlightColorPickerCancel = enum_next(ugui.button_uids()),
+        RecordVariables = enum_next(#GHOST_RECORDABLE_VARIABLES),
+        HighlightColorLabel = enum_next(),
+        HighlightColor = enum_next(),
+        HighlightColorPickerButton = enum_next(),
+        HighlightColorSwatch = enum_next(),
+        HighlightColorPicker = enum_next(),
+        HighlightColorPickerOk = enum_next(),
+        HighlightColorPickerCancel = enum_next(),
     }
 end)
 
@@ -133,7 +133,7 @@ return {
         for i, variable in ipairs(GHOST_RECORDABLE_VARIABLES) do
             local column, row = (i - 1) % 2, (i - 1) // 2
             Settings.ghost_recorded_variables[variable.id] = ugui.toggle_button({
-                uid = UID.RecordVariables + (i - 1) * ugui.toggle_button_uids(),
+                uid = UID.RecordVariables + (i - 1),
                 rectangle = grid_rect(0.1 + column * 3.9, 7.9 + row, 3.8, 1),
                 text = Locales.str(variable.locale),
                 tooltip = Locales.str('GHOST_SETTINGS_RECORD_VARIABLE_TOOLTIP'),

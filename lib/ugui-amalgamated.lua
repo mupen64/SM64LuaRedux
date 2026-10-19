@@ -13,7 +13,7 @@
 --
 
 local ugui = {
-    _VERSION = '5.1.0',
+    _VERSION = '6.0.0',
     _URL = 'https://codeberg.org/mupen64/ugui',
     _DESCRIPTION = 'Flexible immediate-mode GUI library for Mupen Lua',
     _LICENSE = 'GPL-3',
@@ -32,8 +32,11 @@ local ugui = {
 
 
 ---@alias UID number
----Unique identifier for a control. Must be unique within a frame.
---- UID `-1` is reserved for the global context menu.
+---Local identifier for a control. Must be unique among siblings and stable across frames.
+---Negative local IDs are reserved for controls owned by the library.
+
+---@alias ResolvedUID number|string
+---Internal identifier including the control's hierarchy.
 
 ---@class Environment
 ---@field public mouse_position { x: number, y: number } The mouse position.
@@ -119,15 +122,16 @@ ugui.get_visual_state = function(control)
         return ugui.visual_states.disabled
     end
 
-    if ugui.internal.clicked_control == control.uid then
+    local uid = control._uid or ugui.internal.resolve_uid(control.uid)
+    if ugui.internal.clicked_control == uid then
         return ugui.visual_states.active
     end
 
-    if ugui.internal.mouse_captured_control == control.uid then
+    if ugui.internal.mouse_captured_control == uid then
         return ugui.visual_states.active
     end
 
-    if ugui.internal.hovered_control == control.uid then
+    if ugui.internal.hovered_control == uid then
         return ugui.visual_states.hovered
     end
 
@@ -436,7 +440,7 @@ ugui.end_frame = function()
         current_painter:restore()
 
         if draw_start then
-            ugui.internal.record_control_draw_time(control.uid, draw_start)
+            ugui.internal.record_control_draw_time(control._uid, draw_start)
             ugui.internal.draw_debug_control_state(control)
         end
 
@@ -519,8 +523,8 @@ end
 ---@field public sorted_children SceneNode[]?
 
 ---@class ControlState
----@field public type string The type last used with this UID.
----@field public frame integer The most recent frame in which this UID was placed.
+---@field public type string The type last used with this resolved UID.
+---@field public frame integer The most recent frame in which this resolved UID was placed.
 
 local unpack_values = table.unpack or unpack
 local function pack_values(...)
@@ -531,8 +535,8 @@ ugui.internal = {
     ---@type SceneRoot
     scene_root = {children = {}},
 
-    ---@type table<UID, SceneNode>
-    ---Current scene nodes indexed by their control UID.
+    ---@type table<ResolvedUID, SceneNode>
+    ---Current scene nodes indexed by their control's resolved UID.
     scene_nodes_by_uid = {},
 
     ---@type (SceneNode|SceneRoot)?
@@ -544,17 +548,17 @@ ugui.internal = {
     ---@type Painter
     painter = nil,
 
-    ---@type table<UID, ControlState>
+    ---@type table<ResolvedUID, ControlState>
     control_types = {},
 
     ---@type integer
     frame_index = 0,
 
-    ---@type table<UID, any>
+    ---@type table<ResolvedUID, any>
     ---Map of control UIDs to their data.
     control_data = {},
 
-    ---@type { owner_uid: UID, items: MenuItem[], position: UguiVector2, opened_frame: integer }?
+    ---@type { owner_uid: ResolvedUID, items: MenuItem[], position: UguiVector2, opened_frame: integer }?
     ---The single currently open control context menu.
     context_menu_state = nil,
 
@@ -567,11 +571,11 @@ ugui.internal = {
     ---Reserved UID for the global context menu control.
     context_menu_uid = -1,
 
-    ---@type table<UID, number>
+    ---@type table<ResolvedUID, number>
     ---Execution time, in seconds, accumulated for each control during the current frame.
     control_execution_times = {},
 
-    ---@type table<UID, number>
+    ---@type table<ResolvedUID, number>
     ---Draw time, in seconds, accumulated for each control during the current frame.
     control_draw_times = {},
 
@@ -588,27 +592,27 @@ ugui.internal = {
     -- The position of the mouse the last time the primary button was pressed.
     mouse_down_position = {x = 0, y = 0},
 
-    ---@type UID?
+    ---@type ResolvedUID?
     ---The control that was clicked this frame.
     clicked_control = nil,
 
-    ---@type UID?
+    ---@type ResolvedUID?
     ---The control that was double-clicked this frame.
     doubleclicked_control = nil,
 
-    ---@type UID?
+    ---@type ResolvedUID?
     ---The control that was triple-clicked this frame.
     tripleclicked_control = nil,
 
-    ---@type UID?
+    ---@type ResolvedUID?
     ---The control that is being hovered over.
     hovered_control = nil,
 
-    ---@type UID?
+    ---@type ResolvedUID?
     ---The control that is currently capturing mouse inputs.
     mouse_captured_control = nil,
 
-    ---@type UID?
+    ---@type ResolvedUID?
     ---The control that is currently capturing keyboard inputs. Synonymous to a "focused" control.
     keyboard_captured_control = nil,
 
@@ -648,11 +652,11 @@ ugui.internal = {
     ---Smoothed one-second rolling averages of end_frame section durations, in seconds.
     average_debug_end_frame_times = {},
 
-    ---@type { t: number, controls: table<UID, { execution_time: number, draw_time: number }> }[]
+    ---@type { t: number, controls: table<ResolvedUID, { execution_time: number, draw_time: number }> }[]
     ---Recent control timing samples used by the debug overlay.
     debug_control_time_samples = {},
 
-    ---@type table<UID, { execution_time: number, draw_time: number }>
+    ---@type table<ResolvedUID, { execution_time: number, draw_time: number }>
     ---Smoothed one-second rolling averages of per-control timings, in seconds.
     average_debug_control_times = {},
 
@@ -737,7 +741,7 @@ ugui.internal = {
             return false
         end
 
-        local node = ugui.internal.find_node(control.uid)
+        local node = ugui.internal.find_node(control._uid)
         if node then
             return node.is_enabled ~= false
         end
@@ -754,7 +758,7 @@ ugui.internal = {
         if not ugui.internal.is_control_enabled(control) then
             return false
         end
-        local node = ugui.internal.find_node(control.uid)
+        local node = ugui.internal.find_node(control._uid)
         if not node or not ugui.internal.hittest_node(point, node) then
             return false
         end
@@ -968,7 +972,7 @@ ugui.internal = {
             -- Determine the hovered control if we haven't already
             if ugui.internal.hovered_control == nil and effective_hittestable then
                 if ugui.internal.hittest_node(ugui.internal.environment.mouse_position, entry) then
-                    ugui.internal.hovered_control = control.uid
+                    ugui.internal.hovered_control = control._uid
 
                     if ugui.internal.hovered_control ~= prev_hovered_control then
                         ugui.internal.hover_start_time = os.clock()
@@ -995,9 +999,9 @@ ugui.internal = {
 
                 local target = target_node and target_node.control
                 if target and target_node.is_enabled and type(target.context_menu) == 'table'
-                    and #target.context_menu > 0 and target.uid ~= ugui.internal.context_menu_uid then
+                    and #target.context_menu > 0 and target._uid ~= ugui.internal.context_menu_uid then
                     ugui.internal.context_menu_state = {
-                        owner_uid = target.uid,
+                        owner_uid = target._uid,
                         items = target.context_menu,
                         position = point,
                         opened_frame = ugui.internal.frame_index,
@@ -1020,12 +1024,12 @@ ugui.internal = {
 
         -- If we have a captured control, the hovered control must be locked to that as well.
         if mouse_captured_control ~= nil then
-            ugui.internal.hovered_control = mouse_captured_control.control.uid
+            ugui.internal.hovered_control = mouse_captured_control.control._uid
         end
 
         -- If the clicked control is disabled, we clear it now at the end of input processing, effectively "swallowing" the click.
         if clicked_control then
-            local clicked_node = ugui.internal.find_node(clicked_control.uid)
+            local clicked_node = ugui.internal.find_node(clicked_control._uid)
             if clicked_node and not clicked_node.is_enabled then
                 clicked_control = nil
             end
@@ -1077,12 +1081,12 @@ ugui.internal = {
             keyboard_captured_control = nil
         end
 
-        ugui.internal.mouse_captured_control = mouse_captured_control and mouse_captured_control.control.uid or nil
-        ugui.internal.keyboard_captured_control = keyboard_captured_control and keyboard_captured_control.control.uid or
+        ugui.internal.mouse_captured_control = mouse_captured_control and mouse_captured_control.control._uid or nil
+        ugui.internal.keyboard_captured_control = keyboard_captured_control and keyboard_captured_control.control._uid or
             nil
-        ugui.internal.clicked_control = clicked_control and clicked_control.uid or nil
-        ugui.internal.doubleclicked_control = doubleclicked_control and doubleclicked_control.uid or nil
-        ugui.internal.tripleclicked_control = tripleclicked_control and tripleclicked_control.uid or nil
+        ugui.internal.clicked_control = clicked_control and clicked_control._uid or nil
+        ugui.internal.doubleclicked_control = doubleclicked_control and doubleclicked_control._uid or nil
+        ugui.internal.tripleclicked_control = tripleclicked_control and tripleclicked_control._uid or nil
 
         local context_menu_state = ugui.internal.context_menu_state
         if context_menu_state and context_menu_state.opened_frame < ugui.internal.frame_index
@@ -1100,7 +1104,12 @@ ugui.internal = {
 ---@return ControlReturnValue # The control's return value.
 local control_impl = function(control, control_type, fn, initialize_data)
     ugui.internal.assert(control_type ~= '', 'empty control_type is no longer allowed')
-    if control.uid == ugui.internal.context_menu_uid and not ugui.internal.context_menu_placing then
+    local previous_node = ugui.internal.scene_nodes_by_uid[control._uid]
+    if previous_node and previous_node.control == control then
+        error('Attempted to show the same control table more than once in a frame; use a separate table for each placement.', 2)
+    end
+    control._uid = ugui.internal.resolve_uid(control.uid)
+    if control._uid == ugui.internal.context_menu_uid and not ugui.internal.context_menu_placing then
         error('UID -1 is reserved for the global context menu.', 2)
     end
 
@@ -1112,14 +1121,14 @@ local control_impl = function(control, control_type, fn, initialize_data)
     control._render_rect = render_rect
     local revert_styler_mixin = ugui.internal.apply_styler_mixin(control)
 
-    local is_new_control = ugui.internal.control_data[control.uid] == nil
+    local is_new_control = ugui.internal.control_data[control._uid] == nil
     if is_new_control then
-        ugui.internal.control_data[control.uid] = {
+        ugui.internal.control_data[control._uid] = {
             signal_change = ugui.signal_change_states.none,
         }
     end
 
-    local control_data = ugui.internal.control_data[control.uid]
+    local control_data = ugui.internal.control_data[control._uid]
     if is_new_control and initialize_data then
         initialize_data(control, control_data)
     end
@@ -1129,14 +1138,14 @@ local control_impl = function(control, control_type, fn, initialize_data)
         return_value = get_return_value(control, control_data)
     end
 
-    local stored_control_type = ugui.internal.control_types[control.uid]
+    local stored_control_type = ugui.internal.control_types[control._uid]
     if stored_control_type then
         if stored_control_type.frame == ugui.internal.frame_index then
             error(string.format(
-                'Attempted to show a control with uid %d, which is already in use! Note that some controls reserve more than one uid slot after them.',
-                control.uid))
+                'Attempted to show a control with uid %s, which is already in use at this hierarchy level!',
+                control._uid))
         elseif stored_control_type.type ~= control_type then
-            error(string.format('Attempted to reuse UID %d of %s for %s.', control.uid,
+            error(string.format('Attempted to reuse UID %s of %s for %s.', control._uid,
                 stored_control_type.type, control_type))
         end
     end
@@ -1145,7 +1154,7 @@ local control_impl = function(control, control_type, fn, initialize_data)
     return_value = get_return_value(control, control_data)
 
     if execution_start then
-        ugui.internal.record_control_execution_time(control.uid, execution_start)
+        ugui.internal.record_control_execution_time(control._uid, execution_start)
     end
 
     ugui.internal.scene_node_order = ugui.internal.scene_node_order + 1
@@ -1161,8 +1170,8 @@ local control_impl = function(control, control_type, fn, initialize_data)
     }
     parent_node.children[#parent_node.children + 1] = scene_node
     parent_node.sorted_children = nil
-    ugui.internal.scene_nodes_by_uid[control.uid] = scene_node
-    ugui.internal.control_types[control.uid] = {
+    ugui.internal.scene_nodes_by_uid[control._uid] = scene_node
+    ugui.internal.control_types[control._uid] = {
         type = control_type,
         frame = ugui.internal.frame_index,
     }
@@ -1179,8 +1188,8 @@ local control_impl = function(control, control_type, fn, initialize_data)
     end
 
     local context_menu_state = ugui.internal.context_menu_state
-    if control.uid ~= ugui.internal.context_menu_uid and context_menu_state
-        and context_menu_state.owner_uid == control.uid then
+    if control._uid ~= ugui.internal.context_menu_uid and context_menu_state
+        and context_menu_state.owner_uid == control._uid then
         local items = control.context_menu
         if not ugui.internal.is_control_enabled(control) or type(items) ~= 'table' or #items == 0 then
             ugui.internal.context_menu_state = nil
@@ -1699,8 +1708,54 @@ ugui.internal.foreach_scene_node = function(callback, reverse)
     return true
 end
 
----Finds a scene node by the UID of its control.
----@param uid UID?
+local function uid_segment(uid)
+    if type(uid) == 'string' then
+        return uid
+    end
+    local integer = math.tointeger(uid)
+    return integer and tostring(integer) or string.format('%.17g', uid)
+end
+
+---Resolves a local UID against the current scene parent. Strings are private, already-resolved IDs.
+---@param uid UID|ResolvedUID
+---@return ResolvedUID
+ugui.internal.resolve_uid = function(uid)
+    if type(uid) == 'string' then
+        return uid
+    end
+    ugui.internal.assert(type(uid) == 'number' and uid == uid and math.abs(uid) ~= math.huge,
+        'expected uid to be a finite number')
+    local parent = ugui.internal.current_parent
+    if not parent or parent == ugui.internal.scene_root then
+        return uid
+    end
+    return uid_segment(parent.control._uid) .. '/' .. uid_segment(uid)
+end
+
+---Resolves an owned local ID independently of the child's scene parent.
+---@param control UguiControl
+---@param slot integer
+---@return ResolvedUID
+ugui.internal.child_uid = function(control, slot)
+    local node = ugui.internal.scene_nodes_by_uid[control._uid]
+    local uid = node and node.control == control and control._uid or ugui.internal.resolve_uid(control.uid)
+    return uid_segment(uid) .. '/' .. tostring(slot)
+end
+
+---Tests ownership even for private controls reparented to the scene root, such as popups.
+---@param control UguiControl
+---@param uid ResolvedUID?
+---@return boolean
+ugui.internal.is_owned_uid = function(control, uid)
+    if uid == nil then
+        return false
+    end
+    local prefix = uid_segment(control._uid) .. '/-'
+    return uid == control._uid or uid_segment(uid):sub(1, #prefix) == prefix
+end
+
+---Finds a scene node by the resolved UID of its control.
+---@param uid ResolvedUID?
 ---@return SceneNode?
 ugui.internal.find_node = function(uid)
     if uid == nil then
@@ -1777,7 +1832,7 @@ end
 ---Recomputes a placed node and its descendants after a local rectangle changes.
 ---@param control UguiControl
 ugui.internal.update_render_rect = function(control)
-    local node = ugui.internal.find_node(control.uid)
+    local node = ugui.internal.find_node(control._uid)
     if not node then
         return
     end
@@ -2537,7 +2592,7 @@ ugui.standard_styler = {
     ---@param rectangle UguiRect The list item's bounds.
     draw_list = function(control, rectangle)
         local visual_state = ugui.get_visual_state(control)
-        local data = ugui.internal.control_data[control.uid]
+        local data = ugui.internal.control_data[control._uid]
 
         ugui.standard_styler.draw_list_frame(rectangle, visual_state)
 
@@ -2666,7 +2721,7 @@ ugui.standard_styler = {
         local visual_state = ugui.get_visual_state(control)
         ugui.standard_styler.draw_menu_frame(rectangle, visual_state)
         if hovered_index == nil then
-            hovered_index = ugui.internal.control_data[control.uid].hovered_index
+            hovered_index = ugui.internal.control_data[control._uid].hovered_index
         end
 
         local y = rectangle.y
@@ -2783,13 +2838,13 @@ ugui.standard_styler = {
     ---@param control TextBox The control table.
     ---@param visual_state VisualState The visual state.
     draw_textbox = function(control, visual_state)
-        local data = ugui.internal.control_data[control.uid]
+        local data = ugui.internal.control_data[control._uid]
         local rectangle = control._render_rect
         local text<const> = data.text
         local scroll_offset = data.scroll_offset
         local scrolled_text<const> = scroll_offset == 1 and text or text:sub(scroll_offset)
 
-        local keyboard_captured = ugui.internal.keyboard_captured_control == control.uid
+        local keyboard_captured = ugui.internal.keyboard_captured_control == control._uid
 
         local p = ugui.internal.painter
         p:save()
@@ -3055,9 +3110,9 @@ ugui.standard_styler = {
     draw_trackbar = function(control)
         local rectangle = control._render_rect
         local visual_state = ugui.get_visual_state(control)
-        local data = ugui.internal.control_data[control.uid]
+        local data = ugui.internal.control_data[control._uid]
 
-        if ugui.internal.mouse_captured_control == control.uid and ugui.internal.is_control_enabled(control) then
+        if ugui.internal.mouse_captured_control == control._uid and ugui.internal.is_control_enabled(control) then
             visual_state = ugui.visual_states.active
         end
 
@@ -3427,21 +3482,19 @@ ugui.internal.add_debug_overlay_controls = function()
 
     if not ugui.internal.debug_overlay_control_uids then
         ugui.internal.debug_overlay_control_uids = debug_uid_provider.allocate_once('DebugOverlay', function(enum_next)
-            local panel = enum_next(ugui.panel_uids())
-            local title = enum_next(ugui.label_uids())
-            local frame = enum_next(ugui.label_uids())
-            local scale = enum_next(ugui.label_uids())
-            local grouping_button = enum_next(ugui.button_uids())
-            local button = enum_next(ugui.button_uids())
+            local panel = enum_next()
+            local title = enum_next()
+            local frame = enum_next()
+            local scale = enum_next()
+            local grouping_button = enum_next()
+            local button = enum_next()
             return {
                 panel = panel,
                 title = title,
                 frame = frame,
                 scale = scale,
                 grouping_button = grouping_button,
-                grouping_button_label = grouping_button + 1,
                 button = button,
-                button_label = button + 1,
             }
         end)
     end
@@ -3732,7 +3785,7 @@ ugui.internal.update_debug_frame_time = function(current_time)
 end
 
 ---Records time spent executing a control.
----@param uid UID The control's UID.
+---@param uid ResolvedUID The control's resolved UID.
 ---@param start_time number The os.clock time before execution began.
 ugui.internal.record_control_execution_time = function(uid, start_time)
     if not ugui.DEBUG then
@@ -3744,7 +3797,7 @@ ugui.internal.record_control_execution_time = function(uid, start_time)
 end
 
 ---Records time spent drawing a control.
----@param uid UID The control's UID.
+---@param uid ResolvedUID The control's resolved UID.
 ---@param start_time number The os.clock time before drawing began.
 ugui.internal.record_control_draw_time = function(uid, start_time)
     if not ugui.DEBUG then
@@ -3764,7 +3817,7 @@ ugui.internal.draw_debug_control_state = function(control)
 
     local p = ugui.internal.painter
     local render_rect = control._render_rect
-    if ugui.internal.keyboard_captured_control == control.uid then
+    if ugui.internal.keyboard_captured_control == control._uid then
         local rectangle = {
             x = render_rect.x - 4,
             y = render_rect.y - 4,
@@ -3775,7 +3828,7 @@ ugui.internal.draw_debug_control_state = function(control)
         p:rect(ugui.internal.rect_to_painter_rect(rectangle))
         p:stroke('#000000', {width = 2})
     end
-    if ugui.internal.mouse_captured_control == control.uid then
+    if ugui.internal.mouse_captured_control == control._uid then
         local rectangle = {
             x = render_rect.x - 8,
             y = render_rect.y - 8,
@@ -3805,12 +3858,17 @@ ugui.internal.draw_debug_overlay = function()
     local debug_uids = ugui.internal.debug_overlay_control_uids
     local control_entries = {}
     ugui.internal.foreach_scene_node(function(node)
-        local uid = node.control.uid
-        local is_debug_control = debug_uids and
-            (uid == debug_uids.panel or uid == debug_uids.title or uid == debug_uids.frame
-                or uid == debug_uids.scale or uid == debug_uids.grouping_button
-                or uid == debug_uids.grouping_button_label or uid == debug_uids.button
-                or uid == debug_uids.button_label)
+        local uid = node.control._uid
+        local is_debug_control = false
+        ---@type SceneNode|SceneRoot?
+        local ancestor = node
+        while debug_uids and ancestor and ancestor ~= ugui.internal.scene_root do
+            if ancestor.control._uid == debug_uids.panel then
+                is_debug_control = true
+                break
+            end
+            ancestor = ancestor.parent
+        end
         if not is_debug_control then
             local timing = ugui.internal.average_debug_control_times[uid] or {}
             control_entries[#control_entries + 1] = {
@@ -3898,7 +3956,7 @@ ugui.internal.draw_debug_overlay = function()
 
         table.sort(entries, function(a, b)
             if a.type == b.type then
-                return (a.uid or 0) < (b.uid or 0)
+                return tostring(a.uid or 0) < tostring(b.uid or 0)
             end
             return a.type < b.type
         end)
@@ -3950,14 +4008,15 @@ ugui.internal.draw_debug_overlay = function()
             p:close_path()
 
             local color_index
-            if entry.uid then
+            if type(entry.uid) == 'number' then
                 color_index = (entry.uid % #palette) + 1
             else
-                local type_hash = 0
-                for i = 1, #entry.type do
-                    type_hash = (type_hash + string.byte(entry.type, i)) % #palette
+                local color_key = entry.uid or entry.type
+                local color_hash = 0
+                for i = 1, #color_key do
+                    color_hash = (color_hash + string.byte(color_key, i)) % #palette
                 end
-                color_index = type_hash + 1
+                color_index = color_hash + 1
             end
             local slice_hovered = mouse_distance <= radius and angle_from_start >= elapsed_angle
                 and angle_from_start < elapsed_angle + sweep
@@ -4049,7 +4108,7 @@ ugui.internal.draw_debug_overlay = function()
             if group_by_type then
                 control_label = string.format('%s (%d controls)', hovered_slice.type, hovered_slice.control_count)
             else
-                control_label = string.format('%s (%d)', hovered_slice.type, hovered_slice.uid)
+                control_label = string.format('%s (%s)', hovered_slice.type, tostring(hovered_slice.uid))
             end
             tooltip_text = string.format('%s\n%s: %.3f ms\n%.1f%% of total',
                 control_label, view, hovered_time * 1000, percentage)
@@ -4138,7 +4197,7 @@ end
 ---@alias UguiBackgroundSize "auto" | "cover" | "contain" | UguiVector2
 
 ---@class UguiControl
----@field public uid UID The unique identifier of the control.
+---@field public uid UID|ResolvedUID The control's local numeric identifier, unique among siblings and stable across frames. Ancestors scope its persistent state. Negative local IDs are reserved for built-in children, leaving non-negative sibling IDs available to callers. Resolved string IDs are reserved for library-owned controls.
 ---@field public draw (fun(control: UguiControl))? Draws the control. Use `control._render_rect` instead of `control.rectangle`.
 ---@field public hittest (fun(control: UguiControl, point: UguiVector2): boolean)? Provides hittesting for the control. By default, the check is whether the point is inside `control._render_rect`.
 ---@field public get_return_value (fun(control: UguiControl, data: any): ControlReturnValue)? Computes the control's current return value and updates its data; use `control._render_rect` for absolute bounds.
@@ -4162,7 +4221,8 @@ end
 ---@field public background_size UguiBackgroundSize? Background image dimensions in pixels, `"auto"`, `"cover"`, or `"contain"`. Requires `background_image`.
 ---@field public background_nineslice_source PainterRect? Source rectangle for nine-slice rendering. Requires `background_image` and `background_nineslice_center`.
 ---@field public background_nineslice_center PainterRect? Center rectangle for nine-slice rendering. Requires `background_image` and `background_nineslice_source`.
----@field public _render_rect UguiRect **Internal, only use when authoring controls.** The control's effective rectangle.
+---@field public _uid ResolvedUID? **Internal, only use when authoring controls.** The resolved hierarchical identifier. Use this for state lookups and input identity comparisons, not `uid`.
+---@field public _render_rect UguiRect? **Internal, only use when authoring controls.** The control's effective rectangle.
 
 ---The base class for all controls.
 
@@ -4178,13 +4238,6 @@ end
 
 ---@class Panel : UguiControl
 ---A non-interactive surface.
-
----Gets the number of UID slots reserved by a Panel.
----@return integer
-ugui.panel_uids = function()
-    return 1
-end
-
 
 ---Places a Panel.
 ---@param control Panel The control table.
@@ -4220,13 +4273,6 @@ end
 ---@field public clip boolean? Whether the text is clipped to the control rectangle. If `nil`, false is assumed.
 ---@field public fit boolean? Whether the text is scaled to fit the control rectangle. If `nil`, false is assumed.
 ---A label that contains text.
-
----Gets the number of UID slots reserved by a Label.
----@return integer
-ugui.label_uids = function()
-    return 1
-end
-
 
 local label_draw = function(control)
     ugui.standard_styler.draw_rich_text({
@@ -4281,28 +4327,13 @@ end
 ---@field public text RichText The text displayed on the button.
 ---A button which can be clicked.
 
-local function button_get_uids()
-    local n = 1
-
-    local label<const> = n
-    n = n + ugui.label_uids()
-
-
-    return {total = n, label = label}
-end
-local button_uids<const> = button_get_uids()
-
----Gets the number of UID slots reserved by a Button.
----@return integer
-ugui.button_uids = function()
-    return button_uids.total
-end
+local button_label_uid<const> = -1
 
 ---@param control Button
 ---@param data any
 ---@return ControlReturnValue
 local function button_get_return_value(control, data)
-    local pressed = ugui.internal.clicked_control == control.uid
+    local pressed = ugui.internal.clicked_control == control._uid
 
     data.signal_change = ugui.internal.process_signal_changes(data.signal_change, pressed)
 
@@ -4331,7 +4362,7 @@ ugui.button = function(control, fn)
     local result = ugui.internal.control(control, 'button', function()
         local visual_state = ugui.get_visual_state(control)
         ugui.label({
-            uid = control.uid + button_uids.label,
+            uid = button_label_uid,
             text = control.text,
             color = ugui.standard_styler.params.button.text[visual_state],
             rectangle = {x = 0, y = 0, width = control.rectangle.width, height = control.rectangle.height},
@@ -4360,21 +4391,7 @@ end
 ---@field public is_checked boolean? Whether the button is checked. If nil, the ToggleButton is considered unchecked.
 ---A button which can be toggled on and off.
 
-local function toggle_button_get_uids()
-    local n = 1
-
-    local label<const> = n
-    n = n + ugui.label_uids()
-
-    return {total = n, label = label}
-end
-local toggle_button_uids<const> = toggle_button_get_uids()
-
----Gets the number of UID slots reserved by a ToggleButton.
----@return integer
-ugui.toggle_button_uids = function()
-    return toggle_button_uids.total
-end
+local toggle_button_label_uid<const> = -1
 
 ---@param control ToggleButton
 ---@param data any
@@ -4382,7 +4399,7 @@ end
 local function toggle_button_get_return_value(control, data)
     data.is_checked = control.is_checked
 
-    local pressed = ugui.internal.clicked_control == control.uid
+    local pressed = ugui.internal.clicked_control == control._uid
 
     if pressed then
         data.is_checked = not data.is_checked
@@ -4423,7 +4440,7 @@ ugui.toggle_button = function(control, fn)
         end
 
         ugui.label({
-            uid = control.uid + toggle_button_uids.label,
+            uid = toggle_button_label_uid,
             text = control.text,
             color = ugui.standard_styler.params.button.text[visual_state],
             rectangle = {x = 0, y = 0, width = control.rectangle.width, height = control.rectangle.height},
@@ -4455,27 +4472,9 @@ end
 ---A button which can be toggled on and off.
 ---TODO: Make wraparound optional
 
-local function carrousel_button_get_uids()
-    local n = 1
-
-    local label_left<const> = n
-    n = n + ugui.label_uids()
-
-    local label_text<const> = n
-    n = n + ugui.label_uids()
-
-    local label_right<const> = n
-    n = n + ugui.label_uids()
-
-    return {total = n, label_left = label_left, label_text = label_text, label_right = label_right}
-end
-local carrousel_button_uids<const> = carrousel_button_get_uids()
-
----Gets the number of UID slots reserved by a CarrouselButton.
----@return integer
-ugui.carrousel_button_uids = function()
-    return carrousel_button_uids.total
-end
+local carrousel_button_label_left_uid<const> = -1
+local carrousel_button_label_text_uid<const> = -2
+local carrousel_button_label_right_uid<const> = -3
 
 ---@param control CarrouselButton
 ---@param data any
@@ -4484,7 +4483,7 @@ local function carrousel_button_get_return_value(control, data)
     data.selected_index = control.selected_index
     local rectangle = control._render_rect
 
-    if ugui.internal.clicked_control == control.uid then
+    if ugui.internal.clicked_control == control._uid then
         local relative_x = ugui.internal.environment.mouse_position.x - rectangle.x
         if relative_x > rectangle.width / 2 then
             data.selected_index = data.selected_index + 1
@@ -4527,11 +4526,6 @@ ugui.carrousel_button = function(control, fn)
     ugui.internal.assert(type(control.items) == 'table', 'expected items to be string[]')
     ugui.internal.assert(type(control.selected_index) == 'number', 'expected selected_index to be number')
     control.draw = control.draw or carrousel_button_draw
-
-    local label_left_uid<const> = control.uid + carrousel_button_uids.label_left
-    local label_text_uid<const> = control.uid + carrousel_button_uids.label_text
-    local label_right_uid<const> = control.uid + carrousel_button_uids.label_right
-
     control.get_return_value = control.get_return_value or carrousel_button_get_return_value
     local result = ugui.internal.control(control, 'carrousel_button', function()
         local visual_state = ugui.get_visual_state(control)
@@ -4539,10 +4533,10 @@ ugui.carrousel_button = function(control, fn)
         local icon_size = ugui.standard_styler.params.icon_size
         local padding = ugui.standard_styler.params.textbox.padding.x
         local height = control.rectangle.height
-        local data = ugui.internal.control_data[control.uid]
+        local data = ugui.internal.control_data[control._uid]
 
         ugui.label({
-            uid = label_left_uid,
+            uid = carrousel_button_label_left_uid,
             rectangle = {x = padding, y = 0, width = icon_size, height = height},
             text = '[icon:arrow_left]',
             color = color,
@@ -4551,7 +4545,7 @@ ugui.carrousel_button = function(control, fn)
         })
 
         ugui.label({
-            uid = label_text_uid,
+            uid = carrousel_button_label_text_uid,
             rectangle = {
                 x = padding + icon_size,
                 y = 0,
@@ -4566,7 +4560,7 @@ ugui.carrousel_button = function(control, fn)
         })
 
         ugui.label({
-            uid = label_right_uid,
+            uid = carrousel_button_label_right_uid,
             rectangle = {
                 x = control.rectangle.width - padding - icon_size,
                 y = 0,
@@ -4603,12 +4597,6 @@ end
 ---@field public ratio number The overflow ratio, which is calculated by dividing the desired content dimensions by the relevant attached control's (e.g.: a listbox's) dimensions.
 ---A scrollbar which allows scrolling horizontally or vertically, depending on the control's dimensions.
 
----Gets the number of UID slots reserved by a ScrollBar.
----@return integer
-ugui.scrollbar_uids = function()
-    return 1
-end
-
 ---@param control ScrollBar
 ---@param data any
 ---@return ControlReturnValue
@@ -4622,13 +4610,13 @@ local function scrollbar_get_return_value(control, data)
         and rectangle.width * control.ratio
         or rectangle.height * control.ratio
 
-    if ugui.internal.clicked_control == control.uid and ugui.internal.environment.shift then
+    if ugui.internal.clicked_control == control._uid and ugui.internal.environment.shift then
         local mouse_pos = ugui.internal.environment.mouse_position
         local current_pos = is_horizontal and (mouse_pos.x - rectangle.x) or (mouse_pos.y - rectangle.y)
         local track_length = (is_horizontal and rectangle.width or rectangle.height) - thumb_size
         data.value = ugui.internal.clamp(current_pos / track_length, 0, 1)
     else
-        if ugui.internal.mouse_captured_control == control.uid then
+        if ugui.internal.mouse_captured_control == control._uid then
             local mouse_pos = ugui.internal.environment.mouse_position
             local mouse_down = ugui.internal.mouse_down_position
 
@@ -4662,7 +4650,7 @@ end
 
 
 local scrollbar_draw = function(control)
-    local data = ugui.internal.control_data[control.uid]
+    local data = ugui.internal.control_data[control._uid]
     local rectangle = control._render_rect
     local is_horizontal = rectangle.width > rectangle.height
 
@@ -4725,24 +4713,8 @@ end
 ---If the items don't fit in the control's bounds horizontally, horizontal scrolling will be enabled if horizontal_scroll is true.
 ---The `rectangle` field might be mutated to accommodate the scrollbars.
 
-local function listbox_get_uids()
-    local n = 1
-
-    local scrollbar_1<const> = n
-    n = n + ugui.scrollbar_uids()
-
-    local scrollbar_2<const> = n
-    n = n + ugui.scrollbar_uids()
-
-    return {total = n, scrollbar_1 = scrollbar_1, scrollbar_2 = scrollbar_2}
-end
-local listbox_uids<const> = listbox_get_uids()
-
----Gets the number of UID slots reserved by a ListBox.
----@return integer
-ugui.listbox_uids = function()
-    return listbox_uids.total
-end
+local listbox_scrollbar_1_uid<const> = -1
+local listbox_scrollbar_2_uid<const> = -2
 
 local function initialize_listbox_data(control, data)
     if data.scroll_x == nil then
@@ -4783,9 +4755,9 @@ local function listbox_get_return_value(control, data)
     -- FIXME: This is pretty weird... we should have a mechanism at the ugui core level for this
     local can_mouse_scroll = false
     if ugui.internal.mouse_captured_control == nil then
-        can_mouse_scroll = ugui.internal.hovered_control == control.uid
+        can_mouse_scroll = ugui.internal.hovered_control == control._uid
     end
-    if ugui.internal.mouse_captured_control == control.uid then
+    if ugui.internal.mouse_captured_control == control._uid then
         can_mouse_scroll = true
     end
 
@@ -4818,7 +4790,7 @@ local function listbox_get_return_value(control, data)
         end
     end
 
-    if ugui.internal.mouse_captured_control == control.uid then
+    if ugui.internal.mouse_captured_control == control._uid then
         local relative_y = ugui.internal.environment.mouse_position.y - rectangle.y
         local new_index = index_from_y(relative_y)
         data.selected_index = new_index
@@ -4840,7 +4812,7 @@ local function listbox_get_return_value(control, data)
         data.scroll_y = data.scroll_y - ugui.internal.environment._scroll_delta.y * one_item_scroll_y
     end
 
-    if ugui.internal.keyboard_captured_control == control.uid then
+    if ugui.internal.keyboard_captured_control == control._uid then
         for i = 1, #ugui.internal.environment.key_events do
             local e = ugui.internal.environment.key_events[i]
             if not e.keycode2 or not e.pressed then
@@ -4927,14 +4899,11 @@ ugui.listbox = function(control, fn)
 
     control.get_return_value = control.get_return_value or listbox_get_return_value
     local result = ugui.internal.control(control, 'listbox', fn, initialize_listbox_data)
-    local data = ugui.internal.control_data[control.uid]
-
-    local scrollbar_1_uid<const> = control.uid + listbox_uids.scrollbar_1
-    local scrollbar_2_uid<const> = control.uid + listbox_uids.scrollbar_2
+    local data = ugui.internal.control_data[control._uid]
 
     if x_overflow then
         data.scroll_x = ugui.scrollbar({
-            uid = scrollbar_1_uid,
+            uid = ugui.internal.child_uid(control, listbox_scrollbar_1_uid),
             is_enabled = ugui.internal.is_control_enabled(control),
             opacity = control.opacity,
             rectangle = {
@@ -4951,7 +4920,7 @@ ugui.listbox = function(control, fn)
 
     if y_overflow then
         data.scroll_y = ugui.scrollbar({
-            uid = scrollbar_2_uid,
+            uid = ugui.internal.child_uid(control, listbox_scrollbar_2_uid),
             is_enabled = ugui.internal.is_control_enabled(control),
             opacity = control.opacity,
             rectangle = {
@@ -5026,12 +4995,6 @@ local function surrounding_word_index(text, from)
     return lo, hi
 end
 
----Gets the number of UID slots reserved by a TextBox.
----@return integer
-ugui.textbox_uids = function()
-    return 1
-end
-
 local function initialize_textbox_data(control, data)
     if data.caret_index == nil then
         data.caret_index = 1
@@ -5072,14 +5035,14 @@ local function textbox_get_return_value(control, data)
     local scroll_width<const> = math.max(0, visible_width - 1) -- Leave room for the caret stroke.
     local font_name<const> = ugui.standard_styler.params.font_name
     local font_size<const> = ugui.standard_styler.params.font_size
-    local clicked<const> = ugui.internal.clicked_control == control.uid
-    local double_clicked<const> = ugui.internal.doubleclicked_control == control.uid
-    local triple_clicked<const> = ugui.internal.tripleclicked_control == control.uid
+    local clicked<const> = ugui.internal.clicked_control == control._uid
+    local double_clicked<const> = ugui.internal.doubleclicked_control == control._uid
+    local triple_clicked<const> = ugui.internal.tripleclicked_control == control._uid
     local mouse_position<const> = ugui.internal.environment.mouse_position
     local mouse_down_position<const> = ugui.internal.mouse_down_position
     local mouse_moved_since_press<const> = mouse_position.x ~= mouse_down_position.x or
         mouse_position.y ~= mouse_down_position.y
-    local dragging<const> = ugui.internal.mouse_captured_control == control.uid and mouse_moved_since_press and
+    local dragging<const> = ugui.internal.mouse_captured_control == control._uid and mouse_moved_since_press and
         data.selection_mode ~= 'all' and not clicked and not triple_clicked
     local scroll_target = data.caret_index
     if data.last_changed_anchor == 'selection_start' then
@@ -5092,7 +5055,7 @@ local function textbox_get_return_value(control, data)
         scroll_state.width ~= scroll_width or scroll_state.font_name ~= font_name or
         scroll_state.font_size ~= font_size or scroll_state.target ~= scroll_target or
         scroll_state.offset ~= data.scroll_offset
-    local keyboard_input<const> = ugui.internal.keyboard_captured_control == control.uid and
+    local keyboard_input<const> = ugui.internal.keyboard_captured_control == control._uid and
         #ugui.internal.environment.key_events > 0
 
     -- Idle frames need no text shaping, measurement, or mouse hit-testing.
@@ -5217,7 +5180,7 @@ local function textbox_get_return_value(control, data)
     end
 
     -- If we're capturing the keyboard, we process all the key presses.
-    if ugui.internal.keyboard_captured_control == control.uid then
+    if ugui.internal.keyboard_captured_control == control._uid then
         for i = 1, #ugui.internal.environment.key_events do
             local e = ugui.internal.environment.key_events[i]
             local before_edit<const> = {
@@ -5477,7 +5440,7 @@ local textbox_draw = function(control)
     local rectangle = control._render_rect
 
     -- Special case: if we're capturing the keyboard, we consider ourselves "active"
-    if ugui.internal.keyboard_captured_control == control.uid then
+    if ugui.internal.keyboard_captured_control == control._uid then
         visual_state = ugui.visual_states.active
     end
 
@@ -5518,40 +5481,11 @@ end
 ---@field public preview_change boolean? Whether the returned selected index can change while the combobox is open.
 ---A combobox which allows the user to choose from a list of items.
 
-local function combobox_get_uids()
-    local n = 1
-
-    local textbox<const> = n
-    n = n + ugui.textbox_uids()
-
-    local button<const> = n
-    n = n + ugui.button_uids()
-
-    local listbox<const> = n
-    n = n + ugui.listbox_uids()
-
-    local label_text<const> = n
-    n = n + ugui.label_uids()
-
-    local label_icon<const> = n
-    n = n + ugui.label_uids()
-
-    return {
-        total = n,
-        textbox = textbox,
-        button = button,
-        listbox = listbox,
-        label_text = label_text,
-        label_icon = label_icon,
-    }
-end
-local combobox_uids<const> = combobox_get_uids()
-
----Gets the number of UID slots reserved by a ComboBox.
----@return integer
-ugui.combobox_uids = function()
-    return combobox_uids.total
-end
+local combobox_textbox_uid<const> = -1
+local combobox_button_uid<const> = -2
+local combobox_listbox_uid<const> = -3
+local combobox_label_text_uid<const> = -4
+local combobox_label_icon_uid<const> = -5
 
 local function initialize_combobox_data(control, data)
     data.open = false
@@ -5570,7 +5504,7 @@ local function combobox_get_return_value(control, data)
     end
 
     -- Only toggle on click if NOT editable (editable mode handles this via the button)
-    if not control.editable and ugui.internal.clicked_control == control.uid then
+    if not control.editable and ugui.internal.clicked_control == control._uid then
         data.open = not data.open
     end
 
@@ -5596,7 +5530,7 @@ end
 
 local combobox_draw = function(control)
     local visual_state = ugui.get_visual_state(control)
-    local data = ugui.internal.control_data[control.uid]
+    local data = ugui.internal.control_data[control._uid]
 
     if visual_state ~= ugui.visual_states.disabled and data.open then
         visual_state = ugui.visual_states.active
@@ -5618,19 +5552,11 @@ ugui.combobox = function(control, fn)
         'expected selected_index to be number or nil')
     control.draw = control.draw or combobox_draw
 
-    local textbox_uid<const> = control.uid + combobox_uids.textbox
-    local button_uid<const> = control.uid + combobox_uids.button
-    local listbox_uid<const> = control.uid + combobox_uids.listbox
-    local label_text_uid<const> = control.uid + combobox_uids.label_text
-    local label_icon_uid<const> = control.uid + combobox_uids.label_icon
-
-    local highest_owned_uid<const> = control.uid + combobox_uids.total - 1
-
     local button_size<const> = 30
     control.get_return_value = control.get_return_value or combobox_get_return_value
     local result = ugui.internal.control(control, 'combobox', function()
         local visual_state = ugui.get_visual_state(control)
-        local data = ugui.internal.control_data[control.uid]
+        local data = ugui.internal.control_data[control._uid]
         if data.open and control.is_enabled ~= false then
             visual_state = ugui.visual_states.active
         end
@@ -5644,7 +5570,7 @@ ugui.combobox = function(control, fn)
         local icon_size = ugui.standard_styler.params.icon_size
 
         ugui.label({
-            uid = label_text_uid,
+            uid = combobox_label_text_uid,
             rectangle = {
                 x = padding * 2,
                 y = 0,
@@ -5659,7 +5585,7 @@ ugui.combobox = function(control, fn)
             clip = true,
         })
         ugui.label({
-            uid = label_icon_uid,
+            uid = combobox_label_icon_uid,
             rectangle = {
                 x = control.rectangle.width - icon_size - padding * 2,
                 y = 0,
@@ -5676,14 +5602,14 @@ ugui.combobox = function(control, fn)
             fn()
         end
     end, initialize_combobox_data)
-    local data = ugui.internal.control_data[control.uid]
+    local data = ugui.internal.control_data[control._uid]
 
 
     if control.editable then
         local selected_index = data.filtered_to_original and data.filtered_to_original[data.selected_index] or data.selected_index
         local current_text = (data.search_text or control.items[selected_index]) or ''
         local search_text = ugui.textbox({
-            uid = textbox_uid,
+            uid = ugui.internal.child_uid(control, combobox_textbox_uid),
             rectangle = {
                 x = control.rectangle.x,
                 y = control.rectangle.y,
@@ -5696,7 +5622,7 @@ ugui.combobox = function(control, fn)
         })
 
         if ugui.button({
-                uid = button_uid,
+                uid = ugui.internal.child_uid(control, combobox_button_uid),
                 rectangle = {
                     x = control.rectangle.x + control.rectangle.width - button_size,
                     y = control.rectangle.y,
@@ -5771,6 +5697,7 @@ ugui.combobox = function(control, fn)
         }
 
         -- HACK: Parent the listbox to the scene root to avoid drawing priority issues
+        local listbox_uid<const> = ugui.internal.child_uid(control, combobox_listbox_uid)
         local listbox = {
             uid = listbox_uid,
             rectangle = list_rect,
@@ -5792,10 +5719,7 @@ ugui.combobox = function(control, fn)
 
         local enter_pressed = false
         -- allow confirming the selection with return when any of the owned controls captures keyboard input
-        if ugui.internal.keyboard_captured_control ~= nil
-            and ugui.internal.keyboard_captured_control >= control.uid
-            and ugui.internal.keyboard_captured_control <= highest_owned_uid
-        then
+        if ugui.internal.is_owned_uid(control, ugui.internal.keyboard_captured_control) then
             for i = 1, #ugui.internal.environment.key_events do
                 local e = ugui.internal.environment.key_events[i]
                 if e.keycode2 == Mupen.keycode.SDLK_RETURN and e.pressed then
@@ -5810,7 +5734,7 @@ ugui.combobox = function(control, fn)
         local clicked_outside =
             ugui.internal.is_mouse_just_down()
             and ugui.internal.hovered_control ~= nil
-            and (ugui.internal.hovered_control < control.uid or ugui.internal.hovered_control > highest_owned_uid)
+            and not ugui.internal.is_owned_uid(control, ugui.internal.hovered_control)
 
         if enter_pressed or released_inside or clicked_outside then
             data.open = false
@@ -5851,12 +5775,6 @@ end
 ---@field public y_snap integer? The snap distance to 0 on the Y axis. If nil, no snap will be applied.
 ---A joystick which can be interacted with.
 
----Gets the number of UID slots reserved by a Joystick.
----@return integer
-ugui.joystick_uids = function()
-    return 1
-end
-
 ---@param control Joystick
 ---@param data any
 ---@return ControlReturnValue
@@ -5864,7 +5782,7 @@ local function joystick_get_return_value(control, data)
     data.position = {x = control.position.x, y = control.position.y}
     local rectangle = control._render_rect
 
-    if ugui.internal.mouse_captured_control == control.uid then
+    if ugui.internal.mouse_captured_control == control._uid then
         data.position.x = ugui.internal.clamp(
             ugui.internal.remap(ugui.internal.environment.mouse_position.x - rectangle.x, 0,
                 rectangle.width, -128, 128), -128, 128)
@@ -5936,12 +5854,6 @@ end
 ---@field public shape "square"|"circle"? The picker shape. Defaults to "square".
 ---@field public band_position "right"|"top"|"left"|"bottom"|"none"? Where the hue/value band is placed. Defaults to "right".
 ---A color picker with either a square saturation/value field and hue band, or a circular hue/saturation picker with a value band.
-
----Gets the number of UID slots reserved by a ColorPicker.
----@return integer
-ugui.colorpicker_uids = function()
-    return 1
-end
 
 local valid_band_positions = {right = true, top = true, left = true, bottom = true, none = true}
 local valid_shapes = {square = true, circle = true}
@@ -6016,7 +5928,7 @@ local function colorpicker_get_return_value(control, data)
     local square, band = colorpicker_get_geometry(control._render_rect, band_position)
 
     local selection_changed = false
-    if ugui.internal.clicked_control == control.uid then
+    if ugui.internal.clicked_control == control._uid then
         local mouse_down_position = ugui.internal.mouse_down_position
         if shape == 'circle' then
             if square.width > 0 and ugui.internal.point_in_circle(mouse_down_position, square) then
@@ -6035,7 +5947,7 @@ local function colorpicker_get_return_value(control, data)
         end
     end
 
-    if ugui.internal.mouse_captured_control == control.uid then
+    if ugui.internal.mouse_captured_control == control._uid then
         local mouse_position = ugui.internal.environment.mouse_position
         if data.drag_mode == 'circle' and square.width > 0 then
             local center_x = square.x + square.width / 2
@@ -6081,16 +5993,16 @@ local function colorpicker_get_return_value(control, data)
 
     local mouse_position = ugui.internal.environment.mouse_position
     local circle_is_active = shape == 'circle' and (
-        ugui.internal.mouse_captured_control == control.uid and data.drag_mode == 'circle' or
-        ugui.internal.mouse_captured_control ~= control.uid and ugui.internal.hovered_control == control.uid and
+        ugui.internal.mouse_captured_control == control._uid and data.drag_mode == 'circle' or
+        ugui.internal.mouse_captured_control ~= control._uid and ugui.internal.hovered_control == control._uid and
         ugui.internal.point_in_circle(mouse_position, square))
     local band_is_active = band.width > 0 and band.height > 0 and (
-        ugui.internal.mouse_captured_control == control.uid and
+        ugui.internal.mouse_captured_control == control._uid and
         (data.drag_mode == 'band' or data.drag_mode == 'value') or
-        ugui.internal.mouse_captured_control ~= control.uid and ugui.internal.hovered_control == control.uid and
+        ugui.internal.mouse_captured_control ~= control._uid and ugui.internal.hovered_control == control._uid and
         ugui.internal.point_in_rect(mouse_position, band))
 
-    if ugui.internal.keyboard_captured_control == control.uid then
+    if ugui.internal.keyboard_captured_control == control._uid then
         for i = 1, #ugui.internal.environment.key_events do
             local event = ugui.internal.environment.key_events[i]
             if event.keycode2 and event.pressed then
@@ -6174,7 +6086,7 @@ local function colorpicker_get_return_value(control, data)
         end
     end
 
-    if ugui.internal.hovered_control == control.uid and ugui.internal.is_control_enabled(control) then
+    if ugui.internal.hovered_control == control._uid and ugui.internal.is_control_enabled(control) then
         local scroll_delta = ugui.internal.environment._scroll_delta.y
         if scroll_delta ~= 0 then
             local nudge = scroll_delta * 0.01
@@ -6280,12 +6192,6 @@ end
 ---@field public value number The current value in the range 0-1.
 ---A trackbar which can have its value adjusted.
 
----Gets the number of UID slots reserved by a Trackbar.
----@return integer
-ugui.trackbar_uids = function()
-    return 1
-end
-
 ---@param control Trackbar
 ---@param data any
 ---@return ControlReturnValue
@@ -6293,7 +6199,7 @@ local function trackbar_get_return_value(control, data)
     data.value = control.value
     local rectangle = control._render_rect
 
-    if ugui.internal.mouse_captured_control == control.uid then
+    if ugui.internal.mouse_captured_control == control._uid then
         if rectangle.width > rectangle.height then
             data.value = (ugui.internal.environment.mouse_position.x - rectangle.x) / rectangle.width
         else
@@ -6352,12 +6258,6 @@ end
 ---@class Menu : UguiControl
 ---@field public items MenuItem[] The items contained in the menu.
 ---A menu, which allows the user to choose from a list of items.
-
----Gets the number of UID slots reserved by a Menu.
----@return integer
-ugui.menu_uids = function()
-    return 1
-end
 
 local function menu_init(_, data)
     data.dismissed = 0
@@ -6435,7 +6335,7 @@ end
 ---@param point UguiVector2
 ---@return boolean
 local function menu_hittest(control, point)
-    local data = ugui.internal.control_data[control.uid]
+    local data = ugui.internal.control_data[control._uid]
     local hovered_path = data and data.hovered_path or {}
     local visible_menus = menu_get_visible(control, hovered_path)
     for i = 1, #visible_menus do
@@ -6499,7 +6399,7 @@ local function menu_get_return_value(control, data)
         end
     end
 
-    if ugui.internal.clicked_control == control.uid and hovered_menu and hovered_item_index then
+    if ugui.internal.clicked_control == control._uid and hovered_menu and hovered_item_index then
         local item = hovered_menu.items[hovered_item_index]
         if item.enabled ~= false and (not item.items or #item.items == 0) then
             result.item = item
@@ -6519,7 +6419,7 @@ local function menu_get_return_value(control, data)
 end
 
 local menu_draw = function(control)
-    local data = ugui.internal.control_data[control.uid]
+    local data = ugui.internal.control_data[control._uid]
     local visible_menus = menu_get_visible(control, data.hovered_path or {})
     for i = 1, #visible_menus do
         local menu = visible_menus[i]
@@ -6572,12 +6472,7 @@ end
 ---@field public selected_index integer The index of the selected tab.
 ---@field public rectangle UguiRect The visual bounds the selected tab can place its contents in.
 
----Gets the number of UID slots reserved by a TabControl.
----@param item_count integer The amount of items passed in to the TabControl.
----@return integer
-ugui.tabcontrol_uids = function(item_count)
-    return 1 + item_count * ugui.toggle_button_uids() + ugui.panel_uids()
-end
+local tabcontrol_content_panel_uid<const> = -1
 
 local function initialize_tabcontrol_data(control, data)
     data.scroll_x = 0
@@ -6606,7 +6501,7 @@ ugui.tabcontrol = function(control, fn)
     ugui.internal.assert(type(control.selected_index) == 'number', 'expected selected_index to be number')
     local selected_index = control.selected_index
     local content_rectangle
-    local current_uid = control.uid + 1
+    local current_uid = -2
 
     control.get_return_value = control.get_return_value or tabcontrol_get_return_value
     ugui.internal.control(control, 'tabcontrol', function()
@@ -6648,7 +6543,7 @@ ugui.tabcontrol = function(control, fn)
             end
 
             x = x + width + ugui.standard_styler.params.tabcontrol.gap_x
-            current_uid = current_uid + ugui.toggle_button_uids()
+            current_uid = current_uid - 1
         end
 
         local rail_size = ugui.standard_styler.params.tabcontrol.rail_size
@@ -6660,11 +6555,11 @@ ugui.tabcontrol = function(control, fn)
         }
 
         ugui.panel({
-            uid = control.uid + 1 + #control.items * ugui.toggle_button_uids(),
+            uid = tabcontrol_content_panel_uid,
             rectangle = content_rectangle,
         }, fn)
     end, initialize_tabcontrol_data)
-    local data = ugui.internal.control_data[control.uid]
+    local data = ugui.internal.control_data[control._uid]
 
     if ugui.standard_styler.params.tabcontrol.draw_frame then
         local clone = ugui.internal.deep_clone(control)
@@ -6706,21 +6601,7 @@ end
 ---@field public show_negative boolean? Whether a button for viewing and toggling the value's sign is shown. If nil, false is assumed.
 ---A numberbox, which allows modifying a number by typing or by adjusting its individual digits.
 
-local function numberbox_get_uids()
-    local n = 1
-
-    local button_1<const> = n
-    n = n + ugui.button_uids()
-
-    return {total = n, button_1 = button_1}
-end
-local numberbox_uids<const> = numberbox_get_uids()
-
----Gets the number of UID slots reserved by a NumberBox.
----@return integer
-ugui.numberbox_uids = function()
-    return numberbox_uids.total
-end
+local numberbox_button_1_uid<const> = -1
 
 local function initialize_numberbox_data(control, data)
     data.caret_index = 1
@@ -6769,12 +6650,12 @@ local function numberbox_get_return_value(control, data)
             ugui.internal.get_digit(data.value, control.places, index) + value, index)
     end
 
-    if ugui.internal.clicked_control == control.uid then
+    if ugui.internal.clicked_control == control._uid then
         data.caret_index = get_caret_index_at_relative_x(ugui.internal.environment.mouse_position.x -
             rectangle.x)
     end
 
-    if ugui.internal.keyboard_captured_control == control.uid then
+    if ugui.internal.keyboard_captured_control == control._uid then
         -- handle number key press
         for i = 1, #ugui.internal.environment.key_events do
             local e = ugui.internal.environment.key_events[i]
@@ -6839,7 +6720,7 @@ end
 
 
 local numberbox_draw = function(control)
-    local data = ugui.internal.control_data[control.uid]
+    local data = ugui.internal.control_data[control._uid]
     local rectangle = control._render_rect
     local font_size = ugui.standard_styler.params.font_size * ugui.standard_styler.params.numberbox.font_scale
     local font_name = ugui.standard_styler.params.monospace_font_name
@@ -6847,7 +6728,7 @@ local numberbox_draw = function(control)
     local p = ugui.internal.painter
 
     local visual_state = ugui.get_visual_state(control)
-    if ugui.internal.keyboard_captured_control == control.uid then
+    if ugui.internal.keyboard_captured_control == control._uid then
         visual_state = ugui.visual_states.active
     end
     ugui.standard_styler.draw_edit_frame(control, rectangle, visual_state)
@@ -6894,7 +6775,7 @@ local numberbox_draw = function(control)
         height = rectangle.height,
     }
 
-    if ugui.internal.keyboard_captured_control == control.uid then
+    if ugui.internal.keyboard_captured_control == control._uid then
         p:begin_path()
         p:rect(ugui.internal.rect_to_painter_rect(selected_char_rect))
         local selection_color = ugui.color_source_to_rgbaf(ugui.standard_styler.params.numberbox.selection)
@@ -6922,7 +6803,7 @@ ugui.numberbox = function(control, fn)
     control.draw = control.draw or numberbox_draw
     control.get_return_value = control.get_return_value or numberbox_get_return_value
     local result = ugui.internal.control(control, 'numberbox', fn, initialize_numberbox_data)
-    local data = ugui.internal.control_data[control.uid]
+    local data = ugui.internal.control_data[control._uid]
 
     if control.show_negative then
         local negative_button_size = control.rectangle.width / 8
@@ -6935,7 +6816,7 @@ ugui.numberbox = function(control, fn)
         }
 
         if ugui.button({
-                uid = control.uid + numberbox_uids.button_1,
+                uid = ugui.internal.child_uid(control, numberbox_button_1_uid),
                 is_enabled = ugui.internal.is_control_enabled(control),
                 opacity = control.opacity,
                 rectangle = {
@@ -6972,27 +6853,9 @@ end
 ---@field public is_horizontal boolean? Whether the increment buttons are stacked horizontally.
 ---A spinner, consisting of a textbox and buttons for incrementing or decrementing a number.
 
-local function spinner_get_uids()
-    local n = 1
-
-    local textbox<const> = n
-    n = n + ugui.textbox_uids()
-
-    local button_1<const> = n
-    n = n + ugui.button_uids()
-
-    local button_2<const> = n
-    n = n + ugui.button_uids()
-
-    return {total = n, textbox = textbox, button_1 = button_1, button_2 = button_2}
-end
-local spinner_uids<const> = spinner_get_uids()
-
----Gets the number of UID slots reserved by a Spinner.
----@return integer
-ugui.spinner_uids = function()
-    return spinner_uids.total
-end
+local spinner_textbox_uid<const> = -1
+local spinner_button_1_uid<const> = -2
+local spinner_button_2_uid<const> = -3
 
 local function initialize_spinner_data(control, data)
     data.value = control.value or 0
@@ -7027,10 +6890,6 @@ ugui.spinner = function(control, fn)
         'expected is_horizontal to be boolean or nil')
     control.get_return_value = control.get_return_value or spinner_get_return_value
 
-    local textbox_uid<const> = control.uid + spinner_uids.textbox
-    local button_1_uid<const> = control.uid + spinner_uids.button_1
-    local button_2_uid<const> = control.uid + spinner_uids.button_2
-
     local increment = control.increment or 1
 
     local function clamp_value(candidate)
@@ -7053,7 +6912,7 @@ ugui.spinner = function(control, fn)
     local data
     local value
     local result = ugui.internal.control(control, 'spinner', function()
-        data = ugui.internal.control_data[control.uid]
+        data = ugui.internal.control_data[control._uid]
         value = data.value
 
         local textbox_rect = {
@@ -7063,12 +6922,12 @@ ugui.spinner = function(control, fn)
             height = control.rectangle.height,
         }
         local textbox_render_rect = ugui.internal.compute_render_rect({
-            uid = textbox_uid,
+            uid = spinner_textbox_uid,
             rectangle = textbox_rect,
         })
 
         local new_text = ugui.textbox({
-            uid = textbox_uid,
+            uid = spinner_textbox_uid,
             rectangle = textbox_rect,
             is_enabled = ugui.internal.is_control_enabled(control),
             opacity = control.opacity,
@@ -7082,7 +6941,7 @@ ugui.spinner = function(control, fn)
 
         if ugui.internal.is_control_enabled(control)
             and (ugui.internal.point_in_rect(ugui.internal.environment.mouse_position, textbox_render_rect)
-                or ugui.internal.mouse_captured_control == textbox_uid)
+                or ugui.internal.mouse_captured_control == ugui.internal.child_uid(control, spinner_textbox_uid))
         then
             if ugui.internal.environment._scroll_delta.y ~= 0 then
                 value = clamp_value(value + increment * ugui.internal.environment._scroll_delta.y)
@@ -7091,7 +6950,7 @@ ugui.spinner = function(control, fn)
 
         if control.is_horizontal then
             if ugui.button({
-                    uid = button_1_uid,
+                    uid = spinner_button_1_uid,
                     is_enabled = ugui.internal.is_control_enabled(control) and not (value == control.minimum_value),
                     opacity = control.opacity,
                     rectangle = {
@@ -7107,7 +6966,7 @@ ugui.spinner = function(control, fn)
             end
 
             if ugui.button({
-                    uid = button_2_uid,
+                    uid = spinner_button_2_uid,
                     is_enabled = ugui.internal.is_control_enabled(control) and not (value == control.maximum_value),
                     opacity = control.opacity,
                     rectangle = {
@@ -7123,7 +6982,7 @@ ugui.spinner = function(control, fn)
             end
         else
             if ugui.button({
-                    uid = button_1_uid,
+                    uid = spinner_button_1_uid,
                     is_enabled = ugui.internal.is_control_enabled(control) and not (value == control.maximum_value),
                     opacity = control.opacity,
                     rectangle = {
@@ -7139,7 +6998,7 @@ ugui.spinner = function(control, fn)
             end
 
             if ugui.button({
-                    uid = button_2_uid,
+                    uid = spinner_button_2_uid,
                     is_enabled = ugui.internal.is_control_enabled(control) and not (value == control.minimum_value),
                     opacity = control.opacity,
                     rectangle = {
@@ -7200,46 +7059,14 @@ end
 ---@field public maximized boolean? Whether the maximize button was pressed.
 ---@field public closed boolean? Whether the close button was pressed.
 
-local function window_get_uids()
-    local n = 1
-
-    local titlebar_panel<const> = n
-    n = n + ugui.panel_uids()
-
-    local content_panel<const> = n
-    n = n + ugui.panel_uids()
-
-    local title<const> = n
-    n = n + ugui.label_uids()
-
-    local minimize_button<const> = n
-    n = n + ugui.button_uids()
-
-    local maximize_button<const> = n
-    n = n + ugui.button_uids()
-
-    local close_button<const> = n
-    n = n + ugui.button_uids()
-
-    local resize_handle<const> = n
-    n = n + ugui.panel_uids()
-
-    local drag_grip<const> = n
-    n = n + ugui.label_uids()
-
-    return {
-        total = n,
-        titlebar_panel = titlebar_panel,
-        content_panel = content_panel,
-        title = title,
-        minimize_button = minimize_button,
-        maximize_button = maximize_button,
-        close_button = close_button,
-        resize_handle = resize_handle,
-        drag_grip = drag_grip,
-    }
-end
-local window_uids<const> = window_get_uids()
+local window_titlebar_panel_uid<const> = -1
+local window_content_panel_uid<const> = -2
+local window_title_uid<const> = -3
+local window_minimize_button_uid<const> = -4
+local window_maximize_button_uid<const> = -5
+local window_close_button_uid<const> = -6
+local window_resize_handle_uid<const> = -7
+local window_drag_grip_uid<const> = -8
 
 local function window_draw_rotated_title(control, angle)
     local rectangle = control._render_rect
@@ -7272,12 +7099,6 @@ local function window_draw_resize_handle(control)
         control._render_rect,
         ugui.standard_styler.params.button.border[ugui.visual_states.normal],
         'diagonal_grip_bottom_right')
-end
-
----Gets the number of UID slots reserved by a Window.
----@return integer
-ugui.window_uids = function()
-    return window_uids.total
 end
 
 ---Places a Window.
@@ -7334,21 +7155,21 @@ ugui.window = function(control, fn)
 
     if control.minimizable ~= false then
         titlebar_buttons[#titlebar_buttons + 1] = {
-            uid = window_uids.minimize_button,
+            uid = window_minimize_button_uid,
             text = '[icon:minimize]',
             action = 'minimize',
         }
     end
     if control.maximizable ~= false then
         titlebar_buttons[#titlebar_buttons + 1] = {
-            uid = window_uids.maximize_button,
+            uid = window_maximize_button_uid,
             text = '[icon:maximize]',
             action = 'maximize',
         }
     end
     if control.closable ~= false then
         titlebar_buttons[#titlebar_buttons + 1] = {
-            uid = window_uids.close_button,
+            uid = window_close_button_uid,
             text = '[icon:close]',
             action = 'close',
         }
@@ -7366,7 +7187,7 @@ ugui.window = function(control, fn)
 
     local result = ugui.internal.control(control, 'window', function()
         ugui.panel({
-            uid = control.uid + window_uids.titlebar_panel,
+            uid = window_titlebar_panel_uid,
             rectangle = titlebar_rectangle,
             fill = ugui.standard_styler.params.button.back[ugui.visual_states.normal],
             stroke = ugui.standard_styler.params.button.border[ugui.visual_states.normal],
@@ -7377,7 +7198,7 @@ ugui.window = function(control, fn)
             local title_start = 8
             if control.draggable ~= false then
                 ugui.label({
-                    uid = control.uid + window_uids.drag_grip,
+                    uid = window_drag_grip_uid,
                     rectangle = vertical_titlebar
                         and {x = 0, y = 6, width = titlebar_size, height = 12}
                         or {x = 6, y = 0, width = 12, height = titlebar_size},
@@ -7389,7 +7210,7 @@ ugui.window = function(control, fn)
             end
 
             local title_label = {
-                uid = control.uid + window_uids.title,
+                uid = window_title_uid,
                 rectangle = vertical_titlebar and {
                     x = 0,
                     y = title_start,
@@ -7433,7 +7254,7 @@ ugui.window = function(control, fn)
                     height = titlebar_size,
                 }
                 local pressed = ugui.button({
-                    uid = control.uid + button.uid,
+                    uid = button.uid,
                     rectangle = button_rectangle,
                     text = button.text,
                     is_enabled = is_enabled,
@@ -7450,14 +7271,14 @@ ugui.window = function(control, fn)
         end)
 
         ugui.panel({
-            uid = control.uid + window_uids.content_panel,
+            uid = window_content_panel_uid,
             rectangle = content_rectangle,
             opacity = control.opacity,
         }, fn)
 
         if control.resizable ~= false then
             ugui.panel({
-                uid = control.uid + window_uids.resize_handle,
+                uid = window_resize_handle_uid,
                 rectangle = {
                     x = rectangle.width - resize_handle_size,
                     y = rectangle.height - resize_handle_size,
@@ -7471,9 +7292,9 @@ ugui.window = function(control, fn)
         end
     end)
 
-    local data = ugui.internal.control_data[control.uid]
+    local data = ugui.internal.control_data[control._uid]
     local dragging = control.draggable ~= false
-        and ugui.internal.mouse_captured_control == control.uid + window_uids.titlebar_panel
+        and ugui.internal.mouse_captured_control == ugui.internal.child_uid(control, window_titlebar_panel_uid)
     local new_position
 
     if dragging then
@@ -7504,7 +7325,7 @@ ugui.window = function(control, fn)
     end
 
     local resizing = control.resizable ~= false
-        and ugui.internal.mouse_captured_control == control.uid + window_uids.resize_handle
+        and ugui.internal.mouse_captured_control == ugui.internal.child_uid(control, window_resize_handle_uid)
     local minimum_width = vertical_titlebar and math.max(1, titlebar_size) or 1
     local minimum_height = vertical_titlebar and 1 or math.max(1, titlebar_size)
     local new_size

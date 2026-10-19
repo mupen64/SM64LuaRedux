@@ -86,8 +86,8 @@ local scroll_offset = 0
 local UID = UIDProvider.allocate_once('InputListGui', function(enum_next)
     local base = enum_next(MAX_DISPLAYED_SECTIONS * NUM_UIDS_PER_ROW)
     return {
-        SheetName = enum_next(ugui.textbox_uids()),
-        Scrollbar = enum_next(ugui.scrollbar_uids()),
+        SheetName = enum_next(),
+        Scrollbar = enum_next(),
         Row = function(index)
             return base + (index - 1) * NUM_UIDS_PER_ROW
         end,

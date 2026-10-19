@@ -7,8 +7,8 @@
 local UID = UIDProvider.allocate_once('GhostTab', function(enum_next)
     return {
         TabControl = enum_next(UIDProvider.unknown),
-        Overlay = enum_next(ugui.listbox_uids()),
-        OverlayColor = enum_next(ugui.panel_uids()),
+        Overlay = enum_next(),
+        OverlayColor = enum_next(),
     }
 end)
 

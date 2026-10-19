@@ -6,18 +6,18 @@
 
 local UID = UIDProvider.allocate_once('GhostRecording', function(enum_next)
     return {
-        RecordingStatus = enum_next(ugui.label_uids()),
-        RecordMario = enum_next(ugui.toggle_button_uids()),
-        ObjectLabel = enum_next(ugui.label_uids()),
-        RecordObject = enum_next(ugui.toggle_button_uids()),
-        AddressLabel = enum_next(ugui.label_uids()),
-        GhostObjectAddress = enum_next(ugui.textbox_uids()),
-        RecordObjectByName = enum_next(ugui.toggle_button_uids()),
-        ObjectList = enum_next(ugui.listbox_uids()),
-        ObjectData = enum_next(ugui.listbox_uids()),
-        GhostPath = enum_next(ugui.textbox_uids()),
-        BrowseGhostPath = enum_next(ugui.button_uids()),
-        RecordGhost = enum_next(ugui.toggle_button_uids()),
+        RecordingStatus = enum_next(),
+        RecordMario = enum_next(),
+        ObjectLabel = enum_next(),
+        RecordObject = enum_next(),
+        AddressLabel = enum_next(),
+        GhostObjectAddress = enum_next(),
+        RecordObjectByName = enum_next(),
+        ObjectList = enum_next(),
+        ObjectData = enum_next(),
+        GhostPath = enum_next(),
+        BrowseGhostPath = enum_next(),
+        RecordGhost = enum_next(),
     }
 end)
 

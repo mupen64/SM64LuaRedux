@@ -214,9 +214,7 @@ return {
             rectangle = grid_rect(-6, 10, 6, 7),
             selected_index = nil,
             items = VarWatch.processed_values,
-            styler_mixin = {
-                color_filter = { r = 255, g = 255, b = 255, a = 110 },
-            },
+            opacity = 0.8
         })
     end,
 }

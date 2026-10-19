@@ -6,30 +6,30 @@
 
 local UID = UIDProvider.allocate_once('TAS', function(enum_next)
     return {
-        ProcessedValues = enum_next(ugui.listbox_uids()),
-        GoalAngle = enum_next(ugui.numberbox_uids()),
-        GoalMag = enum_next(ugui.numberbox_uids()),
-        HighMagnitude = enum_next(ugui.toggle_button_uids()),
-        ResetMag = enum_next(ugui.button_uids()),
-        DustlessWalk = enum_next(ugui.button_uids()),
-        SpeedKick = enum_next(ugui.button_uids()),
-        D99Always = enum_next(ugui.toggle_button_uids()),
-        D99 = enum_next(ugui.toggle_button_uids()),
-        DYaw = enum_next(ugui.toggle_button_uids()),
-        StrainLeft = enum_next(ugui.toggle_button_uids()),
-        StrainRight = enum_next(ugui.toggle_button_uids()),
-        Joystick = enum_next(ugui.joystick_uids()),
-        AtanStrain = enum_next(ugui.toggle_button_uids()),
-        AtanStrainReverse = enum_next(ugui.toggle_button_uids()),
-        AtanButtons = enum_next(10 * ugui.button_uids()),
-        AtanFieldLabels = enum_next(5 * ugui.label_uids()),
+        ProcessedValues = enum_next(),
+        GoalAngle = enum_next(),
+        GoalMag = enum_next(),
+        HighMagnitude = enum_next(),
+        ResetMag = enum_next(),
+        DustlessWalk = enum_next(),
+        SpeedKick = enum_next(),
+        D99Always = enum_next(),
+        D99 = enum_next(),
+        DYaw = enum_next(),
+        StrainLeft = enum_next(),
+        StrainRight = enum_next(),
+        Joystick = enum_next(),
+        AtanStrain = enum_next(),
+        AtanStrainReverse = enum_next(),
+        AtanButtons = enum_next(10),
+        AtanFieldLabels = enum_next(5),
         MovementModeDisabled = enum_next(),
-        MovementModeMatchYaw = enum_next(ugui.toggle_button_uids()),
-        MovementModeReverseYaw = enum_next(ugui.toggle_button_uids()),
-        MovementModeMatchAngle = enum_next(ugui.toggle_button_uids()),
-        StickX = enum_next(ugui.label_uids()),
-        StickY = enum_next(ugui.label_uids()),
-        StickMag = enum_next(ugui.label_uids()),
+        MovementModeMatchYaw = enum_next(),
+        MovementModeReverseYaw = enum_next(),
+        MovementModeMatchAngle = enum_next(),
+        StickX = enum_next(),
+        StickY = enum_next(),
+        StickMag = enum_next(),
     }
 end)
 
@@ -195,7 +195,7 @@ return {
                 })
 
                 if ugui.button({
-                        uid = UID.AtanButtons + index * 2 * ugui.button_uids(),
+                        uid = UID.AtanButtons + index * 2,
                         rectangle = grid_rect(x, 3.5, width / 2, 0.5),
                         text = '-',
                         tooltip = Locales.str(tooltip_key),
@@ -204,7 +204,7 @@ return {
                 end
 
                 if ugui.button({
-                        uid = UID.AtanButtons + (index * 2 + 1) * ugui.button_uids(),
+                        uid = UID.AtanButtons + (index * 2 + 1),
                         rectangle = grid_rect(x + width / 2, 3.5, width / 2, 0.5),
                         text = '+',
                         tooltip = Locales.str(tooltip_key),
