@@ -1,3 +1,6 @@
+> [!NOTE]
+> This repository has moved to [Codeberg](https://codeberg.org/mupen64/SM64LuaRedux).
+
 <p align="center">
   <img width="128" align="center" src="https://github.com/Mupen64-Rewrite/SM64LuaRedux/assets/48759429/4c3ac7b9-ba24-401c-b074-9ba364f0295a">
 </p>
