@@ -165,7 +165,7 @@ return {
             -- FIXME: do we really need to update memory
             Memory.update()
             Settings.tas.atan_strain = atan_strain
-            Settings.tas.atan_start = Memory.current.mario_global_timer
+            Settings.tas.atan_start = Memory.current.global_timer
         end
 
         if Settings.tas.atan_strain then

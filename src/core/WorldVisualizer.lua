@@ -4,7 +4,10 @@
 -- SPDX-License-Identifier: GPL-2.0-or-later
 --
 
-WorldVisualizer = {}
+WorldVisualizer = {
+    ---@type integer | nil # an object address drawn even when the visualizer is disabled (e.g. the ghost tab's recorded object)
+    highlighted_object = nil,
+}
 
 -- original by madghostek, adapted to redux model
 
@@ -112,8 +115,30 @@ local function draw_moved_dist()
     end
 end
 
+local function draw_object(o, color, thickness)
+    local p = project(o)
+    if not is_inside_frustum(p) then
+        return
+    end
+
+    local offset = 30000 / p.z
+
+    local rect = {
+        x = math.floor(p.x - offset / 2),
+        y = math.floor(p.y - offset / 2),
+        width = math.floor(offset),
+        height = math.floor(offset),
+    }
+
+    BreitbandGraphics.draw_rectangle(rect, color, thickness)
+end
+
 WorldVisualizer.draw = function()
-    if not Settings.worldviz_enabled then
+    local highlighted = WorldVisualizer.highlighted_object
+    if highlighted and (highlighted < 0x80000000 or highlighted >= 0x80800000) then
+        highlighted = nil
+    end
+    if not Settings.worldviz_enabled and not highlighted then
         return
     end
 
@@ -121,28 +146,20 @@ WorldVisualizer.draw = function()
     camera_yaw = Memory.current.camera_yaw / 182.04
     camera_pitch = Memory.current.camera_pitch / 182.04
 
-    local objects = get_objects()
-
-    for _, o in pairs(objects) do
-        local p = project(o);
-
-        if not is_inside_frustum(p) then
-            goto continue
+    if Settings.worldviz_enabled then
+        for _, o in pairs(get_objects()) do
+            draw_object(o, o.color or BreitbandGraphics.colors.red, 1)
         end
 
-        local offset = 30000 / p.z
-
-        local rect = {
-            x = math.floor(p.x - offset / 2),
-            y = math.floor(p.y - offset / 2),
-            width = math.floor(offset),
-            height = math.floor(offset),
-        }
-
-        BreitbandGraphics.draw_rectangle(rect, o.color or BreitbandGraphics.colors.red, 1)
-
-        ::continue::
+        draw_moved_dist()
     end
 
-    draw_moved_dist()
+    if highlighted then
+        local color = Settings.ghost_recording_highlight_color or {255, 0, 0}
+        draw_object({
+            x = memory.readfloat(highlighted + 0xA0),
+            y = memory.readfloat(highlighted + 0xA4),
+            z = memory.readfloat(highlighted + 0xA8),
+        }, { r = color[1], g = color[2], b = color[3] }, 3)
+    end
 end

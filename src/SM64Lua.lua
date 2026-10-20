@@ -38,7 +38,7 @@ dofile(core_path .. 'MoreMaths.lua')
 dofile(core_path .. 'WorldVisualizer.lua')
 dofile(core_path .. 'MiniVisualizer.lua')
 dofile(core_path .. 'Timer.lua')
-dofile(core_path .. 'Ghost.lua')
+dofile(core_path .. 'Ghosts.lua')
 dofile(core_path .. 'VarWatch.lua')
 dofile(core_path .. 'Styles.lua')
 dofile(core_path .. 'Locales.lua')
@@ -65,6 +65,7 @@ local views = {
     dofile(views_path .. 'Tools.lua'),
     dofile(views_path .. 'Timer.lua'),
     dofile(views_path .. 'Visualizer.lua'),
+    dofile(views_path .. 'GhostTab/Main.lua'),
 }
 
 local semantic_workflow = dofile(processors_path .. 'SemanticWorkflow.lua')
@@ -182,7 +183,7 @@ local function at_input()
     end
 
     Joypad.send()
-    Ghost.update()
+    Ghosts.update()
     Dumping.update()
 end
 
@@ -283,6 +284,9 @@ local function atdrawd2d()
 
     WorldVisualizer.draw()
     MiniVisualizer.draw()
+    GhostTab_draw_ghost_overlay(
+        views[Settings.tab_index].name() == Locales.str('SEMANTIC_WORKFLOW_TAB_NAME') and 6 or 0
+    )
     Notifications.draw()
 
     BreitbandGraphics.fill_rectangle({
